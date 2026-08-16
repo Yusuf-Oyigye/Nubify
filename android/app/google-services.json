@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "69403007783",
+    "project_id": "nubify-af91b",
+    "storage_bucket": "nubify-af91b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:69403007783:android:a6025cd4e2772b1723e702",
+        "android_client_info": {
+          "package_name": "com.nubify.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "69403007783-vlqj61p8l40f60vddshr5d3q3el23ep1.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCFKdNYKJ05JlpwBd3TTjYwTJTkwxlQnAM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "69403007783-vlqj61p8l40f60vddshr5d3q3el23ep1.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "69403007783-b8n7dlkf0j9s5ath8a9giqqk1t8nufp4.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.nubify.app.nubify"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
