@@ -1,1 +1,45 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"nubify-af91b","appId":"1:69403007783:android:a6025cd4e2772b1723e702","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"nubify-af91b","configurations":{"android":"1:69403007783:android:a6025cd4e2772b1723e702","ios":"1:69403007783:ios:56d76d9049a5989c23e702"}}}}}}
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "nubify-af91b",
+          "appId": "1:69403007783:android:a6025cd4e2772b1723e702",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "nubify-af91b",
+          "configurations": {
+            "android": "1:69403007783:android:a6025cd4e2772b1723e702",
+            "ios": "1:69403007783:ios:56d76d9049a5989c23e702"
+          }
+        }
+      }
+    }
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "disallowLegacyRuntimeConfig": true,
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ],
+      "predeploy": [
+        "npm --prefix \"$RESOURCE_DIR\" run lint"
+      ]
+    }
+  ],
+  "firestore": {
+    "database": "(default)",
+    "location": "eur3",
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  }
+}

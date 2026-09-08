@@ -1,27 +1,50 @@
 import 'dart:typed_data';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
-import 'package:nubify/models/user.dart' as model;
-import 'package:nubify/resources/storage_methods.dart';
+
+import '../models/user.dart'
+as model;
+
+import 'storage_methods.dart';
+
+//===================================================
+// AUTH METHODS
+//===================================================
 
 class AuthMethods {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseAuth _auth =
+      FirebaseAuth.instance;
+
   final FirebaseFirestore _firestore =
       FirebaseFirestore.instance;
 
-  Future<model.User> getUserDetails() async {
-    User currentUser = _auth.currentUser!;
+  //===================================================
+  // GET CURRENT USER
+  //===================================================
 
-    DocumentSnapshot snap = await _firestore
+  Future<model.User>
+  getUserDetails() async {
+    final User currentUser =
+    _auth.currentUser!;
+
+    final DocumentSnapshot<
+        Map<String, dynamic>>
+    snap =
+    await _firestore
         .collection('users')
         .doc(currentUser.uid)
         .get();
 
-    return model.User.fromSnap(snap);
+    return model.User.fromSnap(
+      snap,
+    );
   }
 
-  // Sign up user
+  //===================================================
+  // SIGN UP
+  //===================================================
+
   Future<String> signUpUser({
     required String email,
     required String password,
@@ -32,112 +55,183 @@ class AuthMethods {
     required String favoriteQuote,
     Uint8List? file,
   }) async {
-    String res = "Some error occurred";
+    String res =
+        'Some error occurred';
 
     try {
-      if (email.isNotEmpty &&
-          password.isNotEmpty &&
-          username.isNotEmpty &&
-          fullName.isNotEmpty &&
-          faculty.isNotEmpty) {
-        UserCredential cred =
-        await _auth.createUserWithEmailAndPassword(
-          email: email,
-          password: password,
-        );
+      final String cleanEmail =
+      email.trim();
 
-        String photoUrl = '';
+      final String cleanUsername =
+      username.trim();
 
-        if (file != null) {
-          photoUrl = await StorageMethods()
-              .uploadImageToStorage(
-            'profilePics',
-            file,
-            false,
-          );
-        }
+      final String cleanFullName =
+      fullName.trim();
 
-        model.User user = model.User(
-          username: username,
-          fullName: fullName,
-          uid: cred.user!.uid,
-          email: email,
-          faculty: faculty,
-          hobbies: hobbies,
-          favoriteQuote: favoriteQuote,
-          followers: [],
-          following: [],
-          photoUrl: photoUrl,
-        );
+      final String cleanFaculty =
+      faculty.trim();
 
-        await _firestore
-            .collection('users')
-            .doc(cred.user!.uid)
-            .set(user.toJson());
-
-        res = "success";
-      } else {
-        res = "Please fill all required fields";
+      if (cleanEmail.isEmpty ||
+          password.isEmpty ||
+          cleanUsername.isEmpty ||
+          cleanFullName.isEmpty ||
+          cleanFaculty.isEmpty) {
+        return 'Please fill all required fields';
       }
-    } on FirebaseAuthException catch (e) {
-      if (e.code == 'email-already-in-use') {
-        res = "Email already in use";
-      } else if (e.code == 'invalid-email') {
-        res = "Invalid email address";
-      } else if (e.code == 'weak-password') {
-        res =
-        "Password should be at least 6 characters";
-      } else {
-        res = e.message ?? "Sign up failed";
+
+      if (password.length < 6) {
+        return 'Password should be at least 6 characters';
       }
+
+      final UserCredential cred =
+      await _auth
+          .createUserWithEmailAndPassword(
+        email:
+        cleanEmail,
+
+        password:
+        password,
+      );
+
+      String photoUrl =
+          '';
+
+      if (file != null) {
+        photoUrl =
+        await StorageMethods()
+            .uploadImageToStorage(
+          'profilePics',
+          file,
+          false,
+        );
+      }
+
+      final model.User user =
+      model.User(
+        username:
+        cleanUsername,
+
+        fullName:
+        cleanFullName,
+
+        uid:
+        cred.user!.uid,
+
+        email:
+        cleanEmail,
+
+        faculty:
+        cleanFaculty,
+
+        hobbies:
+        hobbies.trim(),
+
+        favoriteQuote:
+        favoriteQuote.trim(),
+
+        followers:
+        const <String>[],
+
+        following:
+        const <String>[],
+
+        pinnedPostIds:
+        const <String>[],
+
+        photoUrl:
+        photoUrl,
+      );
+
+      await _firestore
+          .collection('users')
+          .doc(cred.user!.uid)
+          .set(
+        user.toJson(),
+      );
+
+      res =
+      'success';
+    } on FirebaseAuthException catch (
+    e
+    ) {
+    if (e.code ==
+    'email-already-in-use') {
+    res =
+    'Email already in use';
+    } else if (e.code ==
+    'invalid-email') {
+    res =
+    'Invalid email address';
+    } else if (e.code ==
+    'weak-password') {
+    res =
+    'Password should be at least 6 characters';
+    } else {
+    res =
+    e.message ??
+    'Sign up failed';
+    }
     } catch (e) {
-      res = e.toString();
+    res =
+    e.toString();
     }
 
     return res;
   }
 
-  // Login user
+  //===================================================
+  // LOGIN
+  //===================================================
+
   Future<String> loginUser({
     required String email,
     required String password,
   }) async {
-    String res = "Some error occurred";
+    String res =
+        'Some error occurred';
 
     try {
-      if (email.isNotEmpty &&
-          password.isNotEmpty) {
-        await _auth.signInWithEmailAndPassword(
-          email: email,
-          password: password,
-        );
-
-        res = "success";
-      } else {
-        res = "Please enter all the fields";
+      if (email.trim().isEmpty ||
+          password.isEmpty) {
+        return 'Please enter all the fields';
       }
-    } on FirebaseAuthException catch (e) {
-      print(
-        "Firebase Error Code: ${e.code}",
+
+      await _auth
+          .signInWithEmailAndPassword(
+        email:
+        email.trim(),
+
+        password:
+        password,
       );
 
-      if (e.code == 'invalid-email') {
-        res = "Invalid email address";
-      } else if (e.code ==
-          'invalid-credential') {
-        res =
-        "Incorrect email or password";
-      } else if (e.code ==
-          'user-not-found') {
-        res = "User not found";
-      } else if (e.code ==
-          'wrong-password') {
-        res = "Incorrect password";
-      } else {
-        res = e.message ?? "Login failed";
-      }
+      res =
+      'success';
+    } on FirebaseAuthException catch (
+    e
+    ) {
+    if (e.code ==
+    'invalid-email') {
+    res =
+    'Invalid email address';
+    } else if (e.code ==
+    'invalid-credential' ||
+    e.code ==
+    'wrong-password') {
+    res =
+    'Incorrect email or password';
+    } else if (e.code ==
+    'user-not-found') {
+    res =
+    'User not found';
+    } else {
+    res =
+    e.message ??
+    'Login failed';
+    }
     } catch (e) {
-      res = e.toString();
+    res =
+    e.toString();
     }
 
     return res;
