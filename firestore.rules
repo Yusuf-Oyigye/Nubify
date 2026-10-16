@@ -1,0 +1,1198 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+  //===================================================
+// LINK PREVIEW CACHE
+//===================================================
+
+match /linkPreviews/{previewId} {
+  allow read: if request.auth != null;
+
+  allow create, update, delete: if false;
+}
+  //===============================
+// HELPER
+//===============================
+
+function signedIn() {
+  return request.auth != null;
+}
+
+//===============================
+// DIRECT CONVERSATIONS
+//===============================
+
+match /conversations/{conversationId} {
+
+  allow create: if signedIn()
+    && request.resource.data.participants is list
+    && request.auth.uid
+        in request.resource.data.participants;
+
+  allow read: if signedIn()
+    && request.auth.uid
+        in resource.data.participants;
+
+  allow update: if signedIn()
+    && request.auth.uid
+        in resource.data.participants
+    && request.resource.data.participants
+        == resource.data.participants;
+
+  //===============================
+  // DIRECT MESSAGES
+  //===============================
+
+  match /messages/{messageId} {
+
+    allow create: if signedIn()
+      && request.resource.data.senderId
+          == request.auth.uid
+      && request.auth.uid
+          in getAfter(
+            /databases/$(database)/documents/conversations/$(conversationId)
+          ).data.participants;
+
+    allow read: if signedIn()
+      && request.auth.uid
+          in get(
+            /databases/$(database)/documents/conversations/$(conversationId)
+          ).data.participants;
+
+    allow update: if signedIn()
+      && request.auth.uid
+          in get(
+            /databases/$(database)/documents/conversations/$(conversationId)
+          ).data.participants;
+  }
+
+  //===============================
+  // TYPING
+  //===============================
+
+  match /typing/{userId} {
+    allow read: if signedIn();
+
+    allow write: if signedIn()
+      && request.auth.uid == userId;
+  }
+
+  //===============================
+  // RECORDING
+  //===============================
+
+  match /recording/{userId} {
+    allow read: if signedIn();
+
+    allow write: if signedIn()
+      && request.auth.uid == userId;
+  }
+}
+
+//===============================
+// CHAT PRIVACY
+//===============================
+
+match /users/{userId}/chatSettings/{settingId} {
+
+  allow read: if signedIn();
+
+  allow create, update, delete:
+      if signedIn()
+      && request.auth.uid == userId;
+}
+
+//===============================
+// BLOCKED USERS
+//===============================
+
+match /users/{userId}/blockedUsers/{blockedUserId} {
+
+  allow read, create, update, delete:
+      if signedIn()
+      && request.auth.uid == userId;
+}
+
+//===============================
+// PRESENCE
+//===============================
+
+match /userPresence/{userId} {
+
+  allow read:
+      if signedIn();
+
+  allow create, update:
+      if signedIn()
+      && request.auth.uid == userId;
+}
+
+//===============================
+// GROUPS
+//===============================
+
+match /chatGroups/{groupId} {
+
+  //===============================
+  // CREATE GROUP
+  //===============================
+
+  allow create: if signedIn()
+    && request.resource.data.creatorId
+        == request.auth.uid
+    && request.auth.uid
+        in request.resource.data.memberIds
+    && request.auth.uid
+        in request.resource.data.adminIds;
+
+  //===============================
+  // READ GROUP
+  //===============================
+
+  allow read: if signedIn()
+    && request.auth.uid
+        in resource.data.memberIds;
+
+  //===============================
+  // UPDATE GROUP
+  //===============================
+
+  allow update: if signedIn()
+    && (
+      request.auth.uid
+          in resource.data.adminIds
+
+      ||
+
+      (
+        request.auth.uid
+            in resource.data.memberIds
+
+        && resource.data.permissions
+            .membersCanEditGroupSettings == true
+
+        && request.resource.data
+            .diff(resource.data)
+            .affectedKeys()
+            .hasOnly([
+              'name',
+              'description',
+              'photoUrl',
+              'updatedAt'
+            ])
+      )
+
+      ||
+
+      (
+        request.auth.uid
+            in resource.data.memberIds
+
+        && resource.data.permissions
+            .membersCanAddMembers == true
+
+        && request.resource.data
+            .diff(resource.data)
+            .affectedKeys()
+            .hasOnly([
+              'memberIds',
+              'members',
+              'memberJoinedAt',
+              'updatedAt'
+            ])
+      )
+
+      ||
+
+      (
+        request.auth.uid
+            in resource.data.memberIds
+
+        && !(request.auth.uid
+            in request.resource.data.memberIds)
+
+        && request.resource.data
+            .diff(resource.data)
+            .affectedKeys()
+            .hasOnly([
+              'memberIds',
+              'members',
+              'adminIds',
+              'memberJoinedAt',
+              'updatedAt'
+            ])
+      )
+    );
+
+  //===============================
+  // GROUP MESSAGES
+  //===============================
+
+  match /messages/{messageId} {
+
+    allow read: if signedIn()
+      && request.auth.uid
+          in get(
+            /databases/$(database)/documents/chatGroups/$(groupId)
+          ).data.memberIds;
+
+    allow create: if signedIn()
+      && request.resource.data.senderId
+          == request.auth.uid
+
+      && request.auth.uid
+          in get(
+            /databases/$(database)/documents/chatGroups/$(groupId)
+          ).data.memberIds
+
+      && (
+        request.auth.uid
+            in get(
+              /databases/$(database)/documents/chatGroups/$(groupId)
+            ).data.adminIds
+
+        ||
+
+        get(
+          /databases/$(database)/documents/chatGroups/$(groupId)
+        ).data.permissions.membersCanSendMessages == true
+      );
+
+    allow update: if signedIn()
+      && request.auth.uid
+          in get(
+            /databases/$(database)/documents/chatGroups/$(groupId)
+          ).data.memberIds;
+  }
+
+  //===================================================
+  // SECURE GROUP JOIN REQUESTS
+  //===================================================
+
+  match /joinRequests/{userId} {
+
+    // Join requests are created through the
+    // authenticated Firebase Cloud Function.
+    //
+    // Clients cannot forge invitations or
+    // submit requests directly.
+
+    allow create: if false;
+
+    // Only group admins can review,
+    // approve, reject, or remove requests.
+
+    allow read, update, delete:
+        if signedIn()
+        && request.auth.uid
+            in get(
+              /databases/$(database)/documents/chatGroups/$(groupId)
+            ).data.adminIds;
+  }
+}
+
+//===============================
+// AUDIO CALLS
+//===============================
+
+match /calls/{callId} {
+
+  allow create: if signedIn()
+    && request.resource.data.callerId
+        == request.auth.uid;
+
+  allow read, update: if signedIn()
+    && (
+      request.auth.uid
+          == resource.data.callerId
+
+      ||
+
+      request.auth.uid
+          == resource.data.calleeId
+    );
+
+  match /callerCandidates/{candidateId} {
+
+    allow read, write: if signedIn()
+      && (
+        request.auth.uid
+            == get(
+              /databases/$(database)/documents/calls/$(callId)
+            ).data.callerId
+
+        ||
+
+        request.auth.uid
+            == get(
+              /databases/$(database)/documents/calls/$(callId)
+            ).data.calleeId
+      );
+  }
+
+  match /calleeCandidates/{candidateId} {
+
+    allow read, write: if signedIn()
+      && (
+        request.auth.uid
+            == get(
+              /databases/$(database)/documents/calls/$(callId)
+            ).data.callerId
+
+        ||
+
+        request.auth.uid
+            == get(
+              /databases/$(database)/documents/calls/$(callId)
+            ).data.calleeId
+      );
+  }
+}
+
+    //===================================================
+    // COMMON HELPERS
+    //===================================================
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isCurrentUser(uid) {
+      return isSignedIn() &&
+          request.auth.uid == uid;
+    }
+
+    function changedOnly(fields) {
+      return request.resource.data
+          .diff(resource.data)
+          .affectedKeys()
+          .hasOnly(fields);
+    }
+
+    //===================================================
+    // ROOT ORIGINAL OWNER CAN UPDATE REPOST VISIBILITY
+    //
+    // Used when an original post is hidden/unhidden.
+    //===================================================
+
+    function isRootPostOwner() {
+      let rootId =
+          resource.data.get(
+            'rootOriginalPostId',
+            resource.data.get(
+              'originalPostId',
+              ''
+            )
+          );
+
+      return isSignedIn() &&
+          rootId != '' &&
+          exists(
+            /databases/$(database)/documents/posts/$(rootId)
+          ) &&
+          get(
+            /databases/$(database)/documents/posts/$(rootId)
+          ).data.uid == request.auth.uid;
+    }
+
+    //===================================================
+    // POSTS
+    //===================================================
+
+    match /posts/{postId} {
+
+      //===================================================
+      // READ
+      //
+      // Client-side Nubify filtering currently handles:
+      // isHidden
+      // isRootHidden
+      // blocked users
+      //
+      // Therefore authenticated users can query posts.
+      //===================================================
+
+      allow read: if isSignedIn();
+
+      //===================================================
+      // CREATE
+      //
+      // User can create only a post belonging to them.
+      // This also applies to repost wrapper documents.
+      //===================================================
+
+      allow create: if isSignedIn() &&
+          request.resource.data.uid ==
+              request.auth.uid;
+
+      //===================================================
+      // UPDATE
+      //
+      // 1. OWNER CAN UPDATE THEIR OWN POST.
+      //
+      // But a repost owner cannot manually change
+      // isRootHidden. That belongs to original owner.
+      //
+      // 2. USERS CAN UPDATE ENGAGEMENT FIELDS.
+      //
+      // 3. ORIGINAL OWNER CAN SYNC isRootHidden ON
+      // OTHER USERS' REPOST WRAPPERS.
+      //===================================================
+
+      allow update: if isSignedIn() &&
+          (
+            (
+              resource.data.uid ==
+                  request.auth.uid &&
+              !request.resource.data
+                  .diff(resource.data)
+                  .affectedKeys()
+                  .hasAny([
+                    'isRootHidden'
+                  ])
+            )
+
+            ||
+
+            changedOnly([
+              'likeCount',
+              'likedUserIds',
+              'likes',
+              'commentCount',
+              'repostCount',
+              'shareCount',
+              'viewCount',
+              'poll'
+            ])
+
+            ||
+
+            (
+              isRootPostOwner() &&
+              changedOnly([
+                'isRootHidden',
+                'updatedAt'
+              ])
+            )
+          );
+
+      //===================================================
+      // DELETE
+      //===================================================
+
+      allow delete: if isSignedIn() &&
+          resource.data.uid ==
+              request.auth.uid;
+
+      //===================================================
+      // POST LIKES
+      //
+      // posts/{postId}/likes/{uid}
+      //===================================================
+
+      match /likes/{likeUid} {
+
+        allow read: if isSignedIn();
+
+        allow create: if isCurrentUser(
+              likeUid
+            ) &&
+            request.resource.data.uid ==
+                request.auth.uid;
+
+        allow delete: if isCurrentUser(
+          likeUid
+        );
+
+        allow update: if false;
+      }
+
+      //===================================================
+      // POST VIEWS
+      //
+      // ONE DOCUMENT PER USER
+      //
+      // posts/{postId}/views/{uid}
+      //===================================================
+
+      match /views/{viewerUid} {
+
+        allow create: if isCurrentUser(
+              viewerUid
+            ) &&
+            request.resource.data.uid ==
+                request.auth.uid;
+
+        //===================================================
+        // USER CAN READ THEIR OWN VIEW.
+        //
+        // POST OWNER CAN ALSO READ VIEWERS.
+        //===================================================
+
+        allow read: if isSignedIn() &&
+            (
+              request.auth.uid ==
+                  viewerUid
+
+              ||
+
+              (
+                exists(
+                  /databases/$(database)/documents/posts/$(postId)
+                ) &&
+                get(
+                  /databases/$(database)/documents/posts/$(postId)
+                ).data.uid ==
+                    request.auth.uid
+              )
+            );
+
+        allow update: if false;
+
+        allow delete: if isCurrentUser(
+          viewerUid
+        );
+      }
+
+      //===================================================
+      // COMMENTS
+      //
+      // posts/{postId}/comments/{commentId}
+      //===================================================
+
+      match /comments/{commentId} {
+
+        allow read: if isSignedIn();
+
+        //===================================================
+        // CREATE COMMENT
+        //===================================================
+
+        allow create: if isSignedIn() &&
+            request.resource.data.uid ==
+                request.auth.uid;
+
+        //===================================================
+        // UPDATE
+        //
+        // Comment owner:
+        // - text
+        // - edit fields
+        //
+        // Other authenticated users:
+        // - likeCount
+        //
+        // Reply creation/deletion:
+        // - replyCount
+        //===================================================
+
+        allow update: if isSignedIn() &&
+            (
+              resource.data.uid ==
+                  request.auth.uid
+
+              ||
+
+              changedOnly([
+                'likeCount'
+              ])
+
+              ||
+
+              changedOnly([
+                'replyCount'
+              ])
+            );
+
+        //===================================================
+        // DELETE COMMENT
+        //===================================================
+
+        allow delete: if isSignedIn() &&
+            resource.data.uid ==
+                request.auth.uid;
+
+        //===================================================
+        // COMMENT LIKES
+        //===================================================
+
+        match /likes/{likeUid} {
+
+          allow read: if isSignedIn();
+
+          allow create: if isCurrentUser(
+                likeUid
+              ) &&
+              request.resource.data.uid ==
+                  request.auth.uid;
+
+          allow delete: if isCurrentUser(
+            likeUid
+          );
+
+          allow update: if false;
+        }
+
+        //===================================================
+        // COMMENT REPLIES
+        //===================================================
+
+        match /replies/{replyId} {
+
+          allow read: if isSignedIn();
+
+          allow create: if isSignedIn() &&
+              request.resource.data.uid ==
+                  request.auth.uid;
+
+          allow update: if isSignedIn() &&
+              (
+                resource.data.uid ==
+                    request.auth.uid
+
+                ||
+
+                changedOnly([
+                  'likeCount'
+                ])
+              );
+
+          allow delete: if isSignedIn() &&
+              resource.data.uid ==
+                  request.auth.uid;
+
+          //===================================================
+          // REPLY LIKES
+          //===================================================
+
+          match /likes/{likeUid} {
+
+            allow read: if isSignedIn();
+
+            allow create: if isCurrentUser(
+                  likeUid
+                ) &&
+                request.resource.data.uid ==
+                    request.auth.uid;
+
+            allow delete: if isCurrentUser(
+              likeUid
+            );
+
+            allow update: if false;
+          }
+        }
+      }
+    }
+
+    //===================================================
+    // OLD GLOBAL COMMENTS
+    //
+    // Kept because your current CommentScreen still
+    // contains compatibility logic for old Nubify data.
+    //===================================================
+
+    match /comments/{commentId} {
+
+      allow read: if isSignedIn();
+
+      allow create: if isSignedIn() &&
+          request.resource.data.uid ==
+              request.auth.uid;
+
+      allow update: if isSignedIn() &&
+          (
+            resource.data.uid ==
+                request.auth.uid
+
+            ||
+
+            changedOnly([
+              'likeCount',
+              'replyCount'
+            ])
+          );
+
+      allow delete: if isSignedIn() &&
+          resource.data.uid ==
+              request.auth.uid;
+
+      match /replies/{replyId} {
+
+        allow read: if isSignedIn();
+
+        allow create: if isSignedIn() &&
+            request.resource.data.uid ==
+                request.auth.uid;
+
+        allow update: if isSignedIn() &&
+            (
+              resource.data.uid ==
+                  request.auth.uid
+
+              ||
+
+              changedOnly([
+                'likeCount'
+              ])
+            );
+
+        allow delete: if isSignedIn() &&
+            resource.data.uid ==
+                request.auth.uid;
+      }
+    }
+
+    //===================================================
+    // OLD GLOBAL REPLIES
+    //===================================================
+
+    match /replies/{replyId} {
+
+      allow read: if isSignedIn();
+
+      allow create: if isSignedIn() &&
+          request.resource.data.uid ==
+              request.auth.uid;
+
+      allow update: if isSignedIn() &&
+          (
+            resource.data.uid ==
+                request.auth.uid
+
+            ||
+
+            changedOnly([
+              'likeCount'
+            ])
+          );
+
+      allow delete: if isSignedIn() &&
+          resource.data.uid ==
+              request.auth.uid;
+    }
+
+    //===================================================
+    // USERS
+    //===================================================
+
+    match /users/{uid} {
+
+      //===================================================
+      // PROFILE IS VIEWABLE BY LOGGED-IN NUBIFY USERS
+      //===================================================
+
+      allow read: if isSignedIn();
+
+      //===================================================
+      // SIGNUP
+      //===================================================
+
+      allow create: if isCurrentUser(
+        uid
+      );
+
+      //===================================================
+      // PROFILE OWNER CAN UPDATE OWN PROFILE.
+      //
+      // Another authenticated user may change only the
+      // target user's followers array. This is needed by
+      // your current follow/unfollow transaction.
+      //===================================================
+
+      allow update: if isSignedIn() &&
+          (
+            request.auth.uid ==
+                uid
+
+            ||
+
+            changedOnly([
+              'followers'
+            ])
+          );
+
+      allow delete: if isCurrentUser(
+        uid
+      );
+
+      //===================================================
+      // SAVED POSTS
+      //
+      // PRIVATE
+      //===================================================
+
+      match /savedPosts/{postId} {
+
+        allow read,
+              create,
+              update,
+              delete:
+            if isCurrentUser(
+              uid
+            );
+      }
+
+      //===================================================
+      // LIKED POSTS
+      //
+      // Profile -> Likes
+      //
+      // PRIVATE
+      //===================================================
+
+      match /likedPosts/{postId} {
+
+        allow read,
+              create,
+              update,
+              delete:
+            if isCurrentUser(
+              uid
+            );
+      }
+
+      //===================================================
+      // COMMENT ACTIVITY
+      //
+      // Profile -> Comments
+      //
+      // PRIVATE
+      //===================================================
+
+      match /commentActivity/{activityId} {
+
+        allow read,
+              create,
+              update,
+              delete:
+            if isCurrentUser(
+              uid
+            );
+      }
+
+      //===================================================
+      // HIDDEN POSTS
+      //
+      // Profile -> Hidden Posts
+      //
+      // PRIVATE
+      //===================================================
+
+      match /hiddenPosts/{postId} {
+
+        allow read,
+              create,
+              update,
+              delete:
+            if isCurrentUser(
+              uid
+            );
+      }
+
+      //===================================================
+      // BLOCKED USERS
+      //
+      // PRIVATE
+      //===================================================
+
+      match /blockedUsers/{blockedUid} {
+
+        allow read,
+              create,
+              update,
+              delete:
+            if isCurrentUser(
+              uid
+            );
+      }
+    }
+
+    //===================================================
+    // STORIES
+    //===================================================
+
+    match /stories/{storyId} {
+
+      allow read: if isSignedIn();
+
+      //===================================================
+      // STORY CREATE
+      //===================================================
+
+      allow create: if isSignedIn() &&
+          request.resource.data.uid ==
+              request.auth.uid;
+
+      //===================================================
+      // STORY UPDATE
+      //
+      // OWNER CAN UPDATE THEIR STORY.
+      //
+      // OTHER USERS CAN UPDATE ONLY STORY ENGAGEMENT:
+      //
+      // viewerIds
+      // viewCount
+      // likedUserIds
+      // likeCount
+      // replyCount
+      // poll
+      // shareCount
+      // reshareCount
+      //===================================================
+
+      allow update: if isSignedIn() &&
+          (
+            resource.data.uid ==
+                request.auth.uid
+
+            ||
+
+            changedOnly([
+              'viewerIds',
+              'viewCount',
+              'likedUserIds',
+              'likeCount',
+              'replyCount',
+              'poll',
+              'shareCount',
+              'reshareCount'
+            ])
+          );
+
+      //===================================================
+      // STORY DELETE
+      //===================================================
+
+      allow delete: if isSignedIn() &&
+          resource.data.uid ==
+              request.auth.uid;
+
+      //===================================================
+      // STORY VIEWS
+      //
+      // Story owner can view viewer list.
+      // Viewer can read their own viewer document.
+      //===================================================
+
+      match /views/{viewerUid} {
+
+        allow create: if isCurrentUser(
+              viewerUid
+            ) &&
+            request.resource.data.uid ==
+                request.auth.uid;
+
+        allow read: if isSignedIn() &&
+            (
+              request.auth.uid ==
+                  viewerUid
+
+              ||
+
+              (
+                exists(
+                  /databases/$(database)/documents/stories/$(storyId)
+                ) &&
+                get(
+                  /databases/$(database)/documents/stories/$(storyId)
+                ).data.uid ==
+                    request.auth.uid
+              )
+            );
+
+        allow update: if false;
+
+        allow delete: if isCurrentUser(
+          viewerUid
+        );
+      }
+
+      //===================================================
+      // STORY REPLIES
+      //===================================================
+
+      match /replies/{replyId} {
+
+        allow read: if isSignedIn();
+
+        allow create: if isSignedIn() &&
+            request.resource.data.uid ==
+                request.auth.uid;
+
+        allow update: if isSignedIn() &&
+            resource.data.uid ==
+                request.auth.uid;
+
+        allow delete: if isSignedIn() &&
+            resource.data.uid ==
+                request.auth.uid;
+      }
+    }
+
+    //===================================================
+    // NOTIFICATIONS
+    //
+    // Supports BOTH notification field formats currently
+    // present in Nubify:
+    //
+    // receiverId / senderId
+    //
+    // and
+    //
+    // uid / senderUid
+    //===================================================
+
+    match /notifications/{notificationId} {
+
+      //===================================================
+      // CREATE
+      //===================================================
+
+      allow create: if isSignedIn() &&
+          (
+            request.resource.data.get(
+              'senderId',
+              ''
+            ) ==
+                request.auth.uid
+
+            ||
+
+            request.resource.data.get(
+              'senderUid',
+              ''
+            ) ==
+                request.auth.uid
+          );
+
+      //===================================================
+      // READ ONLY IF THIS NOTIFICATION BELONGS TO USER
+      //===================================================
+
+      allow read: if isSignedIn() &&
+          (
+            resource.data.get(
+              'receiverId',
+              ''
+            ) ==
+                request.auth.uid
+
+            ||
+
+            resource.data.get(
+              'uid',
+              ''
+            ) ==
+                request.auth.uid
+          );
+
+      //===================================================
+      // RECEIVER CAN MARK READ
+      //===================================================
+
+      allow update: if isSignedIn() &&
+          (
+            resource.data.get(
+              'receiverId',
+              ''
+            ) ==
+                request.auth.uid
+
+            ||
+
+            resource.data.get(
+              'uid',
+              ''
+            ) ==
+                request.auth.uid
+          );
+
+      //===================================================
+      // RECEIVER CAN DELETE
+      //===================================================
+
+      allow delete: if isSignedIn() &&
+          (
+            resource.data.get(
+              'receiverId',
+              ''
+            ) ==
+                request.auth.uid
+
+            ||
+
+            resource.data.get(
+              'uid',
+              ''
+            ) ==
+                request.auth.uid
+          );
+    }
+
+    //===================================================
+    // REPORTS
+    //===================================================
+
+    match /reports/{reportId} {
+
+      //===================================================
+      // ANY LOGGED-IN USER CAN SUBMIT REPORT
+      //===================================================
+
+      allow create: if isSignedIn();
+
+      //===================================================
+      // NORMAL USERS SHOULD NOT BROWSE OTHER REPORTS.
+      //
+      // This allows the reporter to read their own report
+      // if you later add a "My Reports" screen.
+      //===================================================
+
+      allow read: if isSignedIn() &&
+          (
+            resource.data.get(
+              'reportedBy',
+              ''
+            ) ==
+                request.auth.uid
+          );
+
+      allow update,
+            delete:
+          if false;
+    }
+
+    //===================================================
+    // CURRENT USER PROFILE ACTIVITY HISTORY
+    //
+    // ProfileActivityService uses collection-group
+    // queries to find comments and replies written by
+    // the signed-in user across every post location.
+    // The uid filter in each query must match the user.
+    //===================================================
+
+    match /{path=**}/comments/{commentId} {
+      allow read: if isSignedIn() &&
+          resource.data.uid ==
+              request.auth.uid;
+    }
+
+    match /{path=**}/replies/{replyId} {
+      allow read: if isSignedIn() &&
+          resource.data.uid ==
+              request.auth.uid;
+    }
+
+    //===================================================
+    // DENY UNKNOWN COLLECTIONS
+    //===================================================
+
+    match /{document=**} {
+      allow read,
+            write:
+          if false;
+    }
+  }
+}

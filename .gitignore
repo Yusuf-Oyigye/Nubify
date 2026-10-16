@@ -43,3 +43,13 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Local Codex workspace data
+.agents/
+.codex/
+.codex-remote-attachments/
+skills-lock.json
+
+# Local backup copies of Firebase Functions source
+functions/*.backup
+functions/*.backup-*
