@@ -14,50 +14,38 @@ class RepostService {
   // FIREBASE
   //===================================================
 
-  final FirebaseFirestore _firestore =
-      FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  final FirebaseAuth _auth =
-      FirebaseAuth.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
   //===================================================
   // NOTIFICATION SERVICE
   //===================================================
 
-  final NotificationService _notificationService =
-  NotificationService();
+  final NotificationService _notificationService = NotificationService();
 
   //===================================================
   // POSTS COLLECTION
   //===================================================
 
-  CollectionReference<Map<String, dynamic>>
-  get _posts =>
-      _firestore.collection(
-        'posts',
-      );
+  CollectionReference<Map<String, dynamic>> get _posts =>
+      _firestore.collection('posts');
 
   //===================================================
-// PLAIN REPOST
-//
-// ONE PLAIN REPOST PER USER PER EXACT POST / REPOST.
-//
-// USER CAN STILL QUOTE REPOST THE SAME TARGET ONCE.
-//===================================================
+  // PLAIN REPOST
+  //
+  // ONE PLAIN REPOST PER USER PER EXACT POST / REPOST.
+  //
+  // USER CAN STILL QUOTE REPOST THE SAME TARGET ONCE.
+  //===================================================
 
-  Future<String> repost(
-      String originalPostId,
-      ) async {
-    final User user =
-    _requireUser();
+  Future<String> repost(String originalPostId) async {
+    final User user = _requireUser();
 
-    final String requestedPostId =
-    originalPostId.trim();
+    final String requestedPostId = originalPostId.trim();
 
     if (requestedPostId.isEmpty) {
-      throw Exception(
-        'Post could not be found.',
-      );
+      throw Exception('Post could not be found.');
     }
 
     //===================================================
@@ -66,127 +54,93 @@ class RepostService {
     // ORIGINAL POST A AND REPOST B ARE DIFFERENT TARGETS.
     //===================================================
 
-    final String sourcePostId =
-        requestedPostId;
+    final String sourcePostId = requestedPostId;
 
     //===================================================
     // CHECK EXISTING PLAIN REPOST
     //===================================================
 
-    final bool alreadyReposted =
-    await hasReposted(
-      sourcePostId,
-    );
+    final bool alreadyReposted = await hasReposted(sourcePostId);
 
     if (alreadyReposted) {
-      throw Exception(
-        'ALREADY_REPOSTED',
-      );
+      throw Exception('ALREADY_REPOSTED');
     }
 
     //===================================================
     // TRUE ROOT ORIGINAL
     //===================================================
 
-    final String rootPostId =
-    await resolveRootPostId(
-      sourcePostId,
-    );
+    final String rootPostId = await resolveRootPostId(sourcePostId);
 
     if (rootPostId.isEmpty) {
-      throw Exception(
-        'Original post could not be found.',
-      );
+      throw Exception('Original post could not be found.');
     }
 
     //===================================================
     // ONE PLAIN REPOST ID PER USER + EXACT TARGET
     //===================================================
 
-    final String repostId =
-        'repost_${user.uid}_$sourcePostId';
+    final String repostId = 'repost_${user.uid}_$sourcePostId';
 
     return _createRepost(
-      sourcePostId:
-      sourcePostId,
-      rootPostId:
-      rootPostId,
-      repostId:
-      repostId,
-      type:
-      'repost',
-      quote:
-      '',
-      currentUser:
-      user,
+      sourcePostId: sourcePostId,
+      rootPostId: rootPostId,
+      repostId: repostId,
+      type: 'repost',
+      quote: '',
+      currentUser: user,
     );
   }
   //===================================================
-// QUOTE REPOST
-//
-// ONE QUOTE REPOST PER USER PER EXACT POST / REPOST.
-//
-// PLAIN REPOST IS SEPARATE.
-//
-// USER CAN DO:
-// 1 PLAIN REPOST
-// 1 QUOTE REPOST
-//===================================================
+  // QUOTE REPOST
+  //
+  // ONE QUOTE REPOST PER USER PER EXACT POST / REPOST.
+  //
+  // PLAIN REPOST IS SEPARATE.
+  //
+  // USER CAN DO:
+  // 1 PLAIN REPOST
+  // 1 QUOTE REPOST
+  //===================================================
 
   Future<String> quoteRepost({
     required String originalPostId,
     required String text,
   }) async {
-    final User user =
-    _requireUser();
+    final User user = _requireUser();
 
-    final String requestedPostId =
-    originalPostId.trim();
+    final String requestedPostId = originalPostId.trim();
 
-    final String quote =
-    text.trim();
+    final String quote = text.trim();
 
     if (requestedPostId.isEmpty) {
-      throw Exception(
-        'Post could not be found.',
-      );
+      throw Exception('Post could not be found.');
     }
 
     //===================================================
     // EXACT DIRECT TARGET
     //===================================================
 
-    final String sourcePostId =
-        requestedPostId;
+    final String sourcePostId = requestedPostId;
 
     //===================================================
     // CHECK EXISTING QUOTE REPOST
     //===================================================
 
-    final bool alreadyQuoteReposted =
-    await hasQuoteReposted(
-      sourcePostId,
-    );
+    final bool alreadyQuoteReposted = await hasQuoteReposted(sourcePostId);
 
     if (alreadyQuoteReposted) {
-      throw Exception(
-        'ALREADY_QUOTE_REPOSTED',
-      );
+      throw Exception('ALREADY_QUOTE_REPOSTED');
     }
 
     //===================================================
     // TRUE ROOT ORIGINAL
     //===================================================
 
-    final String rootPostId =
-    await resolveRootPostId(
-      sourcePostId,
-    );
+    final String rootPostId = await resolveRootPostId(sourcePostId);
 
     if (rootPostId.isEmpty) {
-      throw Exception(
-        'Original post could not be found.',
-      );
+      throw Exception('Original post could not be found.');
     }
 
     //===================================================
@@ -195,22 +149,15 @@ class RepostService {
     // DIFFERENT FROM PLAIN REPOST ID.
     //===================================================
 
-    final String repostId =
-        'quote_${user.uid}_$sourcePostId';
+    final String repostId = 'quote_${user.uid}_$sourcePostId';
 
     return _createRepost(
-      sourcePostId:
-      sourcePostId,
-      rootPostId:
-      rootPostId,
-      repostId:
-      repostId,
-      type:
-      'quote',
-      quote:
-      quote,
-      currentUser:
-      user,
+      sourcePostId: sourcePostId,
+      rootPostId: rootPostId,
+      repostId: repostId,
+      type: 'quote',
+      quote: quote,
+      currentUser: user,
     );
   }
 
@@ -226,32 +173,21 @@ class RepostService {
     required String quote,
     User? currentUser,
   }) async {
-    final User user =
-        currentUser ??
-            _requireUser();
+    final User user = currentUser ?? _requireUser();
 
     //===================================================
     // REFERENCES
     //===================================================
 
-    final DocumentReference<
-        Map<String, dynamic>>
-    sourceRef =
-    _posts.doc(
+    final DocumentReference<Map<String, dynamic>> sourceRef = _posts.doc(
       sourcePostId,
     );
 
-    final DocumentReference<
-        Map<String, dynamic>>
-    rootRef =
-    _posts.doc(
+    final DocumentReference<Map<String, dynamic>> rootRef = _posts.doc(
       rootPostId,
     );
 
-    final DocumentReference<
-        Map<String, dynamic>>
-    repostRef =
-    _posts.doc(
+    final DocumentReference<Map<String, dynamic>> repostRef = _posts.doc(
       repostId,
     );
 
@@ -259,118 +195,68 @@ class RepostService {
     // LOAD SOURCE POST
     //===================================================
 
-    final DocumentSnapshot<
-        Map<String, dynamic>>
-    sourceSnapshot =
-    await sourceRef.get();
+    final DocumentSnapshot<Map<String, dynamic>> sourceSnapshot =
+        await sourceRef.get();
 
-    if (!sourceSnapshot.exists ||
-        sourceSnapshot.data() ==
-            null) {
-      throw Exception(
-        'Post no longer exists.',
-      );
+    if (!sourceSnapshot.exists || sourceSnapshot.data() == null) {
+      throw Exception('Post no longer exists.');
     }
 
-    final Map<String, dynamic>
-    source =
-    sourceSnapshot.data()!;
+    final Map<String, dynamic> source = sourceSnapshot.data()!;
 
     //===================================================
     // SOURCE VISIBILITY CHECK
     //===================================================
 
-    if (source['isHidden'] ==
-        true ||
-        source['isRootHidden'] ==
-            true) {
-      throw Exception(
-        'This post is currently hidden.',
-      );
+    if (source['isHidden'] == true || source['isRootHidden'] == true) {
+      throw Exception('This post is currently hidden.');
     }
 
     //===================================================
     // LOAD ROOT ORIGINAL
     //===================================================
 
-    DocumentSnapshot<
-        Map<String, dynamic>>
-    rootSnapshot =
-        sourceSnapshot;
+    DocumentSnapshot<Map<String, dynamic>> rootSnapshot = sourceSnapshot;
 
-    if (rootPostId !=
-        sourcePostId) {
-      rootSnapshot =
-      await rootRef.get();
+    if (rootPostId != sourcePostId) {
+      rootSnapshot = await rootRef.get();
     }
 
-    if (!rootSnapshot.exists ||
-        rootSnapshot.data() ==
-            null) {
-      throw Exception(
-        'Original post no longer exists.',
-      );
+    if (!rootSnapshot.exists || rootSnapshot.data() == null) {
+      throw Exception('Original post no longer exists.');
     }
 
-    final Map<String, dynamic>
-    root =
-    rootSnapshot.data()!;
+    final Map<String, dynamic> root = rootSnapshot.data()!;
 
     //===================================================
     // ROOT VISIBILITY CHECK
     //===================================================
 
-    if (root['isHidden'] ==
-        true ||
-        root['isRootHidden'] ==
-            true) {
-      throw Exception(
-        'This post is currently hidden.',
-      );
+    if (root['isHidden'] == true || root['isRootHidden'] == true) {
+      throw Exception('This post is currently hidden.');
     }
 
     //===================================================
     // LOAD REPOSTER PROFILE
     //===================================================
 
-    final DocumentSnapshot<
-        Map<String, dynamic>>
-    profileSnapshot =
-    await _firestore
-        .collection(
-      'users',
-    )
-        .doc(
-      user.uid,
-    )
-        .get();
+    final DocumentSnapshot<Map<String, dynamic>> profileSnapshot =
+        await _firestore.collection('users').doc(user.uid).get();
 
-    final Map<String, dynamic>
-    profile =
-        profileSnapshot.data() ??
-            <String, dynamic>{};
+    final Map<String, dynamic> profile =
+        profileSnapshot.data() ?? <String, dynamic>{};
 
     //===================================================
     // REPOSTER DETAILS
     //===================================================
 
-    final String username =
-    (profile['username'] ??
-        '')
+    final String username = (profile['username'] ?? '').toString().trim();
+
+    final String fullName = (profile['fullName'] ?? user.displayName ?? '')
         .toString()
         .trim();
 
-    final String fullName =
-    (profile['fullName'] ??
-        user.displayName ??
-        '')
-        .toString()
-        .trim();
-
-    final String photoUrl =
-    (profile['photoUrl'] ??
-        user.photoURL ??
-        '')
+    final String photoUrl = (profile['photoUrl'] ?? user.photoURL ?? '')
         .toString()
         .trim();
 
@@ -378,37 +264,17 @@ class RepostService {
     // TRUE ORIGINAL DETAILS
     //===================================================
 
-    final String originalOwnerUid =
-    (root['uid'] ??
-        '')
-        .toString()
-        .trim();
+    final String originalOwnerUid = (root['uid'] ?? '').toString().trim();
 
-    final String originalUsername =
-    (root['username'] ??
-        '')
-        .toString()
-        .trim();
+    final String originalUsername = (root['username'] ?? '').toString().trim();
 
-    final String originalFullName =
-    (root['fullName'] ??
-        '')
-        .toString()
-        .trim();
+    final String originalFullName = (root['fullName'] ?? '').toString().trim();
 
-    final String originalPhotoUrl =
-    (root['photoUrl'] ??
-        '')
-        .toString()
-        .trim();
+    final String originalPhotoUrl = (root['photoUrl'] ?? '').toString().trim();
 
-    final String originalCaption =
-    (root['caption'] ??
-        '')
-        .toString();
+    final String originalCaption = (root['caption'] ?? '').toString();
 
-    final dynamic originalCreatedAt =
-    root['createdAt'];
+    final dynamic originalCreatedAt = root['createdAt'];
 
     //===================================================
     // DIRECT SOURCE OWNER
@@ -419,47 +285,33 @@ class RepostService {
     // OR QUOTE-REPOST AUTHOR.
     //===================================================
 
-    final String sourceOwnerUid =
-    (source['uid'] ??
-        '')
-        .toString()
-        .trim();
+    final String sourceOwnerUid = (source['uid'] ?? '').toString().trim();
 
-    final bool quoteRepost =
-        type == 'quote';
+    final bool quoteRepost = type == 'quote';
 
-    final Timestamp clientNow =
-    Timestamp.now();
+    final Timestamp clientNow = Timestamp.now();
 
     //===================================================
     // REPOST DOCUMENT
     //===================================================
 
-    final Map<String, dynamic>
-    repostData =
-    <String, dynamic>{
+    final Map<String, dynamic> repostData = <String, dynamic>{
       //===================================================
       // BASIC POST ID
       //===================================================
 
-      'postId':
-      repostId,
+      'postId': repostId,
 
       //===================================================
       // REPOSTER
       //===================================================
+      'uid': user.uid,
 
-      'uid':
-      user.uid,
+      'username': username,
 
-      'username':
-      username,
+      'fullName': fullName,
 
-      'fullName':
-      fullName,
-
-      'photoUrl':
-      photoUrl,
+      'photoUrl': photoUrl,
 
       //===================================================
       // OWN TEXT
@@ -468,37 +320,26 @@ class RepostService {
       //
       // QUOTE REPOST -> USER QUOTE
       //===================================================
-
-      'caption':
-      quoteRepost
-          ? quote
-          : '',
+      'caption': quoteRepost ? quote : '',
 
       //===================================================
       // OWN MEDIA
       //
       // REFERENCED CONTENT IS LOADED FROM sourcePostId.
       //===================================================
+      'media': <dynamic>[],
 
-      'media':
-      <dynamic>[],
-
-      'mediaCount':
-      0,
+      'mediaCount': 0,
 
       //===================================================
       // NUBUZZ
       //===================================================
-
-      'isNUBuzz':
-      false,
+      'isNUBuzz': false,
 
       //===================================================
       // POST TYPE
       //===================================================
-
-      'postType':
-      'repost',
+      'postType': 'repost',
 
       //===================================================
       // POLL
@@ -506,77 +347,49 @@ class RepostService {
       // REPOST WRAPPER ITSELF HAS NO NEW POLL.
       // REFERENCED POST MAY HAVE A POLL.
       //===================================================
-
-      'hasPoll':
-      false,
-
+      'hasPoll': false,
 
       //===================================================
       // TAGS
       //===================================================
+      'taggedUsers': <dynamic>[],
 
-      'taggedUsers':
-      <dynamic>[],
-
-      'taggedUserIds':
-      <String>[],
+      'taggedUserIds': <String>[],
 
       //===================================================
       // REPOST'S OWN ENGAGEMENT
       //===================================================
+      'likes': <String>[],
 
-      'likes':
-      <String>[],
+      'likedUserIds': <String>[],
 
-      'likedUserIds':
-      <String>[],
+      'likeCount': 0,
 
-      'likeCount':
-      0,
+      'commentCount': 0,
 
-      'commentCount':
-      0,
+      'repostCount': 0,
 
-      'repostCount':
-      0,
+      'shareCount': 0,
 
-      'shareCount':
-      0,
-
-      'viewCount':
-      0,
+      'viewCount': 0,
 
       //===================================================
       // REPOST FLAGS
       //===================================================
+      'isRepost': true,
 
-      'isRepost':
-      true,
+      'repostType': quoteRepost ? 'quote' : 'repost',
 
-      'repostType':
-      quoteRepost
-          ? 'quote'
-          : 'repost',
+      'repostText': quoteRepost ? quote : '',
 
-      'repostText':
-      quoteRepost
-          ? quote
-          : '',
-
-      'repostCaption':
-      quoteRepost
-          ? quote
-          : '',
+      'repostCaption': quoteRepost ? quote : '',
 
       //===================================================
       // TRUE ROOT ORIGINAL
       //===================================================
+      'originalPostId': rootPostId,
 
-      'originalPostId':
-      rootPostId,
-
-      'rootOriginalPostId':
-      rootPostId,
+      'rootOriginalPostId': rootPostId,
 
       //===================================================
       // DIRECT SOURCE
@@ -586,168 +399,119 @@ class RepostService {
       // FOR QUOTE OF QUOTE:
       // sourcePostId CAN POINT TO ANOTHER QUOTE POST.
       //===================================================
-
-      'sourcePostId':
-      sourcePostId,
+      'sourcePostId': sourcePostId,
 
       //===================================================
       // ORIGINAL FALLBACK DETAILS
       //===================================================
+      'originalUid': originalOwnerUid,
 
-      'originalUid':
-      originalOwnerUid,
+      'originalUsername': originalUsername,
 
-      'originalUsername':
-      originalUsername,
+      'originalFullName': originalFullName,
 
-      'originalFullName':
-      originalFullName,
+      'originalPhotoUrl': originalPhotoUrl,
 
-      'originalPhotoUrl':
-      originalPhotoUrl,
+      'originalCaption': originalCaption,
 
-      'originalCaption':
-      originalCaption,
-
-      'originalCreatedAt':
-      originalCreatedAt,
+      'originalCreatedAt': originalCreatedAt,
 
       //===================================================
       // REPOSTER FALLBACK DETAILS
       //===================================================
+      'repostedByUid': user.uid,
 
-      'repostedByUid':
-      user.uid,
+      'repostedByUsername': username,
 
-      'repostedByUsername':
-      username,
+      'repostedByFullName': fullName,
 
-      'repostedByFullName':
-      fullName,
-
-      'repostedByPhotoUrl':
-      photoUrl,
+      'repostedByPhotoUrl': photoUrl,
 
       //===================================================
       // VISIBILITY
       //===================================================
+      'isHidden': false,
 
-      'isHidden':
-      false,
-
-      'isRootHidden':
-      false,
+      'isRootHidden': false,
 
       //===================================================
       // TIME
       //===================================================
+      'createdAt': FieldValue.serverTimestamp(),
 
-      'createdAt':
-      FieldValue.serverTimestamp(),
+      'repostedAt': FieldValue.serverTimestamp(),
 
-      'repostedAt':
-      FieldValue.serverTimestamp(),
+      'clientCreatedAt': clientNow,
 
-      'clientCreatedAt':
-      clientNow,
-
-      'updatedAt':
-      FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
     };
 
-//=================================
-// UNIQUE REPOST WRITE
-//
-// BOTH PLAIN AND QUOTE REPOSTS NOW USE
-// DETERMINISTIC IDS.
-//
-// THIS TRANSACTION STOPS FAST DOUBLE-TAPS
-// FROM CREATING / COUNTING THE SAME ACTION TWICE.
-//=================================
+    //=================================
+    // UNIQUE REPOST WRITE
+    //
+    // BOTH PLAIN AND QUOTE REPOSTS NOW USE
+    // DETERMINISTIC IDS.
+    //
+    // THIS TRANSACTION STOPS FAST DOUBLE-TAPS
+    // FROM CREATING / COUNTING THE SAME ACTION TWICE.
+    //=================================
 
-    final Map<String, dynamic> coreRepostData =
-    Map<String, dynamic>.from(
+    final Map<String, dynamic> coreRepostData = Map<String, dynamic>.from(
       repostData,
     );
 
-//=================================
-// ATOMIC UNIQUE WRITE
-//=================================
+    //=================================
+    // ATOMIC UNIQUE WRITE
+    //=================================
 
-    Future<void> writeCore(
-        Map<String, dynamic> data,
-        ) async {
-      await _firestore.runTransaction(
-            (
-            Transaction transaction,
-            ) async {
-          final DocumentSnapshot<
-              Map<String, dynamic>>
-          existing =
-          await transaction.get(
-            repostRef,
+    Future<void> writeCore(Map<String, dynamic> data) async {
+      await _firestore.runTransaction((Transaction transaction) async {
+        final DocumentSnapshot<Map<String, dynamic>> existing =
+            await transaction.get(repostRef);
+
+        //=================================
+        // ACTION ALREADY EXISTS
+        //=================================
+
+        if (existing.exists) {
+          throw Exception(
+            quoteRepost ? 'ALREADY_QUOTE_REPOSTED' : 'ALREADY_REPOSTED',
           );
+        }
 
-          //=================================
-          // ACTION ALREADY EXISTS
-          //=================================
+        //=================================
+        // CREATE EXACTLY ONCE
+        //=================================
 
-          if (existing.exists) {
-            throw Exception(
-              quoteRepost
-                  ? 'ALREADY_QUOTE_REPOSTED'
-                  : 'ALREADY_REPOSTED',
-            );
-          }
-
-          //=================================
-          // CREATE EXACTLY ONCE
-          //=================================
-
-          transaction.set(
-            repostRef,
-            data,
-          );
-        },
-      );
+        transaction.set(repostRef, data);
+      });
     }
 
-//=================================
-// NORMAL WRITE + COMPATIBILITY
-//=================================
+    //=================================
+    // NORMAL WRITE + COMPATIBILITY
+    //=================================
 
     try {
-      await writeCore(
-        coreRepostData,
-      );
+      await writeCore(coreRepostData);
     } on FirebaseException catch (error) {
       final bool canTryCompatibility =
-          error.code ==
-              'permission-denied' ||
-              error.code ==
-                  'failed-precondition' ||
-              error.code ==
-                  'invalid-argument';
+          error.code == 'permission-denied' ||
+          error.code == 'failed-precondition' ||
+          error.code == 'invalid-argument';
 
       if (!canTryCompatibility) {
         rethrow;
       }
 
-      final Map<String, dynamic>
-      compatibilityData =
-      Map<String, dynamic>.from(
+      final Map<String, dynamic> compatibilityData = Map<String, dynamic>.from(
         coreRepostData,
       );
 
-      compatibilityData['postType'] =
-      'text';
+      compatibilityData['postType'] = 'text';
 
-      compatibilityData['poll'] =
-      null;
+      compatibilityData['poll'] = null;
 
-      await writeCore(
-        compatibilityData,
-      );
+      await writeCore(compatibilityData);
     }
     //===================================================
     // DIRECT SOURCE REPOST COUNT
@@ -756,29 +520,11 @@ class RepostService {
 
     unawaited(
       sourceRef
-          .update(
-        <String, dynamic>{
-          'repostCount':
-          FieldValue.increment(
-            1,
-          ),
-        },
-      )
-          .timeout(
-        const Duration(
-          seconds:
-          6,
-        ),
-      )
-          .catchError(
-        (
-        Object error,
-        ) {
-          print(
-            'Source repost-count error: $error',
-          );
-        },
-      ),
+          .update(<String, dynamic>{'repostCount': FieldValue.increment(1)})
+          .timeout(const Duration(seconds: 6))
+          .catchError((Object error) {
+            print('Source repost-count error: $error');
+          }),
     );
 
     //===================================================
@@ -786,33 +532,14 @@ class RepostService {
     // BEST-EFFORT ONLY
     //===================================================
 
-    if (rootPostId !=
-        sourcePostId) {
+    if (rootPostId != sourcePostId) {
       unawaited(
         rootRef
-            .update(
-          <String, dynamic>{
-            'repostCount':
-            FieldValue.increment(
-              1,
-            ),
-          },
-        )
-            .timeout(
-          const Duration(
-            seconds:
-            6,
-          ),
-        )
-            .catchError(
-          (
-          Object error,
-          ) {
-            print(
-              'Root repost-count error: $error',
-            );
-          },
-        ),
+            .update(<String, dynamic>{'repostCount': FieldValue.increment(1)})
+            .timeout(const Duration(seconds: 6))
+            .catchError((Object error) {
+              print('Root repost-count error: $error');
+            }),
       );
     }
 
@@ -821,47 +548,25 @@ class RepostService {
     // BEST-EFFORT ONLY
     //===================================================
 
-    if (sourceOwnerUid.isNotEmpty &&
-        sourceOwnerUid !=
-            user.uid) {
-      final Future<void> notificationFuture =
-      quoteRepost
-          ? _notificationService
-          .notifyQuoteRepost(
-        postOwnerId:
-        sourceOwnerUid,
-        postId:
-        sourcePostId,
-        repostPostId:
-        repostId,
-      )
-          : _notificationService
-          .notifyRepost(
-        postOwnerId:
-        sourceOwnerUid,
-        postId:
-        sourcePostId,
-        repostPostId:
-        repostId,
-      );
+    if (sourceOwnerUid.isNotEmpty && sourceOwnerUid != user.uid) {
+      final Future<void> notificationFuture = quoteRepost
+          ? _notificationService.notifyQuoteRepost(
+              postOwnerId: sourceOwnerUid,
+              postId: sourcePostId,
+              repostPostId: repostId,
+            )
+          : _notificationService.notifyRepost(
+              postOwnerId: sourceOwnerUid,
+              postId: sourcePostId,
+              repostPostId: repostId,
+            );
 
       unawaited(
-        notificationFuture
-            .timeout(
-          const Duration(
-            seconds:
-            6,
-          ),
-        )
-            .catchError(
-          (
+        notificationFuture.timeout(const Duration(seconds: 6)).catchError((
           Object error,
-          ) {
-            print(
-              'Repost notification error: $error',
-            );
-          },
-        ),
+        ) {
+          print('Repost notification error: $error');
+        }),
       );
     }
 
@@ -881,62 +586,35 @@ class RepostService {
   // RETURNS ORIGINAL
   //===================================================
 
-  Future<String> resolveRootPostId(
-      String postId,
-      ) async {
-    String currentId =
-    postId.trim();
+  Future<String> resolveRootPostId(String postId) async {
+    String currentId = postId.trim();
 
     if (currentId.isEmpty) {
       return '';
     }
 
-    final Set<String> visited =
-    <String>{};
+    final Set<String> visited = <String>{};
 
-    for (
-    int depth = 0;
-    depth < 12;
-    depth++
-    ) {
-      if (currentId.isEmpty ||
-          visited.contains(
-            currentId,
-          )) {
+    for (int depth = 0; depth < 12; depth++) {
+      if (currentId.isEmpty || visited.contains(currentId)) {
         break;
       }
 
-      visited.add(
-        currentId,
-      );
+      visited.add(currentId);
 
-      final DocumentSnapshot<
-          Map<String, dynamic>>
-      snapshot =
-      await _posts
-          .doc(
-        currentId,
-      )
+      final DocumentSnapshot<Map<String, dynamic>> snapshot = await _posts
+          .doc(currentId)
           .get();
 
-      if (!snapshot.exists ||
-          snapshot.data() ==
-              null) {
+      if (!snapshot.exists || snapshot.data() == null) {
         return currentId;
       }
 
-      final Map<String, dynamic>
-      data =
-      snapshot.data()!;
+      final Map<String, dynamic> data = snapshot.data()!;
 
       final bool isRepost =
-          data['isRepost'] ==
-              true ||
-              (data['repostType'] ??
-                  '')
-                  .toString()
-                  .trim()
-                  .isNotEmpty;
+          data['isRepost'] == true ||
+          (data['repostType'] ?? '').toString().trim().isNotEmpty;
 
       //===================================================
       // NORMAL POST IS THE ROOT
@@ -950,17 +628,12 @@ class RepostService {
       // NEW ROOT FIELD
       //===================================================
 
-      final String explicitRoot =
-      (data['rootOriginalPostId'] ??
-          '')
+      final String explicitRoot = (data['rootOriginalPostId'] ?? '')
           .toString()
           .trim();
 
-      if (explicitRoot.isNotEmpty &&
-          explicitRoot !=
-              currentId) {
-        currentId =
-            explicitRoot;
+      if (explicitRoot.isNotEmpty && explicitRoot != currentId) {
+        currentId = explicitRoot;
 
         continue;
       }
@@ -969,17 +642,12 @@ class RepostService {
       // OLD ORIGINAL FIELD
       //===================================================
 
-      final String oldOriginal =
-      (data['originalPostId'] ??
-          '')
+      final String oldOriginal = (data['originalPostId'] ?? '')
           .toString()
           .trim();
 
-      if (oldOriginal.isNotEmpty &&
-          oldOriginal !=
-              currentId) {
-        currentId =
-            oldOriginal;
+      if (oldOriginal.isNotEmpty && oldOriginal != currentId) {
+        currentId = oldOriginal;
 
         continue;
       }
@@ -988,17 +656,12 @@ class RepostService {
       // SOURCE FALLBACK
       //===================================================
 
-      final String sourcePostId =
-      (data['sourcePostId'] ??
-          '')
+      final String sourcePostId = (data['sourcePostId'] ?? '')
           .toString()
           .trim();
 
-      if (sourcePostId.isNotEmpty &&
-          sourcePostId !=
-              currentId) {
-        currentId =
-            sourcePostId;
+      if (sourcePostId.isNotEmpty && sourcePostId != currentId) {
+        currentId = sourcePostId;
 
         continue;
       }
@@ -1030,63 +693,35 @@ class RepostService {
   // USER CAN CREATE NEW QUOTE REPOSTS REPEATEDLY.
   //===================================================
 
-  Future<String>
-  resolveInteractionPostId(
-      String postId,
-      ) async {
-    String currentId =
-    postId.trim();
+  Future<String> resolveInteractionPostId(String postId) async {
+    String currentId = postId.trim();
 
     if (currentId.isEmpty) {
       return '';
     }
 
-    final Set<String> visited =
-    <String>{};
+    final Set<String> visited = <String>{};
 
-    for (
-    int depth = 0;
-    depth < 12;
-    depth++
-    ) {
-      if (currentId.isEmpty ||
-          visited.contains(
-            currentId,
-          )) {
+    for (int depth = 0; depth < 12; depth++) {
+      if (currentId.isEmpty || visited.contains(currentId)) {
         break;
       }
 
-      visited.add(
-        currentId,
-      );
+      visited.add(currentId);
 
-      final DocumentSnapshot<
-          Map<String, dynamic>>
-      snapshot =
-      await _posts
-          .doc(
-        currentId,
-      )
+      final DocumentSnapshot<Map<String, dynamic>> snapshot = await _posts
+          .doc(currentId)
           .get();
 
-      if (!snapshot.exists ||
-          snapshot.data() ==
-              null) {
+      if (!snapshot.exists || snapshot.data() == null) {
         return currentId;
       }
 
-      final Map<String, dynamic>
-      data =
-      snapshot.data()!;
+      final Map<String, dynamic> data = snapshot.data()!;
 
       final bool isRepost =
-          data['isRepost'] ==
-              true ||
-              (data['repostType'] ??
-                  '')
-                  .toString()
-                  .trim()
-                  .isNotEmpty;
+          data['isRepost'] == true ||
+          (data['repostType'] ?? '').toString().trim().isNotEmpty;
 
       //===================================================
       // NORMAL POST
@@ -1096,16 +731,9 @@ class RepostService {
         return snapshot.id;
       }
 
-      final String type =
-      (data['repostType'] ??
-          '')
-          .toString()
-          .trim();
+      final String type = (data['repostType'] ?? '').toString().trim();
 
-      final String quote =
-      (data['repostText'] ??
-          data['repostCaption'] ??
-          '')
+      final String quote = (data['repostText'] ?? data['repostCaption'] ?? '')
           .toString()
           .trim();
 
@@ -1113,8 +741,7 @@ class RepostService {
       // QUOTE POST IS ITS OWN INTERACTION
       //===================================================
 
-      if (type == 'quote' ||
-          quote.isNotEmpty) {
+      if (type == 'quote' || quote.isNotEmpty) {
         return snapshot.id;
       }
 
@@ -1125,21 +752,18 @@ class RepostService {
       //===================================================
 
       final String sourcePostId =
-      (data['sourcePostId'] ??
-          data['originalPostId'] ??
-          data['rootOriginalPostId'] ??
-          '')
-          .toString()
-          .trim();
+          (data['sourcePostId'] ??
+                  data['originalPostId'] ??
+                  data['rootOriginalPostId'] ??
+                  '')
+              .toString()
+              .trim();
 
-      if (sourcePostId.isEmpty ||
-          sourcePostId ==
-              currentId) {
+      if (sourcePostId.isEmpty || sourcePostId == currentId) {
         return currentId;
       }
 
-      currentId =
-          sourcePostId;
+      currentId = sourcePostId;
     }
 
     return currentId;
@@ -1149,61 +773,40 @@ class RepostService {
   // GET ROOT ORIGINAL POST
   //===================================================
 
-  Future<
-      DocumentSnapshot<
-          Map<String, dynamic>>>
-  getRootOriginalPost(
-      String postId,
-      ) async {
-    final String rootPostId =
-    await resolveRootPostId(
-      postId,
-    );
+  Future<DocumentSnapshot<Map<String, dynamic>>> getRootOriginalPost(
+    String postId,
+  ) async {
+    final String rootPostId = await resolveRootPostId(postId);
 
-    return _posts
-        .doc(
-      rootPostId,
-    )
-        .get();
+    return _posts.doc(rootPostId).get();
   }
 
   //===================================================
   // WATCH REFERENCED / ROOT POST
   //===================================================
 
-  Stream<
-      DocumentSnapshot<
-          Map<String, dynamic>>>
-  watchRootOriginalPost(
-      String rootPostId,
-      ) {
-    return _posts
-        .doc(
-      rootPostId.trim(),
-    )
-        .snapshots();
+  Stream<DocumentSnapshot<Map<String, dynamic>>> watchRootOriginalPost(
+    String rootPostId,
+  ) {
+    return _posts.doc(rootPostId.trim()).snapshots();
   }
 
   //===================================================
-// CHECK IF USER ALREADY PLAIN-REPOSTED EXACT TARGET
-//
-// DO NOT FLATTEN REPOSTS.
-//
-// POST A AND REPOST B ARE DIFFERENT TARGETS.
-//===================================================
+  // CHECK IF USER ALREADY PLAIN-REPOSTED EXACT TARGET
+  //
+  // DO NOT FLATTEN REPOSTS.
+  //
+  // POST A AND REPOST B ARE DIFFERENT TARGETS.
+  //===================================================
 
-  Future<bool> hasReposted(
-      String originalPostId,
-      ) async {
-    final User? user =
-        _auth.currentUser;
+  Future<bool> hasReposted(String originalPostId) async {
+    final User? user = _auth.currentUser;
 
     if (user == null) {
       return false;
     }
 
-    final String sourcePostId =
-    originalPostId.trim();
+    final String sourcePostId = originalPostId.trim();
 
     if (sourcePostId.isEmpty) {
       return false;
@@ -1213,16 +816,10 @@ class RepostService {
     // NEW DETERMINISTIC PLAIN REPOST
     //===================================================
 
-    final String deterministicId =
-        'repost_${user.uid}_$sourcePostId';
+    final String deterministicId = 'repost_${user.uid}_$sourcePostId';
 
-    final DocumentSnapshot<
-        Map<String, dynamic>>
-    deterministic =
-    await _posts
-        .doc(
-      deterministicId,
-    )
+    final DocumentSnapshot<Map<String, dynamic>> deterministic = await _posts
+        .doc(deterministicId)
         .get();
 
     if (deterministic.exists) {
@@ -1233,55 +830,33 @@ class RepostService {
     // OLD PLAIN REPOST BACKWARD COMPATIBILITY
     //===================================================
 
-    final QuerySnapshot<
-        Map<String, dynamic>>
-    snapshot =
-    await _posts
-        .where(
-      'uid',
-      isEqualTo:
-      user.uid,
-    )
+    final QuerySnapshot<Map<String, dynamic>> snapshot = await _posts
+        .where('uid', isEqualTo: user.uid)
         .get();
 
-    for (
-    final QueryDocumentSnapshot<
-        Map<String, dynamic>>
-    document
-    in snapshot.docs
-    ) {
-      final Map<String, dynamic>
-      data =
-      document.data();
+    for (final QueryDocumentSnapshot<Map<String, dynamic>> document
+        in snapshot.docs) {
+      final Map<String, dynamic> data = document.data();
 
-      if (data['isRepost'] !=
-          true) {
+      if (data['isRepost'] != true) {
         continue;
       }
 
-      final String type =
-      (data['repostType'] ??
-          'repost')
-          .toString()
-          .trim();
+      final String type = (data['repostType'] ?? 'repost').toString().trim();
 
       //===================================================
       // QUOTE DOES NOT COUNT AS PLAIN REPOST
       //===================================================
 
-      if (type ==
-          'quote') {
+      if (type == 'quote') {
         continue;
       }
 
-      final String candidateSource =
-      (data['sourcePostId'] ??
-          '')
+      final String candidateSource = (data['sourcePostId'] ?? '')
           .toString()
           .trim();
 
-      if (candidateSource ==
-          sourcePostId) {
+      if (candidateSource == sourcePostId) {
         return true;
       }
     }
@@ -1290,27 +865,23 @@ class RepostService {
   }
 
   //===================================================
-// CHECK IF USER ALREADY QUOTE-REPOSTED EXACT TARGET
-//
-// PLAIN REPOST DOES NOT COUNT.
-//
-// SAME EXACT TARGET CAN HAVE:
-// 1 PLAIN REPOST
-// 1 QUOTE REPOST
-//===================================================
+  // CHECK IF USER ALREADY QUOTE-REPOSTED EXACT TARGET
+  //
+  // PLAIN REPOST DOES NOT COUNT.
+  //
+  // SAME EXACT TARGET CAN HAVE:
+  // 1 PLAIN REPOST
+  // 1 QUOTE REPOST
+  //===================================================
 
-  Future<bool> hasQuoteReposted(
-      String originalPostId,
-      ) async {
-    final User? user =
-        _auth.currentUser;
+  Future<bool> hasQuoteReposted(String originalPostId) async {
+    final User? user = _auth.currentUser;
 
     if (user == null) {
       return false;
     }
 
-    final String sourcePostId =
-    originalPostId.trim();
+    final String sourcePostId = originalPostId.trim();
 
     if (sourcePostId.isEmpty) {
       return false;
@@ -1320,16 +891,10 @@ class RepostService {
     // NEW DETERMINISTIC QUOTE REPOST
     //===================================================
 
-    final String deterministicId =
-        'quote_${user.uid}_$sourcePostId';
+    final String deterministicId = 'quote_${user.uid}_$sourcePostId';
 
-    final DocumentSnapshot<
-        Map<String, dynamic>>
-    deterministic =
-    await _posts
-        .doc(
-      deterministicId,
-    )
+    final DocumentSnapshot<Map<String, dynamic>> deterministic = await _posts
+        .doc(deterministicId)
         .get();
 
     if (deterministic.exists) {
@@ -1340,51 +905,29 @@ class RepostService {
     // OLD QUOTE REPOST BACKWARD COMPATIBILITY
     //===================================================
 
-    final QuerySnapshot<
-        Map<String, dynamic>>
-    snapshot =
-    await _posts
-        .where(
-      'uid',
-      isEqualTo:
-      user.uid,
-    )
+    final QuerySnapshot<Map<String, dynamic>> snapshot = await _posts
+        .where('uid', isEqualTo: user.uid)
         .get();
 
-    for (
-    final QueryDocumentSnapshot<
-        Map<String, dynamic>>
-    document
-    in snapshot.docs
-    ) {
-      final Map<String, dynamic>
-      data =
-      document.data();
+    for (final QueryDocumentSnapshot<Map<String, dynamic>> document
+        in snapshot.docs) {
+      final Map<String, dynamic> data = document.data();
 
-      if (data['isRepost'] !=
-          true) {
+      if (data['isRepost'] != true) {
         continue;
       }
 
-      final String type =
-      (data['repostType'] ??
-          '')
-          .toString()
-          .trim();
+      final String type = (data['repostType'] ?? '').toString().trim();
 
-      if (type !=
-          'quote') {
+      if (type != 'quote') {
         continue;
       }
 
-      final String candidateSource =
-      (data['sourcePostId'] ??
-          '')
+      final String candidateSource = (data['sourcePostId'] ?? '')
           .toString()
           .trim();
 
-      if (candidateSource ==
-          sourcePostId) {
+      if (candidateSource == sourcePostId) {
         return true;
       }
     }
@@ -1395,23 +938,16 @@ class RepostService {
   // DELETE REPOST / QUOTE REPOST
   //===================================================
 
-  Future<void> deleteRepost(
-      String repostPostId,
-      ) async {
-    final User user =
-    _requireUser();
+  Future<void> deleteRepost(String repostPostId) async {
+    final User user = _requireUser();
 
-    final String cleanRepostId =
-    repostPostId.trim();
+    final String cleanRepostId = repostPostId.trim();
 
     if (cleanRepostId.isEmpty) {
       return;
     }
 
-    final DocumentReference<
-        Map<String, dynamic>>
-    repostRef =
-    _posts.doc(
+    final DocumentReference<Map<String, dynamic>> repostRef = _posts.doc(
       cleanRepostId,
     );
 
@@ -1419,173 +955,110 @@ class RepostService {
     // DELETE TRANSACTION
     //===================================================
 
-    await _firestore.runTransaction(
-          (
-          Transaction transaction,
-          ) async {
-        final DocumentSnapshot<
-            Map<String, dynamic>>
-        repostSnapshot =
-        await transaction.get(
-          repostRef,
+    await _firestore.runTransaction((Transaction transaction) async {
+      final DocumentSnapshot<Map<String, dynamic>> repostSnapshot =
+          await transaction.get(repostRef);
+
+      if (!repostSnapshot.exists || repostSnapshot.data() == null) {
+        return;
+      }
+
+      final Map<String, dynamic> repostData = repostSnapshot.data()!;
+
+      //===================================================
+      // OWNER CHECK
+      //===================================================
+
+      if ((repostData['uid'] ?? '').toString() != user.uid) {
+        throw Exception('Only the repost owner can delete it.');
+      }
+
+      //===================================================
+      // SOURCE + ROOT IDS
+      //===================================================
+
+      final String sourcePostId =
+          (repostData['sourcePostId'] ?? repostData['originalPostId'] ?? '')
+              .toString()
+              .trim();
+
+      final String rootPostId =
+          (repostData['rootOriginalPostId'] ??
+                  repostData['originalPostId'] ??
+                  '')
+              .toString()
+              .trim();
+
+      DocumentReference<Map<String, dynamic>>? sourceRef;
+
+      DocumentSnapshot<Map<String, dynamic>>? sourceSnapshot;
+
+      DocumentReference<Map<String, dynamic>>? rootRef;
+
+      DocumentSnapshot<Map<String, dynamic>>? rootSnapshot;
+
+      //===================================================
+      // LOAD SOURCE FOR COUNT
+      //===================================================
+
+      if (sourcePostId.isNotEmpty && sourcePostId != cleanRepostId) {
+        sourceRef = _posts.doc(sourcePostId);
+
+        sourceSnapshot = await transaction.get(sourceRef);
+      }
+
+      //===================================================
+      // LOAD ROOT FOR COUNT
+      //===================================================
+
+      if (rootPostId.isNotEmpty &&
+          rootPostId != cleanRepostId &&
+          rootPostId != sourcePostId) {
+        rootRef = _posts.doc(rootPostId);
+
+        rootSnapshot = await transaction.get(rootRef);
+      }
+
+      //===================================================
+      // DELETE REPOST
+      //===================================================
+
+      transaction.delete(repostRef);
+
+      //===================================================
+      // DECREMENT SOURCE COUNT
+      //===================================================
+
+      if (sourceRef != null &&
+          sourceSnapshot != null &&
+          sourceSnapshot.exists &&
+          sourceSnapshot.data() != null) {
+        final int currentCount = _intValue(
+          sourceSnapshot.data()!['repostCount'],
         );
 
-        if (!repostSnapshot.exists ||
-            repostSnapshot.data() ==
-                null) {
-          return;
-        }
+        transaction.update(sourceRef, <String, dynamic>{
+          'repostCount': currentCount > 0 ? currentCount - 1 : 0,
+        });
+      }
 
-        final Map<String, dynamic>
-        repostData =
-        repostSnapshot.data()!;
+      //===================================================
+      // DECREMENT ROOT COUNT
+      //===================================================
 
-        //===================================================
-        // OWNER CHECK
-        //===================================================
-
-        if ((repostData['uid'] ??
-            '')
-            .toString() !=
-            user.uid) {
-          throw Exception(
-            'Only the repost owner can delete it.',
-          );
-        }
-
-        //===================================================
-        // SOURCE + ROOT IDS
-        //===================================================
-
-        final String sourcePostId =
-        (repostData['sourcePostId'] ??
-            repostData['originalPostId'] ??
-            '')
-            .toString()
-            .trim();
-
-        final String rootPostId =
-        (repostData['rootOriginalPostId'] ??
-            repostData['originalPostId'] ??
-            '')
-            .toString()
-            .trim();
-
-        DocumentReference<
-            Map<String, dynamic>>?
-        sourceRef;
-
-        DocumentSnapshot<
-            Map<String, dynamic>>?
-        sourceSnapshot;
-
-        DocumentReference<
-            Map<String, dynamic>>?
-        rootRef;
-
-        DocumentSnapshot<
-            Map<String, dynamic>>?
-        rootSnapshot;
-
-        //===================================================
-        // LOAD SOURCE FOR COUNT
-        //===================================================
-
-        if (sourcePostId.isNotEmpty &&
-            sourcePostId !=
-                cleanRepostId) {
-          sourceRef =
-              _posts.doc(
-                sourcePostId,
-              );
-
-          sourceSnapshot =
-          await transaction.get(
-            sourceRef,
-          );
-        }
-
-        //===================================================
-        // LOAD ROOT FOR COUNT
-        //===================================================
-
-        if (rootPostId.isNotEmpty &&
-            rootPostId !=
-                cleanRepostId &&
-            rootPostId !=
-                sourcePostId) {
-          rootRef =
-              _posts.doc(
-                rootPostId,
-              );
-
-          rootSnapshot =
-          await transaction.get(
-            rootRef,
-          );
-        }
-
-        //===================================================
-        // DELETE REPOST
-        //===================================================
-
-        transaction.delete(
-          repostRef,
+      if (rootRef != null &&
+          rootSnapshot != null &&
+          rootSnapshot.exists &&
+          rootSnapshot.data() != null) {
+        final int currentRootCount = _intValue(
+          rootSnapshot.data()!['repostCount'],
         );
 
-        //===================================================
-        // DECREMENT SOURCE COUNT
-        //===================================================
-
-        if (sourceRef != null &&
-            sourceSnapshot != null &&
-            sourceSnapshot.exists &&
-            sourceSnapshot.data() !=
-                null) {
-          final int currentCount =
-          _intValue(
-            sourceSnapshot.data()![
-            'repostCount'],
-          );
-
-          transaction.update(
-            sourceRef,
-            <String, dynamic>{
-              'repostCount':
-              currentCount > 0
-                  ? currentCount - 1
-                  : 0,
-            },
-          );
-        }
-
-        //===================================================
-        // DECREMENT ROOT COUNT
-        //===================================================
-
-        if (rootRef != null &&
-            rootSnapshot != null &&
-            rootSnapshot.exists &&
-            rootSnapshot.data() !=
-                null) {
-          final int currentRootCount =
-          _intValue(
-            rootSnapshot.data()![
-            'repostCount'],
-          );
-
-          transaction.update(
-            rootRef,
-            <String, dynamic>{
-              'repostCount':
-              currentRootCount > 0
-                  ? currentRootCount - 1
-                  : 0,
-            },
-          );
-        }
-      },
-    );
+        transaction.update(rootRef, <String, dynamic>{
+          'repostCount': currentRootCount > 0 ? currentRootCount - 1 : 0,
+        });
+      }
+    });
 
     //===================================================
     // REMOVE FROM SAVED HISTORY
@@ -1593,18 +1066,10 @@ class RepostService {
 
     try {
       await _firestore
-          .collection(
-        'users',
-      )
-          .doc(
-        user.uid,
-      )
-          .collection(
-        'savedPosts',
-      )
-          .doc(
-        cleanRepostId,
-      )
+          .collection('users')
+          .doc(user.uid)
+          .collection('savedPosts')
+          .doc(cleanRepostId)
           .delete();
     } catch (_) {}
 
@@ -1614,18 +1079,10 @@ class RepostService {
 
     try {
       await _firestore
-          .collection(
-        'users',
-      )
-          .doc(
-        user.uid,
-      )
-          .collection(
-        'likedPosts',
-      )
-          .doc(
-        cleanRepostId,
-      )
+          .collection('users')
+          .doc(user.uid)
+          .collection('likedPosts')
+          .doc(cleanRepostId)
           .delete();
     } catch (_) {}
   }
@@ -1634,256 +1091,152 @@ class RepostService {
   // WATCH ALL REPOST ENGAGEMENTS FOR ROOT POST
   //===================================================
 
-  Stream<List<Map<String, dynamic>>>
-  watchRepostEngagements(
-      String originalPostId,
-      ) {
-    final String requestedRoot =
-    originalPostId.trim();
+  Stream<List<Map<String, dynamic>>> watchRepostEngagements(
+    String originalPostId,
+  ) {
+    final String requestedRoot = originalPostId.trim();
 
-    final Stream<
-        List<Map<String, dynamic>>>
-    stream =
-    _posts
-        .where(
-      'isRepost',
-      isEqualTo:
-      true,
-    )
+    if (requestedRoot.isEmpty) {
+      return Stream<List<Map<String, dynamic>>>.value(<Map<String, dynamic>>[]);
+    }
+
+    final Stream<List<Map<String, dynamic>>> stream = _posts
+        .where('rootOriginalPostId', isEqualTo: requestedRoot)
         .snapshots()
-        .map(
-          (
-          QuerySnapshot<
-              Map<String, dynamic>>
-          snapshot,
-          ) {
-        final List<
-            Map<String, dynamic>>
-        results =
-        <Map<String, dynamic>>[];
+        .map((QuerySnapshot<Map<String, dynamic>> snapshot) {
+          final List<Map<String, dynamic>> results = <Map<String, dynamic>>[];
 
-        for (final QueryDocumentSnapshot<
-            Map<String, dynamic>>
-        document
-        in snapshot.docs) {
-          final Map<String, dynamic>
-          raw =
-          document.data();
+          for (final QueryDocumentSnapshot<Map<String, dynamic>> document
+              in snapshot.docs) {
+            final Map<String, dynamic> raw = document.data();
 
-          //===================================================
-          // ONLY REPOST DOCUMENTS
-          //===================================================
+            //===================================================
+            // ONLY REPOST DOCUMENTS
+            //===================================================
 
-          if (raw['isRepost'] !=
-              true) {
-            continue;
+            if (raw['isRepost'] != true) {
+              continue;
+            }
+
+            //===================================================
+            // HIDDEN REPOSTS
+            //===================================================
+
+            if (raw['isHidden'] == true || raw['isRootHidden'] == true) {
+              continue;
+            }
+
+            //===================================================
+            // ROOT ID
+            //===================================================
+
+            final String rootPostId =
+                (raw['rootOriginalPostId'] ?? raw['originalPostId'] ?? '')
+                    .toString()
+                    .trim();
+
+            if (rootPostId != requestedRoot) {
+              continue;
+            }
+
+            //===================================================
+            // ADD RESULT
+            //===================================================
+
+            final Map<String, dynamic> data = Map<String, dynamic>.from(raw);
+
+            data['postId'] = (data['postId'] ?? document.id).toString().trim();
+
+            results.add(data);
           }
 
           //===================================================
-          // HIDDEN REPOSTS
+          // NEWEST FIRST
           //===================================================
 
-          if (raw['isHidden'] ==
-              true ||
-              raw['isRootHidden'] ==
-                  true) {
-            continue;
-          }
+          results.sort(_newestMapFirst);
 
-          //===================================================
-          // ROOT ID
-          //===================================================
+          return results;
+        });
 
-          final String rootPostId =
-          (raw['rootOriginalPostId'] ??
-              raw['originalPostId'] ??
-              '')
-              .toString()
-              .trim();
-
-          if (rootPostId !=
-              requestedRoot) {
-            continue;
-          }
-
-          //===================================================
-          // ADD RESULT
-          //===================================================
-
-          final Map<String, dynamic>
-          data =
-          Map<String, dynamic>.from(
-            raw,
-          );
-
-          data['postId'] =
-              (data['postId'] ??
-                  document.id)
-                  .toString()
-                  .trim();
-
-          results.add(
-            data,
-          );
-        }
-
-        //===================================================
-        // NEWEST FIRST
-        //===================================================
-
-        results.sort(
-          _newestMapFirst,
-        );
-
-        return results;
-      },
-    );
-
-    return stream
-        .asBroadcastStream();
+    return stream.asBroadcastStream();
   }
 
   //===================================================
   // WATCH QUOTE REPOSTS
   //===================================================
 
-  Stream<List<Map<String, dynamic>>>
-  watchQuotes(
-      String rootPostId,
-      ) {
-    final Stream<
-        List<Map<String, dynamic>>>
-    stream =
-    watchRepostEngagements(
-      rootPostId,
-    ).map(
-          (
-          List<Map<String, dynamic>>
-          reposts,
-          ) {
-        return reposts.where(
-              (
-              Map<String, dynamic>
-              data,
-              ) {
-            final String type =
-            (data['repostType'] ??
-                '')
-                .toString()
-                .trim();
+  Stream<List<Map<String, dynamic>>> watchQuotes(String rootPostId) {
+    final Stream<List<Map<String, dynamic>>> stream =
+        watchRepostEngagements(rootPostId).map((
+          List<Map<String, dynamic>> reposts,
+        ) {
+          return reposts.where((Map<String, dynamic> data) {
+            final String type = (data['repostType'] ?? '').toString().trim();
 
             final String quote =
-            (data['repostText'] ??
-                data['repostCaption'] ??
-                '')
-                .toString()
-                .trim();
+                (data['repostText'] ?? data['repostCaption'] ?? '')
+                    .toString()
+                    .trim();
 
-            return type ==
-                'quote' ||
-                quote
-                    .isNotEmpty;
-          },
-        ).toList();
-      },
-    );
+            return type == 'quote' || quote.isNotEmpty;
+          }).toList();
+        });
 
-    return stream
-        .asBroadcastStream();
+    return stream.asBroadcastStream();
   }
 
   //===================================================
   // WATCH PLAIN REPOSTS
   //===================================================
 
-  Stream<List<Map<String, dynamic>>>
-  watchPlainReposts(
-      String rootPostId,
-      ) {
-    final Stream<
-        List<Map<String, dynamic>>>
-    stream =
-    watchRepostEngagements(
-      rootPostId,
-    ).map(
-          (
-          List<Map<String, dynamic>>
-          reposts,
-          ) {
-        return reposts.where(
-              (
-              Map<String, dynamic>
-              data,
-              ) {
-            final String type =
-            (data['repostType'] ??
-                'repost')
-                .toString()
-                .trim();
+  Stream<List<Map<String, dynamic>>> watchPlainReposts(String rootPostId) {
+    final Stream<List<Map<String, dynamic>>>
+    stream = watchRepostEngagements(rootPostId).map((
+      List<Map<String, dynamic>> reposts,
+    ) {
+      return reposts.where((Map<String, dynamic> data) {
+        final String type = (data['repostType'] ?? 'repost').toString().trim();
 
-            final String quote =
-            (data['repostText'] ??
-                data['repostCaption'] ??
-                '')
-                .toString()
-                .trim();
+        final String quote = (data['repostText'] ?? data['repostCaption'] ?? '')
+            .toString()
+            .trim();
 
-            return type !=
-                'quote' &&
-                quote
-                    .isEmpty;
-          },
-        ).toList();
-      },
-    );
+        return type != 'quote' && quote.isEmpty;
+      }).toList();
+    });
 
-    return stream
-        .asBroadcastStream();
+    return stream.asBroadcastStream();
   }
 
   //===================================================
   // GET TOTAL REPOST COUNT
   //===================================================
 
-  Future<int> getRepostCount(
-      String rootPostId,
-      ) async {
-    final QuerySnapshot<
-        Map<String, dynamic>>
-    snapshot =
-    await _posts.get();
+  Future<int> getRepostCount(String rootPostId) async {
+    final String cleanRootId = rootPostId.trim();
 
-    int count =
-    0;
+    if (cleanRootId.isEmpty) {
+      return 0;
+    }
 
-    for (final QueryDocumentSnapshot<
-        Map<String, dynamic>>
-    document
-    in snapshot.docs) {
-      final Map<String, dynamic>
-      data =
-      document.data();
+    final QuerySnapshot<Map<String, dynamic>> snapshot = await _posts
+        .where('rootOriginalPostId', isEqualTo: cleanRootId)
+        .get();
 
-      if (data['isRepost'] !=
-          true ||
-          data['isHidden'] ==
-              true ||
-          data['isRootHidden'] ==
-              true) {
+    int count = 0;
+
+    for (final QueryDocumentSnapshot<Map<String, dynamic>> document
+        in snapshot.docs) {
+      final Map<String, dynamic> data = document.data();
+
+      if (data['isRepost'] != true ||
+          data['isHidden'] == true ||
+          data['isRootHidden'] == true) {
         continue;
       }
 
-      final String root =
-      (data['rootOriginalPostId'] ??
-          data['originalPostId'] ??
-          '')
-          .toString()
-          .trim();
-
-      if (root ==
-          rootPostId.trim()) {
-        count++;
-      }
+      count++;
     }
 
     return count;
@@ -1893,12 +1246,8 @@ class RepostService {
   // GET QUOTE COUNT
   //===================================================
 
-  Future<int> getQuoteCount(
-      String rootPostId,
-      ) async {
-    final List<Map<String, dynamic>>
-    reposts =
-    await watchQuotes(
+  Future<int> getQuoteCount(String rootPostId) async {
+    final List<Map<String, dynamic>> reposts = await watchQuotes(
       rootPostId,
     ).first;
 
@@ -1909,13 +1258,8 @@ class RepostService {
   // GET PLAIN REPOST COUNT
   //===================================================
 
-  Future<int>
-  getPlainRepostCount(
-      String rootPostId,
-      ) async {
-    final List<Map<String, dynamic>>
-    reposts =
-    await watchPlainReposts(
+  Future<int> getPlainRepostCount(String rootPostId) async {
+    final List<Map<String, dynamic>> reposts = await watchPlainReposts(
       rootPostId,
     ).first;
 
@@ -1926,71 +1270,45 @@ class RepostService {
   // REPOST COUNT STREAM
   //===================================================
 
-  Stream<int> repostCountStream(
-      String rootPostId,
-      ) {
-    return watchRepostEngagements(
-      rootPostId,
-    ).map(
-          (
-          List<Map<String, dynamic>>
-          items,
-          ) {
-        return items.length;
-      },
-    );
+  Stream<int> repostCountStream(String rootPostId) {
+    return watchRepostEngagements(rootPostId).map((
+      List<Map<String, dynamic>> items,
+    ) {
+      return items.length;
+    });
   }
 
   //===================================================
   // QUOTE COUNT STREAM
   //===================================================
 
-  Stream<int> quoteCountStream(
-      String rootPostId,
-      ) {
-    return watchQuotes(
-      rootPostId,
-    ).map(
-          (
-          List<Map<String, dynamic>>
-          items,
-          ) {
-        return items.length;
-      },
-    );
+  Stream<int> quoteCountStream(String rootPostId) {
+    return watchQuotes(rootPostId).map((List<Map<String, dynamic>> items) {
+      return items.length;
+    });
   }
 
   //===================================================
   // PLAIN REPOST COUNT STREAM
   //===================================================
 
-  Stream<int>
-  plainRepostCountStream(
-      String rootPostId,
-      ) {
-    return watchPlainReposts(
-      rootPostId,
-    ).map(
-          (
-          List<Map<String, dynamic>>
-          items,
-          ) {
-        return items.length;
-      },
-    );
+  Stream<int> plainRepostCountStream(String rootPostId) {
+    return watchPlainReposts(rootPostId).map((
+      List<Map<String, dynamic>> items,
+    ) {
+      return items.length;
+    });
   }
 
   //===================================================
   // SYNC ROOT VISIBILITY TO REPOST WRAPPERS
   //===================================================
 
-  Future<void>
-  syncRootVisibility({
+  Future<void> syncRootVisibility({
     required String rootPostId,
     required bool hidden,
   }) async {
-    final String cleanRootId =
-    rootPostId.trim();
+    final String cleanRootId = rootPostId.trim();
 
     if (cleanRootId.isEmpty) {
       return;
@@ -2000,18 +1318,11 @@ class RepostService {
     // LOAD ROOT
     //===================================================
 
-    final DocumentSnapshot<
-        Map<String, dynamic>>
-    rootSnapshot =
-    await _posts
-        .doc(
-      cleanRootId,
-    )
+    final DocumentSnapshot<Map<String, dynamic>> rootSnapshot = await _posts
+        .doc(cleanRootId)
         .get();
 
-    if (!rootSnapshot.exists ||
-        rootSnapshot.data() ==
-            null) {
+    if (!rootSnapshot.exists || rootSnapshot.data() == null) {
       return;
     }
 
@@ -2019,64 +1330,40 @@ class RepostService {
     // OWNER CHECK
     //===================================================
 
-    final User user =
-    _requireUser();
+    final User user = _requireUser();
 
-    if ((rootSnapshot.data()![
-    'uid'] ??
-        '')
-        .toString() !=
-        user.uid) {
-      throw Exception(
-        'Only the original post owner can change visibility.',
-      );
+    if ((rootSnapshot.data()!['uid'] ?? '').toString() != user.uid) {
+      throw Exception('Only the original post owner can change visibility.');
     }
 
     //===================================================
     // LOAD ALL POSTS
     //===================================================
 
-    final QuerySnapshot<
-        Map<String, dynamic>>
-    allPosts =
-    await _posts.get();
+    final QuerySnapshot<Map<String, dynamic>> allPosts = await _posts.get();
 
-    final List<
-        DocumentReference<
-            Map<String, dynamic>>>
-    wrappers =
-    <DocumentReference<
-        Map<String, dynamic>>>[];
+    final List<DocumentReference<Map<String, dynamic>>> wrappers =
+        <DocumentReference<Map<String, dynamic>>>[];
 
     //===================================================
     // FIND ALL REPOST WRAPPERS FOR ROOT
     //===================================================
 
-    for (final QueryDocumentSnapshot<
-        Map<String, dynamic>>
-    document
-    in allPosts.docs) {
-      final Map<String, dynamic>
-      data =
-      document.data();
+    for (final QueryDocumentSnapshot<Map<String, dynamic>> document
+        in allPosts.docs) {
+      final Map<String, dynamic> data = document.data();
 
-      if (data['isRepost'] !=
-          true) {
+      if (data['isRepost'] != true) {
         continue;
       }
 
       final String candidateRoot =
-      (data['rootOriginalPostId'] ??
-          data['originalPostId'] ??
-          '')
-          .toString()
-          .trim();
+          (data['rootOriginalPostId'] ?? data['originalPostId'] ?? '')
+              .toString()
+              .trim();
 
-      if (candidateRoot ==
-          cleanRootId) {
-        wrappers.add(
-          document.reference,
-        );
+      if (candidateRoot == cleanRootId) {
+        wrappers.add(document.reference);
       }
     }
 
@@ -2088,38 +1375,20 @@ class RepostService {
     // FIRESTORE BATCH LIMIT SAFETY
     //===================================================
 
-    const int batchSize =
-    400;
+    const int batchSize = 400;
 
-    for (
-    int start = 0;
-    start < wrappers.length;
-    start += batchSize
-    ) {
-      final int end =
-      start + batchSize >
-          wrappers.length
+    for (int start = 0; start < wrappers.length; start += batchSize) {
+      final int end = start + batchSize > wrappers.length
           ? wrappers.length
-          : start +
-          batchSize;
+          : start + batchSize;
 
-      final WriteBatch batch =
-      _firestore.batch();
+      final WriteBatch batch = _firestore.batch();
 
-      for (
-      int index = start;
-      index < end;
-      index++
-      ) {
-        batch.update(
-          wrappers[index],
-          <String, dynamic>{
-            'isRootHidden':
-            hidden,
-            'updatedAt':
-            FieldValue.serverTimestamp(),
-          },
-        );
+      for (int index = start; index < end; index++) {
+        batch.update(wrappers[index], <String, dynamic>{
+          'isRootHidden': hidden,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
       }
 
       await batch.commit();
@@ -2131,13 +1400,10 @@ class RepostService {
   //===================================================
 
   User _requireUser() {
-    final User? user =
-        _auth.currentUser;
+    final User? user = _auth.currentUser;
 
     if (user == null) {
-      throw Exception(
-        'Please log in first.',
-      );
+      throw Exception('Please log in first.');
     }
 
     return user;
@@ -2147,42 +1413,23 @@ class RepostService {
   // SORT NEWEST FIRST
   //===================================================
 
-  static int _newestMapFirst(
-      Map<String, dynamic> a,
-      Map<String, dynamic> b,
-      ) {
+  static int _newestMapFirst(Map<String, dynamic> a, Map<String, dynamic> b) {
     final DateTime aDate =
-        _dateValue(
-          a['repostedAt'] ??
-              a['createdAt'],
-        ) ??
-            DateTime
-                .fromMillisecondsSinceEpoch(
-              0,
-            );
+        _dateValue(a['repostedAt'] ?? a['createdAt']) ??
+        DateTime.fromMillisecondsSinceEpoch(0);
 
     final DateTime bDate =
-        _dateValue(
-          b['repostedAt'] ??
-              b['createdAt'],
-        ) ??
-            DateTime
-                .fromMillisecondsSinceEpoch(
-              0,
-            );
+        _dateValue(b['repostedAt'] ?? b['createdAt']) ??
+        DateTime.fromMillisecondsSinceEpoch(0);
 
-    return bDate.compareTo(
-      aDate,
-    );
+    return bDate.compareTo(aDate);
   }
 
   //===================================================
   // DATE HELPER
   //===================================================
 
-  static DateTime? _dateValue(
-      dynamic value,
-      ) {
+  static DateTime? _dateValue(dynamic value) {
     if (value is Timestamp) {
       return value.toDate();
     }
@@ -2192,9 +1439,7 @@ class RepostService {
     }
 
     if (value is String) {
-      return DateTime.tryParse(
-        value,
-      );
+      return DateTime.tryParse(value);
     }
 
     return null;
@@ -2204,9 +1449,7 @@ class RepostService {
   // INT HELPER
   //===================================================
 
-  static int _intValue(
-      dynamic value,
-      ) {
+  static int _intValue(dynamic value) {
     if (value is int) {
       return value;
     }
@@ -2215,10 +1458,6 @@ class RepostService {
       return value.toInt();
     }
 
-    return int.tryParse(
-      value?.toString() ??
-          '',
-    ) ??
-        0;
+    return int.tryParse(value?.toString() ?? '') ?? 0;
   }
 }

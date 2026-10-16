@@ -135,8 +135,24 @@ class Post {
       throw Exception('Invalid post document: ${snapshot.id}');
     }
 
-    final Map<String, dynamic> data = Map<String, dynamic>.from(rawData as Map);
+    return Post.fromMap(
+      Map<String, dynamic>.from(rawData),
+      documentId: snapshot.id,
+    );
+  }
 
+  //===================================================
+  // FROM AN ALREADY-LOADED MAP
+  //
+  // Engagement lists already receive the complete post
+  // data from Firestore. Reusing that data avoids opening
+  // one extra live Firestore listener for every quote.
+  //===================================================
+
+  factory Post.fromMap(
+    Map<String, dynamic> data, {
+    required String documentId,
+  }) {
     final List<dynamic> mediaData = data['media'] is List
         ? List<dynamic>.from(data['media'] as List)
         : <dynamic>[];
@@ -146,7 +162,7 @@ class Post {
         : <dynamic>[];
 
     return Post(
-      postId: (data['postId'] ?? snapshot.id).toString(),
+      postId: (data['postId'] ?? documentId).toString(),
 
       uid: (data['uid'] ?? '').toString(),
 
