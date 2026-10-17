@@ -411,6 +411,34 @@ exports.reviewSellerVerification = onCall(
   },
 );
 
+exports.getMyMarketplaceListingCounts = onCall(
+  {region: REGION, timeoutSeconds: 30, memory: "256MiB"},
+  async (request) => {
+    requireAuthenticated(request);
+    const uid = request.auth.uid;
+    const statuses = [
+      "available",
+      "sold",
+      "unavailable",
+      "draft",
+      "archived",
+    ];
+    const snapshots = await Promise.all(
+      statuses.map((status) => db.collection(LISTINGS)
+        .where("sellerId", "==", uid)
+        .where("status", "==", status)
+        .count()
+        .get()),
+    );
+    return Object.fromEntries(
+      statuses.map((status, index) => [
+        status,
+        snapshots[index].data().count,
+      ]),
+    );
+  },
+);
+
 exports.publishMarketplaceListing = onCall(
   {region: REGION, timeoutSeconds: 30, memory: "256MiB"},
   async (request) => {

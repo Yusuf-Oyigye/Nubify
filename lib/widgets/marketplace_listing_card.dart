@@ -14,11 +14,13 @@ class MarketplaceListingCard extends StatefulWidget {
     required this.listing,
     required this.saved,
     required this.onOpen,
+    this.onSavedChanged,
   });
 
   final MarketplaceListing listing;
   final bool saved;
   final VoidCallback onOpen;
+  final ValueChanged<bool>? onSavedChanged;
 
   @override
   State<MarketplaceListingCard> createState() => _MarketplaceListingCardState();
@@ -56,6 +58,7 @@ class _MarketplaceListingCardState extends State<MarketplaceListingCard> {
     HapticFeedback.selectionClick();
     try {
       await _service.setSaved(widget.listing.listingId, saved: _saved);
+      widget.onSavedChanged?.call(_saved);
     } catch (_) {
       if (mounted) {
         setState(() => _saved = previous);

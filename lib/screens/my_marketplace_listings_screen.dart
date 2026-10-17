@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../models/marketplace_listing.dart';
@@ -6,8 +8,57 @@ import '../utils/marketplace_theme.dart';
 import 'create_marketplace_listing_screen.dart';
 import 'marketplace_listing_details_screen.dart';
 
-class MyMarketplaceListingsScreen extends StatelessWidget {
+class MyMarketplaceListingsScreen extends StatefulWidget {
   const MyMarketplaceListingsScreen({super.key});
+
+  @override
+  State<MyMarketplaceListingsScreen> createState() =>
+      _MyMarketplaceListingsScreenState();
+}
+
+class _MyMarketplaceListingsScreenState
+    extends State<MyMarketplaceListingsScreen> {
+  static const List<String> _statuses = <String>[
+    'available',
+    'sold',
+    'unavailable',
+    'draft',
+    'archived',
+  ];
+  final MarketplaceService _service = MarketplaceService();
+  Map<String, int> _counts = const <String, int>{};
+  int _countGeneration = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_loadCounts());
+  }
+
+  Future<void> _loadCounts() async {
+    final int generation = ++_countGeneration;
+    try {
+      final Map<String, int> values = await _service.myListingCounts();
+      if (!mounted || generation != _countGeneration) {
+        return;
+      }
+      setState(() => _counts = values);
+    } catch (_) {
+      // Each status tab still loads independently and displays its own error.
+    }
+  }
+
+  String _tabLabel(String status) {
+    final String name = switch (status) {
+      'available' => 'Available',
+      'sold' => 'Sold',
+      'unavailable' => 'Unavailable',
+      'draft' => 'Drafts',
+      _ => 'Archived',
+    };
+    final int? count = _counts[status];
+    return count == null ? name : '$name ($count)';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -16,33 +67,30 @@ class MyMarketplaceListingsScreen extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(
           title: const Text('My Listings'),
-          bottom: const TabBar(
+          bottom: TabBar(
             isScrollable: true,
             tabs: <Widget>[
-              Tab(text: 'Available'),
-              Tab(text: 'Sold'),
-              Tab(text: 'Unavailable'),
-              Tab(text: 'Drafts'),
-              Tab(text: 'Archived'),
+              for (final String status in _statuses)
+                Tab(text: _tabLabel(status)),
             ],
           ),
         ),
-        body: const TabBarView(
+        body: TabBarView(
           children: <Widget>[
-            _ListingStatusTab(status: 'available'),
-            _ListingStatusTab(status: 'sold'),
-            _ListingStatusTab(status: 'unavailable'),
-            _ListingStatusTab(status: 'draft'),
-            _ListingStatusTab(status: 'archived'),
+            for (final String status in _statuses)
+              _ListingStatusTab(status: status, onChanged: _loadCounts),
           ],
         ),
         floatingActionButton: FloatingActionButton.extended(
-          onPressed: () => Navigator.push(
-            context,
-            MaterialPageRoute<void>(
-              builder: (_) => const CreateMarketplaceListingScreen(),
-            ),
-          ),
+          onPressed: () async {
+            await Navigator.push<void>(
+              context,
+              MaterialPageRoute<void>(
+                builder: (_) => const CreateMarketplaceListingScreen(),
+              ),
+            );
+            unawaited(_loadCounts());
+          },
           icon: const Icon(Icons.add_rounded),
           label: const Text('New Listing'),
         ),
@@ -51,50 +99,192 @@ class MyMarketplaceListingsScreen extends StatelessWidget {
   }
 }
 
-class _ListingStatusTab extends StatelessWidget {
-  const _ListingStatusTab({required this.status});
+class _ListingStatusTab extends StatefulWidget {
+  const _ListingStatusTab({required this.status, required this.onChanged});
 
   final String status;
+  final VoidCallback onChanged;
+
+  @override
+  State<_ListingStatusTab> createState() => _ListingStatusTabState();
+}
+
+class _ListingStatusTabState extends State<_ListingStatusTab>
+    with AutomaticKeepAliveClientMixin<_ListingStatusTab> {
+  final MarketplaceService _service = MarketplaceService();
+  final ScrollController _scrollController = ScrollController();
+  List<MarketplaceListing> _listings = const <MarketplaceListing>[];
+  MarketplaceListingPage? _lastPage;
+  Object? _loadError;
+  bool _loading = true;
+  bool _loadingMore = false;
+  bool _hasMore = true;
+  int _generation = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_handleScroll);
+    unawaited(_loadListings(reset: true));
+  }
+
+  @override
+  void didUpdateWidget(covariant _ListingStatusTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.status != widget.status) {
+      unawaited(_loadListings(reset: true));
+    }
+  }
+
+  void _handleScroll() {
+    if (_scrollController.position.extentAfter < 450) {
+      unawaited(_loadListings());
+    }
+  }
+
+  Future<void> _loadListings({bool reset = false}) async {
+    if (reset) {
+      _generation += 1;
+      setState(() {
+        _loading = true;
+        _loadingMore = false;
+        _hasMore = true;
+        _loadError = null;
+        _lastPage = null;
+      });
+    } else if (_loading || _loadingMore || !_hasMore) {
+      return;
+    } else {
+      setState(() {
+        _loadingMore = true;
+        _loadError = null;
+      });
+    }
+
+    final int generation = _generation;
+    try {
+      final MarketplaceListingPage page = await _service.fetchMinePage(
+        status: widget.status,
+        after: reset ? null : _lastPage?.lastDocument,
+      );
+      if (!mounted || generation != _generation) {
+        return;
+      }
+      final Set<String> existingIds = _listings
+          .map((MarketplaceListing item) => item.listingId)
+          .toSet();
+      setState(() {
+        _listings = reset
+            ? page.listings
+            : <MarketplaceListing>[
+                ..._listings,
+                ...page.listings.where(
+                  (MarketplaceListing item) => existingIds.add(item.listingId),
+                ),
+              ];
+        _lastPage = page;
+        _hasMore = page.hasMore;
+        _loading = false;
+        _loadingMore = false;
+      });
+    } catch (error) {
+      if (!mounted || generation != _generation) {
+        return;
+      }
+      setState(() {
+        _loadError = error;
+        _loading = false;
+        _loadingMore = false;
+      });
+    }
+  }
+
+  void _listingChanged() {
+    widget.onChanged();
+    unawaited(_loadListings(reset: true));
+  }
 
   @override
   Widget build(BuildContext context) {
-    final MarketplaceService service = MarketplaceService();
-    return StreamBuilder<List<MarketplaceListing>>(
-      stream: service.watchMine(status: status),
-      builder:
-          (
-            BuildContext context,
-            AsyncSnapshot<List<MarketplaceListing>> snapshot,
-          ) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            if (snapshot.hasError) {
-              return Center(
-                child: Text('Unable to load listings. ${snapshot.error}'),
-              );
-            }
-            final List<MarketplaceListing> listings =
-                snapshot.data ?? const <MarketplaceListing>[];
-            if (listings.isEmpty) {
-              return _EmptyStatus(status: status);
-            }
-            return ListView.separated(
-              padding: const EdgeInsets.fromLTRB(14, 14, 14, 90),
-              itemCount: listings.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 10),
-              itemBuilder: (BuildContext context, int index) =>
-                  _OwnerListingTile(listing: listings[index]),
+    super.build(context);
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_listings.isEmpty && _loadError != null) {
+      return _EmptyStatus(
+        status: widget.status,
+        error: _loadError,
+        onRetry: () => unawaited(_loadListings(reset: true)),
+      );
+    }
+    if (_listings.isEmpty) {
+      return RefreshIndicator(
+        onRefresh: () => _loadListings(reset: true),
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: <Widget>[
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: _EmptyStatus(status: widget.status),
+            ),
+          ],
+        ),
+      );
+    }
+    return RefreshIndicator(
+      onRefresh: () => _loadListings(reset: true),
+      child: ListView.separated(
+        controller: _scrollController,
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(14, 14, 14, 90),
+        itemCount: _listings.length + 1,
+        separatorBuilder: (_, _) => const SizedBox(height: 10),
+        itemBuilder: (BuildContext context, int index) {
+          if (index == _listings.length) {
+            return Center(
+              child: _loadingMore
+                  ? const Padding(
+                      padding: EdgeInsets.all(16),
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : _loadError != null
+                  ? TextButton.icon(
+                      onPressed: () => unawaited(_loadListings()),
+                      icon: const Icon(Icons.refresh_rounded),
+                      label: const Text('Could not load more — retry'),
+                    )
+                  : !_hasMore
+                  ? const Padding(
+                      padding: EdgeInsets.all(12),
+                      child: Text('End of this section.'),
+                    )
+                  : const SizedBox(height: 24),
             );
-          },
+          }
+          return _OwnerListingTile(
+            listing: _listings[index],
+            onChanged: _listingChanged,
+          );
+        },
+      ),
     );
+  }
+
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 }
 
 class _OwnerListingTile extends StatefulWidget {
-  const _OwnerListingTile({required this.listing});
+  const _OwnerListingTile({required this.listing, required this.onChanged});
 
   final MarketplaceListing listing;
+  final VoidCallback onChanged;
 
   @override
   State<_OwnerListingTile> createState() => _OwnerListingTileState();
@@ -109,7 +299,7 @@ class _OwnerListingTileState extends State<_OwnerListingTile> {
       return;
     }
     if (value == 'view') {
-      Navigator.push(
+      await Navigator.push<void>(
         context,
         MaterialPageRoute<void>(
           builder: (_) => MarketplaceListingDetailsScreen(
@@ -117,10 +307,11 @@ class _OwnerListingTileState extends State<_OwnerListingTile> {
           ),
         ),
       );
+      widget.onChanged();
       return;
     }
     if (value == 'edit') {
-      Navigator.push(
+      await Navigator.push<void>(
         context,
         MaterialPageRoute<void>(
           builder: (_) => CreateMarketplaceListingScreen(
@@ -128,6 +319,7 @@ class _OwnerListingTileState extends State<_OwnerListingTile> {
           ),
         ),
       );
+      widget.onChanged();
       return;
     }
     if (value == 'delete') {
@@ -161,6 +353,7 @@ class _OwnerListingTileState extends State<_OwnerListingTile> {
       } else {
         await _service.updateStatus(widget.listing.listingId, value);
       }
+      widget.onChanged();
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(
@@ -265,9 +458,11 @@ class _OwnerListingTileState extends State<_OwnerListingTile> {
 }
 
 class _EmptyStatus extends StatelessWidget {
-  const _EmptyStatus({required this.status});
+  const _EmptyStatus({required this.status, this.error, this.onRetry});
 
   final String status;
+  final Object? error;
+  final VoidCallback? onRetry;
 
   @override
   Widget build(BuildContext context) {
@@ -277,22 +472,33 @@ class _EmptyStatus extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            const Icon(
-              Icons.inventory_2_outlined,
+            Icon(
+              error == null
+                  ? Icons.inventory_2_outlined
+                  : Icons.cloud_off_rounded,
               size: 60,
               color: MarketplaceTheme.sky,
             ),
             const SizedBox(height: 14),
             Text(
-              'No ${status == 'draft' ? 'drafts' : '$status listings'}',
+              error == null
+                  ? 'No ${status == 'draft' ? 'drafts' : '$status listings'}'
+                  : 'Unable to load listings',
               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 6),
             Text(
-              status == 'available'
+              error != null
+                  ? error.toString()
+                  : status == 'available'
                   ? 'Published listings will appear here.'
                   : 'This section is currently empty.',
+              textAlign: TextAlign.center,
             ),
+            if (error != null && onRetry != null) ...<Widget>[
+              const SizedBox(height: 12),
+              FilledButton(onPressed: onRetry, child: const Text('Try Again')),
+            ],
           ],
         ),
       ),

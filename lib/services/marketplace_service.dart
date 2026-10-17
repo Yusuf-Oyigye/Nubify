@@ -157,25 +157,56 @@ class MarketplaceService {
     if (uid == null) {
       return const Stream<List<MarketplaceListing>>.empty();
     }
+    return _mineQuery(
+      uid: uid,
+      status: status,
+    ).limit(MarketplaceConstants.pageSize).snapshots().map(_mapListings);
+  }
+
+  Future<MarketplaceListingPage> fetchMinePage({
+    String? status,
+    DocumentSnapshot<Map<String, dynamic>>? after,
+    int limit = MarketplaceConstants.pageSize,
+  }) async {
+    final String? uid = _auth.currentUser?.uid;
+    if (uid == null) {
+      throw StateError('Sign in to manage your Marketplace listings.');
+    }
+    Query<Map<String, dynamic>> query = _mineQuery(uid: uid, status: status);
+    if (after != null) {
+      query = query.startAfterDocument(after);
+    }
+    final QuerySnapshot<Map<String, dynamic>> snapshot = await query
+        .limit(limit)
+        .get();
+    return _pageFromSnapshot(snapshot, limit: limit);
+  }
+
+  Future<Map<String, int>> myListingCounts() async {
+    final HttpsCallableResult<dynamic> result = await _functions
+        .httpsCallable('getMyMarketplaceListingCounts')
+        .call<dynamic>();
+    final Map<String, dynamic> data = Map<String, dynamic>.from(
+      result.data as Map,
+    );
+    return <String, int>{
+      for (final String status in MarketplaceConstants.listingStatuses)
+        status: data[status] is num ? (data[status] as num).toInt() : 0,
+    };
+  }
+
+  Query<Map<String, dynamic>> _mineQuery({
+    required String uid,
+    String? status,
+  }) {
     Query<Map<String, dynamic>> query = _listings.where(
       'sellerId',
       isEqualTo: uid,
     );
-    if (status != null) {
-      query = query.where('status', isEqualTo: status);
+    if (status != null && status.trim().isNotEmpty) {
+      query = query.where('status', isEqualTo: status.trim());
     }
-    return query.limit(MarketplaceConstants.pageSize).snapshots().map((
-      QuerySnapshot<Map<String, dynamic>> snapshot,
-    ) {
-      final List<MarketplaceListing> result = _mapListings(snapshot);
-      result.sort(
-        (MarketplaceListing a, MarketplaceListing b) =>
-            (b.updatedAt ?? DateTime.fromMillisecondsSinceEpoch(0)).compareTo(
-              a.updatedAt ?? DateTime.fromMillisecondsSinceEpoch(0),
-            ),
-      );
-      return result;
-    });
+    return query.orderBy('updatedAt', descending: true);
   }
 
   Stream<MarketplaceListing?> watchListing(String listingId) {
@@ -242,6 +273,43 @@ class MarketplaceService {
           );
           return loaded.whereType<MarketplaceListing>().toList(growable: false);
         });
+  }
+
+  Future<MarketplaceListingPage> fetchSavedPage({
+    DocumentSnapshot<Map<String, dynamic>>? after,
+    int limit = MarketplaceConstants.pageSize,
+  }) async {
+    final String? uid = _auth.currentUser?.uid;
+    if (uid == null) {
+      throw StateError('Sign in to view saved Marketplace listings.');
+    }
+    Query<Map<String, dynamic>> query = _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('savedMarketplaceListings')
+        .orderBy('savedAt', descending: true);
+    if (after != null) {
+      query = query.startAfterDocument(after);
+    }
+    final QuerySnapshot<Map<String, dynamic>> snapshot = await query
+        .limit(limit)
+        .get();
+    final List<MarketplaceListing?> loaded = await Future.wait(
+      snapshot.docs.map((
+        QueryDocumentSnapshot<Map<String, dynamic>> marker,
+      ) async {
+        try {
+          return await getListing(marker.id);
+        } on FirebaseException {
+          return null;
+        }
+      }),
+    );
+    return MarketplaceListingPage(
+      listings: loaded.whereType<MarketplaceListing>().toList(growable: false),
+      lastDocument: snapshot.docs.isEmpty ? null : snapshot.docs.last,
+      hasMore: snapshot.docs.length == limit,
+    );
   }
 
   Future<void> setSaved(String listingId, {required bool saved}) async {

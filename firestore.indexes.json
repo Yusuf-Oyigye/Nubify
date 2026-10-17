@@ -207,6 +207,11 @@
     {
       "collectionGroup": "marketplaceProducts",
       "queryScope": "COLLECTION",
+      "fields": [{"fieldPath":"sellerId","order":"ASCENDING"},{"fieldPath":"status","order":"ASCENDING"},{"fieldPath":"updatedAt","order":"DESCENDING"}]
+    },
+    {
+      "collectionGroup": "marketplaceProducts",
+      "queryScope": "COLLECTION",
       "fields": [{"fieldPath":"category","order":"ASCENDING"},{"fieldPath":"status","order":"ASCENDING"},{"fieldPath":"publicVisible","order":"ASCENDING"}]
     }
   ],
