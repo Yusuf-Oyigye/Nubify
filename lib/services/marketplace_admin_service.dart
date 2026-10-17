@@ -2,7 +2,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import '../models/marketplace_admin_audit.dart';
 import '../models/seller_verification.dart';
+import '../models/seller_verification_history.dart';
 
 //===================================================
 // TRUSTED MARKETPLACE ACCESS STATE
@@ -42,6 +44,7 @@ class MarketplaceAdminService {
   final FirebaseAuth _auth;
   final FirebaseFirestore _firestore;
   final FirebaseFunctions _functions;
+  final Map<String, String> _userLabelCache = <String, String>{};
 
   Future<MarketplaceAdminAccess> access({bool forceRefresh = false}) async {
     final User? user = _auth.currentUser;
@@ -75,6 +78,63 @@ class MarketplaceAdminService {
               .map(SellerVerification.fromFirestore)
               .toList(growable: false),
         );
+  }
+
+  Stream<List<SellerVerificationHistory>> watchVerificationHistory(
+    String applicantUid,
+  ) {
+    return _firestore
+        .collection('sellerVerifications')
+        .doc(applicantUid)
+        .collection('history')
+        .orderBy('createdAt', descending: true)
+        .limit(100)
+        .snapshots()
+        .map(
+          (QuerySnapshot<Map<String, dynamic>> snapshot) => snapshot.docs
+              .map(SellerVerificationHistory.fromFirestore)
+              .toList(growable: false),
+        );
+  }
+
+  Stream<List<MarketplaceAdminAudit>> watchAuditLog() {
+    return _firestore
+        .collection('marketplaceAdminAudit')
+        .orderBy('createdAt', descending: true)
+        .limit(100)
+        .snapshots()
+        .map(
+          (QuerySnapshot<Map<String, dynamic>> snapshot) => snapshot.docs
+              .map(MarketplaceAdminAudit.fromFirestore)
+              .toList(growable: false),
+        );
+  }
+
+  Future<String> userLabel(String uid) async {
+    final String cleanUid = uid.trim();
+    if (cleanUid.isEmpty) {
+      return 'System';
+    }
+    final String? cached = _userLabelCache[cleanUid];
+    if (cached != null) {
+      return cached;
+    }
+    try {
+      final DocumentSnapshot<Map<String, dynamic>> snapshot = await _firestore
+          .collection('users')
+          .doc(cleanUid)
+          .get();
+      final Map<String, dynamic> data =
+          snapshot.data() ?? const <String, dynamic>{};
+      final String name = (data['fullName'] ?? data['username'] ?? '')
+          .toString()
+          .trim();
+      final String label = name.isEmpty ? cleanUid : '$name · $cleanUid';
+      _userLabelCache[cleanUid] = label;
+      return label;
+    } catch (_) {
+      return cleanUid;
+    }
   }
 
   Future<void> review({
