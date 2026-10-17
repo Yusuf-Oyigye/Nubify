@@ -1,6 +1,8 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
+import '../config/marketplace_feature_flags.dart';
 import '../utils/marketplace_theme.dart';
 import 'marketplace_seller_store_screen.dart';
 
@@ -13,7 +15,24 @@ class CampusSellersScreen extends StatefulWidget {
 
 class _CampusSellersScreenState extends State<CampusSellersScreen> {
   final TextEditingController _search = TextEditingController();
+  late final Stream<QuerySnapshot<Map<String, dynamic>>> _sellerStream;
   String _query = '';
+
+  @override
+  void initState() {
+    super.initState();
+    Query<Map<String, dynamic>> query = FirebaseFirestore.instance.collection(
+      'marketplaceSellerStats',
+    );
+    if (MarketplaceFeatureFlags.requireSellerApproval) {
+      query = query.where('active', isEqualTo: true).orderBy('sellerName');
+    } else {
+      query = query
+          .where('availableListingCount', isGreaterThan: 0)
+          .orderBy('availableListingCount', descending: true);
+    }
+    _sellerStream = query.limit(100).snapshots();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +47,7 @@ class _CampusSellersScreenState extends State<CampusSellersScreen> {
               onChanged: (String value) =>
                   setState(() => _query = value.trim().toLowerCase()),
               decoration: InputDecoration(
-                hintText: 'Search approved sellers',
+                hintText: 'Search campus sellers',
                 prefixIcon: const Icon(Icons.search_rounded),
                 filled: true,
                 fillColor: MarketplaceTheme.softSurface(context),
@@ -41,12 +60,7 @@ class _CampusSellersScreenState extends State<CampusSellersScreen> {
           ),
           Expanded(
             child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-              stream: FirebaseFirestore.instance
-                  .collection('marketplaceSellerStats')
-                  .where('active', isEqualTo: true)
-                  .orderBy('sellerName')
-                  .limit(100)
-                  .snapshots(),
+              stream: _sellerStream,
               builder:
                   (
                     BuildContext context,
@@ -67,7 +81,7 @@ class _CampusSellersScreenState extends State<CampusSellersScreen> {
                             .toList();
                     if (docs.isEmpty) {
                       return const Center(
-                        child: Text('No approved sellers match this search.'),
+                        child: Text('No campus sellers match this search.'),
                       );
                     }
                     return GridView.builder(
@@ -106,7 +120,7 @@ class _CampusSellersScreenState extends State<CampusSellersScreen> {
                                   radius: 38,
                                   backgroundImage: photo.isEmpty
                                       ? null
-                                      : NetworkImage(photo),
+                                      : CachedNetworkImageProvider(photo),
                                   child: photo.isEmpty
                                       ? const Icon(
                                           Icons.person_rounded,
@@ -129,12 +143,14 @@ class _CampusSellersScreenState extends State<CampusSellersScreen> {
                                         ),
                                       ),
                                     ),
-                                    const SizedBox(width: 4),
-                                    const Icon(
-                                      Icons.verified_rounded,
-                                      color: MarketplaceTheme.sky,
-                                      size: 17,
-                                    ),
+                                    if (data['verifiedSeller'] == true) ...[
+                                      const SizedBox(width: 4),
+                                      const Icon(
+                                        Icons.verified_rounded,
+                                        color: MarketplaceTheme.sky,
+                                        size: 17,
+                                      ),
+                                    ],
                                   ],
                                 ),
                                 const SizedBox(height: 4),

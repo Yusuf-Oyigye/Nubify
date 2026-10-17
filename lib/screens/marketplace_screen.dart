@@ -1,9 +1,10 @@
 import 'dart:async';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import '../config/marketplace_feature_flags.dart';
 import '../models/marketplace_listing.dart';
 import '../services/marketplace_service.dart';
 import '../services/seller_verification_service.dart';
@@ -41,12 +42,27 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
   bool _loadingMoreFresh = false;
   bool _hasMoreFresh = true;
   int _freshGeneration = 0;
+  late final Stream<Set<String>> _savedIdsStream;
+  MarketplaceHomeDiscovery? _discovery;
+  bool _loadingDiscovery = true;
+  Object? _discoveryError;
 
   @override
   void initState() {
     super.initState();
+    _savedIdsStream = _service.watchSavedIds();
+    final MarketplaceListingPage? cachedFresh = _service.cachedFreshPage;
+    if (cachedFresh != null) {
+      _freshListings = cachedFresh.listings;
+      _freshLastPage = cachedFresh;
+      _hasMoreFresh = cachedFresh.hasMore;
+      _loadingFresh = false;
+    }
+    _discovery = _service.cachedHomeDiscovery;
+    _loadingDiscovery = _discovery == null;
     _scrollController.addListener(_handleScroll);
     unawaited(_loadFreshListings(reset: true));
+    unawaited(_loadDiscovery());
     WidgetsBinding.instance.addPostFrameCallback((_) => _openInitialListing());
   }
 
@@ -62,9 +78,11 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
       setState(() {
         _loadingFresh = true;
         _loadingMoreFresh = false;
-        _hasMoreFresh = true;
         _freshError = null;
-        _freshLastPage = null;
+        if (_freshListings.isEmpty) {
+          _hasMoreFresh = true;
+          _freshLastPage = null;
+        }
       });
     } else if (_loadingFresh || _loadingMoreFresh || !_hasMoreFresh) {
       return;
@@ -112,6 +130,42 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     }
   }
 
+  Future<void> _loadDiscovery() async {
+    if (_discovery == null && mounted) {
+      setState(() {
+        _loadingDiscovery = true;
+        _discoveryError = null;
+      });
+    }
+    try {
+      final MarketplaceHomeDiscovery discovery = await _service
+          .fetchHomeDiscovery();
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _discovery = discovery;
+        _loadingDiscovery = false;
+        _discoveryError = null;
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _loadingDiscovery = false;
+        _discoveryError = error;
+      });
+    }
+  }
+
+  Future<void> _refreshMarketplace() async {
+    await Future.wait<void>(<Future<void>>[
+      _loadFreshListings(reset: true),
+      _loadDiscovery(),
+    ]);
+  }
+
   void _openInitialListing() {
     if (!mounted ||
         _openedInitialListing ||
@@ -130,19 +184,27 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
   }
 
   Future<void> _startSelling() async {
-    final verification = await SellerVerificationService().getMine();
+    if (MarketplaceFeatureFlags.requireSellerApproval) {
+      final verification = await SellerVerificationService().getMine();
+      if (!mounted) {
+        return;
+      }
+      if (!verification.isApproved) {
+        await Navigator.push(
+          context,
+          MaterialPageRoute<void>(
+            builder: (_) => const SellerVerificationScreen(),
+          ),
+        );
+        return;
+      }
+    }
     if (!mounted) {
       return;
     }
-    if (verification.isApproved) {
-      Navigator.pushNamed(context, '/marketplace/create');
-    } else {
-      Navigator.push(
-        context,
-        MaterialPageRoute<void>(
-          builder: (_) => const SellerVerificationScreen(),
-        ),
-      );
+    await Navigator.pushNamed(context, '/marketplace/create');
+    if (mounted) {
+      await _refreshMarketplace();
     }
   }
 
@@ -193,12 +255,15 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
             ),
             icon: const Icon(Icons.notifications_none_rounded),
           ),
-          _ProfileAction(uid: currentUid),
+          _ProfileAction(
+            uid: currentUid,
+            photoUrl: _discovery?.currentUserPhotoUrl ?? '',
+          ),
           const SizedBox(width: 6),
         ],
       ),
       body: RefreshIndicator(
-        onRefresh: () => _loadFreshListings(reset: true),
+        onRefresh: _refreshMarketplace,
         child: CustomScrollView(
           controller: _scrollController,
           physics: const AlwaysScrollableScrollPhysics(),
@@ -248,11 +313,15 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                 subtitle: 'Find exactly what campus has to offer',
               ),
             ),
-            const SliverToBoxAdapter(child: _CategoriesStrip()),
+            SliverToBoxAdapter(
+              child: _CategoriesStrip(
+                counts: _discovery?.categoryCounts ?? const <String, int>{},
+              ),
+            ),
             SliverToBoxAdapter(
               child: _SectionHeading(
                 title: 'Campus Sellers',
-                subtitle: 'Approved students with available listings',
+                subtitle: 'Students with available listings',
                 action: TextButton(onPressed: null, child: Text('')),
               ),
             ),
@@ -273,14 +342,23 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                 ),
               ),
             ),
-            const SliverToBoxAdapter(child: _CampusSellerStrip()),
+            SliverToBoxAdapter(
+              child: _CampusSellerStrip(
+                sellers:
+                    _discovery?.campusSellers ??
+                    const <MarketplaceSellerSummary>[],
+                loading: _loadingDiscovery,
+                error: _discoveryError,
+                onRetry: _loadDiscovery,
+              ),
+            ),
             const SliverToBoxAdapter(
               child: _SectionHeading(
                 title: 'Fresh Listings',
                 subtitle: 'Newest available items and services',
               ),
             ),
-            if (_loadingFresh)
+            if (_loadingFresh && _freshListings.isEmpty)
               const SliverToBoxAdapter(
                 child: Padding(
                   padding: EdgeInsets.all(36),
@@ -302,13 +380,12 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                 child: _MarketplaceState(
                   icon: Icons.storefront_outlined,
                   title: 'Campus Marketplace is ready',
-                  message:
-                      'Approved sellers can publish the first real listing.',
+                  message: 'Students can publish the first real listing.',
                 ),
               )
             else
               StreamBuilder<Set<String>>(
-                stream: _service.watchSavedIds(),
+                stream: _savedIdsStream,
                 builder:
                     (BuildContext context, AsyncSnapshot<Set<String>> saved) {
                       return SliverPadding(
@@ -452,7 +529,7 @@ class _HeroBanner extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             const Text(
-              'Discover products and services, then connect directly with verified student sellers.',
+              'Discover products and services, then connect directly with real student sellers.',
               style: TextStyle(color: Colors.white70, height: 1.4),
             ),
             const SizedBox(height: 18),
@@ -490,7 +567,9 @@ class _HeroBanner extends StatelessWidget {
 }
 
 class _CategoriesStrip extends StatelessWidget {
-  const _CategoriesStrip();
+  const _CategoriesStrip({required this.counts});
+
+  final Map<String, int> counts;
 
   @override
   Widget build(BuildContext context) {
@@ -540,28 +619,12 @@ class _CategoriesStrip extends StatelessWidget {
                       fontWeight: FontWeight.w800,
                     ),
                   ),
-                  StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-                    stream: FirebaseFirestore.instance
-                        .collection('marketplaceCategoryStats')
-                        .doc(category.id)
-                        .snapshots(),
-                    builder:
-                        (
-                          BuildContext context,
-                          AsyncSnapshot<DocumentSnapshot<Map<String, dynamic>>>
-                          snapshot,
-                        ) {
-                          final dynamic raw = snapshot.data
-                              ?.data()?['availableListingCount'];
-                          final int count = raw is num ? raw.toInt() : 0;
-                          return Text(
-                            '$count available',
-                            style: TextStyle(
-                              fontSize: 9,
-                              color: MarketplaceTheme.mutedText(context),
-                            ),
-                          );
-                        },
+                  Text(
+                    '${counts[category.id] ?? 0} available',
+                    style: TextStyle(
+                      fontSize: 9,
+                      color: MarketplaceTheme.mutedText(context),
+                    ),
                   ),
                 ],
               ),
@@ -574,174 +637,146 @@ class _CategoriesStrip extends StatelessWidget {
 }
 
 class _CampusSellerStrip extends StatelessWidget {
-  const _CampusSellerStrip();
+  const _CampusSellerStrip({
+    required this.sellers,
+    required this.loading,
+    required this.error,
+    required this.onRetry,
+  });
+
+  final List<MarketplaceSellerSummary> sellers;
+  final bool loading;
+  final Object? error;
+  final Future<void> Function() onRetry;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       height: 142,
-      child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-        stream: FirebaseFirestore.instance
-            .collection('marketplaceSellerStats')
-            .where('active', isEqualTo: true)
-            .orderBy('availableListingCount', descending: true)
-            .limit(10)
-            .snapshots(),
-        builder:
-            (
-              BuildContext context,
-              AsyncSnapshot<QuerySnapshot<Map<String, dynamic>>> snapshot,
-            ) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                );
-              }
-              final docs =
-                  snapshot.data?.docs ??
-                  const <QueryDocumentSnapshot<Map<String, dynamic>>>[];
-              if (docs.isEmpty) {
-                return const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 18),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      'Approved sellers with available listings will appear here.',
+      child: loading && sellers.isEmpty
+          ? const Center(child: CircularProgressIndicator(strokeWidth: 2))
+          : sellers.isEmpty
+          ? Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 18),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: error == null
+                    ? const Text(
+                        'Sellers with available listings will appear here.',
+                      )
+                    : TextButton.icon(
+                        onPressed: onRetry,
+                        icon: const Icon(Icons.refresh_rounded),
+                        label: const Text('Could not load sellers — retry'),
+                      ),
+              ),
+            )
+          : ListView.separated(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              scrollDirection: Axis.horizontal,
+              itemCount: sellers.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 10),
+              itemBuilder: (BuildContext context, int index) {
+                final MarketplaceSellerSummary seller = sellers[index];
+                return InkWell(
+                  borderRadius: BorderRadius.circular(18),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute<void>(
+                      builder: (_) => MarketplaceSellerStoreScreen(
+                        sellerId: seller.sellerId,
+                      ),
+                    ),
+                  ),
+                  child: Ink(
+                    width: 126,
+                    padding: const EdgeInsets.all(12),
+                    decoration: MarketplaceTheme.premiumCard(context),
+                    child: Column(
+                      children: <Widget>[
+                        CircleAvatar(
+                          radius: 30,
+                          backgroundImage: seller.sellerPhotoUrl.isEmpty
+                              ? null
+                              : CachedNetworkImageProvider(
+                                  seller.sellerPhotoUrl,
+                                ),
+                          child: seller.sellerPhotoUrl.isEmpty
+                              ? const Icon(Icons.person_rounded)
+                              : null,
+                        ),
+                        const SizedBox(height: 7),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: <Widget>[
+                            Flexible(
+                              child: Text(
+                                seller.sellerName,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                            if (seller.verifiedSeller) ...<Widget>[
+                              const SizedBox(width: 3),
+                              const Icon(
+                                Icons.verified_rounded,
+                                size: 14,
+                                color: MarketplaceTheme.sky,
+                              ),
+                            ],
+                          ],
+                        ),
+                        Text(
+                          '${seller.availableListingCount} listings',
+                          style: TextStyle(
+                            fontSize: 9,
+                            color: MarketplaceTheme.mutedText(context),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 );
-              }
-              return ListView.separated(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                scrollDirection: Axis.horizontal,
-                itemCount: docs.length,
-                separatorBuilder: (_, _) => const SizedBox(width: 10),
-                itemBuilder: (BuildContext context, int index) {
-                  final data = docs[index].data();
-                  final String sellerId = (data['sellerId'] ?? docs[index].id)
-                      .toString();
-                  return InkWell(
-                    borderRadius: BorderRadius.circular(18),
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute<void>(
-                        builder: (_) =>
-                            MarketplaceSellerStoreScreen(sellerId: sellerId),
-                      ),
-                    ),
-                    child: Ink(
-                      width: 126,
-                      padding: const EdgeInsets.all(12),
-                      decoration: MarketplaceTheme.premiumCard(context),
-                      child: Column(
-                        children: <Widget>[
-                          CircleAvatar(
-                            radius: 30,
-                            backgroundImage:
-                                (data['sellerPhotoUrl'] ?? '')
-                                    .toString()
-                                    .isEmpty
-                                ? null
-                                : NetworkImage(
-                                    data['sellerPhotoUrl'].toString(),
-                                  ),
-                            child:
-                                (data['sellerPhotoUrl'] ?? '')
-                                    .toString()
-                                    .isEmpty
-                                ? const Icon(Icons.person_rounded)
-                                : null,
-                          ),
-                          const SizedBox(height: 7),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: <Widget>[
-                              Flexible(
-                                child: Text(
-                                  (data['sellerName'] ?? 'Student seller')
-                                      .toString(),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                              ),
-                              if (data['verifiedSeller'] == true) ...<Widget>[
-                                const SizedBox(width: 3),
-                                const Icon(
-                                  Icons.verified_rounded,
-                                  size: 14,
-                                  color: MarketplaceTheme.sky,
-                                ),
-                              ],
-                            ],
-                          ),
-                          Text(
-                            '${data['availableListingCount'] ?? 0} listings',
-                            style: TextStyle(
-                              fontSize: 9,
-                              color: MarketplaceTheme.mutedText(context),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              );
-            },
-      ),
+              },
+            ),
     );
   }
 }
 
 class _ProfileAction extends StatelessWidget {
-  const _ProfileAction({required this.uid});
+  const _ProfileAction({required this.uid, required this.photoUrl});
 
   final String uid;
+  final String photoUrl;
 
   @override
   Widget build(BuildContext context) {
     if (uid.isEmpty) {
       return const SizedBox.shrink();
     }
-    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      stream: FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .snapshots(),
-      builder:
-          (
-            BuildContext context,
-            AsyncSnapshot<DocumentSnapshot<Map<String, dynamic>>> snapshot,
-          ) {
-            final String photoUrl = (snapshot.data?.data()?['photoUrl'] ?? '')
-                .toString();
-            return GestureDetector(
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute<void>(
-                  builder: (_) => ProfileScreen(userId: uid),
-                ),
-              ),
-              child: CircleAvatar(
-                radius: 16,
-                backgroundColor: MarketplaceTheme.sky.withValues(alpha: 0.2),
-                backgroundImage: photoUrl.isEmpty
-                    ? null
-                    : NetworkImage(photoUrl),
-                child: photoUrl.isEmpty
-                    ? const Icon(
-                        Icons.person_rounded,
-                        size: 18,
-                        color: MarketplaceTheme.sky,
-                      )
-                    : null,
-              ),
-            );
-          },
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute<void>(builder: (_) => ProfileScreen(userId: uid)),
+      ),
+      child: CircleAvatar(
+        radius: 16,
+        backgroundColor: MarketplaceTheme.sky.withValues(alpha: 0.2),
+        backgroundImage: photoUrl.isEmpty
+            ? null
+            : CachedNetworkImageProvider(photoUrl),
+        child: photoUrl.isEmpty
+            ? const Icon(
+                Icons.person_rounded,
+                size: 18,
+                color: MarketplaceTheme.sky,
+              )
+            : null,
+      ),
     );
   }
 }

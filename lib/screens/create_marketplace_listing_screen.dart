@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../config/marketplace_feature_flags.dart';
 import '../models/marketplace_listing.dart';
 import '../services/marketplace_media_service.dart';
 import '../services/marketplace_service.dart';
@@ -278,22 +279,24 @@ class _CreateMarketplaceListingScreenState
       return;
     }
     if (publish) {
-      final verification = await SellerVerificationService().getMine();
-      if (!verification.isApproved) {
-        if (mounted) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute<void>(
-              builder: (_) => const SellerVerificationScreen(),
-            ),
-          );
-        }
-        return;
-      }
       final String? validation = _validatePublish();
       if (validation != null) {
         _message(validation);
         return;
+      }
+      if (MarketplaceFeatureFlags.requireSellerApproval) {
+        final verification = await SellerVerificationService().getMine();
+        if (!verification.isApproved) {
+          if (mounted) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute<void>(
+                builder: (_) => const SellerVerificationScreen(),
+              ),
+            );
+          }
+          return;
+        }
       }
     }
 

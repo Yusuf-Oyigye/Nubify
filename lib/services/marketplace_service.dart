@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import '../config/marketplace_feature_flags.dart';
 import '../models/marketplace_filter.dart';
 import '../models/marketplace_listing.dart';
 import '../utils/marketplace_constants.dart';
@@ -22,6 +23,50 @@ class MarketplaceListingPage {
   final bool hasMore;
 }
 
+class MarketplaceSellerSummary {
+  const MarketplaceSellerSummary({
+    required this.sellerId,
+    required this.sellerName,
+    required this.sellerPhotoUrl,
+    required this.availableListingCount,
+    required this.verifiedSeller,
+  });
+
+  factory MarketplaceSellerSummary.fromFirestore(
+    QueryDocumentSnapshot<Map<String, dynamic>> snapshot,
+  ) {
+    final Map<String, dynamic> data = snapshot.data();
+    final dynamic rawCount = data['availableListingCount'];
+    return MarketplaceSellerSummary(
+      sellerId: (data['sellerId'] ?? snapshot.id).toString(),
+      sellerName: (data['sellerName'] ?? 'Student seller').toString(),
+      sellerPhotoUrl: (data['sellerPhotoUrl'] ?? '').toString(),
+      availableListingCount: rawCount is num ? rawCount.toInt() : 0,
+      verifiedSeller: data['verifiedSeller'] == true,
+    );
+  }
+
+  final String sellerId;
+  final String sellerName;
+  final String sellerPhotoUrl;
+  final int availableListingCount;
+  final bool verifiedSeller;
+}
+
+class MarketplaceHomeDiscovery {
+  const MarketplaceHomeDiscovery({
+    required this.userId,
+    required this.categoryCounts,
+    required this.campusSellers,
+    required this.currentUserPhotoUrl,
+  });
+
+  final String userId;
+  final Map<String, int> categoryCounts;
+  final List<MarketplaceSellerSummary> campusSellers;
+  final String currentUserPhotoUrl;
+}
+
 class MarketplaceService {
   MarketplaceService({
     FirebaseAuth? auth,
@@ -35,6 +80,17 @@ class MarketplaceService {
   final FirebaseAuth _auth;
   final FirebaseFirestore _firestore;
   final FirebaseFunctions _functions;
+
+  static MarketplaceListingPage? _cachedFreshPage;
+  static MarketplaceHomeDiscovery? _cachedHomeDiscovery;
+
+  MarketplaceListingPage? get cachedFreshPage => _cachedFreshPage;
+
+  MarketplaceHomeDiscovery? get cachedHomeDiscovery {
+    final MarketplaceHomeDiscovery? cached = _cachedHomeDiscovery;
+    final String uid = _auth.currentUser?.uid ?? '';
+    return cached != null && cached.userId == uid ? cached : null;
+  }
 
   CollectionReference<Map<String, dynamic>> get _listings =>
       _firestore.collection('marketplaceProducts');
@@ -66,7 +122,77 @@ class MarketplaceService {
     final QuerySnapshot<Map<String, dynamic>> snapshot = await query
         .limit(limit)
         .get();
-    return _pageFromSnapshot(snapshot, limit: limit);
+    final MarketplaceListingPage page = _pageFromSnapshot(
+      snapshot,
+      limit: limit,
+    );
+    if (after == null &&
+        (category == null || category.trim().isEmpty) &&
+        (sellerId == null || sellerId.trim().isEmpty)) {
+      _cachedFreshPage = page;
+    }
+    return page;
+  }
+
+  /// Loads the small discovery datasets used at the top of Marketplace in
+  /// three parallel one-time reads. Previously the home screen maintained 14
+  /// separate live listeners for this data, including one per category.
+  Future<MarketplaceHomeDiscovery> fetchHomeDiscovery({
+    int sellerLimit = 10,
+  }) async {
+    final String uid = _auth.currentUser?.uid ?? '';
+    Query<Map<String, dynamic>> sellerQuery = _firestore.collection(
+      'marketplaceSellerStats',
+    );
+    if (MarketplaceFeatureFlags.requireSellerApproval) {
+      sellerQuery = sellerQuery.where('active', isEqualTo: true);
+    } else {
+      sellerQuery = sellerQuery.where(
+        'availableListingCount',
+        isGreaterThan: 0,
+      );
+    }
+    sellerQuery = sellerQuery.orderBy(
+      'availableListingCount',
+      descending: true,
+    );
+
+    final List<Object?> results = await Future.wait<Object?>(<Future<Object?>>[
+      _firestore
+          .collection('marketplaceCategoryStats')
+          .limit(MarketplaceConstants.categories.length)
+          .get(),
+      sellerQuery.limit(sellerLimit).get(),
+      uid.isEmpty
+          ? Future<Object?>.value(null)
+          : _firestore.collection('users').doc(uid).get(),
+    ]);
+
+    final QuerySnapshot<Map<String, dynamic>> categorySnapshot =
+        results[0]! as QuerySnapshot<Map<String, dynamic>>;
+    final QuerySnapshot<Map<String, dynamic>> sellerSnapshot =
+        results[1]! as QuerySnapshot<Map<String, dynamic>>;
+    final DocumentSnapshot<Map<String, dynamic>>? profileSnapshot =
+        results[2] as DocumentSnapshot<Map<String, dynamic>>?;
+
+    final Map<String, int> categoryCounts = <String, int>{
+      for (final QueryDocumentSnapshot<Map<String, dynamic>> document
+          in categorySnapshot.docs)
+        document.id: document.data()['availableListingCount'] is num
+            ? (document.data()['availableListingCount'] as num).toInt()
+            : 0,
+    };
+    final MarketplaceHomeDiscovery discovery = MarketplaceHomeDiscovery(
+      userId: uid,
+      categoryCounts: Map<String, int>.unmodifiable(categoryCounts),
+      campusSellers: List<MarketplaceSellerSummary>.unmodifiable(
+        sellerSnapshot.docs.map(MarketplaceSellerSummary.fromFirestore),
+      ),
+      currentUserPhotoUrl: (profileSnapshot?.data()?['photoUrl'] ?? '')
+          .toString(),
+    );
+    _cachedHomeDiscovery = discovery;
+    return discovery;
   }
 
   Stream<List<MarketplaceListing>> watchSearch(MarketplaceFilter filter) {
@@ -381,12 +507,16 @@ class MarketplaceService {
     await _functions.httpsCallable('publishMarketplaceListing').call<void>(
       <String, dynamic>{'listingId': listingId},
     );
+    _cachedFreshPage = null;
+    _cachedHomeDiscovery = null;
   }
 
   Future<void> updateStatus(String listingId, String status) async {
     await _functions.httpsCallable('updateMarketplaceListingStatus').call<void>(
       <String, dynamic>{'listingId': listingId, 'status': status},
     );
+    _cachedFreshPage = null;
+    _cachedHomeDiscovery = null;
   }
 
   Future<void> deleteListing(MarketplaceListing listing) async {
@@ -395,6 +525,8 @@ class MarketplaceService {
       throw StateError('Only the listing owner can delete this listing.');
     }
     await _listings.doc(listing.listingId).delete();
+    _cachedFreshPage = null;
+    _cachedHomeDiscovery = null;
   }
 
   List<MarketplaceListing> _mapListings(

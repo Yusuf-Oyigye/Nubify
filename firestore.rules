@@ -721,6 +721,25 @@ match /calls/{callId} {
           ).data.status == 'approved';
     }
 
+    //===================================================
+    // TEMPORARY MARKETPLACE SELLER-APPROVAL SWITCH
+    //
+    // `false` means authenticated listing owners may publish without seller
+    // approval while Marketplace development is in progress. Change only the
+    // return value below to `true` to restore mandatory admin approval.
+    // Verification submissions, reviewer permissions, private student data,
+    // and every other Marketplace security rule remain fully enforced.
+    //===================================================
+
+    function marketplaceSellerApprovalRequiredForPublishing() {
+      return false;
+    }
+
+    function marketplaceSellerMayPublish(uid) {
+      return !marketplaceSellerApprovalRequiredForPublishing() ||
+          marketplaceHasApprovedVerification(uid);
+    }
+
     function marketplaceListingOwner(data) {
       return isOwner(data.sellerId);
     }
@@ -906,7 +925,7 @@ match /calls/{callId} {
             ) ||
             (
               data.status == 'available' &&
-              marketplaceHasApprovedVerification(data.sellerId) &&
+              marketplaceSellerMayPublish(data.sellerId) &&
               data.publishedAt == request.time
             )
           );
@@ -978,7 +997,7 @@ match /calls/{callId} {
           marketplaceValidListingTransition() &&
           (
             data.status != 'available' ||
-            marketplaceHasApprovedVerification(data.sellerId)
+            marketplaceSellerMayPublish(data.sellerId)
           );
     }
 
@@ -1537,7 +1556,10 @@ match /calls/{callId} {
               (
                 data.active == false ||
                 (
-                  data.verificationStatus == 'approved' &&
+                  (
+                    !marketplaceSellerApprovalRequiredForPublishing() ||
+                    data.verificationStatus == 'approved'
+                  ) &&
                   data.get('availableListingCount', 0) > 0
                 )
               )

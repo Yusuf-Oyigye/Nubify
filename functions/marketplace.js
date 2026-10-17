@@ -23,6 +23,15 @@ const storage = getStorage();
 const REGION = "europe-west1";
 const LISTINGS = "marketplaceProducts";
 const VERIFICATIONS = "sellerVerifications";
+
+//===================================================
+// TEMPORARY MARKETPLACE SELLER-APPROVAL SWITCH
+//
+// Keep this value in sync with lib/config/marketplace_feature_flags.dart and
+// firestore.rules. Change all three switches to true when admin approval is
+// ready to become mandatory again.
+//===================================================
+const REQUIRE_SELLER_APPROVAL_FOR_PUBLISHING = false;
 const ALLOWED_CATEGORIES = new Set([
   "rent_housing",
   "food_snacks",
@@ -172,6 +181,9 @@ function validateListingForPublish(data, uid) {
 }
 
 async function requireApprovedSeller(uid) {
+  if (!REQUIRE_SELLER_APPROVAL_FOR_PUBLISHING) {
+    return;
+  }
   const snapshot = await db.collection(VERIFICATIONS).doc(uid).get();
   if (!snapshot.exists || snapshot.data()?.status !== "approved") {
     throw new HttpsError(
@@ -790,7 +802,8 @@ async function updateSellerStats(sellerId) {
     availableListingCount: countSnapshot.data().count,
     verificationStatus: status,
     verifiedSeller: status === "approved",
-    active: status === "approved" && countSnapshot.data().count > 0,
+    active: (!REQUIRE_SELLER_APPROVAL_FOR_PUBLISHING ||
+      status === "approved") && countSnapshot.data().count > 0,
     updatedAt: Timestamp.now(),
   }, {merge: true});
 }
