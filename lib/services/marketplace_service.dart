@@ -10,6 +10,18 @@ import '../utils/marketplace_constants.dart';
 // MARKETPLACE DATA SERVICE
 //===================================================
 
+class MarketplaceListingPage {
+  const MarketplaceListingPage({
+    required this.listings,
+    required this.lastDocument,
+    required this.hasMore,
+  });
+
+  final List<MarketplaceListing> listings;
+  final DocumentSnapshot<Map<String, dynamic>>? lastDocument;
+  final bool hasMore;
+}
+
 class MarketplaceService {
   MarketplaceService({
     FirebaseAuth? auth,
@@ -32,6 +44,56 @@ class MarketplaceService {
     String? sellerId,
     int limit = MarketplaceConstants.pageSize,
   }) {
+    return _availableQuery(
+      category: category,
+      sellerId: sellerId,
+    ).limit(limit).snapshots().map(_mapListings);
+  }
+
+  Future<MarketplaceListingPage> fetchAvailablePage({
+    String? category,
+    String? sellerId,
+    DocumentSnapshot<Map<String, dynamic>>? after,
+    int limit = MarketplaceConstants.pageSize,
+  }) async {
+    Query<Map<String, dynamic>> query = _availableQuery(
+      category: category,
+      sellerId: sellerId,
+    );
+    if (after != null) {
+      query = query.startAfterDocument(after);
+    }
+    final QuerySnapshot<Map<String, dynamic>> snapshot = await query
+        .limit(limit)
+        .get();
+    return _pageFromSnapshot(snapshot, limit: limit);
+  }
+
+  Stream<List<MarketplaceListing>> watchSearch(MarketplaceFilter filter) {
+    return _searchQuery(
+      filter,
+    ).limit(MarketplaceConstants.pageSize).snapshots().map(_mapListings);
+  }
+
+  Future<MarketplaceListingPage> fetchSearchPage(
+    MarketplaceFilter filter, {
+    DocumentSnapshot<Map<String, dynamic>>? after,
+    int limit = MarketplaceConstants.pageSize,
+  }) async {
+    Query<Map<String, dynamic>> query = _searchQuery(filter);
+    if (after != null) {
+      query = query.startAfterDocument(after);
+    }
+    final QuerySnapshot<Map<String, dynamic>> snapshot = await query
+        .limit(limit)
+        .get();
+    return _pageFromSnapshot(snapshot, limit: limit);
+  }
+
+  Query<Map<String, dynamic>> _availableQuery({
+    String? category,
+    String? sellerId,
+  }) {
     Query<Map<String, dynamic>> query = _listings
         .where('status', isEqualTo: 'available')
         .where('publicVisible', isEqualTo: true);
@@ -41,14 +103,10 @@ class MarketplaceService {
     if (sellerId != null && sellerId.trim().isNotEmpty) {
       query = query.where('sellerId', isEqualTo: sellerId.trim());
     }
-    return query
-        .orderBy('createdAt', descending: true)
-        .limit(limit)
-        .snapshots()
-        .map(_mapListings);
+    return query.orderBy('createdAt', descending: true);
   }
 
-  Stream<List<MarketplaceListing>> watchSearch(MarketplaceFilter filter) {
+  Query<Map<String, dynamic>> _searchQuery(MarketplaceFilter filter) {
     Query<Map<String, dynamic>> query = _listings
         .where('status', isEqualTo: 'available')
         .where('publicVisible', isEqualTo: true);
@@ -71,46 +129,27 @@ class MarketplaceService {
 
     final bool hasPriceRange =
         filter.minimumPrice != null || filter.maximumPrice != null;
-    if (hasPriceRange) {
-      query = query.orderBy(
-        'price',
-        descending: filter.sort == MarketplaceSort.priceHighToLow,
-      );
-    } else {
-      switch (filter.sort) {
-        case MarketplaceSort.oldest:
-          query = query.orderBy('createdAt');
-          break;
-        case MarketplaceSort.priceLowToHigh:
-          query = query.orderBy('price');
-          break;
-        case MarketplaceSort.priceHighToLow:
-          query = query.orderBy('price', descending: true);
-          break;
-        case MarketplaceSort.newest:
-          query = query.orderBy('createdAt', descending: true);
-          break;
-      }
+    final MarketplaceSort effectiveSort = hasPriceRange
+        ? switch (filter.sort) {
+            MarketplaceSort.priceHighToLow => MarketplaceSort.priceHighToLow,
+            _ => MarketplaceSort.priceLowToHigh,
+          }
+        : filter.sort;
+    switch (effectiveSort) {
+      case MarketplaceSort.oldest:
+        query = query.orderBy('createdAt');
+        break;
+      case MarketplaceSort.priceLowToHigh:
+        query = query.orderBy('price');
+        break;
+      case MarketplaceSort.priceHighToLow:
+        query = query.orderBy('price', descending: true);
+        break;
+      case MarketplaceSort.newest:
+        query = query.orderBy('createdAt', descending: true);
+        break;
     }
-    return query.limit(MarketplaceConstants.pageSize).snapshots().map((
-      QuerySnapshot<Map<String, dynamic>> snapshot,
-    ) {
-      final List<MarketplaceListing> listings = _mapListings(snapshot);
-      if (hasPriceRange &&
-          (filter.sort == MarketplaceSort.newest ||
-              filter.sort == MarketplaceSort.oldest)) {
-        listings.sort((MarketplaceListing a, MarketplaceListing b) {
-          final DateTime first =
-              a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-          final DateTime second =
-              b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-          return filter.sort == MarketplaceSort.newest
-              ? second.compareTo(first)
-              : first.compareTo(second);
-        });
-      }
-      return listings;
-    });
+    return query;
   }
 
   Stream<List<MarketplaceListing>> watchMine({String? status}) {
@@ -296,5 +335,16 @@ class MarketplaceService {
     return snapshot.docs
         .map(MarketplaceListing.fromFirestore)
         .toList(growable: false);
+  }
+
+  MarketplaceListingPage _pageFromSnapshot(
+    QuerySnapshot<Map<String, dynamic>> snapshot, {
+    required int limit,
+  }) {
+    return MarketplaceListingPage(
+      listings: _mapListings(snapshot),
+      lastDocument: snapshot.docs.isEmpty ? null : snapshot.docs.last,
+      hasMore: snapshot.docs.length == limit,
+    );
   }
 }

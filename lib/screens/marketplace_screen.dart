@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -30,12 +32,84 @@ class MarketplaceScreen extends StatefulWidget {
 
 class _MarketplaceScreenState extends State<MarketplaceScreen> {
   final MarketplaceService _service = MarketplaceService();
+  final ScrollController _scrollController = ScrollController();
   bool _openedInitialListing = false;
+  List<MarketplaceListing> _freshListings = const <MarketplaceListing>[];
+  MarketplaceListingPage? _freshLastPage;
+  Object? _freshError;
+  bool _loadingFresh = true;
+  bool _loadingMoreFresh = false;
+  bool _hasMoreFresh = true;
+  int _freshGeneration = 0;
 
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_handleScroll);
+    unawaited(_loadFreshListings(reset: true));
     WidgetsBinding.instance.addPostFrameCallback((_) => _openInitialListing());
+  }
+
+  void _handleScroll() {
+    if (_scrollController.position.extentAfter < 700) {
+      unawaited(_loadFreshListings());
+    }
+  }
+
+  Future<void> _loadFreshListings({bool reset = false}) async {
+    if (reset) {
+      _freshGeneration += 1;
+      setState(() {
+        _loadingFresh = true;
+        _loadingMoreFresh = false;
+        _hasMoreFresh = true;
+        _freshError = null;
+        _freshLastPage = null;
+      });
+    } else if (_loadingFresh || _loadingMoreFresh || !_hasMoreFresh) {
+      return;
+    } else {
+      setState(() {
+        _loadingMoreFresh = true;
+        _freshError = null;
+      });
+    }
+
+    final int generation = _freshGeneration;
+    try {
+      final MarketplaceListingPage page = await _service.fetchAvailablePage(
+        after: reset ? null : _freshLastPage?.lastDocument,
+      );
+      if (!mounted || generation != _freshGeneration) {
+        return;
+      }
+      final Set<String> existingIds = _freshListings
+          .map((MarketplaceListing item) => item.listingId)
+          .toSet();
+      setState(() {
+        _freshListings = reset
+            ? page.listings
+            : <MarketplaceListing>[
+                ..._freshListings,
+                ...page.listings.where(
+                  (MarketplaceListing item) => existingIds.add(item.listingId),
+                ),
+              ];
+        _freshLastPage = page;
+        _hasMoreFresh = page.hasMore;
+        _loadingFresh = false;
+        _loadingMoreFresh = false;
+      });
+    } catch (error) {
+      if (!mounted || generation != _freshGeneration) {
+        return;
+      }
+      setState(() {
+        _freshError = error;
+        _loadingFresh = false;
+        _loadingMoreFresh = false;
+      });
+    }
   }
 
   void _openInitialListing() {
@@ -124,8 +198,9 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
         ],
       ),
       body: RefreshIndicator(
-        onRefresh: () async => setState(() {}),
+        onRefresh: () => _loadFreshListings(reset: true),
         child: CustomScrollView(
+          controller: _scrollController,
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: <Widget>[
             SliverPadding(
@@ -205,82 +280,90 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                 subtitle: 'Newest available items and services',
               ),
             ),
-            StreamBuilder<Set<String>>(
-              stream: _service.watchSavedIds(),
-              builder: (BuildContext context, AsyncSnapshot<Set<String>> saved) {
-                return StreamBuilder<List<MarketplaceListing>>(
-                  stream: _service.watchAvailable(limit: 40),
-                  builder:
-                      (
-                        BuildContext context,
-                        AsyncSnapshot<List<MarketplaceListing>> snapshot,
-                      ) {
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return const SliverToBoxAdapter(
-                            child: Padding(
-                              padding: EdgeInsets.all(36),
-                              child: Center(child: CircularProgressIndicator()),
-                            ),
-                          );
-                        }
-                        if (snapshot.hasError) {
-                          return SliverToBoxAdapter(
-                            child: _MarketplaceState(
-                              icon: Icons.cloud_off_rounded,
-                              title: 'Listings could not load',
-                              message: snapshot.error.toString(),
-                            ),
-                          );
-                        }
-                        final List<MarketplaceListing> listings =
-                            snapshot.data ?? const <MarketplaceListing>[];
-                        if (listings.isEmpty) {
-                          return const SliverToBoxAdapter(
-                            child: _MarketplaceState(
-                              icon: Icons.storefront_outlined,
-                              title: 'Campus Marketplace is ready',
-                              message:
-                                  'Approved sellers can publish the first real listing.',
-                            ),
-                          );
-                        }
-                        return SliverPadding(
-                          padding: const EdgeInsets.fromLTRB(14, 0, 14, 110),
-                          sliver: SliverGrid.builder(
-                            itemCount: listings.length,
-                            gridDelegate:
-                                const SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 2,
-                                  mainAxisSpacing: 12,
-                                  crossAxisSpacing: 12,
-                                  childAspectRatio: 0.69,
+            if (_loadingFresh)
+              const SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.all(36),
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+              )
+            else if (_freshListings.isEmpty && _freshError != null)
+              SliverToBoxAdapter(
+                child: _MarketplaceState(
+                  icon: Icons.cloud_off_rounded,
+                  title: 'Listings could not load',
+                  message: _freshError.toString(),
+                  actionLabel: 'Try Again',
+                  onAction: () => unawaited(_loadFreshListings(reset: true)),
+                ),
+              )
+            else if (_freshListings.isEmpty)
+              const SliverToBoxAdapter(
+                child: _MarketplaceState(
+                  icon: Icons.storefront_outlined,
+                  title: 'Campus Marketplace is ready',
+                  message:
+                      'Approved sellers can publish the first real listing.',
+                ),
+              )
+            else
+              StreamBuilder<Set<String>>(
+                stream: _service.watchSavedIds(),
+                builder:
+                    (BuildContext context, AsyncSnapshot<Set<String>> saved) {
+                      return SliverPadding(
+                        padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
+                        sliver: SliverGrid.builder(
+                          itemCount: _freshListings.length,
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                mainAxisSpacing: 12,
+                                crossAxisSpacing: 12,
+                                childAspectRatio: 0.69,
+                              ),
+                          itemBuilder: (BuildContext context, int index) {
+                            final MarketplaceListing listing =
+                                _freshListings[index];
+                            return MarketplaceListingCard(
+                              listing: listing,
+                              saved:
+                                  saved.data?.contains(listing.listingId) ??
+                                  false,
+                              onOpen: () => Navigator.push(
+                                context,
+                                MaterialPageRoute<void>(
+                                  builder: (_) =>
+                                      MarketplaceListingDetailsScreen(
+                                        listingId: listing.listingId,
+                                      ),
                                 ),
-                            itemBuilder: (BuildContext context, int index) {
-                              final MarketplaceListing listing =
-                                  listings[index];
-                              return MarketplaceListingCard(
-                                listing: listing,
-                                saved:
-                                    saved.data?.contains(listing.listingId) ??
-                                    false,
-                                onOpen: () => Navigator.push(
-                                  context,
-                                  MaterialPageRoute<void>(
-                                    builder: (_) =>
-                                        MarketplaceListingDetailsScreen(
-                                          listingId: listing.listingId,
-                                        ),
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        );
-                      },
-                );
-              },
-            ),
+                              ),
+                            );
+                          },
+                        ),
+                      );
+                    },
+              ),
+            if (_freshListings.isNotEmpty)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 6, 16, 110),
+                  child: Center(
+                    child: _loadingMoreFresh
+                        ? const CircularProgressIndicator(strokeWidth: 2)
+                        : _freshError != null
+                        ? TextButton.icon(
+                            onPressed: () => unawaited(_loadFreshListings()),
+                            icon: const Icon(Icons.refresh_rounded),
+                            label: const Text('Could not load more — retry'),
+                          )
+                        : !_hasMoreFresh
+                        ? const Text('You have reached the latest listings.')
+                        : const SizedBox(height: 24),
+                  ),
+                ),
+              ),
           ],
         ),
       ),
@@ -295,6 +378,12 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 }
 
@@ -411,7 +500,7 @@ class _CategoriesStrip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16),
         scrollDirection: Axis.horizontal,
         itemCount: MarketplaceConstants.categories.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        separatorBuilder: (_, _) => const SizedBox(width: 10),
         itemBuilder: (BuildContext context, int index) {
           final MarketplaceCategory category =
               MarketplaceConstants.categories[index];
@@ -526,7 +615,7 @@ class _CampusSellerStrip extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 scrollDirection: Axis.horizontal,
                 itemCount: docs.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 10),
+                separatorBuilder: (_, _) => const SizedBox(width: 10),
                 itemBuilder: (BuildContext context, int index) {
                   final data = docs[index].data();
                   final String sellerId = (data['sellerId'] ?? docs[index].id)
@@ -696,7 +785,7 @@ class _SectionHeading extends StatelessWidget {
               ],
             ),
           ),
-          if (action != null) action!,
+          ?action,
         ],
       ),
     );
@@ -708,11 +797,15 @@ class _MarketplaceState extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.message,
+    this.actionLabel,
+    this.onAction,
   });
 
   final IconData icon;
   final String title;
   final String message;
+  final String? actionLabel;
+  final VoidCallback? onAction;
 
   @override
   Widget build(BuildContext context) {
@@ -729,6 +822,10 @@ class _MarketplaceState extends StatelessWidget {
           ),
           const SizedBox(height: 5),
           Text(message, textAlign: TextAlign.center),
+          if (actionLabel != null && onAction != null) ...<Widget>[
+            const SizedBox(height: 12),
+            FilledButton(onPressed: onAction, child: Text(actionLabel!)),
+          ],
         ],
       ),
     );
