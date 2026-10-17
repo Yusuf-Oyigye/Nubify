@@ -13,6 +13,22 @@ import '../utils/marketplace_theme.dart';
 import 'marketplace_listing_details_screen.dart';
 import 'seller_verification_screen.dart';
 
+class _EditableMarketplaceMedia {
+  _EditableMarketplaceMedia.existing(this.existing)
+    : pending = null,
+      key = 'existing-marketplace-media-${_sequence++}';
+
+  _EditableMarketplaceMedia.pending(this.pending)
+    : existing = null,
+      key = 'pending-marketplace-media-${_sequence++}';
+
+  static int _sequence = 0;
+
+  final MarketplaceMedia? existing;
+  final PendingMarketplaceMedia? pending;
+  final String key;
+}
+
 class CreateMarketplaceListingScreen extends StatefulWidget {
   const CreateMarketplaceListingScreen({super.key, this.listingId});
 
@@ -30,8 +46,8 @@ class _CreateMarketplaceListingScreenState
   final TextEditingController _title = TextEditingController();
   final TextEditingController _description = TextEditingController();
   final TextEditingController _price = TextEditingController();
-  final List<PendingMarketplaceMedia> _media = <PendingMarketplaceMedia>[];
-  final List<MarketplaceMedia> _existingMedia = <MarketplaceMedia>[];
+  final List<_EditableMarketplaceMedia> _mediaItems =
+      <_EditableMarketplaceMedia>[];
   final List<MarketplaceMedia> _removedExistingMedia = <MarketplaceMedia>[];
 
   String? _category;
@@ -46,7 +62,7 @@ class _CreateMarketplaceListingScreenState
   double _progress = 0;
   String _progressLabel = '';
 
-  int get _totalMedia => _existingMedia.length + _media.length;
+  int get _totalMedia => _mediaItems.length;
 
   @override
   void initState() {
@@ -77,9 +93,9 @@ class _CreateMarketplaceListingScreenState
       _priceType = listing.priceType.isEmpty ? null : listing.priceType;
       _allowMessages = listing.allowMessages;
       _allowCalls = listing.allowCalls;
-      _existingMedia
+      _mediaItems
         ..clear()
-        ..addAll(listing.media);
+        ..addAll(listing.media.map(_EditableMarketplaceMedia.existing));
       _coverIndex = listing.coverMediaIndex < 0 ? 0 : listing.coverMediaIndex;
     } catch (error) {
       if (mounted) {
@@ -99,10 +115,20 @@ class _CreateMarketplaceListingScreenState
       _message('You can add a maximum of five photos and videos combined.');
       return;
     }
-    final List<PendingMarketplaceMedia> selected = await _mediaService
-        .pickGallery(remainingSlots: remaining);
-    if (selected.isNotEmpty && mounted) {
-      setState(() => _media.addAll(selected));
+    try {
+      final List<PendingMarketplaceMedia> selected = await _mediaService
+          .pickGallery(remainingSlots: remaining);
+      if (selected.isNotEmpty && mounted) {
+        setState(
+          () => _mediaItems.addAll(
+            selected.map(_EditableMarketplaceMedia.pending),
+          ),
+        );
+      }
+    } catch (error) {
+      if (mounted) {
+        _message(_mediaError(error));
+      }
     }
   }
 
@@ -111,12 +137,90 @@ class _CreateMarketplaceListingScreenState
       _message('You already selected five media files.');
       return;
     }
-    final PendingMarketplaceMedia? selected = video
-        ? await _mediaService.captureVideo()
-        : await _mediaService.capturePhoto();
-    if (selected != null && mounted) {
-      setState(() => _media.add(selected));
+    try {
+      final PendingMarketplaceMedia? selected = video
+          ? await _mediaService.captureVideo()
+          : await _mediaService.capturePhoto();
+      if (selected != null && mounted) {
+        setState(
+          () => _mediaItems.add(_EditableMarketplaceMedia.pending(selected)),
+        );
+      }
+    } catch (error) {
+      if (mounted) {
+        _message(_mediaError(error));
+      }
     }
+  }
+
+  Future<void> _replaceMedia(int index) async {
+    if (_saving || index < 0 || index >= _mediaItems.length) {
+      return;
+    }
+    try {
+      final List<PendingMarketplaceMedia> selected = await _mediaService
+          .pickGallery(remainingSlots: 1);
+      if (selected.isEmpty || !mounted) {
+        return;
+      }
+      setState(() {
+        final MarketplaceMedia? oldExisting = _mediaItems[index].existing;
+        if (oldExisting != null) {
+          _removedExistingMedia.add(oldExisting);
+        }
+        _mediaItems[index] = _EditableMarketplaceMedia.pending(selected.first);
+      });
+    } catch (error) {
+      if (mounted) {
+        _message(_mediaError(error));
+      }
+    }
+  }
+
+  String _mediaError(Object error) {
+    return error
+        .toString()
+        .replaceFirst('FormatException: ', '')
+        .replaceFirst('PlatformException', 'Media picker error');
+  }
+
+  void _removeMedia(int index) {
+    if (index < 0 || index >= _mediaItems.length) {
+      return;
+    }
+    setState(() {
+      final _EditableMarketplaceMedia removed = _mediaItems.removeAt(index);
+      if (removed.existing != null) {
+        _removedExistingMedia.add(removed.existing!);
+      }
+      if (_mediaItems.isEmpty) {
+        _coverIndex = 0;
+      } else if (index < _coverIndex) {
+        _coverIndex -= 1;
+      } else if (_coverIndex >= _mediaItems.length) {
+        _coverIndex = _mediaItems.length - 1;
+      }
+    });
+  }
+
+  void _reorderMedia(int oldIndex, int newIndex) {
+    if (oldIndex < 0 || oldIndex >= _mediaItems.length) {
+      return;
+    }
+    if (newIndex > oldIndex) {
+      newIndex -= 1;
+    }
+    newIndex = newIndex.clamp(0, _mediaItems.length - 1);
+    setState(() {
+      final _EditableMarketplaceMedia? cover = _mediaItems.isEmpty
+          ? null
+          : _mediaItems[_coverIndex.clamp(0, _mediaItems.length - 1)];
+      final _EditableMarketplaceMedia moved = _mediaItems.removeAt(oldIndex);
+      _mediaItems.insert(newIndex, moved);
+      if (cover != null) {
+        _coverIndex = _mediaItems.indexOf(cover);
+      }
+    });
   }
 
   Future<void> _showMediaSource() async {
@@ -203,6 +307,8 @@ class _CreateMarketplaceListingScreenState
         .doc(_editingListing?.listingId);
     List<MarketplaceMedia> uploaded = <MarketplaceMedia>[];
     bool listingSaved = false;
+    final bool newlyPublishing =
+        publish && (_editingListing?.status ?? 'draft') != 'available';
     try {
       final DocumentSnapshot<Map<String, dynamic>> profile =
           await FirebaseFirestore.instance
@@ -211,12 +317,16 @@ class _CreateMarketplaceListingScreenState
               .get();
       final Map<String, dynamic> userData =
           profile.data() ?? <String, dynamic>{};
-      if (_media.isNotEmpty) {
+      final List<PendingMarketplaceMedia> pendingMedia = _mediaItems
+          .map((_EditableMarketplaceMedia item) => item.pending)
+          .whereType<PendingMarketplaceMedia>()
+          .toList(growable: false);
+      if (pendingMedia.isNotEmpty) {
         uploaded = await _mediaService.upload(
           uid: user.uid,
           listingId: reference.id,
-          files: _media,
-          startIndex: _existingMedia.length,
+          files: pendingMedia,
+          startIndex: 0,
           onProgress: (double value, String label) {
             if (mounted) {
               setState(() {
@@ -227,10 +337,17 @@ class _CreateMarketplaceListingScreenState
           },
         );
       }
-      final List<MarketplaceMedia> combined = <MarketplaceMedia>[
-        ..._existingMedia,
-        ...uploaded,
-      ];
+      int uploadedIndex = 0;
+      final List<MarketplaceMedia> combined = _mediaItems
+          .map((_EditableMarketplaceMedia item) {
+            if (item.existing != null) {
+              return item.existing!;
+            }
+            final MarketplaceMedia value = uploaded[uploadedIndex];
+            uploadedIndex += 1;
+            return value;
+          })
+          .toList(growable: false);
       final List<MarketplaceMedia> normalized = List<MarketplaceMedia>.generate(
         combined.length,
         (int index) {
@@ -316,7 +433,7 @@ class _CreateMarketplaceListingScreenState
         await _mediaService.deleteUploadedMedia(_removedExistingMedia);
       }
 
-      if (publish && (_editingListing?.status ?? 'draft') != 'available') {
+      if (newlyPublishing) {
         setState(() => _progressLabel = 'Publishing listing');
         await _marketplace.publish(reference.id);
       }
@@ -335,9 +452,13 @@ class _CreateMarketplaceListingScreenState
               color: MarketplaceTheme.emerald,
               size: 62,
             ),
-            title: const Text('Listing Published!'),
-            content: const Text(
-              'Your listing is now available in NUB Marketplace.',
+            title: Text(
+              newlyPublishing ? 'Listing Published!' : 'Changes Saved!',
+            ),
+            content: Text(
+              newlyPublishing
+                  ? 'Your listing is now available in NUB Marketplace.'
+                  : 'Your available listing has been updated.',
             ),
             actions: <Widget>[
               FilledButton(
@@ -409,7 +530,9 @@ class _CreateMarketplaceListingScreenState
         actions: <Widget>[
           TextButton(
             onPressed: _saving ? null : () => _save(publish: false),
-            child: const Text('Save Draft'),
+            child: Text(
+              _editingListing == null ? 'Save Draft' : 'Save Changes',
+            ),
           ),
         ],
       ),
@@ -450,60 +573,10 @@ class _CreateMarketplaceListingScreenState
                   child: ReorderableListView.builder(
                     scrollDirection: Axis.horizontal,
                     buildDefaultDragHandles: false,
-                    itemCount:
-                        _existingMedia.length +
-                        _media.length +
-                        (_totalMedia < 5 ? 1 : 0),
-                    onReorderItem: (int oldIndex, int newIndex) {
-                      if (oldIndex < _existingMedia.length ||
-                          oldIndex >= _existingMedia.length + _media.length) {
-                        return;
-                      }
-                      oldIndex -= _existingMedia.length;
-                      newIndex -= _existingMedia.length;
-                      if (newIndex > _media.length) newIndex = _media.length;
-                      if (newIndex < 0) newIndex = 0;
-                      setState(() {
-                        final PendingMarketplaceMedia moved = _media.removeAt(
-                          oldIndex,
-                        );
-                        _media.insert(newIndex, moved);
-                        if (_coverIndex == _existingMedia.length + oldIndex) {
-                          _coverIndex = _existingMedia.length + newIndex;
-                        }
-                      });
-                    },
+                    itemCount: _totalMedia + (_totalMedia < 5 ? 1 : 0),
+                    onReorderItem: _reorderMedia,
                     itemBuilder: (BuildContext context, int index) {
-                      if (index < _existingMedia.length) {
-                        final MarketplaceMedia item = _existingMedia[index];
-                        return ReorderableDragStartListener(
-                          key: ValueKey<String>(
-                            'existing-${item.storagePath}-$index',
-                          ),
-                          index: index,
-                          enabled: false,
-                          child: Padding(
-                            padding: const EdgeInsets.only(right: 10),
-                            child: _ExistingMediaTile(
-                              item: item,
-                              cover: index == _coverIndex,
-                              onCover: () =>
-                                  setState(() => _coverIndex = index),
-                              onRemove: () => setState(() {
-                                _removedExistingMedia.add(item);
-                                _existingMedia.removeAt(index);
-                                if (_totalMedia == 0) {
-                                  _coverIndex = 0;
-                                } else if (_coverIndex >= _totalMedia) {
-                                  _coverIndex = _totalMedia - 1;
-                                }
-                              }),
-                            ),
-                          ),
-                        );
-                      }
-                      final int pendingIndex = index - _existingMedia.length;
-                      if (pendingIndex == _media.length) {
+                      if (index == _mediaItems.length) {
                         return Padding(
                           key: const ValueKey<String>('add-marketplace-media'),
                           padding: const EdgeInsets.only(right: 10),
@@ -542,30 +615,42 @@ class _CreateMarketplaceListingScreenState
                           ),
                         );
                       }
-                      final PendingMarketplaceMedia item = _media[pendingIndex];
+                      final _EditableMarketplaceMedia entry =
+                          _mediaItems[index];
                       return ReorderableDragStartListener(
-                        key: ValueKey<String>('${item.file.path}-$index'),
+                        key: ValueKey<String>(entry.key),
                         index: index,
                         child: Padding(
                           padding: const EdgeInsets.only(right: 10),
-                          child: _PendingMediaTile(
-                            item: item,
-                            cover: index == _coverIndex,
-                            onCover: () => setState(() => _coverIndex = index),
-                            onRemove: () => setState(() {
-                              _media.removeAt(pendingIndex);
-                              if (_totalMedia == 0) {
-                                _coverIndex = 0;
-                              } else if (_coverIndex >= _totalMedia) {
-                                _coverIndex = _totalMedia - 1;
-                              }
-                            }),
-                          ),
+                          child: entry.existing != null
+                              ? _ExistingMediaTile(
+                                  item: entry.existing!,
+                                  cover: index == _coverIndex,
+                                  onCover: () =>
+                                      setState(() => _coverIndex = index),
+                                  onReplace: () => _replaceMedia(index),
+                                  onRemove: () => _removeMedia(index),
+                                )
+                              : _PendingMediaTile(
+                                  item: entry.pending!,
+                                  cover: index == _coverIndex,
+                                  onCover: () =>
+                                      setState(() => _coverIndex = index),
+                                  onReplace: () => _replaceMedia(index),
+                                  onRemove: () => _removeMedia(index),
+                                ),
                         ),
                       );
                     },
                   ),
                 ),
+                if (_totalMedia > 0) ...<Widget>[
+                  const SizedBox(height: 8),
+                  Text(
+                    'Tap to choose the cover. Hold and drag to reorder. Use the swap icon to replace a file.',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
                 const SizedBox(height: 22),
                 TextField(
                   controller: _title,
@@ -723,13 +808,19 @@ class _CreateMarketplaceListingScreenState
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
           child: FilledButton.icon(
-            onPressed: _saving ? null : () => _save(publish: true),
+            onPressed: _saving
+                ? null
+                : () => _save(
+                    publish: (_editingListing?.status ?? 'draft') != 'sold',
+                  ),
             icon: const Icon(Icons.rocket_launch_rounded),
             label: Text(
               _saving
                   ? 'Saving…'
                   : _editingListing?.status == 'available'
                   ? 'Save Changes'
+                  : _editingListing?.status == 'sold'
+                  ? 'Save Sold Listing'
                   : 'Publish Listing',
             ),
             style: FilledButton.styleFrom(
@@ -764,12 +855,14 @@ class _PendingMediaTile extends StatelessWidget {
     required this.item,
     required this.cover,
     required this.onCover,
+    required this.onReplace,
     required this.onRemove,
   });
 
   final PendingMarketplaceMedia item;
   final bool cover;
   final VoidCallback onCover;
+  final VoidCallback onReplace;
   final VoidCallback onRemove;
 
   @override
@@ -854,6 +947,26 @@ class _PendingMediaTile extends StatelessWidget {
             ),
           ),
         ),
+        Positioned(
+          right: 4,
+          bottom: 4,
+          child: Material(
+            color: Colors.black54,
+            shape: const CircleBorder(),
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: onReplace,
+              child: const Padding(
+                padding: EdgeInsets.all(5),
+                child: Icon(
+                  Icons.swap_horiz_rounded,
+                  color: Colors.white,
+                  size: 17,
+                ),
+              ),
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -864,12 +977,14 @@ class _ExistingMediaTile extends StatelessWidget {
     required this.item,
     required this.cover,
     required this.onCover,
+    required this.onReplace,
     required this.onRemove,
   });
 
   final MarketplaceMedia item;
   final bool cover;
   final VoidCallback onCover;
+  final VoidCallback onReplace;
   final VoidCallback onRemove;
 
   @override
@@ -940,6 +1055,26 @@ class _ExistingMediaTile extends StatelessWidget {
               child: const Padding(
                 padding: EdgeInsets.all(5),
                 child: Icon(Icons.close_rounded, color: Colors.white, size: 17),
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          right: 4,
+          bottom: 4,
+          child: Material(
+            color: Colors.black54,
+            shape: const CircleBorder(),
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: onReplace,
+              child: const Padding(
+                padding: EdgeInsets.all(5),
+                child: Icon(
+                  Icons.swap_horiz_rounded,
+                  color: Colors.white,
+                  size: 17,
+                ),
               ),
             ),
           ),

@@ -1,18 +1,27 @@
 import 'dart:async';
-import 'dart:typed_data';
+import 'dart:io';
 
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:video_player/video_player.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 
 import '../models/marketplace_listing.dart';
 import '../utils/marketplace_constants.dart';
 
 class PendingMarketplaceMedia {
-  const PendingMarketplaceMedia({required this.file, required this.type});
+  const PendingMarketplaceMedia({
+    required this.file,
+    required this.type,
+    required this.sizeBytes,
+    required this.durationMs,
+  });
 
   final XFile file;
   final String type;
+  final int sizeBytes;
+  final int durationMs;
 
   bool get isVideo => type == 'video';
 }
@@ -28,6 +37,8 @@ class MarketplaceMediaService {
 
   final ImagePicker _picker;
   final FirebaseStorage _storage;
+  static const int _maximumBytes = 30 * 1024 * 1024;
+  static const int _maximumVideoDurationMs = 2 * 60 * 1000;
 
   Future<List<PendingMarketplaceMedia>> pickGallery({
     required int remainingSlots,
@@ -39,7 +50,11 @@ class MarketplaceMediaService {
       limit: remainingSlots.clamp(1, MarketplaceConstants.maxMediaCount),
       imageQuality: 88,
     );
-    return files.take(remainingSlots).map(_pendingFromFile).toList();
+    final List<PendingMarketplaceMedia> result = <PendingMarketplaceMedia>[];
+    for (final XFile file in files.take(remainingSlots)) {
+      result.add(await _validatedPendingFromFile(file));
+    }
+    return result;
   }
 
   Future<PendingMarketplaceMedia?> capturePhoto() async {
@@ -47,9 +62,7 @@ class MarketplaceMediaService {
       source: ImageSource.camera,
       imageQuality: 88,
     );
-    return file == null
-        ? null
-        : PendingMarketplaceMedia(file: file, type: 'image');
+    return file == null ? null : _validatedPendingFromFile(file);
   }
 
   Future<PendingMarketplaceMedia?> captureVideo() async {
@@ -57,9 +70,7 @@ class MarketplaceMediaService {
       source: ImageSource.camera,
       maxDuration: const Duration(minutes: 2),
     );
-    return file == null
-        ? null
-        : PendingMarketplaceMedia(file: file, type: 'video');
+    return file == null ? null : _validatedPendingFromFile(file);
   }
 
   Future<List<MarketplaceMedia>> upload({
@@ -147,7 +158,7 @@ class MarketplaceMediaService {
             type: pending.type,
             url: mediaUrl,
             thumbnailUrl: thumbnailUrl,
-            durationMs: 0,
+            durationMs: pending.durationMs,
             displayOrder: displayIndex,
             storagePath: mediaPath,
           ),
@@ -186,13 +197,63 @@ class MarketplaceMediaService {
     }
   }
 
-  PendingMarketplaceMedia _pendingFromFile(XFile file) {
+  Future<PendingMarketplaceMedia> _validatedPendingFromFile(XFile file) async {
     final String mime = file.mimeType?.toLowerCase() ?? '';
     final String extension = file.name.split('.').last.toLowerCase();
     final bool video =
         mime.startsWith('video/') ||
         <String>{'mp4', 'mov', 'm4v', 'webm', 'avi'}.contains(extension);
-    return PendingMarketplaceMedia(file: file, type: video ? 'video' : 'image');
+    final bool image =
+        mime.startsWith('image/') ||
+        <String>{
+          'jpg',
+          'jpeg',
+          'png',
+          'webp',
+          'heic',
+          'heif',
+        }.contains(extension);
+    if (!video && !image) {
+      throw FormatException(
+        '${file.name} is not a supported photo or video file.',
+      );
+    }
+
+    final int sizeBytes = await file.length();
+    if (sizeBytes <= 0) {
+      throw FormatException('${file.name} is empty or could not be read.');
+    }
+    if (sizeBytes > _maximumBytes) {
+      throw FormatException('${file.name} is larger than the 30 MB limit.');
+    }
+
+    int durationMs = 0;
+    if (video && !kIsWeb) {
+      final VideoPlayerController controller = VideoPlayerController.file(
+        File(file.path),
+      );
+      try {
+        await controller.initialize();
+        durationMs = controller.value.duration.inMilliseconds;
+      } finally {
+        await controller.dispose();
+      }
+      if (durationMs <= 0) {
+        throw FormatException('${file.name} could not be read as a video.');
+      }
+      if (durationMs > _maximumVideoDurationMs) {
+        throw FormatException(
+          '${file.name} is longer than the 2-minute limit.',
+        );
+      }
+    }
+
+    return PendingMarketplaceMedia(
+      file: file,
+      type: video ? 'video' : 'image',
+      sizeBytes: sizeBytes,
+      durationMs: durationMs,
+    );
   }
 
   String _extension(String name, String type) {
