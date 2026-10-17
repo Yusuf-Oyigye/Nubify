@@ -18,6 +18,196 @@
         }
       ],
       "density": "SPARSE_ALL"
+    },
+    {
+      "collectionGroup": "marketplaceProducts",
+      "queryScope": "COLLECTION",
+      "fields": [{"fieldPath":"status","order":"ASCENDING"},{"fieldPath":"publicVisible","order":"ASCENDING"},{"fieldPath":"createdAt","order":"DESCENDING"}]
+    },
+    {
+      "collectionGroup": "marketplaceProducts",
+      "queryScope": "COLLECTION",
+      "fields": [{"fieldPath":"status","order":"ASCENDING"},{"fieldPath":"publicVisible","order":"ASCENDING"},{"fieldPath":"createdAt","order":"ASCENDING"}]
+    },
+    {
+      "collectionGroup": "marketplaceProducts",
+      "queryScope": "COLLECTION",
+      "fields": [{"fieldPath":"status","order":"ASCENDING"},{"fieldPath":"publicVisible","order":"ASCENDING"},{"fieldPath":"category","order":"ASCENDING"},{"fieldPath":"createdAt","order":"DESCENDING"}]
+    },
+    {
+      "collectionGroup": "marketplaceProducts",
+      "queryScope": "COLLECTION",
+      "fields": [{"fieldPath":"status","order":"ASCENDING"},{"fieldPath":"publicVisible","order":"ASCENDING"},{"fieldPath":"category","order":"ASCENDING"},{"fieldPath":"createdAt","order":"ASCENDING"}]
+    },
+    {
+      "collectionGroup": "marketplaceProducts",
+      "queryScope": "COLLECTION",
+      "fields": [{"fieldPath":"status","order":"ASCENDING"},{"fieldPath":"publicVisible","order":"ASCENDING"},{"fieldPath":"sellerId","order":"ASCENDING"},{"fieldPath":"createdAt","order":"DESCENDING"}]
+    },
+    {
+      "collectionGroup": "marketplaceProducts",
+      "queryScope": "COLLECTION",
+      "fields": [{"fieldPath":"status","order":"ASCENDING"},{"fieldPath":"publicVisible","order":"ASCENDING"},{"fieldPath":"condition","order":"ASCENDING"},{"fieldPath":"createdAt","order":"DESCENDING"}]
+    },
+    {
+      "collectionGroup": "marketplaceProducts",
+      "queryScope": "COLLECTION",
+      "fields": [{"fieldPath":"status","order":"ASCENDING"},{"fieldPath":"publicVisible","order":"ASCENDING"},{"fieldPath":"condition","order":"ASCENDING"},{"fieldPath":"createdAt","order":"ASCENDING"}]
+    },
+    {
+      "collectionGroup": "marketplaceProducts",
+      "queryScope": "COLLECTION",
+      "fields": [{"fieldPath":"status","order":"ASCENDING"},{"fieldPath":"publicVisible","order":"ASCENDING"},{"fieldPath":"category","order":"ASCENDING"},{"fieldPath":"condition","order":"ASCENDING"},{"fieldPath":"createdAt","order":"DESCENDING"}]
+    },
+    {
+      "collectionGroup": "marketplaceProducts",
+      "queryScope": "COLLECTION",
+      "fields": [{"fieldPath":"status","order":"ASCENDING"},{"fieldPath":"publicVisible","order":"ASCENDING"},{"fieldPath":"category","order":"ASCENDING"},{"fieldPath":"condition","order":"ASCENDING"},{"fieldPath":"createdAt","order":"ASCENDING"}]
+    },
+    {
+      "collectionGroup": "marketplaceProducts",
+      "queryScope": "COLLECTION",
+      "fields": [{"fieldPath":"status","order":"ASCENDING"},{"fieldPath":"publicVisible","order":"ASCENDING"},{"fieldPath":"price","order":"ASCENDING"}]
+    },
+    {
+      "collectionGroup": "marketplaceProducts",
+      "queryScope": "COLLECTION",
+      "fields": [{"fieldPath":"status","order":"ASCENDING"},{"fieldPath":"publicVisible","order":"ASCENDING"},{"fieldPath":"price","order":"DESCENDING"}]
+    },
+    {
+      "collectionGroup": "marketplaceProducts",
+      "queryScope": "COLLECTION",
+      "fields": [{"fieldPath":"status","order":"ASCENDING"},{"fieldPath":"publicVisible","order":"ASCENDING"},{"fieldPath":"category","order":"ASCENDING"},{"fieldPath":"price","order":"ASCENDING"}]
+    },
+    {
+      "collectionGroup": "marketplaceProducts",
+      "queryScope": "COLLECTION",
+      "fields": [{"fieldPath":"status","order":"ASCENDING"},{"fieldPath":"publicVisible","order":"ASCENDING"},{"fieldPath":"category","order":"ASCENDING"},{"fieldPath":"price","order":"DESCENDING"}]
+    },
+    {
+      "collectionGroup": "marketplaceProducts",
+      "queryScope": "COLLECTION",
+      "fields": [{"fieldPath":"status","order":"ASCENDING"},{"fieldPath":"publicVisible","order":"ASCENDING"},{"fieldPath":"condition","order":"ASCENDING"},{"fieldPath":"price","order":"ASCENDING"}]
+    },
+    {
+      "collectionGroup": "marketplaceProducts",
+      "queryScope": "COLLECTION",
+      "fields": [{"fieldPath":"status","order":"ASCENDING"},{"fieldPath":"publicVisible","order":"ASCENDING"},{"fieldPath":"condition","order":"ASCENDING"},{"fieldPath":"price","order":"DESCENDING"}]
+    },
+    {
+      "collectionGroup": "marketplaceProducts",
+      "queryScope": "COLLECTION",
+      "fields": [{"fieldPath":"status","order":"ASCENDING"},{"fieldPath":"publicVisible","order":"ASCENDING"},{"fieldPath":"category","order":"ASCENDING"},{"fieldPath":"condition","order":"ASCENDING"},{"fieldPath":"price","order":"ASCENDING"}]
+    },
+    {
+      "collectionGroup": "marketplaceProducts",
+      "queryScope": "COLLECTION",
+      "fields": [{"fieldPath":"status","order":"ASCENDING"},{"fieldPath":"publicVisible","order":"ASCENDING"},{"fieldPath":"category","order":"ASCENDING"},{"fieldPath":"condition","order":"ASCENDING"},{"fieldPath":"price","order":"DESCENDING"}]
+    },
+    {
+      "collectionGroup": "marketplaceProducts",
+      "queryScope": "COLLECTION",
+      "fields": [{"fieldPath":"status","order":"ASCENDING"},{"fieldPath":"publicVisible","order":"ASCENDING"},{"fieldPath":"searchPrefixes","arrayConfig":"CONTAINS"},{"fieldPath":"createdAt","order":"DESCENDING"}]
+    },
+    {
+      "collectionGroup": "marketplaceProducts",
+      "queryScope": "COLLECTION",
+      "fields": [{"fieldPath":"status","order":"ASCENDING"},{"fieldPath":"publicVisible","order":"ASCENDING"},{"fieldPath":"searchPrefixes","arrayConfig":"CONTAINS"},{"fieldPath":"createdAt","order":"ASCENDING"}]
+    },
+    {
+      "collectionGroup": "marketplaceProducts",
+      "queryScope": "COLLECTION",
+      "fields": [{"fieldPath":"status","order":"ASCENDING"},{"fieldPath":"publicVisible","order":"ASCENDING"},{"fieldPath":"category","order":"ASCENDING"},{"fieldPath":"searchPrefixes","arrayConfig":"CONTAINS"},{"fieldPath":"createdAt","order":"DESCENDING"}]
+    },
+    {
+      "collectionGroup": "marketplaceProducts",
+      "queryScope": "COLLECTION",
+      "fields": [{"fieldPath":"status","order":"ASCENDING"},{"fieldPath":"publicVisible","order":"ASCENDING"},{"fieldPath":"category","order":"ASCENDING"},{"fieldPath":"searchPrefixes","arrayConfig":"CONTAINS"},{"fieldPath":"createdAt","order":"ASCENDING"}]
+    },
+    {
+      "collectionGroup": "marketplaceProducts",
+      "queryScope": "COLLECTION",
+      "fields": [{"fieldPath":"status","order":"ASCENDING"},{"fieldPath":"publicVisible","order":"ASCENDING"},{"fieldPath":"condition","order":"ASCENDING"},{"fieldPath":"searchPrefixes","arrayConfig":"CONTAINS"},{"fieldPath":"createdAt","order":"DESCENDING"}]
+    },
+    {
+      "collectionGroup": "marketplaceProducts",
+      "queryScope": "COLLECTION",
+      "fields": [{"fieldPath":"status","order":"ASCENDING"},{"fieldPath":"publicVisible","order":"ASCENDING"},{"fieldPath":"condition","order":"ASCENDING"},{"fieldPath":"searchPrefixes","arrayConfig":"CONTAINS"},{"fieldPath":"createdAt","order":"ASCENDING"}]
+    },
+    {
+      "collectionGroup": "marketplaceProducts",
+      "queryScope": "COLLECTION",
+      "fields": [{"fieldPath":"status","order":"ASCENDING"},{"fieldPath":"publicVisible","order":"ASCENDING"},{"fieldPath":"category","order":"ASCENDING"},{"fieldPath":"condition","order":"ASCENDING"},{"fieldPath":"searchPrefixes","arrayConfig":"CONTAINS"},{"fieldPath":"createdAt","order":"DESCENDING"}]
+    },
+    {
+      "collectionGroup": "marketplaceProducts",
+      "queryScope": "COLLECTION",
+      "fields": [{"fieldPath":"status","order":"ASCENDING"},{"fieldPath":"publicVisible","order":"ASCENDING"},{"fieldPath":"category","order":"ASCENDING"},{"fieldPath":"condition","order":"ASCENDING"},{"fieldPath":"searchPrefixes","arrayConfig":"CONTAINS"},{"fieldPath":"createdAt","order":"ASCENDING"}]
+    },
+    {
+      "collectionGroup": "marketplaceProducts",
+      "queryScope": "COLLECTION",
+      "fields": [{"fieldPath":"status","order":"ASCENDING"},{"fieldPath":"publicVisible","order":"ASCENDING"},{"fieldPath":"searchPrefixes","arrayConfig":"CONTAINS"},{"fieldPath":"price","order":"ASCENDING"}]
+    },
+    {
+      "collectionGroup": "marketplaceProducts",
+      "queryScope": "COLLECTION",
+      "fields": [{"fieldPath":"status","order":"ASCENDING"},{"fieldPath":"publicVisible","order":"ASCENDING"},{"fieldPath":"searchPrefixes","arrayConfig":"CONTAINS"},{"fieldPath":"price","order":"DESCENDING"}]
+    },
+    {
+      "collectionGroup": "marketplaceProducts",
+      "queryScope": "COLLECTION",
+      "fields": [{"fieldPath":"status","order":"ASCENDING"},{"fieldPath":"publicVisible","order":"ASCENDING"},{"fieldPath":"category","order":"ASCENDING"},{"fieldPath":"searchPrefixes","arrayConfig":"CONTAINS"},{"fieldPath":"price","order":"ASCENDING"}]
+    },
+    {
+      "collectionGroup": "marketplaceProducts",
+      "queryScope": "COLLECTION",
+      "fields": [{"fieldPath":"status","order":"ASCENDING"},{"fieldPath":"publicVisible","order":"ASCENDING"},{"fieldPath":"category","order":"ASCENDING"},{"fieldPath":"searchPrefixes","arrayConfig":"CONTAINS"},{"fieldPath":"price","order":"DESCENDING"}]
+    },
+    {
+      "collectionGroup": "marketplaceProducts",
+      "queryScope": "COLLECTION",
+      "fields": [{"fieldPath":"status","order":"ASCENDING"},{"fieldPath":"publicVisible","order":"ASCENDING"},{"fieldPath":"condition","order":"ASCENDING"},{"fieldPath":"searchPrefixes","arrayConfig":"CONTAINS"},{"fieldPath":"price","order":"ASCENDING"}]
+    },
+    {
+      "collectionGroup": "marketplaceProducts",
+      "queryScope": "COLLECTION",
+      "fields": [{"fieldPath":"status","order":"ASCENDING"},{"fieldPath":"publicVisible","order":"ASCENDING"},{"fieldPath":"condition","order":"ASCENDING"},{"fieldPath":"searchPrefixes","arrayConfig":"CONTAINS"},{"fieldPath":"price","order":"DESCENDING"}]
+    },
+    {
+      "collectionGroup": "marketplaceProducts",
+      "queryScope": "COLLECTION",
+      "fields": [{"fieldPath":"status","order":"ASCENDING"},{"fieldPath":"publicVisible","order":"ASCENDING"},{"fieldPath":"category","order":"ASCENDING"},{"fieldPath":"condition","order":"ASCENDING"},{"fieldPath":"searchPrefixes","arrayConfig":"CONTAINS"},{"fieldPath":"price","order":"ASCENDING"}]
+    },
+    {
+      "collectionGroup": "marketplaceProducts",
+      "queryScope": "COLLECTION",
+      "fields": [{"fieldPath":"status","order":"ASCENDING"},{"fieldPath":"publicVisible","order":"ASCENDING"},{"fieldPath":"category","order":"ASCENDING"},{"fieldPath":"condition","order":"ASCENDING"},{"fieldPath":"searchPrefixes","arrayConfig":"CONTAINS"},{"fieldPath":"price","order":"DESCENDING"}]
+    },
+    {
+      "collectionGroup": "marketplaceSellerStats",
+      "queryScope": "COLLECTION",
+      "fields": [{"fieldPath":"active","order":"ASCENDING"},{"fieldPath":"availableListingCount","order":"DESCENDING"}]
+    },
+    {
+      "collectionGroup": "marketplaceSellerStats",
+      "queryScope": "COLLECTION",
+      "fields": [{"fieldPath":"active","order":"ASCENDING"},{"fieldPath":"sellerName","order":"ASCENDING"}]
+    },
+    {
+      "collectionGroup": "sellerVerifications",
+      "queryScope": "COLLECTION",
+      "fields": [{"fieldPath":"status","order":"ASCENDING"},{"fieldPath":"submittedAt","order":"DESCENDING"}]
+    },
+    {
+      "collectionGroup": "marketplaceProducts",
+      "queryScope": "COLLECTION",
+      "fields": [{"fieldPath":"sellerId","order":"ASCENDING"},{"fieldPath":"status","order":"ASCENDING"},{"fieldPath":"publicVisible","order":"ASCENDING"}]
+    },
+    {
+      "collectionGroup": "marketplaceProducts",
+      "queryScope": "COLLECTION",
+      "fields": [{"fieldPath":"category","order":"ASCENDING"},{"fieldPath":"status","order":"ASCENDING"},{"fieldPath":"publicVisible","order":"ASCENDING"}]
     }
   ],
   "fieldOverrides": [

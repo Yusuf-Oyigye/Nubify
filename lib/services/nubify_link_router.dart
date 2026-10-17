@@ -7,6 +7,7 @@ import '../models/story.dart';
 import '../screens/comment_screen.dart';
 import '../screens/group_chat_screen.dart';
 import '../screens/marketplace_screen.dart';
+import '../screens/marketplace_listing_details_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/story_viewer_screen.dart';
 import '../screens/nubuzz_screen.dart';
@@ -143,12 +144,21 @@ class NubifyLinkRouter {
     //===================================================
 
     if ((type == 'marketplace' || type == 'product')) {
+      if (parts.length >= 2) {
+        await Navigator.push<void>(
+          context,
+          MaterialPageRoute<void>(
+            builder: (_) =>
+                MarketplaceListingDetailsScreen(listingId: parts[1]),
+          ),
+        );
+        return;
+      }
+
       await Navigator.push<void>(
         context,
-
         MaterialPageRoute<void>(builder: (_) => const MarketplaceScreen()),
       );
-
       return;
     }
 

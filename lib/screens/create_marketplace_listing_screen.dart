@@ -1,0 +1,950 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+import '../models/marketplace_listing.dart';
+import '../services/marketplace_media_service.dart';
+import '../services/marketplace_service.dart';
+import '../services/private_profile_service.dart';
+import '../services/seller_verification_service.dart';
+import '../utils/marketplace_constants.dart';
+import '../utils/marketplace_theme.dart';
+import 'marketplace_listing_details_screen.dart';
+import 'seller_verification_screen.dart';
+
+class CreateMarketplaceListingScreen extends StatefulWidget {
+  const CreateMarketplaceListingScreen({super.key, this.listingId});
+
+  final String? listingId;
+
+  @override
+  State<CreateMarketplaceListingScreen> createState() =>
+      _CreateMarketplaceListingScreenState();
+}
+
+class _CreateMarketplaceListingScreenState
+    extends State<CreateMarketplaceListingScreen> {
+  final MarketplaceMediaService _mediaService = MarketplaceMediaService();
+  final MarketplaceService _marketplace = MarketplaceService();
+  final TextEditingController _title = TextEditingController();
+  final TextEditingController _description = TextEditingController();
+  final TextEditingController _price = TextEditingController();
+  final List<PendingMarketplaceMedia> _media = <PendingMarketplaceMedia>[];
+  final List<MarketplaceMedia> _existingMedia = <MarketplaceMedia>[];
+  final List<MarketplaceMedia> _removedExistingMedia = <MarketplaceMedia>[];
+
+  String? _category;
+  String? _condition;
+  String? _priceType;
+  int _coverIndex = 0;
+  bool _allowMessages = true;
+  bool _allowCalls = false;
+  bool _saving = false;
+  bool _loadingExisting = false;
+  MarketplaceListing? _editingListing;
+  double _progress = 0;
+  String _progressLabel = '';
+
+  int get _totalMedia => _existingMedia.length + _media.length;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.listingId?.trim().isNotEmpty == true) {
+      _loadExisting();
+    }
+  }
+
+  Future<void> _loadExisting() async {
+    setState(() => _loadingExisting = true);
+    try {
+      final MarketplaceListing? listing = await _marketplace.getListing(
+        widget.listingId!.trim(),
+      );
+      if (listing == null) {
+        throw StateError('This listing no longer exists.');
+      }
+      if (listing.sellerId != FirebaseAuth.instance.currentUser?.uid) {
+        throw StateError('Only the listing owner can edit it.');
+      }
+      _editingListing = listing;
+      _title.text = listing.title;
+      _description.text = listing.description;
+      _price.text = listing.price?.toString() ?? '';
+      _category = listing.category.isEmpty ? null : listing.category;
+      _condition = listing.condition.isEmpty ? null : listing.condition;
+      _priceType = listing.priceType.isEmpty ? null : listing.priceType;
+      _allowMessages = listing.allowMessages;
+      _allowCalls = listing.allowCalls;
+      _existingMedia
+        ..clear()
+        ..addAll(listing.media);
+      _coverIndex = listing.coverMediaIndex < 0 ? 0 : listing.coverMediaIndex;
+    } catch (error) {
+      if (mounted) {
+        _message(error.toString());
+        Navigator.pop(context);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _loadingExisting = false);
+      }
+    }
+  }
+
+  Future<void> _addFromGallery() async {
+    final int remaining = MarketplaceConstants.maxMediaCount - _totalMedia;
+    if (remaining <= 0) {
+      _message('You can add a maximum of five photos and videos combined.');
+      return;
+    }
+    final List<PendingMarketplaceMedia> selected = await _mediaService
+        .pickGallery(remainingSlots: remaining);
+    if (selected.isNotEmpty && mounted) {
+      setState(() => _media.addAll(selected));
+    }
+  }
+
+  Future<void> _capture({required bool video}) async {
+    if (_totalMedia >= MarketplaceConstants.maxMediaCount) {
+      _message('You already selected five media files.');
+      return;
+    }
+    final PendingMarketplaceMedia? selected = video
+        ? await _mediaService.captureVideo()
+        : await _mediaService.capturePhoto();
+    if (selected != null && mounted) {
+      setState(() => _media.add(selected));
+    }
+  }
+
+  Future<void> _showMediaSource() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (BuildContext sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('Choose photos or videos'),
+              subtitle: Text(
+                '${MarketplaceConstants.maxMediaCount - _totalMedia} slots remaining',
+              ),
+              onTap: () {
+                Navigator.pop(sheetContext);
+                _addFromGallery();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_camera_outlined),
+              title: const Text('Take a photo'),
+              onTap: () {
+                Navigator.pop(sheetContext);
+                _capture(video: false);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.videocam_outlined),
+              title: const Text('Record a video'),
+              subtitle: const Text('Maximum recording length: 2 minutes'),
+              onTap: () {
+                Navigator.pop(sheetContext);
+                _capture(video: true);
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _save({required bool publish}) async {
+    if (_saving) {
+      return;
+    }
+    final User? user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      _message('Sign in before creating a listing.');
+      return;
+    }
+    if (publish) {
+      final verification = await SellerVerificationService().getMine();
+      if (!verification.isApproved) {
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute<void>(
+              builder: (_) => const SellerVerificationScreen(),
+            ),
+          );
+        }
+        return;
+      }
+      final String? validation = _validatePublish();
+      if (validation != null) {
+        _message(validation);
+        return;
+      }
+    }
+
+    setState(() {
+      _saving = true;
+      _progress = 0;
+      _progressLabel = 'Preparing listing';
+    });
+
+    final DocumentReference<Map<String, dynamic>> reference = FirebaseFirestore
+        .instance
+        .collection('marketplaceProducts')
+        .doc(_editingListing?.listingId);
+    List<MarketplaceMedia> uploaded = <MarketplaceMedia>[];
+    bool listingSaved = false;
+    try {
+      final DocumentSnapshot<Map<String, dynamic>> profile =
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .get();
+      final Map<String, dynamic> userData =
+          profile.data() ?? <String, dynamic>{};
+      if (_media.isNotEmpty) {
+        uploaded = await _mediaService.upload(
+          uid: user.uid,
+          listingId: reference.id,
+          files: _media,
+          startIndex: _existingMedia.length,
+          onProgress: (double value, String label) {
+            if (mounted) {
+              setState(() {
+                _progress = value;
+                _progressLabel = label;
+              });
+            }
+          },
+        );
+      }
+      final List<MarketplaceMedia> combined = <MarketplaceMedia>[
+        ..._existingMedia,
+        ...uploaded,
+      ];
+      final List<MarketplaceMedia> normalized = List<MarketplaceMedia>.generate(
+        combined.length,
+        (int index) {
+          final MarketplaceMedia item = combined[index];
+          return MarketplaceMedia(
+            type: item.type,
+            url: item.url,
+            thumbnailUrl: item.thumbnailUrl,
+            durationMs: item.durationMs,
+            displayOrder: index,
+            storagePath: item.storagePath,
+          );
+        },
+      );
+      final int safeCover = normalized.isEmpty
+          ? -1
+          : _coverIndex.clamp(0, normalized.length - 1);
+      final String thumbnail = normalized.isEmpty
+          ? ''
+          : (normalized[safeCover].thumbnailUrl.trim().isEmpty
+                ? normalized[safeCover].url
+                : normalized[safeCover].thumbnailUrl);
+      final String selectedPriceType = _priceType ?? '';
+      final double? numericPrice =
+          selectedPriceType == 'fixed' || selectedPriceType == 'negotiable'
+          ? double.tryParse(_price.text.trim())
+          : null;
+
+      final Map<String, dynamic> listingData = <String, dynamic>{
+        'listingId': reference.id,
+        'sellerId': user.uid,
+        'sellerName': (userData['fullName'] ?? '').toString(),
+        'sellerPhotoUrl': (userData['photoUrl'] ?? '').toString(),
+        'title': _title.text.trim(),
+        'description': _description.text.trim(),
+        'category': _category ?? '',
+        'condition': _condition ?? '',
+        'priceType': selectedPriceType,
+        'price': numericPrice,
+        'currency': MarketplaceConstants.currency,
+        'media': normalized
+            .map((MarketplaceMedia item) => item.toMap())
+            .toList(),
+        'mediaCount': normalized.length,
+        'coverMediaIndex': safeCover,
+        'thumbnailUrl': thumbnail,
+        'status': _editingListing?.status ?? 'draft',
+        'publicVisible': _editingListing?.publicVisible ?? false,
+        'contactPreferences': <String, dynamic>{
+          'allowMessages': _allowMessages,
+          'allowCalls': _allowCalls,
+        },
+        'searchPrefixes':
+            publish || (_editingListing?.status ?? 'draft') == 'available'
+            ? MarketplaceConstants.buildSearchPrefixes(<String>[
+                _title.text,
+                _description.text,
+                _category ?? '',
+                (userData['fullName'] ?? '').toString(),
+              ])
+            : <String>[],
+        'createdAt': _editingListing?.createdAt == null
+            ? FieldValue.serverTimestamp()
+            : Timestamp.fromDate(_editingListing!.createdAt!),
+        'updatedAt': FieldValue.serverTimestamp(),
+        'publishedAt': _editingListing?.publishedAt == null
+            ? null
+            : Timestamp.fromDate(_editingListing!.publishedAt!),
+        'soldAt': _editingListing?.soldAt == null
+            ? null
+            : Timestamp.fromDate(_editingListing!.soldAt!),
+        'unavailableAt': _editingListing?.unavailableAt == null
+            ? null
+            : Timestamp.fromDate(_editingListing!.unavailableAt!),
+        'archivedAt': _editingListing?.archivedAt == null
+            ? null
+            : Timestamp.fromDate(_editingListing!.archivedAt!),
+      };
+      await reference.set(listingData);
+      listingSaved = true;
+
+      if (_removedExistingMedia.isNotEmpty) {
+        await _mediaService.deleteUploadedMedia(_removedExistingMedia);
+      }
+
+      if (publish && (_editingListing?.status ?? 'draft') != 'available') {
+        setState(() => _progressLabel = 'Publishing listing');
+        await _marketplace.publish(reference.id);
+      }
+
+      if (!mounted) {
+        return;
+      }
+      HapticFeedback.mediumImpact();
+      if (publish) {
+        await showDialog<void>(
+          context: context,
+          barrierDismissible: false,
+          builder: (BuildContext dialogContext) => AlertDialog(
+            icon: const Icon(
+              Icons.check_circle_rounded,
+              color: MarketplaceTheme.emerald,
+              size: 62,
+            ),
+            title: const Text('Listing Published!'),
+            content: const Text(
+              'Your listing is now available in NUB Marketplace.',
+            ),
+            actions: <Widget>[
+              FilledButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('View Listing'),
+              ),
+            ],
+          ),
+        );
+        if (!mounted) {
+          return;
+        }
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute<void>(
+            builder: (_) =>
+                MarketplaceListingDetailsScreen(listingId: reference.id),
+          ),
+        );
+      } else {
+        _message(
+          _editingListing == null
+              ? 'Draft saved privately.'
+              : 'Listing updated.',
+        );
+        Navigator.pop(context);
+      }
+    } catch (error) {
+      if (!listingSaved && uploaded.isNotEmpty) {
+        await _mediaService.deleteUploadedMedia(uploaded);
+      }
+      if (mounted) {
+        _message(error.toString());
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _saving = false);
+      }
+    }
+  }
+
+  String? _validatePublish() {
+    if (_totalMedia == 0) return 'Add at least one photo or video.';
+    if (_title.text.trim().length < 2) return 'Enter a clear listing title.';
+    if (_description.text.trim().length < 3) return 'Add a useful description.';
+    if (_category == null) return 'Choose a category.';
+    if (_condition == null) return 'Choose the condition.';
+    if (_priceType == null) return 'Choose how the item is priced.';
+    if ((_priceType == 'fixed' || _priceType == 'negotiable')) {
+      final double? value = double.tryParse(_price.text.trim());
+      if (value == null || value <= 0 || value > 100000000) {
+        return 'Enter a valid price greater than zero.';
+      }
+    }
+    if (!_allowMessages && !_allowCalls) {
+      return 'Enable at least one way for buyers to contact you.';
+    }
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bool showPrice = _priceType == 'fixed' || _priceType == 'negotiable';
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          _editingListing == null ? 'Sell on Marketplace' : 'Edit Listing',
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: _saving ? null : () => _save(publish: false),
+            child: const Text('Save Draft'),
+          ),
+        ],
+      ),
+      body: _loadingExisting
+          ? const Center(child: CircularProgressIndicator())
+          : ListView(
+              padding: const EdgeInsets.fromLTRB(18, 10, 18, 120),
+              children: <Widget>[
+                Row(
+                  children: <Widget>[
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Text(
+                            'Show it beautifully',
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          Text('Choose up to five photos and videos combined.'),
+                        ],
+                      ),
+                    ),
+                    Text(
+                      '$_totalMedia/5',
+                      style: const TextStyle(
+                        color: MarketplaceTheme.sky,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                SizedBox(
+                  height: 126,
+                  child: ReorderableListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    buildDefaultDragHandles: false,
+                    itemCount:
+                        _existingMedia.length +
+                        _media.length +
+                        (_totalMedia < 5 ? 1 : 0),
+                    onReorderItem: (int oldIndex, int newIndex) {
+                      if (oldIndex < _existingMedia.length ||
+                          oldIndex >= _existingMedia.length + _media.length) {
+                        return;
+                      }
+                      oldIndex -= _existingMedia.length;
+                      newIndex -= _existingMedia.length;
+                      if (newIndex > _media.length) newIndex = _media.length;
+                      if (newIndex < 0) newIndex = 0;
+                      setState(() {
+                        final PendingMarketplaceMedia moved = _media.removeAt(
+                          oldIndex,
+                        );
+                        _media.insert(newIndex, moved);
+                        if (_coverIndex == _existingMedia.length + oldIndex) {
+                          _coverIndex = _existingMedia.length + newIndex;
+                        }
+                      });
+                    },
+                    itemBuilder: (BuildContext context, int index) {
+                      if (index < _existingMedia.length) {
+                        final MarketplaceMedia item = _existingMedia[index];
+                        return ReorderableDragStartListener(
+                          key: ValueKey<String>(
+                            'existing-${item.storagePath}-$index',
+                          ),
+                          index: index,
+                          enabled: false,
+                          child: Padding(
+                            padding: const EdgeInsets.only(right: 10),
+                            child: _ExistingMediaTile(
+                              item: item,
+                              cover: index == _coverIndex,
+                              onCover: () =>
+                                  setState(() => _coverIndex = index),
+                              onRemove: () => setState(() {
+                                _removedExistingMedia.add(item);
+                                _existingMedia.removeAt(index);
+                                if (_totalMedia == 0) {
+                                  _coverIndex = 0;
+                                } else if (_coverIndex >= _totalMedia) {
+                                  _coverIndex = _totalMedia - 1;
+                                }
+                              }),
+                            ),
+                          ),
+                        );
+                      }
+                      final int pendingIndex = index - _existingMedia.length;
+                      if (pendingIndex == _media.length) {
+                        return Padding(
+                          key: const ValueKey<String>('add-marketplace-media'),
+                          padding: const EdgeInsets.only(right: 10),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(18),
+                            onTap: _showMediaSource,
+                            child: Ink(
+                              width: 112,
+                              decoration: BoxDecoration(
+                                color: MarketplaceTheme.softSurface(context),
+                                borderRadius: BorderRadius.circular(18),
+                                border: Border.all(
+                                  color: MarketplaceTheme.sky.withValues(
+                                    alpha: 0.4,
+                                  ),
+                                ),
+                              ),
+                              child: const Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: <Widget>[
+                                  Icon(
+                                    Icons.add_photo_alternate_outlined,
+                                    color: MarketplaceTheme.sky,
+                                    size: 34,
+                                  ),
+                                  SizedBox(height: 7),
+                                  Text(
+                                    'Add media',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      }
+                      final PendingMarketplaceMedia item = _media[pendingIndex];
+                      return ReorderableDragStartListener(
+                        key: ValueKey<String>('${item.file.path}-$index'),
+                        index: index,
+                        child: Padding(
+                          padding: const EdgeInsets.only(right: 10),
+                          child: _PendingMediaTile(
+                            item: item,
+                            cover: index == _coverIndex,
+                            onCover: () => setState(() => _coverIndex = index),
+                            onRemove: () => setState(() {
+                              _media.removeAt(pendingIndex);
+                              if (_totalMedia == 0) {
+                                _coverIndex = 0;
+                              } else if (_coverIndex >= _totalMedia) {
+                                _coverIndex = _totalMedia - 1;
+                              }
+                            }),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 22),
+                TextField(
+                  controller: _title,
+                  maxLength: 120,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: const InputDecoration(
+                    labelText: 'Title',
+                    prefixIcon: Icon(Icons.title_rounded),
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  initialValue: _category,
+                  decoration: const InputDecoration(
+                    labelText: 'Category',
+                    prefixIcon: Icon(Icons.category_outlined),
+                    border: OutlineInputBorder(),
+                  ),
+                  items: MarketplaceConstants.categories
+                      .map(
+                        (MarketplaceCategory value) => DropdownMenuItem<String>(
+                          value: value.id,
+                          child: Text(value.label),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (String? value) =>
+                      setState(() => _category = value),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  initialValue: _condition,
+                  decoration: const InputDecoration(
+                    labelText: 'Condition',
+                    prefixIcon: Icon(Icons.auto_awesome_outlined),
+                    border: OutlineInputBorder(),
+                  ),
+                  items: MarketplaceConstants.conditions
+                      .map(
+                        (String value) => DropdownMenuItem<String>(
+                          value: value,
+                          child: Text(
+                            MarketplaceConstants.conditionLabel(value),
+                          ),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (String? value) =>
+                      setState(() => _condition = value),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  initialValue: _priceType,
+                  decoration: const InputDecoration(
+                    labelText: 'Pricing',
+                    prefixIcon: Icon(Icons.sell_outlined),
+                    border: OutlineInputBorder(),
+                  ),
+                  items: const <DropdownMenuItem<String>>[
+                    DropdownMenuItem(
+                      value: 'fixed',
+                      child: Text('Fixed Price'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'negotiable',
+                      child: Text('Negotiable'),
+                    ),
+                    DropdownMenuItem(value: 'free', child: Text('Free')),
+                    DropdownMenuItem(
+                      value: 'contact',
+                      child: Text('Contact for Price'),
+                    ),
+                  ],
+                  onChanged: (String? value) =>
+                      setState(() => _priceType = value),
+                ),
+                if (showPrice) ...<Widget>[
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _price,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    inputFormatters: <TextInputFormatter>[
+                      FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                    ],
+                    decoration: const InputDecoration(
+                      labelText: 'Price',
+                      prefixText: 'EGP ',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _description,
+                  minLines: 5,
+                  maxLines: 10,
+                  maxLength: 5000,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: const InputDecoration(
+                    labelText: 'Description',
+                    alignLabelWithHint: true,
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                const Text(
+                  'Buyer contact',
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
+                ),
+                SwitchListTile.adaptive(
+                  value: _allowMessages,
+                  onChanged: (bool value) =>
+                      setState(() => _allowMessages = value),
+                  title: const Text('Message Seller'),
+                  subtitle: const Text('Use Nubify direct messages.'),
+                  secondary: const Icon(Icons.chat_bubble_outline_rounded),
+                ),
+                SwitchListTile.adaptive(
+                  value: _allowCalls,
+                  onChanged: (bool value) =>
+                      setState(() => _allowCalls = value),
+                  title: const Text('Call Seller'),
+                  subtitle: const Text(
+                    'Uses your private Egyptian mobile number and normal phone network.',
+                  ),
+                  secondary: const Icon(Icons.phone_outlined),
+                ),
+                if (_allowCalls)
+                  TextButton.icon(
+                    onPressed: () async {
+                      final profile = await PrivateProfileService().getMine();
+                      if (mounted && profile.phoneE164.isEmpty) {
+                        _message(
+                          'Add your mobile number in Edit Profile before enabling calls.',
+                        );
+                      }
+                    },
+                    icon: const Icon(Icons.privacy_tip_outlined),
+                    label: const Text('Check private phone setup'),
+                  ),
+                if (_saving) ...<Widget>[
+                  const SizedBox(height: 18),
+                  LinearProgressIndicator(
+                    value: _progress > 0 && _progress < 1 ? _progress : null,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(_progressLabel, textAlign: TextAlign.center),
+                ],
+              ],
+            ),
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+          child: FilledButton.icon(
+            onPressed: _saving ? null : () => _save(publish: true),
+            icon: const Icon(Icons.rocket_launch_rounded),
+            label: Text(
+              _saving
+                  ? 'Saving…'
+                  : _editingListing?.status == 'available'
+                  ? 'Save Changes'
+                  : 'Publish Listing',
+            ),
+            style: FilledButton.styleFrom(
+              backgroundColor: MarketplaceTheme.sky,
+              foregroundColor: MarketplaceTheme.midnight,
+              minimumSize: const Size.fromHeight(54),
+              textStyle: const TextStyle(fontWeight: FontWeight.w900),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _message(String value) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(value)));
+  }
+
+  @override
+  void dispose() {
+    _title.dispose();
+    _description.dispose();
+    _price.dispose();
+    super.dispose();
+  }
+}
+
+class _PendingMediaTile extends StatelessWidget {
+  const _PendingMediaTile({
+    required this.item,
+    required this.cover,
+    required this.onCover,
+    required this.onRemove,
+  });
+
+  final PendingMarketplaceMedia item;
+  final bool cover;
+  final VoidCallback onCover;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: <Widget>[
+        GestureDetector(
+          onTap: onCover,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(18),
+            child: SizedBox(
+              width: 112,
+              height: 126,
+              child: item.isVideo
+                  ? ColoredBox(
+                      color: MarketplaceTheme.navy,
+                      child: const Icon(
+                        Icons.play_circle_fill_rounded,
+                        color: Colors.white,
+                        size: 44,
+                      ),
+                    )
+                  : FutureBuilder<Uint8List>(
+                      future: item.file.readAsBytes(),
+                      builder:
+                          (
+                            BuildContext context,
+                            AsyncSnapshot<Uint8List> snapshot,
+                          ) {
+                            if (!snapshot.hasData) {
+                              return const ColoredBox(
+                                color: MarketplaceTheme.navy,
+                                child: Center(
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                ),
+                              );
+                            }
+                            return Image.memory(
+                              snapshot.data!,
+                              fit: BoxFit.cover,
+                            );
+                          },
+                    ),
+            ),
+          ),
+        ),
+        if (cover)
+          Positioned(
+            left: 6,
+            bottom: 6,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+              decoration: BoxDecoration(
+                color: MarketplaceTheme.sky,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Text(
+                'COVER',
+                style: TextStyle(
+                  color: MarketplaceTheme.midnight,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+          ),
+        Positioned(
+          right: 4,
+          top: 4,
+          child: Material(
+            color: Colors.black54,
+            shape: const CircleBorder(),
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: onRemove,
+              child: const Padding(
+                padding: EdgeInsets.all(5),
+                child: Icon(Icons.close_rounded, color: Colors.white, size: 17),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ExistingMediaTile extends StatelessWidget {
+  const _ExistingMediaTile({
+    required this.item,
+    required this.cover,
+    required this.onCover,
+    required this.onRemove,
+  });
+
+  final MarketplaceMedia item;
+  final bool cover;
+  final VoidCallback onCover;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final String preview = item.thumbnailUrl.isNotEmpty
+        ? item.thumbnailUrl
+        : item.url;
+    return Stack(
+      children: <Widget>[
+        GestureDetector(
+          onTap: onCover,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(18),
+            child: SizedBox(
+              width: 112,
+              height: 126,
+              child: preview.isEmpty
+                  ? const ColoredBox(
+                      color: MarketplaceTheme.navy,
+                      child: Icon(
+                        Icons.broken_image_outlined,
+                        color: Colors.white,
+                      ),
+                    )
+                  : Image.network(preview, fit: BoxFit.cover),
+            ),
+          ),
+        ),
+        if (item.isVideo)
+          const Positioned(
+            left: 42,
+            top: 45,
+            child: Icon(
+              Icons.play_circle_fill_rounded,
+              color: Colors.white,
+              size: 30,
+            ),
+          ),
+        if (cover)
+          Positioned(
+            left: 6,
+            bottom: 6,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+              decoration: BoxDecoration(
+                color: MarketplaceTheme.sky,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Text(
+                'COVER',
+                style: TextStyle(
+                  color: MarketplaceTheme.midnight,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+          ),
+        Positioned(
+          right: 4,
+          top: 4,
+          child: Material(
+            color: Colors.black54,
+            shape: const CircleBorder(),
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: onRemove,
+              child: const Padding(
+                padding: EdgeInsets.all(5),
+                child: Icon(Icons.close_rounded, color: Colors.white, size: 17),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}

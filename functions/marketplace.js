@@ -1,0 +1,720 @@
+const {
+  onCall,
+  HttpsError,
+} = require("firebase-functions/v2/https");
+const {
+  onDocumentWritten,
+} = require("firebase-functions/v2/firestore");
+const {
+  getAuth,
+} = require("firebase-admin/auth");
+const {
+  getFirestore,
+  Timestamp,
+} = require("firebase-admin/firestore");
+const {
+  getStorage,
+} = require("firebase-admin/storage");
+
+const db = getFirestore();
+const auth = getAuth();
+const storage = getStorage();
+
+const REGION = "europe-west1";
+const LISTINGS = "marketplaceProducts";
+const VERIFICATIONS = "sellerVerifications";
+const ALLOWED_CATEGORIES = new Set([
+  "rent_housing",
+  "food_snacks",
+  "electrical_gadgets",
+  "textbooks_books",
+  "medical_laboratory",
+  "printing_photocopying",
+  "clothes_fashion",
+  "furniture_room",
+  "watches_accessories",
+  "student_services",
+  "beauty_personal_care",
+  "other",
+]);
+const ALLOWED_CONDITIONS = new Set(["new", "used", "service"]);
+const ALLOWED_PRICE_TYPES = new Set([
+  "fixed",
+  "negotiable",
+  "free",
+  "contact",
+]);
+
+function requireAuthenticated(request) {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Sign in to continue.");
+  }
+  return uid;
+}
+
+function isMarketplaceOwner(request) {
+  return request.auth?.token?.marketplaceOwner === true;
+}
+
+function isReviewer(request) {
+  const token = request.auth?.token || {};
+  return token.marketplaceOwner === true ||
+    token.admin === true ||
+    token.moderator === true ||
+    token.marketplaceReviewer === true;
+}
+
+function requireReviewer(request) {
+  requireAuthenticated(request);
+  if (!isReviewer(request)) {
+    throw new HttpsError(
+      "permission-denied",
+      "Marketplace reviewer access is required.",
+    );
+  }
+}
+
+function requireOwner(request) {
+  requireAuthenticated(request);
+  if (!isMarketplaceOwner(request)) {
+    throw new HttpsError(
+      "permission-denied",
+      "Only the Marketplace owner can manage staff.",
+    );
+  }
+}
+
+function cleanString(value, name, minLength, maxLength) {
+  if (typeof value !== "string") {
+    throw new HttpsError("invalid-argument", `${name} is required.`);
+  }
+  const clean = value.trim();
+  if (clean.length < minLength || clean.length > maxLength) {
+    throw new HttpsError(
+      "invalid-argument",
+      `${name} must contain ${minLength}-${maxLength} characters.`,
+    );
+  }
+  return clean;
+}
+
+function optionalString(value, maxLength) {
+  if (value == null) {
+    return "";
+  }
+  if (typeof value !== "string" || value.trim().length > maxLength) {
+    throw new HttpsError("invalid-argument", "Invalid text value.");
+  }
+  return value.trim();
+}
+
+function buildSearchPrefixes(parts) {
+  const words = parts
+    .join(" ")
+    .toLowerCase()
+    .replace(/[^a-z0-9\u0600-\u06ff ]/gu, " ")
+    .split(/\s+/u)
+    .filter((word) => word.length > 0)
+    .slice(0, 30);
+  const prefixes = new Set();
+  for (const word of words) {
+    const maximum = Math.min(word.length, 30);
+    for (let size = 1; size <= maximum; size += 1) {
+      prefixes.add(word.slice(0, size));
+      if (prefixes.size >= 20) {
+        return Array.from(prefixes);
+      }
+    }
+  }
+  return Array.from(prefixes);
+}
+
+function validateListingForPublish(data, uid) {
+  if (!data || data.sellerId !== uid) {
+    throw new HttpsError(
+      "permission-denied",
+      "Only the listing owner can publish it.",
+    );
+  }
+  cleanString(data.title, "Title", 2, 120);
+  cleanString(data.description, "Description", 3, 5000);
+  if (!ALLOWED_CATEGORIES.has(data.category)) {
+    throw new HttpsError("invalid-argument", "Choose a valid category.");
+  }
+  if (!ALLOWED_CONDITIONS.has(data.condition)) {
+    throw new HttpsError("invalid-argument", "Choose a valid condition.");
+  }
+  if (!ALLOWED_PRICE_TYPES.has(data.priceType)) {
+    throw new HttpsError("invalid-argument", "Choose a valid price type.");
+  }
+  if (
+    (data.priceType === "fixed" || data.priceType === "negotiable") &&
+    (typeof data.price !== "number" || data.price <= 0 || data.price > 1e8)
+  ) {
+    throw new HttpsError("invalid-argument", "Enter a valid price.");
+  }
+  if (!Array.isArray(data.media) || data.media.length < 1 ||
+      data.media.length > 5) {
+    throw new HttpsError(
+      "invalid-argument",
+      "A listing needs between one and five media files.",
+    );
+  }
+  for (const item of data.media) {
+    if (!item || !["image", "video"].includes(item.type) ||
+        typeof item.url !== "string" || item.url.length > 2048 ||
+        typeof item.storagePath !== "string" ||
+        !item.storagePath.startsWith(`marketplace/${uid}/`)) {
+      throw new HttpsError("invalid-argument", "Invalid listing media.");
+    }
+  }
+}
+
+async function requireApprovedSeller(uid) {
+  const snapshot = await db.collection(VERIFICATIONS).doc(uid).get();
+  if (!snapshot.exists || snapshot.data()?.status !== "approved") {
+    throw new HttpsError(
+      "failed-precondition",
+      "Your seller verification must be approved before publishing.",
+    );
+  }
+}
+
+async function addAudit({actorUid, action, targetUid, details = {}}) {
+  await db.collection("marketplaceAdminAudit").add({
+    actorUid,
+    action,
+    targetUid,
+    details,
+    createdAt: Timestamp.now(),
+  });
+}
+
+async function addNotification(receiverId, type, message) {
+  const reference = db.collection("notifications").doc();
+  await reference.set({
+    notificationId: reference.id,
+    receiverId,
+    senderId: "system",
+    type,
+    message,
+    postId: null,
+    repostPostId: null,
+    commentId: null,
+    replyId: null,
+    storyId: null,
+    marketplacePath: "/marketplace/verification",
+    isRead: false,
+    createdAt: Timestamp.now(),
+  });
+}
+
+exports.submitSellerVerification = onCall(
+  {region: REGION, timeoutSeconds: 30, memory: "256MiB"},
+  async (request) => {
+    const uid = requireAuthenticated(request);
+    const verificationId = cleanString(
+      request.data?.verificationId,
+      "Verification ID",
+      10,
+      100,
+    );
+    const fullName = cleanString(
+      request.data?.fullName,
+      "Full name",
+      2,
+      100,
+    );
+    const studentIdNumber = cleanString(
+      request.data?.studentIdNumber,
+      "Student ID number",
+      3,
+      40,
+    );
+    const studentIdStoragePath = cleanString(
+      request.data?.studentIdStoragePath,
+      "Student ID document path",
+      20,
+      300,
+    );
+    const expectedPrefix =
+      `seller_verifications/${uid}/${verificationId}/student_id.`;
+    if (!studentIdStoragePath.startsWith(expectedPrefix)) {
+      throw new HttpsError(
+        "invalid-argument",
+        "The private document path does not belong to this application.",
+      );
+    }
+    try {
+      await storage.bucket().file(studentIdStoragePath).getMetadata();
+    } catch (_) {
+      throw new HttpsError(
+        "failed-precondition",
+        "Upload the student ID image before submitting.",
+      );
+    }
+
+    const reference = db.collection(VERIFICATIONS).doc(uid);
+    await db.runTransaction(async (transaction) => {
+      const existing = await transaction.get(reference);
+      const currentStatus = existing.data()?.status || "notSubmitted";
+      if (["pending", "approved", "suspended"].includes(currentStatus)) {
+        throw new HttpsError(
+          "failed-precondition",
+          "This verification cannot be submitted again in its current state.",
+        );
+      }
+      const now = Timestamp.now();
+      transaction.set(reference, {
+        uid,
+        verificationId,
+        fullName,
+        studentIdNumber,
+        studentIdStoragePath,
+        status: "pending",
+        rejectionReason: "",
+        suspensionReason: "",
+        submittedAt: now,
+        updatedAt: now,
+        reviewedAt: null,
+        reviewedBy: "",
+      });
+      transaction.set(reference.collection("history").doc(), {
+        uid,
+        verificationId,
+        action: "submitted",
+        actorUid: uid,
+        reason: "",
+        createdAt: now,
+      });
+    });
+    return {status: "pending"};
+  },
+);
+
+exports.reviewSellerVerification = onCall(
+  {region: REGION, timeoutSeconds: 60, memory: "256MiB"},
+  async (request) => {
+    requireReviewer(request);
+    const reviewerUid = request.auth.uid;
+    const applicantUid = cleanString(
+      request.data?.applicantUid,
+      "Applicant",
+      10,
+      128,
+    );
+    const decision = cleanString(
+      request.data?.decision,
+      "Decision",
+      6,
+      20,
+    );
+    if (!["approved", "rejected", "suspended"].includes(decision)) {
+      throw new HttpsError("invalid-argument", "Invalid review decision.");
+    }
+    const reason = optionalString(request.data?.reason, 500);
+    if (["rejected", "suspended"].includes(decision) && reason.length < 3) {
+      throw new HttpsError(
+        "invalid-argument",
+        "A clear reason is required for this decision.",
+      );
+    }
+
+    const reference = db.collection(VERIFICATIONS).doc(applicantUid);
+    await db.runTransaction(async (transaction) => {
+      const snapshot = await transaction.get(reference);
+      if (!snapshot.exists) {
+        throw new HttpsError("not-found", "Verification application not found.");
+      }
+      const current = snapshot.data()?.status;
+      const allowed = decision === "suspended" ?
+        current === "approved" : current === "pending";
+      if (!allowed) {
+        throw new HttpsError(
+          "failed-precondition",
+          `Cannot change ${current || "unknown"} to ${decision}.`,
+        );
+      }
+      const now = Timestamp.now();
+      transaction.update(reference, {
+        status: decision,
+        rejectionReason: decision === "rejected" ? reason : "",
+        suspensionReason: decision === "suspended" ? reason : "",
+        reviewedAt: now,
+        reviewedBy: reviewerUid,
+        updatedAt: now,
+      });
+      transaction.set(reference.collection("history").doc(), {
+        uid: applicantUid,
+        verificationId: snapshot.data()?.verificationId || "",
+        action: decision,
+        actorUid: reviewerUid,
+        reason,
+        createdAt: now,
+      });
+      transaction.set(
+        db.collection("marketplaceSellerStats").doc(applicantUid),
+        {
+          sellerId: applicantUid,
+          verificationStatus: decision,
+          verifiedSeller: decision === "approved",
+          updatedAt: now,
+        },
+        {merge: true},
+      );
+    });
+
+    if (decision === "suspended") {
+      const activeListings = await db.collection(LISTINGS)
+        .where("sellerId", "==", applicantUid)
+        .where("status", "==", "available")
+        .get();
+      const chunks = [];
+      for (let start = 0; start < activeListings.docs.length; start += 400) {
+        chunks.push(activeListings.docs.slice(start, start + 400));
+      }
+      for (const chunk of chunks) {
+        const batch = db.batch();
+        for (const listing of chunk) {
+          batch.update(listing.ref, {
+            status: "unavailable",
+            publicVisible: false,
+            unavailableAt: Timestamp.now(),
+            updatedAt: Timestamp.now(),
+          });
+        }
+        await batch.commit();
+      }
+    }
+
+    const messages = {
+      approved: "Your NUB Marketplace seller verification was approved.",
+      rejected: "Your seller verification needs correction. Open it for details.",
+      suspended: "Your NUB Marketplace selling access was suspended.",
+    };
+    await Promise.all([
+      addNotification(
+        applicantUid,
+        `sellerVerification${decision[0].toUpperCase()}${decision.slice(1)}`,
+        messages[decision],
+      ),
+      addAudit({
+        actorUid: reviewerUid,
+        action: `verification_${decision}`,
+        targetUid: applicantUid,
+        details: {reason},
+      }),
+    ]);
+    return {status: decision};
+  },
+);
+
+exports.publishMarketplaceListing = onCall(
+  {region: REGION, timeoutSeconds: 30, memory: "256MiB"},
+  async (request) => {
+    const uid = requireAuthenticated(request);
+    const listingId = cleanString(
+      request.data?.listingId,
+      "Listing ID",
+      10,
+      100,
+    );
+    await requireApprovedSeller(uid);
+    const reference = db.collection(LISTINGS).doc(listingId);
+    await db.runTransaction(async (transaction) => {
+      const snapshot = await transaction.get(reference);
+      if (!snapshot.exists) {
+        throw new HttpsError("not-found", "Listing not found.");
+      }
+      const data = snapshot.data();
+      validateListingForPublish(data, uid);
+      if (!["draft", "unavailable", "archived"].includes(data.status)) {
+        throw new HttpsError(
+          "failed-precondition",
+          "This listing cannot be published from its current state.",
+        );
+      }
+      const now = Timestamp.now();
+      transaction.update(reference, {
+        status: "available",
+        publicVisible: true,
+        searchPrefixes: buildSearchPrefixes([
+          data.title,
+          data.description,
+          data.category,
+          data.sellerName || "",
+        ]),
+        publishedAt: data.publishedAt || now,
+        unavailableAt: null,
+        archivedAt: null,
+        updatedAt: now,
+      });
+    });
+    return {listingId, status: "available"};
+  },
+);
+
+exports.updateMarketplaceListingStatus = onCall(
+  {region: REGION, timeoutSeconds: 30, memory: "256MiB"},
+  async (request) => {
+    const uid = requireAuthenticated(request);
+    const listingId = cleanString(
+      request.data?.listingId,
+      "Listing ID",
+      10,
+      100,
+    );
+    const targetStatus = cleanString(
+      request.data?.status,
+      "Status",
+      4,
+      20,
+    );
+    if (!["available", "sold", "unavailable", "archived"].includes(
+      targetStatus,
+    )) {
+      throw new HttpsError("invalid-argument", "Invalid listing status.");
+    }
+    if (targetStatus === "available") {
+      await requireApprovedSeller(uid);
+    }
+    const reference = db.collection(LISTINGS).doc(listingId);
+    await db.runTransaction(async (transaction) => {
+      const snapshot = await transaction.get(reference);
+      if (!snapshot.exists || snapshot.data()?.sellerId !== uid) {
+        throw new HttpsError(
+          "permission-denied",
+          "Only the listing owner can change availability.",
+        );
+      }
+      const data = snapshot.data();
+      const allowedTransitions = {
+        draft: new Set(["archived"]),
+        available: new Set(["sold", "unavailable", "archived"]),
+        sold: new Set(["archived"]),
+        unavailable: new Set(["available", "archived"]),
+        archived: new Set(["available"]),
+      };
+      if (!allowedTransitions[data.status]?.has(targetStatus)) {
+        throw new HttpsError(
+          "failed-precondition",
+          `Cannot change ${data.status || "unknown"} to ${targetStatus}.`,
+        );
+      }
+      if (targetStatus === "available") {
+        validateListingForPublish(data, uid);
+      }
+      const now = Timestamp.now();
+      transaction.update(reference, {
+        status: targetStatus,
+        publicVisible: targetStatus === "available",
+        soldAt: targetStatus === "sold" ? now : null,
+        unavailableAt: targetStatus === "unavailable" ? now : null,
+        archivedAt: targetStatus === "archived" ? now : null,
+        updatedAt: now,
+      });
+    });
+    return {listingId, status: targetStatus};
+  },
+);
+
+exports.getMarketplaceSellerContact = onCall(
+  {region: REGION, timeoutSeconds: 15, memory: "256MiB"},
+  async (request) => {
+    requireAuthenticated(request);
+    const listingId = cleanString(
+      request.data?.listingId,
+      "Listing ID",
+      10,
+      100,
+    );
+    const listing = await db.collection(LISTINGS).doc(listingId).get();
+    const data = listing.data();
+    if (!listing.exists || data?.status !== "available" ||
+        data?.publicVisible !== true ||
+        data?.contactPreferences?.allowCalls !== true) {
+      throw new HttpsError(
+        "failed-precondition",
+        "Phone contact is not available for this listing.",
+      );
+    }
+    const contact = await db.collection("userPrivate")
+      .doc(data.sellerId)
+      .get();
+    const phone = contact.data()?.phoneE164;
+    if (contact.data()?.allowMarketplaceCalls !== true ||
+        typeof phone !== "string" ||
+        !/^\+201[0125]\d{8}$/u.test(phone)) {
+      throw new HttpsError(
+        "failed-precondition",
+        "This seller has not enabled phone contact.",
+      );
+    }
+    return {phoneE164: phone};
+  },
+);
+
+exports.findMarketplaceUserByEmail = onCall(
+  {region: REGION, timeoutSeconds: 15, memory: "256MiB"},
+  async (request) => {
+    requireOwner(request);
+    const email = cleanString(request.data?.email, "Email", 5, 254)
+      .toLowerCase();
+    let record;
+    try {
+      record = await auth.getUserByEmail(email);
+    } catch (_) {
+      throw new HttpsError("not-found", "No Nubify account uses that email.");
+    }
+    const profile = await db.collection("users").doc(record.uid).get();
+    const claims = record.customClaims || {};
+    return {
+      uid: record.uid,
+      email: record.email || "",
+      fullName: String(profile.data()?.fullName || "").slice(0, 100),
+      username: String(profile.data()?.username || "").slice(0, 50),
+      photoUrl: String(profile.data()?.photoUrl || "").slice(0, 2048),
+      roles: {
+        marketplaceOwner: claims.marketplaceOwner === true,
+        admin: claims.admin === true,
+        moderator: claims.moderator === true,
+        marketplaceReviewer: claims.marketplaceReviewer === true,
+      },
+    };
+  },
+);
+
+exports.setMarketplaceStaffRole = onCall(
+  {region: REGION, timeoutSeconds: 15, memory: "256MiB"},
+  async (request) => {
+    requireOwner(request);
+    const uid = cleanString(request.data?.uid, "User", 10, 128);
+    const role = cleanString(request.data?.role, "Role", 5, 30);
+    const enabled = request.data?.enabled;
+    if (!["admin", "moderator", "marketplaceReviewer"].includes(role) ||
+        typeof enabled !== "boolean") {
+      throw new HttpsError("invalid-argument", "Invalid staff role change.");
+    }
+    const user = await auth.getUser(uid);
+    const claims = {...(user.customClaims || {})};
+    claims[role] = enabled;
+    await auth.setCustomUserClaims(uid, claims);
+    await addAudit({
+      actorUid: request.auth.uid,
+      action: enabled ? "staff_role_added" : "staff_role_removed",
+      targetUid: uid,
+      details: {role},
+    });
+    return {uid, role, enabled};
+  },
+);
+
+exports.transferMarketplaceOwnership = onCall(
+  {region: REGION, timeoutSeconds: 30, memory: "256MiB"},
+  async (request) => {
+    requireOwner(request);
+    const currentOwnerUid = request.auth.uid;
+    const newOwnerUid = cleanString(
+      request.data?.newOwnerUid,
+      "New owner",
+      10,
+      128,
+    );
+    if (newOwnerUid === currentOwnerUid) {
+      throw new HttpsError(
+        "invalid-argument",
+        "This account is already the Marketplace owner.",
+      );
+    }
+    const [currentOwner, newOwner] = await Promise.all([
+      auth.getUser(currentOwnerUid),
+      auth.getUser(newOwnerUid),
+    ]);
+    const newClaims = {...(newOwner.customClaims || {})};
+    newClaims.marketplaceOwner = true;
+    newClaims.admin = true;
+    newClaims.marketplaceReviewer = true;
+    await auth.setCustomUserClaims(newOwnerUid, newClaims);
+
+    const oldClaims = {...(currentOwner.customClaims || {})};
+    oldClaims.marketplaceOwner = false;
+    await auth.setCustomUserClaims(currentOwnerUid, oldClaims);
+
+    await db.collection("marketplaceSystem").doc("ownership").set({
+      ownerUid: newOwnerUid,
+      previousOwnerUid: currentOwnerUid,
+      transferredAt: Timestamp.now(),
+    });
+    await addAudit({
+      actorUid: currentOwnerUid,
+      action: "ownership_transferred",
+      targetUid: newOwnerUid,
+    });
+    return {ownerUid: newOwnerUid};
+  },
+);
+
+async function updateSellerStats(sellerId) {
+  if (!sellerId) {
+    return;
+  }
+  const [countSnapshot, verification, profile] = await Promise.all([
+    db.collection(LISTINGS)
+      .where("sellerId", "==", sellerId)
+      .where("status", "==", "available")
+      .where("publicVisible", "==", true)
+      .count()
+      .get(),
+    db.collection(VERIFICATIONS).doc(sellerId).get(),
+    db.collection("users").doc(sellerId).get(),
+  ]);
+  const status = verification.data()?.status || "notSubmitted";
+  await db.collection("marketplaceSellerStats").doc(sellerId).set({
+    sellerId,
+    sellerName: String(profile.data()?.fullName || "").slice(0, 100),
+    sellerPhotoUrl: String(profile.data()?.photoUrl || "").slice(0, 2048),
+    availableListingCount: countSnapshot.data().count,
+    verificationStatus: status,
+    verifiedSeller: status === "approved",
+    active: status === "approved" && countSnapshot.data().count > 0,
+    updatedAt: Timestamp.now(),
+  }, {merge: true});
+}
+
+async function updateCategoryStats(category) {
+  if (!category || !ALLOWED_CATEGORIES.has(category)) {
+    return;
+  }
+  const countSnapshot = await db.collection(LISTINGS)
+    .where("category", "==", category)
+    .where("status", "==", "available")
+    .where("publicVisible", "==", true)
+    .count()
+    .get();
+  await db.collection("marketplaceCategoryStats").doc(category).set({
+    category,
+    availableListingCount: countSnapshot.data().count,
+    updatedAt: Timestamp.now(),
+  });
+}
+
+exports.syncMarketplaceDiscoveryStats = onDocumentWritten(
+  {
+    document: `${LISTINGS}/{listingId}`,
+    region: REGION,
+    timeoutSeconds: 60,
+    memory: "256MiB",
+  },
+  async (event) => {
+    const before = event.data?.before?.data() || {};
+    const after = event.data?.after?.data() || {};
+    const sellerIds = new Set([before.sellerId, after.sellerId].filter(Boolean));
+    const categories = new Set([before.category, after.category].filter(Boolean));
+    await Promise.all([
+      ...Array.from(sellerIds).map(updateSellerStats),
+      ...Array.from(categories).map(updateCategoryStats),
+    ]);
+  },
+);
+

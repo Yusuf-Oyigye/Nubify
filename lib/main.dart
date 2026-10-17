@@ -16,6 +16,12 @@ import 'responsive/web_screen_layout.dart';
 import 'screens/comment_screen.dart';
 import 'screens/group_chat_screen.dart';
 import 'screens/marketplace_screen.dart';
+import 'screens/create_marketplace_listing_screen.dart';
+import 'screens/marketplace_listing_details_screen.dart';
+import 'screens/my_marketplace_listings_screen.dart';
+import 'screens/saved_marketplace_listings_screen.dart';
+import 'screens/seller_verification_admin_screen.dart';
+import 'screens/seller_verification_screen.dart';
 import 'screens/story_viewer_screen.dart';
 import 'screens/hidden_posts_screen.dart';
 import 'screens/post_engagements_screen.dart';
@@ -42,25 +48,18 @@ Future<void> main() async {
   if (kIsWeb) {
     await Firebase.initializeApp(
       options: const FirebaseOptions(
-        apiKey:
-        'AIzaSyDl7g6nF94iNevELPwv6b7TzMAFLyCin7E',
-        projectId:
-        'nubify-af91b',
-        storageBucket:
-        'nubify-af91b.firebasestorage.app',
-        messagingSenderId:
-        '69403007783',
-        appId:
-        '1:69403007783:web:a13f93c340cb9d2423e702',
+        apiKey: 'AIzaSyDl7g6nF94iNevELPwv6b7TzMAFLyCin7E',
+        projectId: 'nubify-af91b',
+        storageBucket: 'nubify-af91b.firebasestorage.app',
+        messagingSenderId: '69403007783',
+        appId: '1:69403007783:web:a13f93c340cb9d2423e702',
       ),
     );
   } else {
     await Firebase.initializeApp();
   }
 
-  runApp(
-    const MyApp(),
-  );
+  runApp(const MyApp());
 }
 
 //===================================================
@@ -68,175 +67,165 @@ Future<void> main() async {
 //===================================================
 
 class MyApp extends StatelessWidget {
-  const MyApp({
-    super.key,
-  });
+  const MyApp({super.key});
 
   //===================================================
-// HOME
-//===================================================
+  // HOME
+  //===================================================
 
   Widget _homeLayout() {
     return const IncomingCallListener(
-        child:
-        NubifyDeepLinkGate(
-          child:
-          ResponsiveLayout(
-        mobileScreenLayout:
-        MobileScreenLayout(),
+      child: NubifyDeepLinkGate(
+        child: ResponsiveLayout(
+          mobileScreenLayout: MobileScreenLayout(),
 
-        webScreenLayout:
-        WebScreenLayout(),
-      ),
+          webScreenLayout: WebScreenLayout(),
         ),
+      ),
     );
   }
   //===================================================
   // ROUTES
   //===================================================
 
-  Route<dynamic>? _onGenerateRoute(
-      RouteSettings settings,
-      ) {
+  Route<dynamic>? _onGenerateRoute(RouteSettings settings) {
     //===================================================
     // PROFILE
     //===================================================
 
-    if (settings.name ==
-        '/profile') {
-      final String? uid =
-      settings.arguments is String
-          ? (settings.arguments as String)
-          .trim()
+    if (settings.name == '/profile') {
+      final String? uid = settings.arguments is String
+          ? (settings.arguments as String).trim()
           : null;
 
       return MaterialPageRoute<void>(
-        settings:
-        settings,
-        builder:
-            (_) => ProfileScreen(
-          userId:
-          uid,
-        ),
+        settings: settings,
+        builder: (_) => ProfileScreen(userId: uid),
       );
     }
-//===================================================
-// POST LINK
-//===================================================
+    //===================================================
+    // POST LINK
+    //===================================================
 
-    if (settings.name ==
-        '/post') {
-      final String postId =
-          settings.arguments
-              ?.toString()
-              .trim() ??
-              '';
+    if (settings.name == '/post') {
+      final String postId = settings.arguments?.toString().trim() ?? '';
 
       return MaterialPageRoute<void>(
-        settings:
-        settings,
+        settings: settings,
 
-        builder:
-            (_) =>
-        postId.isEmpty
+        builder: (_) => postId.isEmpty
             ? const _InvalidRouteScreen(
-          title:
-          'Post',
+                title: 'Post',
 
-          message:
-          'The post could not be found.',
-        )
-            : CommentsScreen(
-          postId:
-          postId,
-        ),
+                message: 'The post could not be found.',
+              )
+            : CommentsScreen(postId: postId),
       );
     }
 
-//===================================================
-// STORY LINK
-//===================================================
+    //===================================================
+    // STORY LINK
+    //===================================================
 
-    if (settings.name ==
-        '/story') {
-      final String storyId =
-          settings.arguments
-              ?.toString()
-              .trim() ??
-              '';
+    if (settings.name == '/story') {
+      final String storyId = settings.arguments?.toString().trim() ?? '';
 
       return MaterialPageRoute<void>(
-        settings:
-        settings,
+        settings: settings,
 
-        builder:
-            (_) =>
-            _StoryLinkLoaderScreen(
-              storyId:
-              storyId,
-            ),
+        builder: (_) => _StoryLinkLoaderScreen(storyId: storyId),
       );
     }
 
-//===================================================
-// GROUP LINK
-//===================================================
+    //===================================================
+    // GROUP LINK
+    //===================================================
 
-    if (settings.name ==
-        '/group') {
-      final String groupId =
-          settings.arguments
-              ?.toString()
-              .trim() ??
-              '';
+    if (settings.name == '/group') {
+      final String groupId = settings.arguments?.toString().trim() ?? '';
 
       return MaterialPageRoute<void>(
-        settings:
-        settings,
+        settings: settings,
 
-        builder:
-            (_) =>
-        groupId.isEmpty
+        builder: (_) => groupId.isEmpty
             ? const _InvalidRouteScreen(
-          title:
-          'Group',
+                title: 'Group',
 
-          message:
-          'The group could not be found.',
-        )
-            : GroupChatScreen(
-          groupId:
-          groupId,
-        ),
+                message: 'The group could not be found.',
+              )
+            : GroupChatScreen(groupId: groupId),
       );
     }
 
-//===================================================
-// MARKETPLACE LINK
-//===================================================
+    //===================================================
+    // MARKETPLACE LINK
+    //===================================================
 
-    if (settings.name ==
-        '/marketplace') {
+    if (settings.name == '/marketplace') {
+      final String initialProductId =
+          settings.arguments?.toString().trim() ?? '';
       return MaterialPageRoute<void>(
-        settings:
-        settings,
+        settings: settings,
 
-        builder:
-            (_) =>
-        const MarketplaceScreen(),
+        builder: (_) => MarketplaceScreen(initialProductId: initialProductId),
+      );
+    }
+
+    if (settings.name == '/marketplace/listing') {
+      final String listingId = settings.arguments?.toString().trim() ?? '';
+      return MaterialPageRoute<void>(
+        settings: settings,
+        builder: (_) => listingId.isEmpty
+            ? const _InvalidRouteScreen(
+                title: 'Marketplace Listing',
+                message: 'The listing could not be found.',
+              )
+            : MarketplaceListingDetailsScreen(listingId: listingId),
+      );
+    }
+
+    if (settings.name == '/marketplace/create') {
+      return MaterialPageRoute<void>(
+        settings: settings,
+        builder: (_) => const CreateMarketplaceListingScreen(),
+      );
+    }
+
+    if (settings.name == '/marketplace/verification') {
+      return MaterialPageRoute<void>(
+        settings: settings,
+        builder: (_) => const SellerVerificationScreen(),
+      );
+    }
+
+    if (settings.name == '/marketplace/admin') {
+      return MaterialPageRoute<void>(
+        settings: settings,
+        builder: (_) => const SellerVerificationAdminScreen(),
+      );
+    }
+
+    if (settings.name == '/marketplace/my-listings') {
+      return MaterialPageRoute<void>(
+        settings: settings,
+        builder: (_) => const MyMarketplaceListingsScreen(),
+      );
+    }
+
+    if (settings.name == '/marketplace/saved') {
+      return MaterialPageRoute<void>(
+        settings: settings,
+        builder: (_) => const SavedMarketplaceListingsScreen(),
       );
     }
     //===================================================
     // HOME
     //===================================================
 
-    if (settings.name ==
-        '/home') {
+    if (settings.name == '/home') {
       return MaterialPageRoute<void>(
-        settings:
-        settings,
-        builder:
-            (_) => _homeLayout(),
+        settings: settings,
+        builder: (_) => _homeLayout(),
       );
     }
 
@@ -244,22 +233,14 @@ class MyApp extends StatelessWidget {
     // HIDDEN POSTS
     //===================================================
 
-    if (settings.name ==
-        '/hidden-posts') {
-      final String? uid =
-      settings.arguments is String
-          ? (settings.arguments as String)
-          .trim()
+    if (settings.name == '/hidden-posts') {
+      final String? uid = settings.arguments is String
+          ? (settings.arguments as String).trim()
           : null;
 
       return MaterialPageRoute<void>(
-        settings:
-        settings,
-        builder:
-            (_) => HiddenPostsScreen(
-          userId:
-          uid,
-        ),
+        settings: settings,
+        builder: (_) => HiddenPostsScreen(userId: uid),
       );
     }
 
@@ -267,8 +248,7 @@ class MyApp extends StatelessWidget {
     // POST ENGAGEMENTS
     //===================================================
 
-    if (settings.name ==
-        '/post-engagements') {
+    if (settings.name == '/post-engagements') {
       String postId = '';
 
       int initialTab = 0;
@@ -277,45 +257,28 @@ class MyApp extends StatelessWidget {
       // STRING ARGUMENT
       //===================================================
 
-      if (settings.arguments
-      is String) {
-        postId =
-            (settings.arguments as String)
-                .trim();
+      if (settings.arguments is String) {
+        postId = (settings.arguments as String).trim();
       }
 
       //===================================================
       // MAP ARGUMENT
       //===================================================
 
-      if (settings.arguments
-      is Map) {
-        final Map<dynamic, dynamic>
-        arguments =
-        settings.arguments
-        as Map<dynamic, dynamic>;
+      if (settings.arguments is Map) {
+        final Map<dynamic, dynamic> arguments =
+            settings.arguments as Map<dynamic, dynamic>;
 
-        postId =
-            (arguments['postId'] ?? '')
-                .toString()
-                .trim();
+        postId = (arguments['postId'] ?? '').toString().trim();
 
-        final dynamic rawTab =
-        arguments['initialTab'];
+        final dynamic rawTab = arguments['initialTab'];
 
         if (rawTab is int) {
-          initialTab =
-              rawTab;
+          initialTab = rawTab;
         } else if (rawTab is num) {
-          initialTab =
-              rawTab.toInt();
+          initialTab = rawTab.toInt();
         } else {
-          initialTab =
-              int.tryParse(
-                rawTab?.toString() ??
-                    '',
-              ) ??
-                  0;
+          initialTab = int.tryParse(rawTab?.toString() ?? '') ?? 0;
         }
       }
 
@@ -337,29 +300,18 @@ class MyApp extends StatelessWidget {
 
       if (postId.isEmpty) {
         return MaterialPageRoute<void>(
-          settings:
-          settings,
-          builder:
-              (_) =>
-          const _InvalidRouteScreen(
-            title:
-            'Post Engagements',
-            message:
-            'The post could not be found.',
+          settings: settings,
+          builder: (_) => const _InvalidRouteScreen(
+            title: 'Post Engagements',
+            message: 'The post could not be found.',
           ),
         );
       }
 
       return MaterialPageRoute<void>(
-        settings:
-        settings,
-        builder:
-            (_) => PostEngagementsScreen(
-          postId:
-          postId,
-          initialTab:
-          initialTab,
-        ),
+        settings: settings,
+        builder: (_) =>
+            PostEngagementsScreen(postId: postId, initialTab: initialTab),
       );
     }
 
@@ -371,68 +323,39 @@ class MyApp extends StatelessWidget {
   //===================================================
 
   @override
-  Widget build(
-      BuildContext context,
-      ) {
+  Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider<
-            UserProvider>(
-          create:
-              (_) => UserProvider(),
-        ),
+        ChangeNotifierProvider<UserProvider>(create: (_) => UserProvider()),
       ],
-      child:
-      MaterialApp(
-        debugShowCheckedModeBanner:
-        false,
-        title:
-        'Nubify',
-        theme:
-        ThemeData.dark().copyWith(
-          scaffoldBackgroundColor:
-          mobileBackgroundColor,
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: 'Nubify',
+        theme: ThemeData.dark().copyWith(
+          scaffoldBackgroundColor: mobileBackgroundColor,
         ),
-        onGenerateRoute:
-        _onGenerateRoute,
-        navigatorObservers:
-        <NavigatorObserver>[
-          nubifyMediaRouteObserver,
-        ],
-        home:
-        StreamBuilder<User?>(
-          stream:
-          FirebaseAuth.instance
-              .authStateChanges(),
-          builder: (
-              BuildContext context,
-              AsyncSnapshot<User?> snapshot,
-              ) {
+        onGenerateRoute: _onGenerateRoute,
+        navigatorObservers: <NavigatorObserver>[nubifyMediaRouteObserver],
+        home: StreamBuilder<User?>(
+          stream: FirebaseAuth.instance.authStateChanges(),
+          builder: (BuildContext context, AsyncSnapshot<User?> snapshot) {
             //===================================================
             // AUTH ACTIVE
             //===================================================
 
-            if (snapshot.connectionState ==
-                ConnectionState.active) {
+            if (snapshot.connectionState == ConnectionState.active) {
               if (snapshot.hasData) {
                 return _homeLayout();
               }
 
               if (snapshot.hasError) {
                 return Scaffold(
-                  body:
-                  Center(
-                    child:
-                    Padding(
-                      padding:
-                      const EdgeInsets.all(
-                        20,
-                      ),
-                      child:
-                      Text(
+                  body: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Text(
                         '${snapshot.error}',
-                        textAlign:
-                        TextAlign.center,
+                        textAlign: TextAlign.center,
                       ),
                     ),
                   ),
@@ -446,16 +369,10 @@ class MyApp extends StatelessWidget {
             // WAITING
             //===================================================
 
-            if (snapshot.connectionState ==
-                ConnectionState.waiting) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
               return const Scaffold(
-                body:
-                Center(
-                  child:
-                  CircularProgressIndicator(
-                    color:
-                    primaryColor,
-                  ),
+                body: Center(
+                  child: CircularProgressIndicator(color: primaryColor),
                 ),
               );
             }
@@ -472,109 +389,57 @@ class MyApp extends StatelessWidget {
 // INVALID ROUTE SCREEN
 //===================================================
 
-class _InvalidRouteScreen
-    extends StatelessWidget {
-  const _InvalidRouteScreen({
-    required this.title,
-    required this.message,
-  });
+class _InvalidRouteScreen extends StatelessWidget {
+  const _InvalidRouteScreen({required this.title, required this.message});
 
   final String title;
 
   final String message;
 
   @override
-  Widget build(
-      BuildContext context,
-      ) {
+  Widget build(BuildContext context) {
     return Scaffold(
-      appBar:
-      AppBar(
-        title:
-        Text(
-          title,
-        ),
-      ),
-      body:
-      Center(
-        child:
-        Padding(
-          padding:
-          const EdgeInsets.all(
-            24,
-          ),
-          child:
-          Column(
-            mainAxisSize:
-            MainAxisSize.min,
-            children:
-            <Widget>[
+      appBar: AppBar(title: Text(title)),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
               const Icon(
-                Icons
-                    .error_outline_rounded,
-                size:
-                54,
-                color:
-                Color(
-                  0xFF29B6F6,
-                ),
+                Icons.error_outline_rounded,
+                size: 54,
+                color: Color(0xFF29B6F6),
               ),
 
-              const SizedBox(
-                height:
-                14,
-              ),
+              const SizedBox(height: 14),
 
               Text(
                 message,
-                textAlign:
-                TextAlign.center,
-                style:
-                const TextStyle(
-                  fontSize:
-                  16,
-                  fontWeight:
-                  FontWeight.w600,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
 
-              const SizedBox(
-                height:
-                18,
-              ),
+              const SizedBox(height: 18),
 
               FilledButton.icon(
-                onPressed:
-                    () {
-                  if (Navigator.of(
-                    context,
-                  ).canPop()) {
-                    Navigator.of(
-                      context,
-                    ).pop();
+                onPressed: () {
+                  if (Navigator.of(context).canPop()) {
+                    Navigator.of(context).pop();
 
                     return;
                   }
 
-                  Navigator.of(
-                    context,
-                  ).pushNamedAndRemoveUntil(
+                  Navigator.of(context).pushNamedAndRemoveUntil(
                     '/home',
-                        (
-                        Route<dynamic> route,
-                        ) =>
-                    false,
+                    (Route<dynamic> route) => false,
                   );
                 },
-                icon:
-                const Icon(
-                  Icons
-                      .arrow_back_rounded,
-                ),
-                label:
-                const Text(
-                  'Go Back',
-                ),
+                icon: const Icon(Icons.arrow_back_rounded),
+                label: const Text('Go Back'),
               ),
             ],
           ),
@@ -587,105 +452,68 @@ class _InvalidRouteScreen
 // STORY LINK LOADER
 //===================================================
 
-class _StoryLinkLoaderScreen
-    extends StatelessWidget {
-  const _StoryLinkLoaderScreen({
-    required this.storyId,
-  });
+class _StoryLinkLoaderScreen extends StatelessWidget {
+  const _StoryLinkLoaderScreen({required this.storyId});
 
   final String storyId;
 
   @override
-  Widget build(
-      BuildContext context,
-      ) {
+  Widget build(BuildContext context) {
     if (storyId.trim().isEmpty) {
       return const _InvalidRouteScreen(
-        title:
-        'Story',
+        title: 'Story',
 
-        message:
-        'The Story could not be found.',
+        message: 'The Story could not be found.',
       );
     }
 
-    return FutureBuilder<
-        DocumentSnapshot<
-            Map<String, dynamic>>>(
-      future:
-      FirebaseFirestore
-          .instance
-          .collection(
-        'stories',
-      )
-          .doc(
-        storyId,
-      )
+    return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      future: FirebaseFirestore.instance
+          .collection('stories')
+          .doc(storyId)
           .get(),
 
       builder:
           (
-          BuildContext context,
-          AsyncSnapshot<
-              DocumentSnapshot<
-                  Map<String, dynamic>>>
-          snapshot,
+            BuildContext context,
+            AsyncSnapshot<DocumentSnapshot<Map<String, dynamic>>> snapshot,
           ) {
-        if (snapshot.connectionState ==
-            ConnectionState.waiting) {
-          return const Scaffold(
-            backgroundColor:
-            Colors.black,
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Scaffold(
+                backgroundColor: Colors.black,
 
-            body:
-            Center(
-              child:
-              CircularProgressIndicator(
-                color:
-                Color(
-                  0xFF29B6F6,
+                body: Center(
+                  child: CircularProgressIndicator(color: Color(0xFF29B6F6)),
                 ),
-              ),
-            ),
-          );
-        }
+              );
+            }
 
-        if (!snapshot.hasData ||
-            !snapshot.data!.exists) {
-          return const _InvalidRouteScreen(
-            title:
-            'Story',
+            if (!snapshot.hasData || !snapshot.data!.exists) {
+              return const _InvalidRouteScreen(
+                title: 'Story',
 
-            message:
-            'This Story is no longer available.',
-          );
-        }
+                message: 'This Story is no longer available.',
+              );
+            }
 
-        try {
-          final NubifyStory story =
-          NubifyStory.fromFirestore(
-            snapshot.data!,
-          );
+            try {
+              final NubifyStory story = NubifyStory.fromFirestore(
+                snapshot.data!,
+              );
 
-          return StoryViewerScreen(
-            stories:
-            <NubifyStory>[
-              story,
-            ],
+              return StoryViewerScreen(
+                stories: <NubifyStory>[story],
 
-            allowExpiredStories:
-            true,
-          );
-        } catch (_) {
-          return const _InvalidRouteScreen(
-            title:
-            'Story',
+                allowExpiredStories: true,
+              );
+            } catch (_) {
+              return const _InvalidRouteScreen(
+                title: 'Story',
 
-            message:
-            'Unable to open this Story.',
-          );
-        }
-      },
+                message: 'Unable to open this Story.',
+              );
+            }
+          },
     );
   }
 }

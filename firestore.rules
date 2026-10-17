@@ -1,5 +1,79 @@
 rules_version = '2';
 
+// ===============================================================
+// Assumed Marketplace Data Model (prototype, 2026-10-17)
+// ===============================================================
+//
+// This section documents only the new Marketplace collections. The legacy
+// Nubify collections below retain their existing rules for compatibility.
+//
+// marketplaceProducts/{listingId}
+//   listingId: string (required, immutable, equals document id)
+//   sellerId: string (required, immutable, authenticated owner)
+//   sellerName: string (required, 1-120 characters when published)
+//   sellerPhotoUrl: string (required, empty or HTTPS URL, max 2048)
+//   title: string (required, max 120; non-empty when published)
+//   description: string (required, max 5000)
+//   category: string (required; one of the twelve stable category ids)
+//   condition: string (required; new, used, or service when published)
+//   priceType: string (required; fixed, negotiable, free, or contact)
+//   price: number (required, 0-100,000,000 EGP)
+//   currency: string (required, EGP)
+//   media: list (required, max 5 strictly validated media maps)
+//   mediaCount: integer (required, exactly media.size())
+//   coverMediaIndex: integer (required, -1 only when media is empty)
+//   thumbnailUrl: string (required, empty or HTTPS URL, max 2048)
+//   status: string (required; draft, available, sold, unavailable, archived)
+//   publicVisible: bool (required; true only for available listings)
+//   contactPreferences: map (required; allowMessages/allowCalls booleans)
+//   searchPrefixes: list (required, max 20 strings, each max 64)
+//   createdAt/updatedAt: timestamp (required; createdAt immutable)
+//   publishedAt/soldAt/unavailableAt/archivedAt: timestamp or null (required)
+//
+// sellerVerifications/{uid}
+//   uid: string (required, immutable, equals document id)
+//   verificationId: string (required, max 128)
+//   fullName: string (required, 2-100)
+//   studentIdNumber: string (required, 3-40; format deliberately not invented)
+//   studentIdStoragePath: string (required, scoped to uid/verification id)
+//   status: string (required; notSubmitted, pending, approved, rejected, suspended)
+//   submittedAt/updatedAt: timestamp (required)
+//   reviewedAt: timestamp or null (required)
+//   reviewedBy/rejectionReason/suspensionReason: string (required, bounded)
+//
+// sellerVerifications/{uid}/history/{eventId}
+//   uid, verificationId, action, actorUid, reason, createdAt
+//   (all required and strictly bounded)
+//
+// marketplaceSellerStats/{uid}
+//   sellerId, sellerName, sellerPhotoUrl, verificationStatus, verifiedSeller,
+//   availableListingCount, active, updatedAt
+//   (server-maintained; authenticated read only)
+//
+// marketplaceCategoryStats/{categoryId}
+//   category, availableListingCount, updatedAt
+//   (server-maintained; authenticated read only)
+//
+// marketplaceReports/{reportId}
+//   reportId, reporterId, listingId, sellerId, reason, explanation, status,
+//   createdAt, updatedAt, reviewedAt, reviewedBy, resolutionNote
+//
+// marketplaceAdminAudit/{eventId}
+//   actorUid, action, targetUid, details, createdAt
+//   (server-maintained, reviewer-readable only)
+//
+// userPrivate/{uid}
+//   uid, phoneE164, allowMarketplaceCalls, updatedAt
+//   (owner-only; never publicly readable)
+//
+// users/{uid}/savedMarketplaceListings/{listingId}
+//   listingId, ownerUid, savedAt (owner-only)
+//
+// Reviewer authority is derived only from Firebase Authentication custom
+// claims: marketplaceOwner, admin, moderator, or marketplaceReviewer.
+// Editable profile fields are never trusted for Marketplace authorization.
+// ===============================================================
+
 service cloud.firestore {
   match /databases/{database}/documents {
   //===================================================
@@ -368,6 +442,1117 @@ match /calls/{callId} {
           .diff(resource.data)
           .affectedKeys()
           .hasOnly(fields);
+    }
+
+    //===================================================
+    // MARKETPLACE SECURITY HELPERS
+    //===================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isAuthenticated() &&
+          request.auth.uid == uid;
+    }
+
+    // Used by owner-scoped documents whose identity field is named `uid`.
+    function uidUnchanged(data) {
+      return isAuthenticated() &&
+          data.uid == request.auth.uid;
+    }
+
+    function uidNotModified() {
+      return request.resource.data.uid ==
+          resource.data.uid;
+    }
+
+    function isMarketplaceReviewer() {
+      return isAuthenticated() &&
+          (
+            request.auth.token.get('admin', false) == true ||
+            request.auth.token.get('moderator', false) == true ||
+            request.auth.token.get('marketplaceReviewer', false) == true ||
+            request.auth.token.get('marketplaceOwner', false) == true
+          );
+    }
+
+    function marketplaceHasSafeListLimit(maximum) {
+      return request.query.limit != null &&
+          request.query.limit > 0 &&
+          request.query.limit <= maximum;
+    }
+
+    function marketplaceValidId(value) {
+      return value is string &&
+          value.size() >= 1 &&
+          value.size() <= 128 &&
+          value.matches('^[A-Za-z0-9_-]+$');
+    }
+
+    function marketplaceValidRequiredString(value, minimum, maximum) {
+      return value is string &&
+          value.size() >= minimum &&
+          value.size() <= maximum;
+    }
+
+    function marketplaceValidOptionalString(value, maximum) {
+      return value is string &&
+          value.size() <= maximum;
+    }
+
+    function marketplaceValidHttpsUrl(value, allowEmpty) {
+      return value is string &&
+          value.size() <= 2048 &&
+          (
+            (allowEmpty && value == '') ||
+            value.matches('^https://.+$')
+          );
+    }
+
+    function marketplaceNullOrTimestamp(data, field) {
+      return data.get(field, null) == null ||
+          data[field] is timestamp;
+    }
+
+    function marketplaceValidVerificationStatus(status) {
+      return status in [
+        'notSubmitted',
+        'pending',
+        'approved',
+        'rejected',
+        'suspended'
+      ];
+    }
+
+    function marketplaceValidListingStatus(status) {
+      return status in [
+        'draft',
+        'available',
+        'sold',
+        'unavailable',
+        'archived'
+      ];
+    }
+
+    function marketplaceValidCategory(category) {
+      return category in [
+        'rent_housing',
+        'food_snacks',
+        'electrical_gadgets',
+        'textbooks_books',
+        'medical_laboratory',
+        'printing_photocopying',
+        'clothes_fashion',
+        'furniture_room',
+        'watches_accessories',
+        'student_services',
+        'beauty_personal_care',
+        'other'
+      ];
+    }
+
+    function marketplaceValidCondition(condition) {
+      return condition in ['new', 'used', 'service'];
+    }
+
+    function marketplaceValidPriceType(priceType) {
+      return priceType in ['fixed', 'negotiable', 'free', 'contact'];
+    }
+
+    function marketplaceValidPrice(data) {
+      return (data.price == null || data.price is number) &&
+          (
+            (
+              data.priceType in ['fixed', 'negotiable'] &&
+              data.price is number &&
+              data.price > 0 &&
+              data.price <= 100000000
+            ) ||
+            (
+              data.priceType in ['free', 'contact'] &&
+              (
+                data.price == null ||
+                data.price == 0
+              )
+            ) ||
+            (
+              data.status == 'draft' &&
+              (
+                data.price == null ||
+                (
+                  data.price >= 0 &&
+                  data.price <= 100000000
+                )
+              ) &&
+              (
+                data.priceType == '' ||
+                marketplaceValidPriceType(data.priceType)
+              )
+            )
+          );
+    }
+
+    function marketplaceValidContactPreferences(value) {
+      return value is map &&
+          value.keys().hasOnly([
+            'allowMessages',
+            'allowCalls'
+          ]) &&
+          value.keys().hasAll([
+            'allowMessages',
+            'allowCalls'
+          ]) &&
+          value.allowMessages is bool &&
+          value.allowCalls is bool;
+    }
+
+    function marketplaceValidSearchPrefix(value) {
+      return value is string &&
+          value.size() >= 1 &&
+          value.size() <= 64;
+    }
+
+    // Firestore Rules has no list loop. Because searchPrefixes is capped at
+    // twenty items, every possible element is explicitly validated.
+    function marketplaceValidSearchPrefixes(values) {
+      return values is list &&
+          values.size() <= 20 &&
+          (values.size() < 1 || marketplaceValidSearchPrefix(values[0])) &&
+          (values.size() < 2 || marketplaceValidSearchPrefix(values[1])) &&
+          (values.size() < 3 || marketplaceValidSearchPrefix(values[2])) &&
+          (values.size() < 4 || marketplaceValidSearchPrefix(values[3])) &&
+          (values.size() < 5 || marketplaceValidSearchPrefix(values[4])) &&
+          (values.size() < 6 || marketplaceValidSearchPrefix(values[5])) &&
+          (values.size() < 7 || marketplaceValidSearchPrefix(values[6])) &&
+          (values.size() < 8 || marketplaceValidSearchPrefix(values[7])) &&
+          (values.size() < 9 || marketplaceValidSearchPrefix(values[8])) &&
+          (values.size() < 10 || marketplaceValidSearchPrefix(values[9])) &&
+          (values.size() < 11 || marketplaceValidSearchPrefix(values[10])) &&
+          (values.size() < 12 || marketplaceValidSearchPrefix(values[11])) &&
+          (values.size() < 13 || marketplaceValidSearchPrefix(values[12])) &&
+          (values.size() < 14 || marketplaceValidSearchPrefix(values[13])) &&
+          (values.size() < 15 || marketplaceValidSearchPrefix(values[14])) &&
+          (values.size() < 16 || marketplaceValidSearchPrefix(values[15])) &&
+          (values.size() < 17 || marketplaceValidSearchPrefix(values[16])) &&
+          (values.size() < 18 || marketplaceValidSearchPrefix(values[17])) &&
+          (values.size() < 19 || marketplaceValidSearchPrefix(values[18])) &&
+          (values.size() < 20 || marketplaceValidSearchPrefix(values[19]));
+    }
+
+    function marketplaceValidStoragePath(path, sellerId, listingId) {
+      return path is string &&
+          path.size() >= 1 &&
+          path.size() <= 512 &&
+          path.matches(
+            '^marketplace/' + sellerId + '/' + listingId +
+            '/[A-Za-z0-9_.-]{1,180}$'
+          );
+    }
+
+    function marketplaceValidMediaItem(item, sellerId, listingId) {
+      return item is map &&
+          item.keys().hasOnly([
+            'type',
+            'url',
+            'thumbnailUrl',
+            'durationMs',
+            'displayOrder',
+            'storagePath'
+          ]) &&
+          item.keys().hasAll([
+            'type',
+            'url',
+            'thumbnailUrl',
+            'durationMs',
+            'displayOrder',
+            'storagePath'
+          ]) &&
+          item.type in ['image', 'video'] &&
+          marketplaceValidHttpsUrl(item.url, false) &&
+          marketplaceValidHttpsUrl(item.thumbnailUrl, item.type == 'image') &&
+          item.durationMs is int &&
+          item.durationMs >= 0 &&
+          item.durationMs <= 600000 &&
+          item.displayOrder is int &&
+          item.displayOrder >= 0 &&
+          item.displayOrder <= 4 &&
+          marketplaceValidStoragePath(
+            item.storagePath,
+            sellerId,
+            listingId
+          );
+    }
+
+    // The five-item cap lets us inspect each media map instead of trusting
+    // only the outer list type.
+    function marketplaceValidMediaList(values, sellerId, listingId) {
+      return values is list &&
+          values.size() <= 5 &&
+          (
+            values.size() < 1 ||
+            marketplaceValidMediaItem(values[0], sellerId, listingId)
+          ) &&
+          (
+            values.size() < 2 ||
+            marketplaceValidMediaItem(values[1], sellerId, listingId)
+          ) &&
+          (
+            values.size() < 3 ||
+            marketplaceValidMediaItem(values[2], sellerId, listingId)
+          ) &&
+          (
+            values.size() < 4 ||
+            marketplaceValidMediaItem(values[3], sellerId, listingId)
+          ) &&
+          (
+            values.size() < 5 ||
+            marketplaceValidMediaItem(values[4], sellerId, listingId)
+          );
+    }
+
+    function marketplaceHasApprovedVerification(uid) {
+      return exists(
+            /databases/$(database)/documents/sellerVerifications/$(uid)
+          ) &&
+          get(
+            /databases/$(database)/documents/sellerVerifications/$(uid)
+          ).data.status == 'approved';
+    }
+
+    function marketplaceListingOwner(data) {
+      return isOwner(data.sellerId);
+    }
+
+    function marketplaceListingIdentityMatchesProfile(data) {
+      return exists(
+            /databases/$(database)/documents/users/$(data.sellerId)
+          ) &&
+          data.sellerName == get(
+            /databases/$(database)/documents/users/$(data.sellerId)
+          ).data.fullName &&
+          data.sellerPhotoUrl == get(
+            /databases/$(database)/documents/users/$(data.sellerId)
+          ).data.photoUrl;
+    }
+
+    function marketplaceValidListingTimestamps(data) {
+      return data.createdAt is timestamp &&
+          data.updatedAt is timestamp &&
+          marketplaceNullOrTimestamp(data, 'publishedAt') &&
+          marketplaceNullOrTimestamp(data, 'soldAt') &&
+          marketplaceNullOrTimestamp(data, 'unavailableAt') &&
+          marketplaceNullOrTimestamp(data, 'archivedAt') &&
+          (
+            data.status != 'draft' ||
+            (
+              data.publishedAt == null &&
+              data.soldAt == null &&
+              data.unavailableAt == null &&
+              data.archivedAt == null
+            )
+          ) &&
+          (
+            data.status != 'available' ||
+            (
+              data.publishedAt is timestamp &&
+              data.soldAt == null &&
+              data.unavailableAt == null &&
+              data.archivedAt == null
+            )
+          ) &&
+          (
+            data.status != 'sold' ||
+            (
+              data.publishedAt is timestamp &&
+              data.soldAt is timestamp &&
+              data.unavailableAt == null &&
+              data.archivedAt == null
+            )
+          ) &&
+          (
+            data.status != 'unavailable' ||
+            (
+              data.publishedAt is timestamp &&
+              data.soldAt == null &&
+              data.unavailableAt is timestamp &&
+              data.archivedAt == null
+            )
+          ) &&
+          (
+            data.status != 'archived' ||
+            data.archivedAt is timestamp
+          );
+    }
+
+    function marketplaceValidListing(data, listingId) {
+      return data.keys().hasOnly([
+            'listingId',
+            'sellerId',
+            'sellerName',
+            'sellerPhotoUrl',
+            'title',
+            'description',
+            'category',
+            'condition',
+            'priceType',
+            'price',
+            'currency',
+            'media',
+            'mediaCount',
+            'coverMediaIndex',
+            'thumbnailUrl',
+            'status',
+            'publicVisible',
+            'contactPreferences',
+            'searchPrefixes',
+            'createdAt',
+            'updatedAt',
+            'publishedAt',
+            'soldAt',
+            'unavailableAt',
+            'archivedAt'
+          ]) &&
+          data.keys().hasAll([
+            'listingId',
+            'sellerId',
+            'sellerName',
+            'sellerPhotoUrl',
+            'title',
+            'description',
+            'category',
+            'condition',
+            'priceType',
+            'price',
+            'currency',
+            'media',
+            'mediaCount',
+            'coverMediaIndex',
+            'thumbnailUrl',
+            'status',
+            'publicVisible',
+            'contactPreferences',
+            'searchPrefixes',
+            'createdAt',
+            'updatedAt',
+            'publishedAt',
+            'soldAt',
+            'unavailableAt',
+            'archivedAt'
+          ]) &&
+          marketplaceValidId(data.listingId) &&
+          data.listingId == listingId &&
+          marketplaceValidId(data.sellerId) &&
+          marketplaceValidOptionalString(data.sellerName, 120) &&
+          marketplaceValidHttpsUrl(data.sellerPhotoUrl, true) &&
+          marketplaceValidOptionalString(data.title, 120) &&
+          marketplaceValidOptionalString(data.description, 5000) &&
+          data.category is string &&
+          data.category.size() <= 80 &&
+          data.condition is string &&
+          data.condition.size() <= 16 &&
+          data.priceType is string &&
+          data.priceType.size() <= 16 &&
+          data.currency == 'EGP' &&
+          marketplaceValidPrice(data) &&
+          marketplaceValidMediaList(data.media, data.sellerId, listingId) &&
+          data.mediaCount is int &&
+          data.mediaCount == data.media.size() &&
+          data.coverMediaIndex is int &&
+          (
+            (
+              data.mediaCount == 0 &&
+              data.coverMediaIndex == -1
+            ) ||
+            (
+              data.mediaCount > 0 &&
+              data.coverMediaIndex >= 0 &&
+              data.coverMediaIndex < data.mediaCount
+            )
+          ) &&
+          marketplaceValidHttpsUrl(data.thumbnailUrl, true) &&
+          marketplaceValidListingStatus(data.status) &&
+          data.publicVisible is bool &&
+          data.publicVisible == (data.status == 'available') &&
+          marketplaceValidContactPreferences(data.contactPreferences) &&
+          marketplaceValidSearchPrefixes(data.searchPrefixes) &&
+          marketplaceValidListingTimestamps(data) &&
+          (
+            data.status == 'draft' ||
+            (
+              marketplaceValidRequiredString(data.sellerName, 1, 120) &&
+              marketplaceValidRequiredString(data.title, 1, 120) &&
+              marketplaceValidCategory(data.category) &&
+              marketplaceValidCondition(data.condition) &&
+              marketplaceValidPriceType(data.priceType) &&
+              data.mediaCount >= 1 &&
+              marketplaceValidHttpsUrl(data.thumbnailUrl, false) &&
+              data.searchPrefixes.size() >= 1
+            )
+          );
+    }
+
+    function marketplaceValidListingCreate(data, listingId) {
+      return marketplaceValidListing(data, listingId) &&
+          marketplaceListingOwner(data) &&
+          marketplaceListingIdentityMatchesProfile(data) &&
+          data.createdAt == request.time &&
+          data.updatedAt == request.time &&
+          (
+            (
+              data.status == 'draft' &&
+              data.publicVisible == false
+            ) ||
+            (
+              data.status == 'available' &&
+              marketplaceHasApprovedVerification(data.sellerId) &&
+              data.publishedAt == request.time
+            )
+          );
+    }
+
+    function marketplaceValidListingTransition() {
+      let oldStatus = resource.data.status;
+      let newStatus = request.resource.data.status;
+
+      return (
+            oldStatus == newStatus &&
+            request.resource.data.publishedAt == resource.data.publishedAt &&
+            request.resource.data.soldAt == resource.data.soldAt &&
+            request.resource.data.unavailableAt == resource.data.unavailableAt &&
+            request.resource.data.archivedAt == resource.data.archivedAt
+          ) ||
+          (
+            oldStatus == 'draft' &&
+            newStatus == 'available' &&
+            request.resource.data.publishedAt == request.time &&
+            request.resource.data.soldAt == null &&
+            request.resource.data.unavailableAt == null &&
+            request.resource.data.archivedAt == null
+          ) ||
+          (
+            oldStatus == 'available' &&
+            newStatus == 'sold' &&
+            request.resource.data.soldAt == request.time
+          ) ||
+          (
+            oldStatus == 'available' &&
+            newStatus == 'unavailable' &&
+            request.resource.data.unavailableAt == request.time
+          ) ||
+          (
+            oldStatus in ['draft', 'available', 'unavailable', 'sold'] &&
+            newStatus == 'archived' &&
+            request.resource.data.publishedAt == resource.data.publishedAt &&
+            request.resource.data.soldAt == resource.data.soldAt &&
+            request.resource.data.unavailableAt == resource.data.unavailableAt &&
+            request.resource.data.archivedAt == request.time
+          ) ||
+          (
+            oldStatus == 'unavailable' &&
+            newStatus == 'available' &&
+            request.resource.data.publishedAt == request.time &&
+            request.resource.data.soldAt == null &&
+            request.resource.data.unavailableAt == null &&
+            request.resource.data.archivedAt == null
+          ) ||
+          (
+            oldStatus == 'archived' &&
+            newStatus == 'draft' &&
+            request.resource.data.publishedAt == null &&
+            request.resource.data.soldAt == null &&
+            request.resource.data.unavailableAt == null &&
+            request.resource.data.archivedAt == null
+          );
+    }
+
+    function marketplaceValidListingUpdate(data, listingId) {
+      return marketplaceValidListing(data, listingId) &&
+          marketplaceListingOwner(resource.data) &&
+          marketplaceListingIdentityMatchesProfile(data) &&
+          data.listingId == resource.data.listingId &&
+          data.sellerId == resource.data.sellerId &&
+          data.createdAt == resource.data.createdAt &&
+          data.updatedAt == request.time &&
+          marketplaceValidListingTransition() &&
+          (
+            data.status != 'available' ||
+            marketplaceHasApprovedVerification(data.sellerId)
+          );
+    }
+
+    function marketplaceIsPublicListing(data) {
+      return data.status == 'available' &&
+          data.publicVisible == true;
+    }
+
+    // Read-only compatibility for an individual old share/deep-link document.
+    // Legacy collection queries remain disallowed because they did not filter
+    // availability and could reveal sold/unavailable items.
+    function marketplaceIsLegacyPublicListing(data) {
+      return !data.keys().hasAll(['status', 'publicVisible']) &&
+          data.get('isAvailable', false) == true &&
+          data.get('sold', true) == false;
+    }
+
+    function marketplaceValidVerificationPath(path, uid, verificationId) {
+      return path is string &&
+          path.size() <= 512 &&
+          path.matches(
+            '^seller_verifications/' + uid + '/' + verificationId +
+            '/student_id[.](jpg|jpeg|png|webp)$'
+          );
+    }
+
+    function marketplaceValidSellerVerification(data, uid) {
+      return data.keys().hasOnly([
+            'uid',
+            'verificationId',
+            'fullName',
+            'studentIdNumber',
+            'studentIdStoragePath',
+            'status',
+            'submittedAt',
+            'updatedAt',
+            'reviewedAt',
+            'reviewedBy',
+            'rejectionReason',
+            'suspensionReason'
+          ]) &&
+          data.keys().hasAll([
+            'uid',
+            'verificationId',
+            'fullName',
+            'studentIdNumber',
+            'studentIdStoragePath',
+            'status',
+            'submittedAt',
+            'updatedAt',
+            'reviewedAt',
+            'reviewedBy',
+            'rejectionReason',
+            'suspensionReason'
+          ]) &&
+          data.uid == uid &&
+          marketplaceValidId(data.uid) &&
+          marketplaceValidId(data.verificationId) &&
+          marketplaceValidRequiredString(data.fullName, 2, 100) &&
+          marketplaceValidRequiredString(data.studentIdNumber, 3, 40) &&
+          marketplaceValidVerificationPath(
+            data.studentIdStoragePath,
+            uid,
+            data.verificationId
+          ) &&
+          marketplaceValidVerificationStatus(data.status) &&
+          data.submittedAt is timestamp &&
+          data.updatedAt is timestamp &&
+          marketplaceNullOrTimestamp(data, 'reviewedAt') &&
+          marketplaceValidOptionalString(data.reviewedBy, 128) &&
+          marketplaceValidOptionalString(data.rejectionReason, 500) &&
+          marketplaceValidOptionalString(data.suspensionReason, 500) &&
+          (
+            data.status != 'approved' ||
+            (
+              data.reviewedAt is timestamp &&
+              marketplaceValidRequiredString(data.reviewedBy, 1, 128) &&
+              data.rejectionReason == '' &&
+              data.suspensionReason == ''
+            )
+          ) &&
+          (
+            data.status != 'rejected' ||
+            (
+              data.reviewedAt is timestamp &&
+              marketplaceValidRequiredString(data.reviewedBy, 1, 128) &&
+              marketplaceValidRequiredString(data.rejectionReason, 1, 500) &&
+              data.suspensionReason == ''
+            )
+          ) &&
+          (
+            data.status != 'suspended' ||
+            (
+              data.reviewedAt is timestamp &&
+              marketplaceValidRequiredString(data.reviewedBy, 1, 128) &&
+              marketplaceValidRequiredString(data.suspensionReason, 1, 500)
+            )
+          ) &&
+          (
+            data.status != 'pending' ||
+            (
+              data.reviewedAt == null &&
+              data.reviewedBy == '' &&
+              data.rejectionReason == '' &&
+              data.suspensionReason == ''
+            )
+          );
+    }
+
+    function marketplaceValidVerificationCreate(data, uid) {
+      return marketplaceValidSellerVerification(data, uid) &&
+          isOwner(uid) &&
+          uidUnchanged(data) &&
+          data.status == 'pending' &&
+          data.submittedAt == request.time &&
+          data.updatedAt == request.time;
+    }
+
+    function marketplaceValidApplicantResubmission(data, uid) {
+      return marketplaceValidSellerVerification(data, uid) &&
+          isOwner(uid) &&
+          uidNotModified() &&
+          resource.data.status == 'rejected' &&
+          data.status == 'pending' &&
+          data.verificationId != resource.data.verificationId &&
+          data.submittedAt == request.time &&
+          data.updatedAt == request.time &&
+          request.resource.data
+              .diff(resource.data)
+              .affectedKeys()
+              .hasOnly([
+                'verificationId',
+                'fullName',
+                'studentIdNumber',
+                'studentIdStoragePath',
+                'status',
+                'submittedAt',
+                'updatedAt',
+                'reviewedAt',
+                'reviewedBy',
+                'rejectionReason',
+                'suspensionReason'
+              ]);
+    }
+
+    function marketplaceValidReviewTransition(oldStatus, newStatus) {
+      return (
+            oldStatus == 'pending' &&
+            newStatus in ['approved', 'rejected']
+          ) ||
+          (
+            oldStatus == 'approved' &&
+            newStatus == 'suspended'
+          ) ||
+          (
+            oldStatus == 'suspended' &&
+            newStatus == 'approved'
+          );
+    }
+
+    function marketplaceValidReviewerDecision(data, uid) {
+      return marketplaceValidSellerVerification(data, uid) &&
+          isMarketplaceReviewer() &&
+          uidNotModified() &&
+          marketplaceValidReviewTransition(
+            resource.data.status,
+            data.status
+          ) &&
+          data.verificationId == resource.data.verificationId &&
+          data.fullName == resource.data.fullName &&
+          data.studentIdNumber == resource.data.studentIdNumber &&
+          data.studentIdStoragePath == resource.data.studentIdStoragePath &&
+          data.submittedAt == resource.data.submittedAt &&
+          data.updatedAt == request.time &&
+          data.reviewedAt == request.time &&
+          data.reviewedBy == request.auth.uid &&
+          request.resource.data
+              .diff(resource.data)
+              .affectedKeys()
+              .hasOnly([
+                'status',
+                'updatedAt',
+                'reviewedAt',
+                'reviewedBy',
+                'rejectionReason',
+                'suspensionReason'
+              ]);
+    }
+
+    function marketplaceValidVerificationHistory(data, uid, eventId) {
+      return data.keys().hasOnly([
+            'uid',
+            'verificationId',
+            'action',
+            'actorUid',
+            'reason',
+            'createdAt'
+          ]) &&
+          data.keys().hasAll([
+            'uid',
+            'verificationId',
+            'action',
+            'actorUid',
+            'reason',
+            'createdAt'
+          ]) &&
+          marketplaceValidId(eventId) &&
+          data.uid == uid &&
+          marketplaceValidId(data.uid) &&
+          marketplaceValidId(data.verificationId) &&
+          data.action in [
+            'submitted',
+            'approved',
+            'rejected',
+            'suspended'
+          ] &&
+          marketplaceValidId(data.actorUid) &&
+          marketplaceValidOptionalString(data.reason, 500) &&
+          data.createdAt == request.time;
+    }
+
+    function marketplaceValidReviewerHistoryCreate(data, uid, eventId) {
+      return isMarketplaceReviewer() &&
+          marketplaceValidVerificationHistory(data, uid, eventId) &&
+          data.actorUid == request.auth.uid &&
+          data.action in ['approved', 'rejected', 'suspended'] &&
+          existsAfter(
+            /databases/$(database)/documents/sellerVerifications/$(uid)
+          ) &&
+          getAfter(
+            /databases/$(database)/documents/sellerVerifications/$(uid)
+          ).data.verificationId == data.verificationId &&
+          getAfter(
+            /databases/$(database)/documents/sellerVerifications/$(uid)
+          ).data.status == data.action;
+    }
+
+    function marketplaceValidPrivateUser(data, uid) {
+      return data.keys().hasOnly([
+            'uid',
+            'phoneE164',
+            'allowMarketplaceCalls',
+            'updatedAt'
+          ]) &&
+          data.keys().hasAll([
+            'uid',
+            'phoneE164',
+            'allowMarketplaceCalls',
+            'updatedAt'
+          ]) &&
+          data.uid == uid &&
+          marketplaceValidId(data.uid) &&
+          data.phoneE164 is string &&
+          (
+            data.phoneE164 == '' ||
+            data.phoneE164.matches('^[+]20(10|11|12|15)[0-9]{8}$')
+          ) &&
+          data.allowMarketplaceCalls is bool &&
+          data.updatedAt is timestamp;
+    }
+
+    function marketplaceValidPrivateUserCreate(data, uid) {
+      return isOwner(uid) &&
+          uidUnchanged(data) &&
+          marketplaceValidPrivateUser(data, uid) &&
+          data.updatedAt == request.time;
+    }
+
+    function marketplaceValidPrivateUserUpdate(data, uid) {
+      return isOwner(uid) &&
+          uidNotModified() &&
+          marketplaceValidPrivateUser(data, uid) &&
+          data.updatedAt == request.time;
+    }
+
+    function marketplaceValidSavedListing(data, uid, listingId) {
+      return data.keys().hasOnly([
+            'listingId',
+            'ownerUid',
+            'savedAt'
+          ]) &&
+          data.keys().hasAll([
+            'listingId',
+            'ownerUid',
+            'savedAt'
+          ]) &&
+          data.listingId == listingId &&
+          marketplaceValidId(data.listingId) &&
+          data.ownerUid == uid &&
+          marketplaceValidId(data.ownerUid) &&
+          data.savedAt == request.time;
+    }
+
+    function marketplaceSavedTargetIsPublic(listingId) {
+      return exists(
+            /databases/$(database)/documents/marketplaceProducts/$(listingId)
+          ) &&
+          marketplaceIsPublicListing(
+            get(
+              /databases/$(database)/documents/marketplaceProducts/$(listingId)
+            ).data
+          );
+    }
+
+    function marketplaceValidReportReason(reason) {
+      return reason in [
+        'Scam or Fraud',
+        'Misleading Information',
+        'Prohibited Item',
+        'Inappropriate Content',
+        'Duplicate Listing',
+        'Other'
+      ];
+    }
+
+    function marketplaceValidReportStatus(status) {
+      return status in [
+        'submitted',
+        'reviewing',
+        'resolved',
+        'dismissed'
+      ];
+    }
+
+    function marketplaceValidReport(data, reportId) {
+      return data.keys().hasOnly([
+            'reportId',
+            'reporterId',
+            'listingId',
+            'sellerId',
+            'reason',
+            'explanation',
+            'status',
+            'createdAt',
+            'updatedAt',
+            'reviewedAt',
+            'reviewedBy',
+            'resolutionNote'
+          ]) &&
+          data.keys().hasAll([
+            'reportId',
+            'reporterId',
+            'listingId',
+            'sellerId',
+            'reason',
+            'explanation',
+            'status',
+            'createdAt',
+            'updatedAt',
+            'reviewedAt',
+            'reviewedBy',
+            'resolutionNote'
+          ]) &&
+          data.reportId == reportId &&
+          marketplaceValidRequiredString(data.reportId, 3, 260) &&
+          marketplaceValidId(data.reporterId) &&
+          marketplaceValidId(data.listingId) &&
+          marketplaceValidId(data.sellerId) &&
+          marketplaceValidReportReason(data.reason) &&
+          marketplaceValidOptionalString(data.explanation, 1000) &&
+          marketplaceValidReportStatus(data.status) &&
+          data.createdAt is timestamp &&
+          data.updatedAt is timestamp &&
+          marketplaceNullOrTimestamp(data, 'reviewedAt') &&
+          marketplaceValidOptionalString(data.reviewedBy, 128) &&
+          marketplaceValidOptionalString(data.resolutionNote, 1000) &&
+          (
+            data.status != 'submitted' ||
+            (
+              data.reviewedAt == null &&
+              data.reviewedBy == '' &&
+              data.resolutionNote == ''
+            )
+          ) &&
+          (
+            data.status != 'reviewing' ||
+            (
+              data.reviewedAt is timestamp &&
+              marketplaceValidRequiredString(data.reviewedBy, 1, 128)
+            )
+          ) &&
+          (
+            !(data.status in ['resolved', 'dismissed']) ||
+            (
+              data.reviewedAt is timestamp &&
+              marketplaceValidRequiredString(data.reviewedBy, 1, 128) &&
+              marketplaceValidRequiredString(data.resolutionNote, 1, 1000)
+            )
+          );
+    }
+
+    function marketplaceReportIdFor(reporterId, listingId) {
+      return reporterId + '_' + listingId;
+    }
+
+    function marketplaceReportMatchesListing(data) {
+      return exists(
+            /databases/$(database)/documents/marketplaceProducts/$(data.listingId)
+          ) &&
+          marketplaceIsPublicListing(
+            get(
+              /databases/$(database)/documents/marketplaceProducts/$(data.listingId)
+            ).data
+          ) &&
+          get(
+            /databases/$(database)/documents/marketplaceProducts/$(data.listingId)
+          ).data.sellerId == data.sellerId;
+    }
+
+    function marketplaceValidReportCreate(data, reportId) {
+      return marketplaceValidReport(data, reportId) &&
+          data.reporterId == request.auth.uid &&
+          data.reportId == marketplaceReportIdFor(
+            request.auth.uid,
+            data.listingId
+          ) &&
+          data.sellerId != request.auth.uid &&
+          data.status == 'submitted' &&
+          (
+            data.reason != 'Other' ||
+            marketplaceValidRequiredString(data.explanation, 1, 1000)
+          ) &&
+          data.createdAt == request.time &&
+          data.updatedAt == request.time &&
+          data.reviewedAt == null &&
+          data.reviewedBy == '' &&
+          data.resolutionNote == '' &&
+          marketplaceReportMatchesListing(data);
+    }
+
+    function marketplaceValidReportTransition(oldStatus, newStatus) {
+      return (
+            oldStatus == 'submitted' &&
+            newStatus in ['reviewing', 'resolved', 'dismissed']
+          ) ||
+          (
+            oldStatus == 'reviewing' &&
+            newStatus in ['resolved', 'dismissed']
+          );
+    }
+
+    function marketplaceValidReportReview(data, reportId) {
+      return isMarketplaceReviewer() &&
+          marketplaceValidReport(data, reportId) &&
+          data.reportId == resource.data.reportId &&
+          data.reporterId == resource.data.reporterId &&
+          data.listingId == resource.data.listingId &&
+          data.sellerId == resource.data.sellerId &&
+          data.reason == resource.data.reason &&
+          data.explanation == resource.data.explanation &&
+          data.createdAt == resource.data.createdAt &&
+          marketplaceValidReportTransition(
+            resource.data.status,
+            data.status
+          ) &&
+          data.updatedAt == request.time &&
+          data.reviewedAt == request.time &&
+          data.reviewedBy == request.auth.uid &&
+          request.resource.data
+              .diff(resource.data)
+              .affectedKeys()
+              .hasOnly([
+                'status',
+                'updatedAt',
+                'reviewedAt',
+                'reviewedBy',
+                'resolutionNote'
+              ]);
+    }
+
+    function marketplaceValidSellerStats(data, uid) {
+      return data.keys().hasOnly([
+            'sellerId',
+            'sellerName',
+            'sellerPhotoUrl',
+            'verificationStatus',
+            'verifiedSeller',
+            'availableListingCount',
+            'active',
+            'updatedAt'
+          ]) &&
+          data.keys().hasAll([
+            'sellerId',
+            'verificationStatus',
+            'verifiedSeller',
+            'updatedAt'
+          ]) &&
+          data.sellerId == uid &&
+          marketplaceValidId(data.sellerId) &&
+          (
+            !('sellerName' in data) ||
+            marketplaceValidOptionalString(data.sellerName, 100)
+          ) &&
+          (
+            !('sellerPhotoUrl' in data) ||
+            marketplaceValidHttpsUrl(data.sellerPhotoUrl, true)
+          ) &&
+          marketplaceValidVerificationStatus(data.verificationStatus) &&
+          data.verifiedSeller is bool &&
+          data.verifiedSeller == (data.verificationStatus == 'approved') &&
+          (
+            !('availableListingCount' in data) ||
+            (
+              data.availableListingCount is int &&
+              data.availableListingCount >= 0 &&
+              data.availableListingCount <= 1000000
+            )
+          ) &&
+          (
+            !('active' in data) ||
+            (
+              data.active is bool &&
+              (
+                data.active == false ||
+                (
+                  data.verificationStatus == 'approved' &&
+                  data.get('availableListingCount', 0) > 0
+                )
+              )
+            )
+          ) &&
+          data.updatedAt is timestamp;
+    }
+
+    function marketplaceValidCategoryStats(data, categoryId) {
+      return data.keys().hasOnly([
+            'category',
+            'availableListingCount',
+            'updatedAt'
+          ]) &&
+          data.keys().hasAll([
+            'category',
+            'availableListingCount',
+            'updatedAt'
+          ]) &&
+          data.category == categoryId &&
+          marketplaceValidCategory(data.category) &&
+          data.availableListingCount is int &&
+          data.availableListingCount >= 0 &&
+          data.availableListingCount <= 1000000 &&
+          data.updatedAt is timestamp;
+    }
+
+    function marketplaceValidAuditDetails(data) {
+      return data is map &&
+          data.keys().hasOnly([
+            'reason',
+            'role'
+          ]) &&
+          marketplaceValidOptionalString(data.get('reason', ''), 500) &&
+          marketplaceValidOptionalString(data.get('role', ''), 30);
+    }
+
+    function marketplaceValidAdminAudit(data, eventId) {
+      return data.keys().hasOnly([
+            'actorUid',
+            'action',
+            'targetUid',
+            'details',
+            'createdAt'
+          ]) &&
+          data.keys().hasAll([
+            'actorUid',
+            'action',
+            'targetUid',
+            'details',
+            'createdAt'
+          ]) &&
+          marketplaceValidId(eventId) &&
+          marketplaceValidId(data.actorUid) &&
+          marketplaceValidRequiredString(data.action, 1, 64) &&
+          marketplaceValidId(data.targetUid) &&
+          marketplaceValidAuditDetails(data.details) &&
+          data.createdAt is timestamp;
     }
 
     //===================================================
@@ -907,6 +2092,241 @@ match /calls/{callId} {
               uid
             );
       }
+
+      //===================================================
+      // SAVED MARKETPLACE LISTINGS
+      //
+      // One document per user/listing pair prevents duplicate saves. The
+      // saved marker remains private even if the product later becomes sold
+      // or unavailable, so the app can display its changed availability.
+      //===================================================
+
+      match /savedMarketplaceListings/{listingId} {
+
+        allow read: if isOwner(uid);
+
+        allow create: if isOwner(uid) &&
+            marketplaceValidSavedListing(
+              request.resource.data,
+              uid,
+              listingId
+            ) &&
+            marketplaceSavedTargetIsPublic(listingId);
+
+        allow update: if false;
+
+        allow delete: if isOwner(uid) &&
+            resource.data.ownerUid == uid &&
+            resource.data.listingId == listingId;
+      }
+    }
+
+    //===================================================
+    // NUB MARKETPLACE LISTINGS
+    //===================================================
+
+    match /marketplaceProducts/{listingId} {
+
+      // An individual document may be opened when it is publicly available,
+      // belongs to the signed-in seller, or the caller is a trusted reviewer.
+      // A narrow legacy fallback keeps old shared links readable without
+      // permitting unsafe legacy collection browsing.
+      allow get: if isAuthenticated() &&
+          (
+            marketplaceIsPublicListing(resource.data) ||
+            marketplaceListingOwner(resource.data) ||
+            isMarketplaceReviewer() ||
+            marketplaceIsLegacyPublicListing(resource.data)
+          );
+
+      // Public discovery queries must filter status == available and
+      // publicVisible == true. Owner management queries must filter sellerId
+      // to the caller. Review dashboards require a reviewer custom claim.
+      allow list: if marketplaceHasSafeListLimit(50) &&
+          (
+            isMarketplaceReviewer() ||
+            (
+              isAuthenticated() &&
+              (
+                marketplaceIsPublicListing(resource.data) ||
+                marketplaceListingOwner(resource.data)
+              )
+            )
+          );
+
+      allow create: if marketplaceValidListingCreate(
+        request.resource.data,
+        listingId
+      );
+
+      allow update: if marketplaceValidListingUpdate(
+        request.resource.data,
+        listingId
+      );
+
+      allow delete: if marketplaceListingOwner(resource.data) &&
+          resource.data.listingId == listingId;
+    }
+
+    //===================================================
+    // PRIVATE SELLER VERIFICATION
+    //===================================================
+
+    match /sellerVerifications/{uid} {
+
+      allow get: if isOwner(uid) ||
+          isMarketplaceReviewer();
+
+      allow list: if isMarketplaceReviewer() &&
+          marketplaceHasSafeListLimit(100);
+
+      allow create: if marketplaceValidVerificationCreate(
+        request.resource.data,
+        uid
+      );
+
+      allow update: if marketplaceValidApplicantResubmission(
+            request.resource.data,
+            uid
+          ) ||
+          marketplaceValidReviewerDecision(
+            request.resource.data,
+            uid
+          );
+
+      allow delete: if false;
+
+      match /history/{eventId} {
+
+        allow get: if isOwner(uid) ||
+            isMarketplaceReviewer();
+
+        allow list: if (
+              isOwner(uid) ||
+              isMarketplaceReviewer()
+            ) &&
+            marketplaceHasSafeListLimit(100);
+
+        allow create: if marketplaceValidReviewerHistoryCreate(
+          request.resource.data,
+          uid,
+          eventId
+        );
+
+        allow update, delete: if false;
+      }
+    }
+
+    //===================================================
+    // PRIVATE USER CONTACT DATA
+    //===================================================
+
+    match /userPrivate/{uid} {
+
+      allow get: if isOwner(uid);
+
+      allow list: if false;
+
+      allow create: if marketplaceValidPrivateUserCreate(
+        request.resource.data,
+        uid
+      );
+
+      allow update: if marketplaceValidPrivateUserUpdate(
+        request.resource.data,
+        uid
+      );
+
+      allow delete: if isOwner(uid) &&
+          resource.data.uid == uid;
+    }
+
+    //===================================================
+    // SERVER-MAINTAINED PUBLIC MARKETPLACE STATISTICS
+    //===================================================
+
+    match /marketplaceSellerStats/{uid} {
+
+      allow get: if isAuthenticated() &&
+          marketplaceValidSellerStats(resource.data, uid);
+
+      allow list: if isAuthenticated() &&
+          marketplaceHasSafeListLimit(100);
+
+      allow create, update, delete: if false;
+    }
+
+    match /marketplaceCategoryStats/{categoryId} {
+
+      allow get: if isAuthenticated() &&
+          marketplaceValidCategoryStats(
+            resource.data,
+            categoryId
+          );
+
+      // There are exactly twelve fixed category documents, but a generous
+      // bounded limit keeps this rule compatible with future pagination.
+      allow list: if isAuthenticated() &&
+          marketplaceHasSafeListLimit(50);
+
+      allow create, update, delete: if false;
+    }
+
+    //===================================================
+    // MARKETPLACE REPORTING
+    //===================================================
+
+    match /marketplaceReports/{reportId} {
+
+      allow create: if isAuthenticated() &&
+          marketplaceValidReportCreate(
+            request.resource.data,
+            reportId
+          );
+
+      allow get: if isAuthenticated() &&
+          (
+            resource.data.reporterId == request.auth.uid ||
+            isMarketplaceReviewer()
+          );
+
+      allow list: if isMarketplaceReviewer() &&
+          marketplaceHasSafeListLimit(100);
+
+      allow update: if marketplaceValidReportReview(
+        request.resource.data,
+        reportId
+      );
+
+      allow delete: if false;
+    }
+
+    //===================================================
+    // MARKETPLACE ADMIN AUDIT LOG
+    //
+    // Writes are server-only. Firebase Admin SDK operations bypass client
+    // rules and must validate marketplaceValidAdminAudit equivalently in the
+    // trusted function before writing.
+    //===================================================
+
+    match /marketplaceAdminAudit/{eventId} {
+
+      allow get: if isMarketplaceReviewer() &&
+          marketplaceValidAdminAudit(resource.data, eventId);
+
+      allow list: if isMarketplaceReviewer() &&
+          marketplaceHasSafeListLimit(100);
+
+      allow create, update, delete: if false;
+    }
+
+    // The ownership pointer is maintained only by the trusted ownership
+    // transfer Cloud Function. Reviewer access supports the admin dashboard.
+    match /marketplaceSystem/{documentId} {
+
+      allow read: if isMarketplaceReviewer();
+
+      allow create, update, delete: if false;
     }
 
     //===================================================

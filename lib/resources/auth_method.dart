@@ -3,8 +3,8 @@ import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-import '../models/user.dart'
-as model;
+import '../models/user.dart' as model;
+import '../utils/egyptian_phone.dart';
 
 import 'storage_methods.dart';
 
@@ -13,32 +13,23 @@ import 'storage_methods.dart';
 //===================================================
 
 class AuthMethods {
-  final FirebaseAuth _auth =
-      FirebaseAuth.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  final FirebaseFirestore _firestore =
-      FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   //===================================================
   // GET CURRENT USER
   //===================================================
 
-  Future<model.User>
-  getUserDetails() async {
-    final User currentUser =
-    _auth.currentUser!;
+  Future<model.User> getUserDetails() async {
+    final User currentUser = _auth.currentUser!;
 
-    final DocumentSnapshot<
-        Map<String, dynamic>>
-    snap =
-    await _firestore
+    final DocumentSnapshot<Map<String, dynamic>> snap = await _firestore
         .collection('users')
         .doc(currentUser.uid)
         .get();
 
-    return model.User.fromSnap(
-      snap,
-    );
+    return model.User.fromSnap(snap);
   }
 
   //===================================================
@@ -51,31 +42,30 @@ class AuthMethods {
     required String username,
     required String fullName,
     required String faculty,
+    required String phone,
     required String hobbies,
     required String favoriteQuote,
     Uint8List? file,
   }) async {
-    String res =
-        'Some error occurred';
+    String res = 'Some error occurred';
 
     try {
-      final String cleanEmail =
-      email.trim();
+      final String cleanEmail = email.trim();
 
-      final String cleanUsername =
-      username.trim();
+      final String cleanUsername = username.trim();
 
-      final String cleanFullName =
-      fullName.trim();
+      final String cleanFullName = fullName.trim();
 
-      final String cleanFaculty =
-      faculty.trim();
+      final String cleanFaculty = faculty.trim();
+
+      final String? phoneE164 = EgyptianPhone.normalize(phone);
 
       if (cleanEmail.isEmpty ||
           password.isEmpty ||
           cleanUsername.isEmpty ||
           cleanFullName.isEmpty ||
-          cleanFaculty.isEmpty) {
+          cleanFaculty.isEmpty ||
+          phoneE164 == null) {
         return 'Please fill all required fields';
       }
 
@@ -83,97 +73,77 @@ class AuthMethods {
         return 'Password should be at least 6 characters';
       }
 
-      final UserCredential cred =
-      await _auth
-          .createUserWithEmailAndPassword(
-        email:
-        cleanEmail,
+      final UserCredential cred = await _auth.createUserWithEmailAndPassword(
+        email: cleanEmail,
 
-        password:
-        password,
+        password: password,
       );
 
-      String photoUrl =
-          '';
+      String photoUrl = '';
 
       if (file != null) {
-        photoUrl =
-        await StorageMethods()
-            .uploadImageToStorage(
+        photoUrl = await StorageMethods().uploadImageToStorage(
           'profilePics',
           file,
           false,
         );
       }
 
-      final model.User user =
-      model.User(
-        username:
-        cleanUsername,
+      final model.User user = model.User(
+        username: cleanUsername,
 
-        fullName:
-        cleanFullName,
+        fullName: cleanFullName,
 
-        uid:
-        cred.user!.uid,
+        uid: cred.user!.uid,
 
-        email:
-        cleanEmail,
+        email: cleanEmail,
 
-        faculty:
-        cleanFaculty,
+        faculty: cleanFaculty,
 
-        hobbies:
-        hobbies.trim(),
+        hobbies: hobbies.trim(),
 
-        favoriteQuote:
-        favoriteQuote.trim(),
+        favoriteQuote: favoriteQuote.trim(),
 
-        followers:
-        const <String>[],
+        followers: const <String>[],
 
-        following:
-        const <String>[],
+        following: const <String>[],
 
-        pinnedPostIds:
-        const <String>[],
+        pinnedPostIds: const <String>[],
 
-        photoUrl:
-        photoUrl,
+        photoUrl: photoUrl,
       );
 
-      await _firestore
+      final WriteBatch batch = _firestore.batch();
+      final DocumentReference<Map<String, dynamic>> publicUser = _firestore
           .collection('users')
-          .doc(cred.user!.uid)
-          .set(
-        user.toJson(),
-      );
+          .doc(cred.user!.uid);
+      final DocumentReference<Map<String, dynamic>> privateUser = _firestore
+          .collection('userPrivate')
+          .doc(cred.user!.uid);
 
-      res =
-      'success';
-    } on FirebaseAuthException catch (
-    e
-    ) {
-    if (e.code ==
-    'email-already-in-use') {
-    res =
-    'Email already in use';
-    } else if (e.code ==
-    'invalid-email') {
-    res =
-    'Invalid email address';
-    } else if (e.code ==
-    'weak-password') {
-    res =
-    'Password should be at least 6 characters';
-    } else {
-    res =
-    e.message ??
-    'Sign up failed';
-    }
+      batch.set(publicUser, user.toJson());
+      batch.set(privateUser, <String, dynamic>{
+        'uid': cred.user!.uid,
+        'phoneE164': phoneE164,
+        'allowMarketplaceCalls': false,
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      await batch.commit();
+
+      res = 'success';
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'email-already-in-use') {
+        res = 'Email already in use';
+      } else if (e.code == 'invalid-email') {
+        res = 'Invalid email address';
+      } else if (e.code == 'weak-password') {
+        res = 'Password should be at least 6 characters';
+      } else {
+        res = e.message ?? 'Sign up failed';
+      }
     } catch (e) {
-    res =
-    e.toString();
+      res = e.toString();
     }
 
     return res;
@@ -187,51 +157,32 @@ class AuthMethods {
     required String email,
     required String password,
   }) async {
-    String res =
-        'Some error occurred';
+    String res = 'Some error occurred';
 
     try {
-      if (email.trim().isEmpty ||
-          password.isEmpty) {
+      if (email.trim().isEmpty || password.isEmpty) {
         return 'Please enter all the fields';
       }
 
-      await _auth
-          .signInWithEmailAndPassword(
-        email:
-        email.trim(),
+      await _auth.signInWithEmailAndPassword(
+        email: email.trim(),
 
-        password:
-        password,
+        password: password,
       );
 
-      res =
-      'success';
-    } on FirebaseAuthException catch (
-    e
-    ) {
-    if (e.code ==
-    'invalid-email') {
-    res =
-    'Invalid email address';
-    } else if (e.code ==
-    'invalid-credential' ||
-    e.code ==
-    'wrong-password') {
-    res =
-    'Incorrect email or password';
-    } else if (e.code ==
-    'user-not-found') {
-    res =
-    'User not found';
-    } else {
-    res =
-    e.message ??
-    'Login failed';
-    }
+      res = 'success';
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'invalid-email') {
+        res = 'Invalid email address';
+      } else if (e.code == 'invalid-credential' || e.code == 'wrong-password') {
+        res = 'Incorrect email or password';
+      } else if (e.code == 'user-not-found') {
+        res = 'User not found';
+      } else {
+        res = e.message ?? 'Login failed';
+      }
     } catch (e) {
-    res =
-    e.toString();
+      res = e.toString();
     }
 
     return res;

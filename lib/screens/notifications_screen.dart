@@ -13,58 +13,43 @@ import 'story_viewer_screen.dart';
 // NOTIFICATIONS SCREEN
 //===================================================
 
-class NotificationsScreen
-    extends StatefulWidget {
-  const NotificationsScreen({
-    super.key,
-  });
+class NotificationsScreen extends StatefulWidget {
+  const NotificationsScreen({super.key});
 
   @override
-  State<NotificationsScreen> createState() =>
-      _NotificationsScreenState();
+  State<NotificationsScreen> createState() => _NotificationsScreenState();
 }
 
 //===================================================
 // NOTIFICATIONS STATE
 //===================================================
 
-class _NotificationsScreenState
-    extends State<NotificationsScreen> {
+class _NotificationsScreenState extends State<NotificationsScreen> {
   //===================================================
   // FIREBASE
   //===================================================
 
-  final FirebaseFirestore _firestore =
-      FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   //===================================================
   // SERVICES
   //===================================================
 
-  final NotificationService
-  _notificationService =
-  NotificationService();
+  final NotificationService _notificationService = NotificationService();
 
-  final StoryService _storyService =
-  StoryService();
+  final StoryService _storyService = StoryService();
 
   //===================================================
   // STABLE STREAM
   //===================================================
 
-  late Stream<
-      QuerySnapshot<
-          Map<String, dynamic>>>
-  _notificationsStream;
+  late Stream<QuerySnapshot<Map<String, dynamic>>> _notificationsStream;
 
   //===================================================
   // COLORS
   //===================================================
 
-  static const Color _blue =
-  Color(
-    0xFF29B6F6,
-  );
+  static const Color _blue = Color(0xFF29B6F6);
 
   //===================================================
   // INIT
@@ -74,9 +59,7 @@ class _NotificationsScreenState
   void initState() {
     super.initState();
 
-    _notificationsStream =
-        _notificationService
-            .getNotifications();
+    _notificationsStream = _notificationService.getNotifications();
   }
 
   //===================================================
@@ -85,9 +68,7 @@ class _NotificationsScreenState
 
   void _refresh() {
     setState(() {
-      _notificationsStream =
-          _notificationService
-              .getNotifications();
+      _notificationsStream = _notificationService.getNotifications();
     });
   }
 
@@ -95,57 +76,26 @@ class _NotificationsScreenState
   // SORT NEWEST FIRST
   //===================================================
 
-  List<
-      QueryDocumentSnapshot<
-          Map<String, dynamic>>>
-  _sortedNotifications(
-      QuerySnapshot<Map<String, dynamic>>
-      snapshot,
-      ) {
-    final List<
-        QueryDocumentSnapshot<
-            Map<String, dynamic>>>
-    documents =
-    List<
-        QueryDocumentSnapshot<
-            Map<String, dynamic>>>.from(
-      snapshot.docs,
-    );
+  List<QueryDocumentSnapshot<Map<String, dynamic>>> _sortedNotifications(
+    QuerySnapshot<Map<String, dynamic>> snapshot,
+  ) {
+    final List<QueryDocumentSnapshot<Map<String, dynamic>>> documents =
+        List<QueryDocumentSnapshot<Map<String, dynamic>>>.from(snapshot.docs);
 
-    documents.sort(
-          (
-          QueryDocumentSnapshot<
-              Map<String, dynamic>>
-          a,
-          QueryDocumentSnapshot<
-              Map<String, dynamic>>
-          b,
-          ) {
-        final DateTime aDate =
-            _notificationDate(
-              a.data()[
-              'createdAt'],
-            ) ??
-                DateTime
-                    .fromMillisecondsSinceEpoch(
-                  0,
-                );
+    documents.sort((
+      QueryDocumentSnapshot<Map<String, dynamic>> a,
+      QueryDocumentSnapshot<Map<String, dynamic>> b,
+    ) {
+      final DateTime aDate =
+          _notificationDate(a.data()['createdAt']) ??
+          DateTime.fromMillisecondsSinceEpoch(0);
 
-        final DateTime bDate =
-            _notificationDate(
-              b.data()[
-              'createdAt'],
-            ) ??
-                DateTime
-                    .fromMillisecondsSinceEpoch(
-                  0,
-                );
+      final DateTime bDate =
+          _notificationDate(b.data()['createdAt']) ??
+          DateTime.fromMillisecondsSinceEpoch(0);
 
-        return bDate.compareTo(
-          aDate,
-        );
-      },
-    );
+      return bDate.compareTo(aDate);
+    });
 
     return documents;
   }
@@ -154,9 +104,7 @@ class _NotificationsScreenState
   // DATE
   //===================================================
 
-  DateTime? _notificationDate(
-      dynamic value,
-      ) {
+  DateTime? _notificationDate(dynamic value) {
     if (value is Timestamp) {
       return value.toDate();
     }
@@ -166,9 +114,7 @@ class _NotificationsScreenState
     }
 
     if (value is String) {
-      return DateTime.tryParse(
-        value,
-      );
+      return DateTime.tryParse(value);
     }
 
     return null;
@@ -180,12 +126,9 @@ class _NotificationsScreenState
 
   Future<void> _markAllAsRead() async {
     try {
-      await _notificationService
-          .markAllAsRead();
+      await _notificationService.markAllAsRead();
     } catch (error) {
-      _showMessage(
-        'Unable to mark notifications as read.',
-      );
+      _showMessage('Unable to mark notifications as read.');
     }
   }
 
@@ -194,79 +137,46 @@ class _NotificationsScreenState
   //===================================================
 
   Future<void> _clearAll() async {
-    final bool? confirmed =
-    await showDialog<bool>(
-      context:
-      context,
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
 
-      builder:
-          (
-          BuildContext dialogContext,
-          ) {
+      builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title:
-          const Text(
-            'Clear Notifications?',
-          ),
+          title: const Text('Clear Notifications?'),
 
-          content:
-          const Text(
-            'All your notifications will be removed.',
-          ),
+          content: const Text('All your notifications will be removed.'),
 
-          actions:
-          <Widget>[
+          actions: <Widget>[
             TextButton(
-              onPressed:
-                  () {
-                Navigator.pop(
-                  dialogContext,
-                  false,
-                );
+              onPressed: () {
+                Navigator.pop(dialogContext, false);
               },
-              child:
-              const Text(
-                'Cancel',
-              ),
+              child: const Text('Cancel'),
             ),
 
             FilledButton(
-              onPressed:
-                  () {
-                Navigator.pop(
-                  dialogContext,
-                  true,
-                );
+              onPressed: () {
+                Navigator.pop(dialogContext, true);
               },
-              child:
-              const Text(
-                'Clear',
-              ),
+              child: const Text('Clear'),
             ),
           ],
         );
       },
     );
 
-    if (confirmed !=
-        true ||
-        !mounted) {
+    if (confirmed != true || !mounted) {
       return;
     }
 
     try {
-      await _notificationService
-          .deleteAllNotifications();
+      await _notificationService.deleteAllNotifications();
 
       if (mounted) {
-        _showMessage(
-          'Notifications cleared.',
-        );
+        _showMessage('Notifications cleared.');
       }
     } catch (_) {
-      _showMessage(
-        'Unable to clear notifications.',
-      );
+      _showMessage('Unable to clear notifications.');
     }
   }
 
@@ -274,23 +184,14 @@ class _NotificationsScreenState
   // OPEN SENDER PROFILE
   //===================================================
 
-  Future<void> _openProfile(
-      String senderId,
-      ) async {
-    final String uid =
-    senderId.trim();
+  Future<void> _openProfile(String senderId) async {
+    final String uid = senderId.trim();
 
-    if (uid.isEmpty ||
-        !mounted) {
+    if (uid.isEmpty || !mounted) {
       return;
     }
 
-    await Navigator.of(context)
-        .pushNamed(
-      '/profile',
-      arguments:
-      uid,
-    );
+    await Navigator.of(context).pushNamed('/profile', arguments: uid);
   }
 
   //===================================================
@@ -306,59 +207,39 @@ class _NotificationsScreenState
     //===================================================
 
     try {
-      await _notificationService
-          .markAsRead(
-        notificationId,
-      );
+      await _notificationService.markAsRead(notificationId);
     } catch (_) {}
 
     if (!mounted) {
       return;
     }
 
-    final String type =
-    (data['type'] ?? '')
+    final String type = (data['type'] ?? '').toString().trim();
+
+    final String senderId = (data['senderId'] ?? data['senderUid'] ?? '')
         .toString()
         .trim();
 
-    final String senderId =
-    (data['senderId'] ??
-        data['senderUid'] ??
-        '')
-        .toString()
-        .trim();
+    final String postId = (data['postId'] ?? '').toString().trim();
 
-    final String postId =
-    (data['postId'] ?? '')
-        .toString()
-        .trim();
+    final String repostPostId = (data['repostPostId'] ?? '').toString().trim();
 
-    final String repostPostId =
-    (data['repostPostId'] ??
-        '')
-        .toString()
-        .trim();
+    final String storyId = (data['storyId'] ?? '').toString().trim();
 
-    final String storyId =
-    (data['storyId'] ?? '')
-        .toString()
-        .trim();
+    if (type.startsWith('sellerVerification')) {
+      await Navigator.pushNamed<void>(context, '/marketplace/verification');
+      return;
+    }
 
     //===================================================
     // STORY
     //===================================================
 
-    if (type ==
-        'storyTag' ||
-        type ==
-            'storyLike' ||
-        type ==
-            'storyReply' ||
-        type ==
-            'storyReshare') {
-      await _openStory(
-        storyId,
-      );
+    if (type == 'storyTag' ||
+        type == 'storyLike' ||
+        type == 'storyReply' ||
+        type == 'storyReshare') {
+      await _openStory(storyId);
 
       return;
     }
@@ -367,11 +248,8 @@ class _NotificationsScreenState
     // FOLLOW
     //===================================================
 
-    if (type ==
-        'follow') {
-      await _openProfile(
-        senderId,
-      );
+    if (type == 'follow') {
+      await _openProfile(senderId);
 
       return;
     }
@@ -387,18 +265,12 @@ class _NotificationsScreenState
     // - embedded root original
     //===================================================
 
-    if (type ==
-        'repost' ||
-        type ==
-            'quoteRepost') {
-      final String targetPostId =
-      repostPostId.isNotEmpty
+    if (type == 'repost' || type == 'quoteRepost') {
+      final String targetPostId = repostPostId.isNotEmpty
           ? repostPostId
           : postId;
 
-      await _openPost(
-        targetPostId,
-      );
+      await _openPost(targetPostId);
 
       return;
     }
@@ -410,17 +282,11 @@ class _NotificationsScreenState
     // at the top, followed by comments.
     //===================================================
 
-    if (type ==
-        'like' ||
-        type ==
-            'comment' ||
-        type ==
-            'reply' ||
-        type ==
-            'tag') {
-      await _openPost(
-        postId,
-      );
+    if (type == 'like' ||
+        type == 'comment' ||
+        type == 'reply' ||
+        type == 'tag') {
+      await _openPost(postId);
 
       return;
     }
@@ -430,25 +296,19 @@ class _NotificationsScreenState
     //===================================================
 
     if (postId.isNotEmpty) {
-      await _openPost(
-        postId,
-      );
+      await _openPost(postId);
 
       return;
     }
 
     if (storyId.isNotEmpty) {
-      await _openStory(
-        storyId,
-      );
+      await _openStory(storyId);
 
       return;
     }
 
     if (senderId.isNotEmpty) {
-      await _openProfile(
-        senderId,
-      );
+      await _openProfile(senderId);
     }
   }
 
@@ -456,61 +316,39 @@ class _NotificationsScreenState
   // OPEN POST / REPOST
   //===================================================
 
-  Future<void> _openPost(
-      String postId,
-      ) async {
-    final String cleanPostId =
-    postId.trim();
+  Future<void> _openPost(String postId) async {
+    final String cleanPostId = postId.trim();
 
     if (cleanPostId.isEmpty) {
-      _showMessage(
-        'This post is unavailable.',
-      );
+      _showMessage('This post is unavailable.');
 
       return;
     }
 
     try {
-      final DocumentSnapshot<
-          Map<String, dynamic>>
-      snapshot =
-      await _firestore
-          .collection(
-        'posts',
-      )
-          .doc(
-        cleanPostId,
-      )
+      final DocumentSnapshot<Map<String, dynamic>> snapshot = await _firestore
+          .collection('posts')
+          .doc(cleanPostId)
           .get();
 
       if (!mounted) {
         return;
       }
 
-      if (!snapshot.exists ||
-          snapshot.data() ==
-              null) {
-        _showMessage(
-          'This post was removed.',
-        );
+      if (!snapshot.exists || snapshot.data() == null) {
+        _showMessage('This post was removed.');
 
         return;
       }
 
-      final Map<String, dynamic> data =
-      snapshot.data()!;
+      final Map<String, dynamic> data = snapshot.data()!;
 
       //===================================================
       // HIDDEN POST
       //===================================================
 
-      if (data['isHidden'] ==
-          true ||
-          data['isRootHidden'] ==
-              true) {
-        _showMessage(
-          'This post is currently hidden.',
-        );
+      if (data['isHidden'] == true || data['isRootHidden'] == true) {
+        _showMessage('This post is currently hidden.');
 
         return;
       }
@@ -518,18 +356,11 @@ class _NotificationsScreenState
       await Navigator.push(
         context,
         MaterialPageRoute<void>(
-          builder:
-              (_) =>
-              CommentsScreen(
-                postId:
-                cleanPostId,
-              ),
+          builder: (_) => CommentsScreen(postId: cleanPostId),
         ),
       );
     } catch (_) {
-      _showMessage(
-        'Unable to open this post.',
-      );
+      _showMessage('Unable to open this post.');
     }
   }
 
@@ -537,35 +368,24 @@ class _NotificationsScreenState
   // OPEN STORY
   //===================================================
 
-  Future<void> _openStory(
-      String storyId,
-      ) async {
-    final String cleanStoryId =
-    storyId.trim();
+  Future<void> _openStory(String storyId) async {
+    final String cleanStoryId = storyId.trim();
 
     if (cleanStoryId.isEmpty) {
-      _showMessage(
-        'This story is unavailable.',
-      );
+      _showMessage('This story is unavailable.');
 
       return;
     }
 
     try {
-      final NubifyStory? story =
-      await _storyService
-          .getStory(
-        cleanStoryId,
-      );
+      final NubifyStory? story = await _storyService.getStory(cleanStoryId);
 
       if (!mounted) {
         return;
       }
 
       if (story == null) {
-        _showMessage(
-          'This story has expired or was removed.',
-        );
+        _showMessage('This story has expired or was removed.');
 
         return;
       }
@@ -573,20 +393,11 @@ class _NotificationsScreenState
       await Navigator.push(
         context,
         MaterialPageRoute<void>(
-          builder:
-              (_) =>
-              StoryViewerScreen(
-                stories:
-                <NubifyStory>[
-                  story,
-                ],
-              ),
+          builder: (_) => StoryViewerScreen(stories: <NubifyStory>[story]),
         ),
       );
     } catch (_) {
-      _showMessage(
-        'Unable to open this story.',
-      );
+      _showMessage('Unable to open this story.');
     }
   }
 
@@ -594,18 +405,11 @@ class _NotificationsScreenState
   // DELETE SINGLE NOTIFICATION
   //===================================================
 
-  Future<void> _deleteNotification(
-      String notificationId,
-      ) async {
+  Future<void> _deleteNotification(String notificationId) async {
     try {
-      await _notificationService
-          .deleteNotification(
-        notificationId,
-      );
+      await _notificationService.deleteNotification(notificationId);
     } catch (_) {
-      _showMessage(
-        'Unable to remove notification.',
-      );
+      _showMessage('Unable to remove notification.');
     }
   }
 
@@ -614,89 +418,49 @@ class _NotificationsScreenState
   //===================================================
 
   @override
-  Widget build(
-      BuildContext context,
-      ) {
+  Widget build(BuildContext context) {
     return Scaffold(
-      appBar:
-      AppBar(
-        title:
-        const Text(
+      appBar: AppBar(
+        title: const Text(
           'Notifications',
-          style:
-          TextStyle(
-            fontWeight:
-            FontWeight.bold,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
 
-        actions:
-        <Widget>[
+        actions: <Widget>[
           PopupMenuButton<String>(
-            onSelected:
-                (
-                String value,
-                ) async {
-              if (value ==
-                  'read') {
+            onSelected: (String value) async {
+              if (value == 'read') {
                 await _markAllAsRead();
               }
 
-              if (value ==
-                  'clear') {
+              if (value == 'clear') {
                 await _clearAll();
               }
             },
 
-            itemBuilder:
-                (
-                BuildContext context,
-                ) {
-              return const <
-                  PopupMenuEntry<
-                      String>>[
+            itemBuilder: (BuildContext context) {
+              return const <PopupMenuEntry<String>>[
                 PopupMenuItem<String>(
-                  value:
-                  'read',
-                  child:
-                  Row(
-                    children:
-                    <Widget>[
-                      Icon(
-                        Icons
-                            .done_all_rounded,
-                      ),
-                      SizedBox(
-                        width:
-                        10,
-                      ),
-                      Text(
-                        'Mark all as read',
-                      ),
+                  value: 'read',
+                  child: Row(
+                    children: <Widget>[
+                      Icon(Icons.done_all_rounded),
+                      SizedBox(width: 10),
+                      Text('Mark all as read'),
                     ],
                   ),
                 ),
 
                 PopupMenuItem<String>(
-                  value:
-                  'clear',
-                  child:
-                  Row(
-                    children:
-                    <Widget>[
+                  value: 'clear',
+                  child: Row(
+                    children: <Widget>[
                       Icon(
-                        Icons
-                            .delete_sweep_outlined,
-                        color:
-                        Colors.redAccent,
+                        Icons.delete_sweep_outlined,
+                        color: Colors.redAccent,
                       ),
-                      SizedBox(
-                        width:
-                        10,
-                      ),
-                      Text(
-                        'Clear notifications',
-                      ),
+                      SizedBox(width: 10),
+                      Text('Clear notifications'),
                     ],
                   ),
                 ),
@@ -706,203 +470,121 @@ class _NotificationsScreenState
         ],
       ),
 
-      body:
-      RefreshIndicator(
-        onRefresh:
-            () async {
+      body: RefreshIndicator(
+        onRefresh: () async {
           _refresh();
 
-          await Future<void>.delayed(
-            const Duration(
-              milliseconds:
-              300,
-            ),
-          );
+          await Future<void>.delayed(const Duration(milliseconds: 300));
         },
 
-        child:
-        StreamBuilder<
-            QuerySnapshot<
-                Map<String,
-                    dynamic>>>(
-          stream:
-          _notificationsStream,
+        child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+          stream: _notificationsStream,
 
           builder:
               (
-              BuildContext context,
-              AsyncSnapshot<
-                  QuerySnapshot<
-                      Map<String,
-                          dynamic>>>
-              snapshot,
+                BuildContext context,
+                AsyncSnapshot<QuerySnapshot<Map<String, dynamic>>> snapshot,
               ) {
-            //===================================================
-            // LOADING
-            //===================================================
+                //===================================================
+                // LOADING
+                //===================================================
 
-            if (snapshot.connectionState ==
-                ConnectionState.waiting &&
-                !snapshot.hasData) {
-              return const Center(
-                child:
-                CircularProgressIndicator(
-                  color:
-                  _blue,
-                ),
-              );
-            }
+                if (snapshot.connectionState == ConnectionState.waiting &&
+                    !snapshot.hasData) {
+                  return const Center(
+                    child: CircularProgressIndicator(color: _blue),
+                  );
+                }
 
-            //===================================================
-            // ERROR
-            //===================================================
+                //===================================================
+                // ERROR
+                //===================================================
 
-            if (snapshot.hasError) {
-              return ListView(
-                physics:
-                const AlwaysScrollableScrollPhysics(),
-                children:
-                <Widget>[
-                  SizedBox(
-                    height:
-                    MediaQuery.of(
-                      context,
-                    ).size.height *
-                        0.55,
-                    child:
-                    const _NotificationsEmptyState(
-                      icon:
-                      Icons
-                          .error_outline_rounded,
-                      title:
-                      'Unable to load notifications',
-                      subtitle:
-                      'Pull down to try again.',
-                    ),
-                  ),
-                ],
-              );
-            }
+                if (snapshot.hasError) {
+                  return ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    children: <Widget>[
+                      SizedBox(
+                        height: MediaQuery.of(context).size.height * 0.55,
+                        child: const _NotificationsEmptyState(
+                          icon: Icons.error_outline_rounded,
+                          title: 'Unable to load notifications',
+                          subtitle: 'Pull down to try again.',
+                        ),
+                      ),
+                    ],
+                  );
+                }
 
-            final List<
-                QueryDocumentSnapshot<
-                    Map<String,
-                        dynamic>>>
-            documents =
-            snapshot.hasData
-                ? _sortedNotifications(
-              snapshot.data!,
-            )
-                : <QueryDocumentSnapshot<
-                Map<String,
-                    dynamic>>>[];
+                final List<QueryDocumentSnapshot<Map<String, dynamic>>>
+                documents = snapshot.hasData
+                    ? _sortedNotifications(snapshot.data!)
+                    : <QueryDocumentSnapshot<Map<String, dynamic>>>[];
 
-            //===================================================
-            // EMPTY
-            //===================================================
+                //===================================================
+                // EMPTY
+                //===================================================
 
-            if (documents.isEmpty) {
-              return ListView(
-                physics:
-                const AlwaysScrollableScrollPhysics(),
-                children:
-                <Widget>[
-                  SizedBox(
-                    height:
-                    MediaQuery.of(
-                      context,
-                    ).size.height *
-                        0.58,
-                    child:
-                    const _NotificationsEmptyState(
-                      icon:
-                      Icons
-                          .notifications_none_rounded,
-                      title:
-                      'No notifications yet',
-                      subtitle:
-                      'Likes, comments, replies, reposts, follows and story activity will appear here.',
-                    ),
-                  ),
-                ],
-              );
-            }
+                if (documents.isEmpty) {
+                  return ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    children: <Widget>[
+                      SizedBox(
+                        height: MediaQuery.of(context).size.height * 0.58,
+                        child: const _NotificationsEmptyState(
+                          icon: Icons.notifications_none_rounded,
+                          title: 'No notifications yet',
+                          subtitle:
+                              'Likes, comments, replies, reposts, follows and story activity will appear here.',
+                        ),
+                      ),
+                    ],
+                  );
+                }
 
-            //===================================================
-            // LIST
-            //===================================================
+                //===================================================
+                // LIST
+                //===================================================
 
-            return ListView.separated(
-              physics:
-              const AlwaysScrollableScrollPhysics(),
+                return ListView.separated(
+                  physics: const AlwaysScrollableScrollPhysics(),
 
-              itemCount:
-              documents.length,
+                  itemCount: documents.length,
 
-              separatorBuilder:
-                  (
-                  BuildContext context,
-                  int index,
-                  ) {
-                return const Divider(
-                  height:
-                  1,
-                );
-              },
-
-              itemBuilder:
-                  (
-                  BuildContext context,
-                  int index,
-                  ) {
-                final QueryDocumentSnapshot<
-                    Map<String,
-                        dynamic>>
-                document =
-                documents[index];
-
-                return _NotificationTile(
-                  key:
-                  ValueKey<String>(
-                    document.id,
-                  ),
-
-                  notificationId:
-                  document.id,
-
-                  data:
-                  document.data(),
-
-                  onOpen:
-                      () {
-                    _openNotification(
-                      notificationId:
-                      document.id,
-
-                      data:
-                      document.data(),
-                    );
+                  separatorBuilder: (BuildContext context, int index) {
+                    return const Divider(height: 1);
                   },
 
-                  onDelete:
-                      () {
-                    _deleteNotification(
-                      document.id,
-                    );
-                  },
+                  itemBuilder: (BuildContext context, int index) {
+                    final QueryDocumentSnapshot<Map<String, dynamic>> document =
+                        documents[index];
 
-                  onOpenProfile:
-                      (
-                      String uid,
-                      ) {
-                    _openProfile(
-                      uid,
+                    return _NotificationTile(
+                      key: ValueKey<String>(document.id),
+
+                      notificationId: document.id,
+
+                      data: document.data(),
+
+                      onOpen: () {
+                        _openNotification(
+                          notificationId: document.id,
+
+                          data: document.data(),
+                        );
+                      },
+
+                      onDelete: () {
+                        _deleteNotification(document.id);
+                      },
+
+                      onOpenProfile: (String uid) {
+                        _openProfile(uid);
+                      },
                     );
                   },
                 );
               },
-            );
-          },
         ),
       ),
     );
@@ -912,23 +594,14 @@ class _NotificationsScreenState
   // MESSAGE
   //===================================================
 
-  void _showMessage(
-      String message,
-      ) {
+  void _showMessage(String message) {
     if (!mounted) {
       return;
     }
 
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(
-      SnackBar(
-        content:
-        Text(
-          message,
-        ),
-      ),
-    );
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 }
 
@@ -936,8 +609,7 @@ class _NotificationsScreenState
 // NOTIFICATION TILE
 //===================================================
 
-class _NotificationTile
-    extends StatelessWidget {
+class _NotificationTile extends StatelessWidget {
   const _NotificationTile({
     super.key,
     required this.notificationId,
@@ -955,419 +627,237 @@ class _NotificationTile
 
   final VoidCallback onDelete;
 
-  final ValueChanged<String>
-  onOpenProfile;
+  final ValueChanged<String> onOpenProfile;
 
   //===================================================
   // FIREBASE
   //===================================================
 
-  static final FirebaseFirestore
-  _firestore =
-      FirebaseFirestore.instance;
+  static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   //===================================================
   // BLUE
   //===================================================
 
-  static const Color _blue =
-  Color(
-    0xFF29B6F6,
-  );
+  static const Color _blue = Color(0xFF29B6F6);
 
   //===================================================
   // BUILD
   //===================================================
 
   @override
-  Widget build(
-      BuildContext context,
-      ) {
-    final String senderId =
-    (data['senderId'] ??
-        data['senderUid'] ??
-        '')
+  Widget build(BuildContext context) {
+    final String senderId = (data['senderId'] ?? data['senderUid'] ?? '')
         .toString()
         .trim();
 
-    final String type =
-    (data['type'] ?? '')
-        .toString()
-        .trim();
+    final String type = (data['type'] ?? '').toString().trim();
 
-    final String message =
-    (data['message'] ?? '')
-        .toString()
-        .trim();
+    final String message = (data['message'] ?? '').toString().trim();
 
-    final bool isRead =
-        data['isRead'] ==
-            true;
+    final bool isRead = data['isRead'] == true;
 
-    final Timestamp? createdAt =
-    data['createdAt']
-    is Timestamp
-        ? data['createdAt']
-    as Timestamp
+    final Timestamp? createdAt = data['createdAt'] is Timestamp
+        ? data['createdAt'] as Timestamp
         : null;
 
-    return FutureBuilder<
-        DocumentSnapshot<
-            Map<String, dynamic>>>(
-      future:
-      senderId.isEmpty
+    return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      future: senderId.isEmpty
           ? null
-          : _firestore
-          .collection(
-        'users',
-      )
-          .doc(
-        senderId,
-      )
-          .get(),
+          : _firestore.collection('users').doc(senderId).get(),
 
       builder:
           (
-          BuildContext context,
-          AsyncSnapshot<
-              DocumentSnapshot<
-                  Map<String, dynamic>>>
-          snapshot,
+            BuildContext context,
+            AsyncSnapshot<DocumentSnapshot<Map<String, dynamic>>> snapshot,
           ) {
-        final Map<String, dynamic>
-        userData =
-            snapshot.data
-                ?.data() ??
-                <String, dynamic>{};
+            final Map<String, dynamic> userData =
+                snapshot.data?.data() ?? <String, dynamic>{};
 
-        final String username =
-        (userData[
-        'username'] ??
-            '')
-            .toString()
-            .trim();
+            final String username = (userData['username'] ?? '')
+                .toString()
+                .trim();
 
-        final String fullName =
-        (userData[
-        'fullName'] ??
-            '')
-            .toString()
-            .trim();
+            final String fullName = (userData['fullName'] ?? '')
+                .toString()
+                .trim();
 
-        final String photoUrl =
-        (userData[
-        'photoUrl'] ??
-            '')
-            .toString()
-            .trim();
+            final String photoUrl = (userData['photoUrl'] ?? '')
+                .toString()
+                .trim();
 
-        final String displayName =
-        fullName.isNotEmpty
-            ? fullName
-            : username.isNotEmpty
-            ? username
-            : 'Someone';
+            final String displayName = fullName.isNotEmpty
+                ? fullName
+                : username.isNotEmpty
+                ? username
+                : 'Someone';
 
-        return Dismissible(
-          key:
-          ValueKey<String>(
-            'notification_$notificationId',
-          ),
+            return Dismissible(
+              key: ValueKey<String>('notification_$notificationId'),
 
-          direction:
-          DismissDirection
-              .endToStart,
+              direction: DismissDirection.endToStart,
 
-          background:
-          Container(
-            alignment:
-            Alignment.centerRight,
-            padding:
-            const EdgeInsets.only(
-              right:
-              24,
-            ),
-            color:
-            Colors.redAccent,
-            child:
-            const Icon(
-              Icons
-                  .delete_outline_rounded,
-              color:
-              Colors.white,
-            ),
-          ),
-
-          onDismissed:
-              (_) {
-            onDelete();
-          },
-
-          child:
-          Material(
-            color:
-            isRead
-                ? Colors.transparent
-                : _blue
-                .withOpacity(
-              0.07,
-            ),
-
-            child:
-            InkWell(
-              onTap:
-              onOpen,
-
-              child:
-              Padding(
-                padding:
-                const EdgeInsets
-                    .fromLTRB(
-                  14,
-                  11,
-                  8,
-                  11,
+              background: Container(
+                alignment: Alignment.centerRight,
+                padding: const EdgeInsets.only(right: 24),
+                color: Colors.redAccent,
+                child: const Icon(
+                  Icons.delete_outline_rounded,
+                  color: Colors.white,
                 ),
+              ),
 
-                child:
-                Row(
-                  crossAxisAlignment:
-                  CrossAxisAlignment
-                      .center,
+              onDismissed: (_) {
+                onDelete();
+              },
 
-                  children:
-                  <Widget>[
-                    //===================================================
-                    // AVATAR
-                    //===================================================
+              child: Material(
+                color: isRead ? Colors.transparent : _blue.withOpacity(0.07),
 
-                    GestureDetector(
-                      behavior:
-                      HitTestBehavior
-                          .opaque,
+                child: InkWell(
+                  onTap: onOpen,
 
-                      onTap:
-                      senderId.isEmpty
-                          ? null
-                          : () {
-                        onOpenProfile(
-                          senderId,
-                        );
-                      },
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(14, 11, 8, 11),
 
-                      child:
-                      Stack(
-                        clipBehavior:
-                        Clip.none,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
 
-                        children:
-                        <Widget>[
-                          CircleAvatar(
-                            radius:
-                            25,
+                      children: <Widget>[
+                        //===================================================
+                        // AVATAR
+                        //===================================================
 
-                            backgroundColor:
-                            _blue
-                                .withOpacity(
-                              0.16,
-                            ),
+                        GestureDetector(
+                          behavior: HitTestBehavior.opaque,
 
-                            backgroundImage:
-                            photoUrl.isNotEmpty
-                                ? NetworkImage(
-                              photoUrl,
-                            )
-                                : null,
+                          onTap: senderId.isEmpty
+                              ? null
+                              : () {
+                                  onOpenProfile(senderId);
+                                },
 
-                            child:
-                            photoUrl.isEmpty
-                                ? const Icon(
-                              Icons
-                                  .person_rounded,
-                            )
-                                : null,
-                          ),
+                          child: Stack(
+                            clipBehavior: Clip.none,
 
-                          Positioned(
-                            right:
-                            -4,
-                            bottom:
-                            -3,
-                            child:
-                            Container(
-                              width:
-                              23,
-                              height:
-                              23,
-                              decoration:
-                              const BoxDecoration(
-                                color:
-                                _blue,
-                                shape:
-                                BoxShape.circle,
-                              ),
-                              child:
-                              Icon(
-                                _iconForType(
-                                  type,
-                                ),
-                                size:
-                                13,
-                                color:
-                                Colors.white,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                            children: <Widget>[
+                              CircleAvatar(
+                                radius: 25,
 
-                    const SizedBox(
-                      width:
-                      13,
-                    ),
+                                backgroundColor: _blue.withOpacity(0.16),
 
-                    //===================================================
-                    // TEXT
-                    //===================================================
+                                backgroundImage: photoUrl.isNotEmpty
+                                    ? NetworkImage(photoUrl)
+                                    : null,
 
-                    Expanded(
-                      child:
-                      Column(
-                        crossAxisAlignment:
-                        CrossAxisAlignment
-                            .start,
-
-                        children:
-                        <Widget>[
-                          RichText(
-                            text:
-                            TextSpan(
-                              style:
-                              DefaultTextStyle
-                                  .of(
-                                context,
-                              )
-                                  .style
-                                  .copyWith(
-                                fontSize:
-                                14,
+                                child: photoUrl.isEmpty
+                                    ? const Icon(Icons.person_rounded)
+                                    : null,
                               ),
 
-                              children:
-                              <InlineSpan>[
-                                TextSpan(
-                                  text:
-                                  displayName,
-                                  style:
-                                  const TextStyle(
-                                    fontWeight:
-                                    FontWeight.bold,
+                              Positioned(
+                                right: -4,
+                                bottom: -3,
+                                child: Container(
+                                  width: 23,
+                                  height: 23,
+                                  decoration: const BoxDecoration(
+                                    color: _blue,
+                                    shape: BoxShape.circle,
                                   ),
-                                ),
-
-                                if (message
-                                    .isNotEmpty)
-                                  TextSpan(
-                                    text:
-                                    ' $message',
-                                    style:
-                                    TextStyle(
-                                      color:
-                                      Theme.of(
-                                        context,
-                                      )
-                                          .colorScheme
-                                          .onSurface
-                                          .withOpacity(
-                                        0.82,
-                                      ),
-                                    ),
+                                  child: Icon(
+                                    _iconForType(type),
+                                    size: 13,
+                                    color: Colors.white,
                                   ),
-                              ],
-                            ),
-                          ),
-
-                          if (username.isNotEmpty)
-                            ...<Widget>[
-                              const SizedBox(
-                                height:
-                                2,
-                              ),
-
-                              Text(
-                                '@$username',
-                                maxLines:
-                                1,
-                                overflow:
-                                TextOverflow
-                                    .ellipsis,
-                                style:
-                                TextStyle(
-                                  color:
-                                  Colors.grey
-                                      .shade500,
-                                  fontSize:
-                                  11,
                                 ),
                               ),
                             ],
-
-                          const SizedBox(
-                            height:
-                            4,
                           ),
+                        ),
 
-                          Text(
-                            NubifyTime
-                                .formatTimestamp(
-                              createdAt,
-                            ),
-                            style:
-                            TextStyle(
-                              color:
-                              Colors.grey
-                                  .shade500,
-                              fontSize:
-                              11,
-                            ),
+                        const SizedBox(width: 13),
+
+                        //===================================================
+                        // TEXT
+                        //===================================================
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+
+                            children: <Widget>[
+                              RichText(
+                                text: TextSpan(
+                                  style: DefaultTextStyle.of(
+                                    context,
+                                  ).style.copyWith(fontSize: 14),
+
+                                  children: <InlineSpan>[
+                                    TextSpan(
+                                      text: displayName,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+
+                                    if (message.isNotEmpty)
+                                      TextSpan(
+                                        text: ' $message',
+                                        style: TextStyle(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurface
+                                              .withOpacity(0.82),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+
+                              if (username.isNotEmpty) ...<Widget>[
+                                const SizedBox(height: 2),
+
+                                Text(
+                                  '@$username',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: Colors.grey.shade500,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ],
+
+                              const SizedBox(height: 4),
+
+                              Text(
+                                NubifyTime.formatTimestamp(createdAt),
+                                style: TextStyle(
+                                  color: Colors.grey.shade500,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
+                        ),
+
+                        //===================================================
+                        // UNREAD DOT
+                        //===================================================
+                        if (!isRead)
+                          const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 8),
+                            child: Icon(Icons.circle, color: _blue, size: 9),
+                          )
+                        else
+                          const SizedBox(width: 8),
+                      ],
                     ),
-
-                    //===================================================
-                    // UNREAD DOT
-                    //===================================================
-
-                    if (!isRead)
-                      const Padding(
-                        padding:
-                        EdgeInsets.symmetric(
-                          horizontal:
-                          8,
-                        ),
-                        child:
-                        Icon(
-                          Icons.circle,
-                          color:
-                          _blue,
-                          size:
-                          9,
-                        ),
-                      )
-                    else
-                      const SizedBox(
-                        width:
-                        8,
-                      ),
-                  ],
+                  ),
                 ),
               ),
-            ),
-          ),
-        );
-      },
+            );
+          },
     );
   }
 
@@ -1375,57 +865,52 @@ class _NotificationTile
   // ICON FOR TYPE
   //===================================================
 
-  static IconData _iconForType(
-      String type,
-      ) {
+  static IconData _iconForType(String type) {
     switch (type) {
       case 'like':
-        return Icons
-            .favorite_rounded;
+        return Icons.favorite_rounded;
 
       case 'comment':
-        return Icons
-            .chat_bubble_rounded;
+        return Icons.chat_bubble_rounded;
 
       case 'reply':
-        return Icons
-            .reply_rounded;
+        return Icons.reply_rounded;
 
       case 'repost':
-        return Icons
-            .repeat_rounded;
+        return Icons.repeat_rounded;
 
       case 'quoteRepost':
-        return Icons
-            .format_quote_rounded;
+        return Icons.format_quote_rounded;
 
       case 'tag':
-        return Icons
-            .alternate_email_rounded;
+        return Icons.alternate_email_rounded;
 
       case 'follow':
-        return Icons
-            .person_add_alt_1_rounded;
+        return Icons.person_add_alt_1_rounded;
 
       case 'storyTag':
-        return Icons
-            .alternate_email_rounded;
+        return Icons.alternate_email_rounded;
 
       case 'storyLike':
-        return Icons
-            .favorite_rounded;
+        return Icons.favorite_rounded;
 
       case 'storyReply':
-        return Icons
-            .reply_rounded;
+        return Icons.reply_rounded;
 
       case 'storyReshare':
-        return Icons
-            .ios_share_rounded;
+        return Icons.ios_share_rounded;
+
+      case 'sellerVerificationApproved':
+        return Icons.verified_rounded;
+
+      case 'sellerVerificationRejected':
+        return Icons.info_outline_rounded;
+
+      case 'sellerVerificationSuspended':
+        return Icons.block_rounded;
 
       default:
-        return Icons
-            .notifications_rounded;
+        return Icons.notifications_rounded;
     }
   }
 }
@@ -1434,8 +919,7 @@ class _NotificationTile
 // EMPTY STATE
 //===================================================
 
-class _NotificationsEmptyState
-    extends StatelessWidget {
+class _NotificationsEmptyState extends StatelessWidget {
   const _NotificationsEmptyState({
     required this.icon,
     required this.title,
@@ -1449,70 +933,31 @@ class _NotificationsEmptyState
   final String subtitle;
 
   @override
-  Widget build(
-      BuildContext context,
-      ) {
+  Widget build(BuildContext context) {
     return Center(
-      child:
-      Padding(
-        padding:
-        const EdgeInsets.symmetric(
-          horizontal:
-          30,
-        ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 30),
 
-        child:
-        Column(
-          mainAxisSize:
-          MainAxisSize.min,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
 
-          children:
-          <Widget>[
-            Icon(
-              icon,
-              size:
-              56,
-              color:
-              const Color(
-                0xFF29B6F6,
-              ),
-            ),
+          children: <Widget>[
+            Icon(icon, size: 56, color: const Color(0xFF29B6F6)),
 
-            const SizedBox(
-              height:
-              12,
-            ),
+            const SizedBox(height: 12),
 
             Text(
               title,
-              textAlign:
-              TextAlign.center,
-              style:
-              const TextStyle(
-                fontSize:
-                18,
-                fontWeight:
-                FontWeight.bold,
-              ),
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
 
-            const SizedBox(
-              height:
-              6,
-            ),
+            const SizedBox(height: 6),
 
             Text(
               subtitle,
-              textAlign:
-              TextAlign.center,
-              style:
-              TextStyle(
-                color:
-                Colors.grey
-                    .shade500,
-                height:
-                1.35,
-              ),
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey.shade500, height: 1.35),
             ),
           ],
         ),

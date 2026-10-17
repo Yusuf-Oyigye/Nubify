@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../services/profile_service.dart';
+import '../services/private_profile_service.dart';
+import '../utils/egyptian_phone.dart';
 import '../utils/utils.dart';
 
 //===================================================
@@ -13,61 +15,48 @@ import '../utils/utils.dart';
 //===================================================
 
 class EditProfileScreen extends StatefulWidget {
-  const EditProfileScreen({
-    super.key,
-  });
+  const EditProfileScreen({super.key});
 
   @override
-  State<EditProfileScreen> createState() =>
-      _EditProfileScreenState();
+  State<EditProfileScreen> createState() => _EditProfileScreenState();
 }
 
 //===================================================
 // EDIT PROFILE STATE
 //===================================================
 
-class _EditProfileScreenState
-    extends State<EditProfileScreen> {
+class _EditProfileScreenState extends State<EditProfileScreen> {
   //===================================================
   // FIREBASE
   //===================================================
 
-  final FirebaseAuth _auth =
-      FirebaseAuth.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  final FirebaseFirestore _firestore =
-      FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   //===================================================
   // PROFILE SERVICE
   //===================================================
 
-  final ProfileService _profileService =
-  ProfileService();
+  final ProfileService _profileService = ProfileService();
+
+  final PrivateProfileService _privateProfileService = PrivateProfileService();
 
   //===================================================
   // CONTROLLERS
   //===================================================
 
-  final TextEditingController
-  _fullNameController =
-  TextEditingController();
+  final TextEditingController _fullNameController = TextEditingController();
 
-  final TextEditingController
-  _usernameController =
-  TextEditingController();
+  final TextEditingController _usernameController = TextEditingController();
 
-  final TextEditingController
-  _facultyController =
-  TextEditingController();
+  final TextEditingController _facultyController = TextEditingController();
 
-  final TextEditingController
-  _hobbiesController =
-  TextEditingController();
+  final TextEditingController _hobbiesController = TextEditingController();
 
-  final TextEditingController
-  _quoteController =
-  TextEditingController();
+  final TextEditingController _quoteController = TextEditingController();
+
+  final TextEditingController _phoneController = TextEditingController();
 
   //===================================================
   // PROFILE PHOTO
@@ -75,30 +64,25 @@ class _EditProfileScreenState
 
   Uint8List? _newImage;
 
-  String _currentPhotoUrl =
-      '';
+  String _currentPhotoUrl = '';
 
-  bool _removePhoto =
-  false;
+  bool _removePhoto = false;
 
   //===================================================
   // STATE
   //===================================================
 
-  bool _loading =
-  true;
+  bool _loading = true;
 
-  bool _saving =
-  false;
+  bool _saving = false;
+
+  bool _allowMarketplaceCalls = false;
 
   //===================================================
   // COLOR
   //===================================================
 
-  static const Color _blue =
-  Color(
-    0xFF29B6F6,
-  );
+  static const Color _blue = Color(0xFF29B6F6);
 
   //===================================================
   // INIT
@@ -116,70 +100,47 @@ class _EditProfileScreenState
   //===================================================
 
   Future<void> _loadProfile() async {
-    final String? uid =
-        _auth.currentUser?.uid;
+    final String? uid = _auth.currentUser?.uid;
 
     if (uid == null) {
       if (mounted) {
-        Navigator.pop(
-          context,
-        );
+        Navigator.pop(context);
       }
 
       return;
     }
 
     try {
-      final DocumentSnapshot<
-          Map<String, dynamic>>
-      snapshot =
-      await _firestore
-          .collection(
-        'users',
-      )
-          .doc(
-        uid,
-      )
+      final DocumentSnapshot<Map<String, dynamic>> snapshot = await _firestore
+          .collection('users')
+          .doc(uid)
           .get();
 
-      final Map<String, dynamic> data =
-          snapshot.data() ??
-              <String, dynamic>{};
+      final Map<String, dynamic> data = snapshot.data() ?? <String, dynamic>{};
 
-      _fullNameController.text =
-          (data['fullName'] ?? '')
-              .toString();
+      _fullNameController.text = (data['fullName'] ?? '').toString();
 
-      _usernameController.text =
-          (data['username'] ?? '')
-              .toString();
+      _usernameController.text = (data['username'] ?? '').toString();
 
-      _facultyController.text =
-          (data['faculty'] ?? '')
-              .toString();
+      _facultyController.text = (data['faculty'] ?? '').toString();
 
-      _hobbiesController.text =
-          (data['hobbies'] ?? '')
-              .toString();
+      _hobbiesController.text = (data['hobbies'] ?? '').toString();
 
-      _quoteController.text =
-          (data['favoriteQuote'] ?? '')
-              .toString();
+      _quoteController.text = (data['favoriteQuote'] ?? '').toString();
 
-      _currentPhotoUrl =
-          (data['photoUrl'] ?? '')
-              .toString();
+      _currentPhotoUrl = (data['photoUrl'] ?? '').toString();
+
+      final privateProfile = await _privateProfileService.getMine();
+      _phoneController.text = privateProfile.phoneE164;
+      _allowMarketplaceCalls = privateProfile.allowMarketplaceCalls;
     } catch (error) {
       if (mounted) {
-        _showMessage(
-          'Unable to load your profile.',
-        );
+        _showMessage('Unable to load your profile.');
       }
     } finally {
       if (mounted) {
         setState(() {
-          _loading =
-          false;
+          _loading = false;
         });
       }
     }
@@ -190,22 +151,16 @@ class _EditProfileScreenState
   //===================================================
 
   Future<void> _pickProfilePhoto() async {
-    final Uint8List? image =
-    await pickImage(
-      ImageSource.gallery,
-    );
+    final Uint8List? image = await pickImage(ImageSource.gallery);
 
-    if (image == null ||
-        !mounted) {
+    if (image == null || !mounted) {
       return;
     }
 
     setState(() {
-      _newImage =
-          image;
+      _newImage = image;
 
-      _removePhoto =
-      false;
+      _removePhoto = false;
     });
   }
 
@@ -215,105 +170,60 @@ class _EditProfileScreenState
 
   Future<void> _showProfilePhotoOptions() async {
     final bool hasPhoto =
-        _newImage != null ||
-            _currentPhotoUrl
-                .trim()
-                .isNotEmpty;
+        _newImage != null || _currentPhotoUrl.trim().isNotEmpty;
 
     await showModalBottomSheet<void>(
-      context:
-      context,
+      context: context,
 
-      showDragHandle:
-      true,
+      showDragHandle: true,
 
-      builder:
-          (
-          BuildContext sheetContext,
-          ) {
+      builder: (BuildContext sheetContext) {
         return SafeArea(
-          child:
-          Column(
-            mainAxisSize:
-            MainAxisSize.min,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
 
-            children:
-            <Widget>[
+            children: <Widget>[
               ListTile(
-                leading:
-                const Icon(
-                  Icons
-                      .photo_library_outlined,
+                leading: const Icon(Icons.photo_library_outlined, color: _blue),
 
-                  color:
-                  _blue,
-                ),
+                title: const Text('Change profile picture'),
 
-                title:
-                const Text(
-                  'Change profile picture',
-                ),
-
-                onTap:
-                    () async {
-                  Navigator.pop(
-                    sheetContext,
-                  );
+                onTap: () async {
+                  Navigator.pop(sheetContext);
 
                   await _pickProfilePhoto();
                 },
               ),
 
               ListTile(
-                enabled:
-                hasPhoto,
+                enabled: hasPhoto,
 
-                leading:
-                Icon(
-                  Icons
-                      .delete_outline_rounded,
+                leading: Icon(
+                  Icons.delete_outline_rounded,
 
-                  color:
-                  hasPhoto
-                      ? Colors.redAccent
-                      : null,
+                  color: hasPhoto ? Colors.redAccent : null,
                 ),
 
-                title:
-                const Text(
-                  'Remove profile picture',
-                ),
+                title: const Text('Remove profile picture'),
 
-                subtitle:
-                const Text(
-                  'Tap Save to apply this change',
-                ),
+                subtitle: const Text('Tap Save to apply this change'),
 
-                onTap:
-                !hasPhoto
+                onTap: !hasPhoto
                     ? null
                     : () {
-                  Navigator.pop(
-                    sheetContext,
-                  );
+                        Navigator.pop(sheetContext);
 
-                  setState(() {
-                    _newImage =
-                    null;
+                        setState(() {
+                          _newImage = null;
 
-                    _currentPhotoUrl =
-                    '';
+                          _currentPhotoUrl = '';
 
-                    _removePhoto =
-                    true;
-                  });
-                },
+                          _removePhoto = true;
+                        });
+                      },
               ),
 
-              const SizedBox(
-                height:
-                8,
-              ),
+              const SizedBox(height: 8),
             ],
           ),
         );
@@ -330,51 +240,44 @@ class _EditProfileScreenState
       return;
     }
 
-    final String fullName =
-    _fullNameController.text
-        .trim();
+    final String fullName = _fullNameController.text.trim();
 
-    final String username =
-    _usernameController.text
-        .trim();
+    final String username = _usernameController.text.trim();
 
-    final String faculty =
-    _facultyController.text
-        .trim();
+    final String faculty = _facultyController.text.trim();
 
-    final String hobbies =
-    _hobbiesController.text
-        .trim();
+    final String hobbies = _hobbiesController.text.trim();
 
-    final String favoriteQuote =
-    _quoteController.text
-        .trim();
+    final String favoriteQuote = _quoteController.text.trim();
+
+    final String phone = _phoneController.text.trim();
 
     //===================================================
     // VALIDATION
     //===================================================
 
     if (fullName.isEmpty) {
-      _showMessage(
-        'Please enter your full name.',
-      );
+      _showMessage('Please enter your full name.');
 
       return;
     }
 
     if (username.isEmpty) {
-      _showMessage(
-        'Please enter your username.',
-      );
+      _showMessage('Please enter your username.');
 
       return;
     }
 
     if (faculty.isEmpty) {
-      _showMessage(
-        'Please enter your faculty.',
-      );
+      _showMessage('Please enter your faculty.');
 
+      return;
+    }
+
+    if (phone.isNotEmpty && !EgyptianPhone.isValid(phone)) {
+      _showMessage(
+        'Enter a valid Egyptian number beginning 010, 011, 012, or 015.',
+      );
       return;
     }
 
@@ -383,65 +286,52 @@ class _EditProfileScreenState
     //===================================================
 
     setState(() {
-      _saving =
-      true;
+      _saving = true;
     });
 
     try {
-      await _profileService
-          .updateProfile(
-        fullName:
-        fullName,
+      await _profileService.updateProfile(
+        fullName: fullName,
 
-        username:
-        username,
+        username: username,
 
-        faculty:
-        faculty,
+        faculty: faculty,
 
-        hobbies:
-        hobbies,
+        hobbies: hobbies,
 
-        favoriteQuote:
-        favoriteQuote,
+        favoriteQuote: favoriteQuote,
 
-        newPhoto:
-        _newImage,
+        newPhoto: _newImage,
 
-        removePhoto:
-        _removePhoto,
+        removePhoto: _removePhoto,
       );
+
+      if (phone.isEmpty) {
+        await _privateProfileService.clearPhone();
+      } else {
+        await _privateProfileService.savePhone(
+          phone: phone,
+          allowMarketplaceCalls: _allowMarketplaceCalls,
+        );
+      }
 
       if (!mounted) {
         return;
       }
 
-      _showMessage(
-        'Profile updated.',
-      );
+      _showMessage('Profile updated.');
 
-      Navigator.pop(
-        context,
-        true,
-      );
+      Navigator.pop(context, true);
     } catch (error) {
       if (!mounted) {
         return;
       }
 
-      _showMessage(
-        error
-            .toString()
-            .replaceFirst(
-          'Exception: ',
-          '',
-        ),
-      );
+      _showMessage(error.toString().replaceFirst('Exception: ', ''));
     } finally {
       if (mounted) {
         setState(() {
-          _saving =
-          false;
+          _saving = false;
         });
       }
     }
@@ -451,500 +341,333 @@ class _EditProfileScreenState
   // CHANGE PASSWORD
   //===================================================
 
-  Future<void>
-  _showChangePasswordDialog() async {
-    final TextEditingController
-    currentController =
-    TextEditingController();
+  Future<void> _showChangePasswordDialog() async {
+    final TextEditingController currentController = TextEditingController();
 
-    final TextEditingController
-    newController =
-    TextEditingController();
+    final TextEditingController newController = TextEditingController();
 
-    final TextEditingController
-    confirmController =
-    TextEditingController();
+    final TextEditingController confirmController = TextEditingController();
 
-    bool obscureCurrent =
-    true;
+    bool obscureCurrent = true;
 
-    bool obscureNew =
-    true;
+    bool obscureNew = true;
 
-    bool obscureConfirm =
-    true;
+    bool obscureConfirm = true;
 
-    bool changing =
-    false;
+    bool changing = false;
 
-    bool dialogClosed =
-    false;
+    bool dialogClosed = false;
 
     //===================================================
     // OPEN DIALOG
     //===================================================
 
     await showDialog<void>(
-      context:
-      context,
+      context: context,
 
-      barrierDismissible:
-      false,
+      barrierDismissible: false,
 
-      builder:
-          (
-          BuildContext dialogContext,
-          ) {
+      builder: (BuildContext dialogContext) {
         return StatefulBuilder(
           builder:
-              (
-              BuildContext
-              dialogBuilderContext,
-              StateSetter
-              setDialogState,
-              ) {
-            //===================================================
-            // SUBMIT PASSWORD CHANGE
-            //===================================================
-
-            Future<void> submit() async {
-              if (changing) {
-                return;
-              }
-
-              final String
-              currentPassword =
-                  currentController.text;
-
-              final String
-              newPassword =
-                  newController.text;
-
-              final String
-              confirmPassword =
-                  confirmController.text;
-
-              //===================================================
-              // VALIDATION
-              //===================================================
-
-              if (currentPassword
-                  .isEmpty ||
-                  newPassword
-                      .isEmpty ||
-                  confirmPassword
-                      .isEmpty) {
-                _showMessage(
-                  'Fill all password fields.',
-                );
-
-                return;
-              }
-
-              if (newPassword !=
-                  confirmPassword) {
-                _showMessage(
-                  'New passwords do not match.',
-                );
-
-                return;
-              }
-
-              if (newPassword.length <
-                  6) {
-                _showMessage(
-                  'Password must be at least 6 characters.',
-                );
-
-                return;
-              }
-
-              //===================================================
-              // START CHANGING
-              //===================================================
-
-              setDialogState(() {
-                changing =
-                true;
-              });
-
-              try {
-                await _profileService
-                    .changePassword(
-                  currentPassword:
-                  currentPassword,
-
-                  newPassword:
-                  newPassword,
-                );
-
-                if (!mounted) {
-                  return;
-                }
-
+              (BuildContext dialogBuilderContext, StateSetter setDialogState) {
                 //===================================================
-                // CLOSE DIALOG
+                // SUBMIT PASSWORD CHANGE
                 //===================================================
 
-                dialogClosed =
-                true;
+                Future<void> submit() async {
+                  if (changing) {
+                    return;
+                  }
 
-                Navigator.of(
-                  dialogContext,
-                ).pop();
+                  final String currentPassword = currentController.text;
 
-                _showMessage(
-                  'Password changed successfully.',
-                );
-              } on FirebaseAuthException catch (
-              error
-              ) {
-                if (!mounted) {
-                  return;
-                }
+                  final String newPassword = newController.text;
 
-                String message =
-                    error.message ??
-                        'Unable to change password.';
+                  final String confirmPassword = confirmController.text;
 
-                if (error.code ==
-                    'wrong-password' ||
-                    error.code ==
-                        'invalid-credential') {
-                  message =
-                  'Your current password is incorrect.';
-                }
+                  //===================================================
+                  // VALIDATION
+                  //===================================================
 
-                _showMessage(
-                  message,
-                );
-              } catch (error) {
-                if (!mounted) {
-                  return;
-                }
+                  if (currentPassword.isEmpty ||
+                      newPassword.isEmpty ||
+                      confirmPassword.isEmpty) {
+                    _showMessage('Fill all password fields.');
 
-                _showMessage(
-                  error
-                      .toString()
-                      .replaceFirst(
-                    'Exception: ',
-                    '',
-                  ),
-                );
-              } finally {
-                //===================================================
-                // IMPORTANT
-                //
-                // Do not call setDialogState after Navigator.pop().
-                // This prevents setState-after-dispose errors.
-                //===================================================
+                    return;
+                  }
 
-                if (!dialogClosed) {
+                  if (newPassword != confirmPassword) {
+                    _showMessage('New passwords do not match.');
+
+                    return;
+                  }
+
+                  if (newPassword.length < 6) {
+                    _showMessage('Password must be at least 6 characters.');
+
+                    return;
+                  }
+
+                  //===================================================
+                  // START CHANGING
+                  //===================================================
+
                   setDialogState(() {
-                    changing =
-                    false;
+                    changing = true;
                   });
+
+                  try {
+                    await _profileService.changePassword(
+                      currentPassword: currentPassword,
+
+                      newPassword: newPassword,
+                    );
+
+                    if (!mounted) {
+                      return;
+                    }
+
+                    //===================================================
+                    // CLOSE DIALOG
+                    //===================================================
+
+                    dialogClosed = true;
+
+                    Navigator.of(dialogContext).pop();
+
+                    _showMessage('Password changed successfully.');
+                  } on FirebaseAuthException catch (error) {
+                    if (!mounted) {
+                      return;
+                    }
+
+                    String message =
+                        error.message ?? 'Unable to change password.';
+
+                    if (error.code == 'wrong-password' ||
+                        error.code == 'invalid-credential') {
+                      message = 'Your current password is incorrect.';
+                    }
+
+                    _showMessage(message);
+                  } catch (error) {
+                    if (!mounted) {
+                      return;
+                    }
+
+                    _showMessage(
+                      error.toString().replaceFirst('Exception: ', ''),
+                    );
+                  } finally {
+                    //===================================================
+                    // IMPORTANT
+                    //
+                    // Do not call setDialogState after Navigator.pop().
+                    // This prevents setState-after-dispose errors.
+                    //===================================================
+
+                    if (!dialogClosed) {
+                      setDialogState(() {
+                        changing = false;
+                      });
+                    }
+                  }
                 }
-              }
-            }
-
-            //===================================================
-            // PASSWORD DIALOG
-            //===================================================
-
-            return PopScope(
-              canPop:
-              !changing,
-
-              child:
-              AlertDialog(
-                title:
-                const Row(
-                  children:
-                  <Widget>[
-                    Icon(
-                      Icons
-                          .lock_reset_rounded,
-
-                      color:
-                      _blue,
-                    ),
-
-                    SizedBox(
-                      width:
-                      10,
-                    ),
-
-                    Text(
-                      'Change Password',
-                    ),
-                  ],
-                ),
 
                 //===================================================
-                // PASSWORD FIELDS
+                // PASSWORD DIALOG
                 //===================================================
 
-                content:
-                SingleChildScrollView(
-                  child:
-                  Column(
-                    mainAxisSize:
-                    MainAxisSize.min,
+                return PopScope(
+                  canPop: !changing,
 
-                    children:
-                    <Widget>[
-                      //===================================================
-                      // CURRENT PASSWORD
-                      //===================================================
+                  child: AlertDialog(
+                    title: const Row(
+                      children: <Widget>[
+                        Icon(Icons.lock_reset_rounded, color: _blue),
 
-                      TextField(
-                        controller:
-                        currentController,
+                        SizedBox(width: 10),
 
-                        obscureText:
-                        obscureCurrent,
+                        Text('Change Password'),
+                      ],
+                    ),
 
-                        enabled:
-                        !changing,
+                    //===================================================
+                    // PASSWORD FIELDS
+                    //===================================================
+                    content: SingleChildScrollView(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
 
-                        textInputAction:
-                        TextInputAction
-                            .next,
+                        children: <Widget>[
+                          //===================================================
+                          // CURRENT PASSWORD
+                          //===================================================
 
-                        decoration:
-                        InputDecoration(
-                          labelText:
-                          'Current password',
+                          TextField(
+                            controller: currentController,
 
-                          prefixIcon:
-                          const Icon(
-                            Icons
-                                .lock_outline_rounded,
-                          ),
+                            obscureText: obscureCurrent,
 
-                          border:
-                          const OutlineInputBorder(),
+                            enabled: !changing,
 
-                          suffixIcon:
-                          IconButton(
-                            onPressed:
-                            changing
-                                ? null
-                                : () {
-                              setDialogState(
-                                    () {
-                                  obscureCurrent =
-                                  !obscureCurrent;
-                                },
-                              );
-                            },
+                            textInputAction: TextInputAction.next,
 
-                            icon:
-                            Icon(
-                              obscureCurrent
-                                  ? Icons
-                                  .visibility_off_outlined
-                                  : Icons
-                                  .visibility_outlined,
+                            decoration: InputDecoration(
+                              labelText: 'Current password',
+
+                              prefixIcon: const Icon(
+                                Icons.lock_outline_rounded,
+                              ),
+
+                              border: const OutlineInputBorder(),
+
+                              suffixIcon: IconButton(
+                                onPressed: changing
+                                    ? null
+                                    : () {
+                                        setDialogState(() {
+                                          obscureCurrent = !obscureCurrent;
+                                        });
+                                      },
+
+                                icon: Icon(
+                                  obscureCurrent
+                                      ? Icons.visibility_off_outlined
+                                      : Icons.visibility_outlined,
+                                ),
+                              ),
                             ),
                           ),
-                        ),
-                      ),
 
-                      const SizedBox(
-                        height:
-                        12,
-                      ),
+                          const SizedBox(height: 12),
 
-                      //===================================================
-                      // NEW PASSWORD
-                      //===================================================
+                          //===================================================
+                          // NEW PASSWORD
+                          //===================================================
+                          TextField(
+                            controller: newController,
 
-                      TextField(
-                        controller:
-                        newController,
+                            obscureText: obscureNew,
 
-                        obscureText:
-                        obscureNew,
+                            enabled: !changing,
 
-                        enabled:
-                        !changing,
+                            textInputAction: TextInputAction.next,
 
-                        textInputAction:
-                        TextInputAction
-                            .next,
+                            decoration: InputDecoration(
+                              labelText: 'New password',
 
-                        decoration:
-                        InputDecoration(
-                          labelText:
-                          'New password',
+                              prefixIcon: const Icon(Icons.password_rounded),
 
-                          prefixIcon:
-                          const Icon(
-                            Icons
-                                .password_rounded,
-                          ),
+                              border: const OutlineInputBorder(),
 
-                          border:
-                          const OutlineInputBorder(),
+                              suffixIcon: IconButton(
+                                onPressed: changing
+                                    ? null
+                                    : () {
+                                        setDialogState(() {
+                                          obscureNew = !obscureNew;
+                                        });
+                                      },
 
-                          suffixIcon:
-                          IconButton(
-                            onPressed:
-                            changing
-                                ? null
-                                : () {
-                              setDialogState(
-                                    () {
-                                  obscureNew =
-                                  !obscureNew;
-                                },
-                              );
-                            },
-
-                            icon:
-                            Icon(
-                              obscureNew
-                                  ? Icons
-                                  .visibility_off_outlined
-                                  : Icons
-                                  .visibility_outlined,
+                                icon: Icon(
+                                  obscureNew
+                                      ? Icons.visibility_off_outlined
+                                      : Icons.visibility_outlined,
+                                ),
+                              ),
                             ),
                           ),
-                        ),
+
+                          const SizedBox(height: 12),
+
+                          //===================================================
+                          // CONFIRM PASSWORD
+                          //===================================================
+                          TextField(
+                            controller: confirmController,
+
+                            obscureText: obscureConfirm,
+
+                            enabled: !changing,
+
+                            textInputAction: TextInputAction.done,
+
+                            onSubmitted: changing
+                                ? null
+                                : (_) {
+                                    submit();
+                                  },
+
+                            decoration: InputDecoration(
+                              labelText: 'Confirm new password',
+
+                              prefixIcon: const Icon(
+                                Icons.verified_user_outlined,
+                              ),
+
+                              border: const OutlineInputBorder(),
+
+                              suffixIcon: IconButton(
+                                onPressed: changing
+                                    ? null
+                                    : () {
+                                        setDialogState(() {
+                                          obscureConfirm = !obscureConfirm;
+                                        });
+                                      },
+
+                                icon: Icon(
+                                  obscureConfirm
+                                      ? Icons.visibility_off_outlined
+                                      : Icons.visibility_outlined,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
+                    ),
 
-                      const SizedBox(
-                        height:
-                        12,
-                      ),
-
-                      //===================================================
-                      // CONFIRM PASSWORD
-                      //===================================================
-
-                      TextField(
-                        controller:
-                        confirmController,
-
-                        obscureText:
-                        obscureConfirm,
-
-                        enabled:
-                        !changing,
-
-                        textInputAction:
-                        TextInputAction
-                            .done,
-
-                        onSubmitted:
-                        changing
+                    //===================================================
+                    // ACTIONS
+                    //===================================================
+                    actions: <Widget>[
+                      TextButton(
+                        onPressed: changing
                             ? null
-                            : (_) {
-                          submit();
-                        },
+                            : () {
+                                dialogClosed = true;
 
-                        decoration:
-                        InputDecoration(
-                          labelText:
-                          'Confirm new password',
+                                Navigator.of(dialogContext).pop();
+                              },
 
-                          prefixIcon:
-                          const Icon(
-                            Icons
-                                .verified_user_outlined,
-                          ),
+                        child: const Text('Cancel'),
+                      ),
 
-                          border:
-                          const OutlineInputBorder(),
+                      FilledButton(
+                        onPressed: changing ? null : submit,
 
-                          suffixIcon:
-                          IconButton(
-                            onPressed:
-                            changing
-                                ? null
-                                : () {
-                              setDialogState(
-                                    () {
-                                  obscureConfirm =
-                                  !obscureConfirm;
-                                },
-                              );
-                            },
+                        child: changing
+                            ? const SizedBox(
+                                width: 18,
 
-                            icon:
-                            Icon(
-                              obscureConfirm
-                                  ? Icons
-                                  .visibility_off_outlined
-                                  : Icons
-                                  .visibility_outlined,
-                            ),
-                          ),
-                        ),
+                                height: 18,
+
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Text('Change'),
                       ),
                     ],
                   ),
-                ),
-
-                //===================================================
-                // ACTIONS
-                //===================================================
-
-                actions:
-                <Widget>[
-                  TextButton(
-                    onPressed:
-                    changing
-                        ? null
-                        : () {
-                      dialogClosed =
-                      true;
-
-                      Navigator.of(
-                        dialogContext,
-                      ).pop();
-                    },
-
-                    child:
-                    const Text(
-                      'Cancel',
-                    ),
-                  ),
-
-                  FilledButton(
-                    onPressed:
-                    changing
-                        ? null
-                        : submit,
-
-                    child:
-                    changing
-                        ? const SizedBox(
-                      width:
-                      18,
-
-                      height:
-                      18,
-
-                      child:
-                      CircularProgressIndicator(
-                        strokeWidth:
-                        2,
-
-                        color:
-                        Colors.white,
-                      ),
-                    )
-                        : const Text(
-                      'Change',
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
+                );
+              },
         );
       },
     );
@@ -965,110 +688,68 @@ class _EditProfileScreenState
   //===================================================
 
   Widget _buildPhoto() {
-    ImageProvider<Object>?
-    imageProvider;
+    ImageProvider<Object>? imageProvider;
 
     if (_newImage != null) {
-      imageProvider =
-          MemoryImage(
-            _newImage!,
-          );
-    } else if (_currentPhotoUrl
-        .trim()
-        .isNotEmpty) {
-      imageProvider =
-          NetworkImage(
-            _currentPhotoUrl.trim(),
-          );
+      imageProvider = MemoryImage(_newImage!);
+    } else if (_currentPhotoUrl.trim().isNotEmpty) {
+      imageProvider = NetworkImage(_currentPhotoUrl.trim());
     }
 
     return Center(
-      child:
-      Stack(
-        clipBehavior:
-        Clip.none,
+      child: Stack(
+        clipBehavior: Clip.none,
 
-        children:
-        <Widget>[
+        children: <Widget>[
           //===================================================
           // PROFILE IMAGE
           //===================================================
 
           CircleAvatar(
-            radius:
-            58,
+            radius: 58,
 
-            backgroundColor:
-            _blue.withValues(
-              alpha:
-              0.20,
-            ),
+            backgroundColor: _blue.withValues(alpha: 0.20),
 
-            backgroundImage:
-            imageProvider,
+            backgroundImage: imageProvider,
 
-            child:
-            imageProvider ==
-                null
+            child: imageProvider == null
                 ? const Icon(
-              Icons
-                  .person_rounded,
+                    Icons.person_rounded,
 
-              size:
-              58,
+                    size: 58,
 
-              color:
-              Colors.white70,
-            )
+                    color: Colors.white70,
+                  )
                 : null,
           ),
 
           //===================================================
           // CHANGE PHOTO BUTTON
           //===================================================
-
           Positioned(
-            right:
-            -3,
+            right: -3,
 
-            bottom:
-            2,
+            bottom: 2,
 
-            child:
-            Material(
-              color:
-              _blue,
+            child: Material(
+              color: _blue,
 
-              shape:
-              const CircleBorder(),
+              shape: const CircleBorder(),
 
-              child:
-              InkWell(
-                customBorder:
-                const CircleBorder(),
+              child: InkWell(
+                customBorder: const CircleBorder(),
 
-                onTap:
-                _saving
-                    ? null
-                    : _showProfilePhotoOptions,
+                onTap: _saving ? null : _showProfilePhotoOptions,
 
-                child:
-                const Padding(
-                  padding:
-                  EdgeInsets.all(
-                    9,
-                  ),
+                child: const Padding(
+                  padding: EdgeInsets.all(9),
 
-                  child:
-                  Icon(
-                    Icons
-                        .add_a_photo_outlined,
+                  child: Icon(
+                    Icons.add_a_photo_outlined,
 
-                    color:
-                    Colors.white,
+                    color: Colors.white,
 
-                    size:
-                    21,
+                    size: 21,
                   ),
                 ),
               ),
@@ -1090,8 +771,7 @@ class _EditProfileScreenState
   //===================================================
 
   Widget _field({
-    required TextEditingController
-    controller,
+    required TextEditingController controller,
 
     required String label,
 
@@ -1099,50 +779,28 @@ class _EditProfileScreenState
 
     int maxLines = 1,
 
-    TextInputType keyboardType =
-        TextInputType.text,
+    TextInputType keyboardType = TextInputType.text,
   }) {
-    final bool isMultiline =
-        maxLines > 1;
+    final bool isMultiline = maxLines > 1;
 
     return TextField(
-      controller:
-      controller,
+      controller: controller,
 
-      maxLines:
-      maxLines,
+      maxLines: maxLines,
 
-      keyboardType:
-      isMultiline
-          ? TextInputType.multiline
-          : keyboardType,
+      keyboardType: isMultiline ? TextInputType.multiline : keyboardType,
 
-      decoration:
-      InputDecoration(
-        labelText:
-        label,
+      decoration: InputDecoration(
+        labelText: label,
 
-        alignLabelWithHint:
-        isMultiline,
+        alignLabelWithHint: isMultiline,
 
-        prefixIcon:
-        Icon(
-          icon,
-        ),
+        prefixIcon: Icon(icon),
 
-        border:
-        const OutlineInputBorder(),
+        border: const OutlineInputBorder(),
 
-        focusedBorder:
-        const OutlineInputBorder(
-          borderSide:
-          BorderSide(
-            color:
-            _blue,
-
-            width:
-            1.5,
-          ),
+        focusedBorder: const OutlineInputBorder(
+          borderSide: BorderSide(color: _blue, width: 1.5),
         ),
       ),
     );
@@ -1153,47 +811,27 @@ class _EditProfileScreenState
   //===================================================
 
   @override
-  Widget build(
-      BuildContext context,
-      ) {
+  Widget build(BuildContext context) {
     return Scaffold(
       //===================================================
       // APP BAR
       //===================================================
 
-      appBar:
-      AppBar(
-        title:
-        const Text(
+      appBar: AppBar(
+        title: const Text(
           'Edit Profile',
 
-          style:
-          TextStyle(
-            fontWeight:
-            FontWeight.bold,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
 
-        actions:
-        <Widget>[
+        actions: <Widget>[
           TextButton(
-            onPressed:
-            _saving
-                ? null
-                : _saveProfile,
+            onPressed: _saving ? null : _saveProfile,
 
-            child:
-            const Text(
+            child: const Text(
               'Save',
 
-              style:
-              TextStyle(
-                color:
-                _blue,
-
-                fontWeight:
-                FontWeight.bold,
-              ),
+              style: TextStyle(color: _blue, fontWeight: FontWeight.bold),
             ),
           ),
         ],
@@ -1202,257 +840,180 @@ class _EditProfileScreenState
       //===================================================
       // BODY
       //===================================================
-
-      body:
-      _loading
-          ? const Center(
-        child:
-        CircularProgressIndicator(
-          color:
-          _blue,
-        ),
-      )
+      body: _loading
+          ? const Center(child: CircularProgressIndicator(color: _blue))
           : AbsorbPointer(
-        absorbing:
-        _saving,
+              absorbing: _saving,
 
-        child:
-        ListView(
-          keyboardDismissBehavior:
-          ScrollViewKeyboardDismissBehavior
-              .onDrag,
+              child: ListView(
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
 
-          padding:
-          const EdgeInsets
-              .fromLTRB(
-            18,
-            18,
-            18,
-            30,
-          ),
+                padding: const EdgeInsets.fromLTRB(18, 18, 18, 30),
 
-          children:
-          <Widget>[
-            //===================================================
-            // PHOTO
-            //===================================================
+                children: <Widget>[
+                  //===================================================
+                  // PHOTO
+                  //===================================================
 
-            _buildPhoto(),
+                  _buildPhoto(),
 
-            const SizedBox(
-              height:
-              28,
-            ),
+                  const SizedBox(height: 28),
 
-            //===================================================
-            // FULL NAME
-            //===================================================
+                  //===================================================
+                  // FULL NAME
+                  //===================================================
+                  _field(
+                    controller: _fullNameController,
 
-            _field(
-              controller:
-              _fullNameController,
+                    label: 'Full name',
 
-              label:
-              'Full name',
+                    icon: Icons.badge_outlined,
+                  ),
 
-              icon:
-              Icons
-                  .badge_outlined,
-            ),
+                  const SizedBox(height: 14),
 
-            const SizedBox(
-              height:
-              14,
-            ),
+                  //===================================================
+                  // USERNAME
+                  //===================================================
+                  _field(
+                    controller: _usernameController,
 
-            //===================================================
-            // USERNAME
-            //===================================================
+                    label: 'Username',
 
-            _field(
-              controller:
-              _usernameController,
+                    icon: Icons.alternate_email_rounded,
+                  ),
 
-              label:
-              'Username',
+                  const SizedBox(height: 14),
 
-              icon:
-              Icons
-                  .alternate_email_rounded,
-            ),
+                  //===================================================
+                  // FACULTY
+                  //===================================================
+                  _field(
+                    controller: _facultyController,
 
-            const SizedBox(
-              height:
-              14,
-            ),
+                    label: 'Faculty',
 
-            //===================================================
-            // FACULTY
-            //===================================================
+                    icon: Icons.school_outlined,
+                  ),
 
-            _field(
-              controller:
-              _facultyController,
+                  const SizedBox(height: 14),
 
-              label:
-              'Faculty',
+                  //===================================================
+                  // PRIVATE MOBILE NUMBER + CALL PERMISSION
+                  //===================================================
+                  _field(
+                    controller: _phoneController,
+                    label: 'Egyptian mobile number',
+                    icon: Icons.phone_android_rounded,
+                    keyboardType: TextInputType.phone,
+                  ),
 
-              icon:
-              Icons
-                  .school_outlined,
-            ),
+                  const SizedBox(height: 8),
 
-            const SizedBox(
-              height:
-              14,
-            ),
+                  Card(
+                    margin: EdgeInsets.zero,
+                    child: SwitchListTile.adaptive(
+                      value: _allowMarketplaceCalls,
+                      onChanged: (bool value) {
+                        setState(() {
+                          _allowMarketplaceCalls = value;
+                        });
+                      },
+                      secondary: const Icon(Icons.call_outlined),
+                      title: const Text('Allow Marketplace calls'),
+                      subtitle: const Text(
+                        'Your number remains private. Nubify only returns it when an eligible buyer taps Call Seller.',
+                      ),
+                      activeThumbColor: _blue,
+                    ),
+                  ),
 
-            //===================================================
-            // HOBBIES
-            //===================================================
+                  const SizedBox(height: 14),
 
-            _field(
-              controller:
-              _hobbiesController,
+                  //===================================================
+                  // HOBBIES
+                  //===================================================
+                  _field(
+                    controller: _hobbiesController,
 
-              label:
-              'Hobbies',
+                    label: 'Hobbies',
 
-              icon:
-              Icons
-                  .interests_outlined,
+                    icon: Icons.interests_outlined,
 
-              maxLines:
-              2,
-            ),
+                    maxLines: 2,
+                  ),
 
-            const SizedBox(
-              height:
-              14,
-            ),
+                  const SizedBox(height: 14),
 
-            //===================================================
-            // FAVOURITE QUOTE
-            //===================================================
+                  //===================================================
+                  // FAVOURITE QUOTE
+                  //===================================================
+                  _field(
+                    controller: _quoteController,
 
-            _field(
-              controller:
-              _quoteController,
+                    label: 'Favourite quote',
 
-              label:
-              'Favourite quote',
+                    icon: Icons.format_quote_rounded,
 
-              icon:
-              Icons
-                  .format_quote_rounded,
+                    maxLines: 3,
+                  ),
 
-              maxLines:
-              3,
-            ),
+                  const SizedBox(height: 20),
 
-            const SizedBox(
-              height:
-              20,
-            ),
+                  //===================================================
+                  // CHANGE PASSWORD
+                  //
+                  // CONTAINS:
+                  // CURRENT PASSWORD
+                  // NEW PASSWORD
+                  // CONFIRM NEW PASSWORD
+                  //===================================================
+                  OutlinedButton.icon(
+                    onPressed: _saving ? null : _showChangePasswordDialog,
 
-            //===================================================
-            // CHANGE PASSWORD
-            //
-            // CONTAINS:
-            // CURRENT PASSWORD
-            // NEW PASSWORD
-            // CONFIRM NEW PASSWORD
-            //===================================================
+                    icon: const Icon(Icons.lock_reset_rounded),
 
-            OutlinedButton.icon(
-              onPressed:
-              _saving
-                  ? null
-                  : _showChangePasswordDialog,
+                    label: const Text('Change Password'),
 
-              icon:
-              const Icon(
-                Icons
-                    .lock_reset_rounded,
-              ),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(50),
+                    ),
+                  ),
 
-              label:
-              const Text(
-                'Change Password',
-              ),
+                  const SizedBox(height: 18),
 
-              style:
-              OutlinedButton
-                  .styleFrom(
-                minimumSize:
-                const Size
-                    .fromHeight(
-                  50,
-                ),
+                  //===================================================
+                  // SAVE BUTTON
+                  //===================================================
+                  FilledButton.icon(
+                    onPressed: _saving ? null : _saveProfile,
+
+                    icon: _saving
+                        ? const SizedBox(
+                            width: 18,
+
+                            height: 18,
+
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Icon(Icons.save_outlined),
+
+                    label: Text(_saving ? 'Saving...' : 'Save Changes'),
+
+                    style: FilledButton.styleFrom(
+                      backgroundColor: _blue,
+
+                      minimumSize: const Size.fromHeight(52),
+                    ),
+                  ),
+                ],
               ),
             ),
-
-            const SizedBox(
-              height:
-              18,
-            ),
-
-            //===================================================
-            // SAVE BUTTON
-            //===================================================
-
-            FilledButton.icon(
-              onPressed:
-              _saving
-                  ? null
-                  : _saveProfile,
-
-              icon:
-              _saving
-                  ? const SizedBox(
-                width:
-                18,
-
-                height:
-                18,
-
-                child:
-                CircularProgressIndicator(
-                  strokeWidth:
-                  2,
-
-                  color:
-                  Colors.white,
-                ),
-              )
-                  : const Icon(
-                Icons
-                    .save_outlined,
-              ),
-
-              label:
-              Text(
-                _saving
-                    ? 'Saving...'
-                    : 'Save Changes',
-              ),
-
-              style:
-              FilledButton
-                  .styleFrom(
-                backgroundColor:
-                _blue,
-
-                minimumSize:
-                const Size
-                    .fromHeight(
-                  52,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -1460,27 +1021,16 @@ class _EditProfileScreenState
   // MESSAGE
   //===================================================
 
-  void _showMessage(
-      String message,
-      ) {
+  void _showMessage(String message) {
     if (!mounted) {
       return;
     }
 
-    ScaffoldMessenger.of(
-      context,
-    ).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
 
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(
-      SnackBar(
-        content:
-        Text(
-          message,
-        ),
-      ),
-    );
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   //===================================================
@@ -1489,20 +1039,17 @@ class _EditProfileScreenState
 
   @override
   void dispose() {
-    _fullNameController
-        .dispose();
+    _fullNameController.dispose();
 
-    _usernameController
-        .dispose();
+    _usernameController.dispose();
 
-    _facultyController
-        .dispose();
+    _facultyController.dispose();
 
-    _hobbiesController
-        .dispose();
+    _hobbiesController.dispose();
 
-    _quoteController
-        .dispose();
+    _quoteController.dispose();
+
+    _phoneController.dispose();
 
     super.dispose();
   }

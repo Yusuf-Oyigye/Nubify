@@ -1,0 +1,95 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isReviewer() {
+      return signedIn() && (
+        request.auth.token.marketplaceOwner == true ||
+        request.auth.token.admin == true ||
+        request.auth.token.moderator == true ||
+        request.auth.token.marketplaceReviewer == true
+      );
+    }
+
+    function isImage() {
+      return request.resource != null &&
+        request.resource.contentType.matches('image/.*');
+    }
+
+    function isMarketplaceMedia() {
+      return request.resource != null && (
+        request.resource.contentType.matches('image/.*') ||
+        request.resource.contentType.matches('video/.*')
+      );
+    }
+
+    //===================================================
+    // MARKETPLACE PRODUCT MEDIA
+    //===================================================
+
+    match /marketplace/{uid}/{listingId}/{fileName} {
+      allow read: if signedIn();
+      allow create, update: if signedIn() &&
+        request.auth.uid == uid &&
+        request.resource.size <= 30 * 1024 * 1024 &&
+        isMarketplaceMedia();
+      allow delete: if signedIn() && request.auth.uid == uid;
+    }
+
+    //===================================================
+    // PRIVATE UNIVERSITY ID DOCUMENTS
+    //===================================================
+
+    match /seller_verifications/{uid}/{verificationId}/{fileName} {
+      allow read: if signedIn() &&
+        (request.auth.uid == uid || isReviewer());
+      allow create, update: if signedIn() &&
+        request.auth.uid == uid &&
+        fileName.matches('student_id\\.(jpg|jpeg|png)') &&
+        request.resource.size <= 10 * 1024 * 1024 &&
+        isImage();
+      allow delete: if signedIn() && request.auth.uid == uid;
+    }
+
+    //===================================================
+    // EXISTING NUBIFY MEDIA PATHS
+    // These retain the access pattern used by the current app.
+    //===================================================
+
+    match /profilePics/{uid} {
+      allow read: if signedIn();
+      allow write: if signedIn() && request.auth.uid == uid;
+    }
+
+    match /posts/{uid}/{allPaths=**} {
+      allow read: if signedIn();
+      allow write: if signedIn() && request.auth.uid == uid;
+    }
+
+    match /stories/{uid}/{allPaths=**} {
+      allow read: if signedIn();
+      allow write: if signedIn() && request.auth.uid == uid;
+    }
+
+    match /chatMedia/{uid}/{allPaths=**} {
+      allow read: if signedIn();
+      allow write: if signedIn() && request.auth.uid == uid;
+    }
+
+    match /groupPhotos/{groupId}/{allPaths=**} {
+      allow read, write: if signedIn();
+    }
+
+    match /comments/{postId}/{allPaths=**} {
+      allow read, write: if signedIn();
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

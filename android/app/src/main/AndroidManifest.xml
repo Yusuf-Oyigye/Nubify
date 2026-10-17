@@ -25,6 +25,9 @@
     <!-- Notification permission for Android 13+ -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!-- Direct cellular calls; the app falls back to the dialer if denied. -->
+    <uses-permission android:name="android.permission.CALL_PHONE" />
+
     <!-- Bluetooth permissions for Android 11 and below -->
     <uses-permission
         android:name="android.permission.BLUETOOTH"
@@ -39,6 +42,10 @@
 
     <!-- Required for Flutter text processing -->
     <queries>
+        <intent>
+            <action android:name="android.intent.action.DIAL" />
+            <data android:scheme="tel" />
+        </intent>
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT" />
             <data android:mimeType="text/plain" />

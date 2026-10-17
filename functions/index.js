@@ -1558,3 +1558,12 @@ exports.joinGroupByInvite = onCall(
     });
   },
 );
+
+//===================================================
+// NUB MARKETPLACE BACKEND
+//===================================================
+
+Object.assign(
+  exports,
+  require("./marketplace"),
+);
