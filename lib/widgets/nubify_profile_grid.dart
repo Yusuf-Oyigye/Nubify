@@ -1,10 +1,8 @@
-import 'dart:typed_data';
-
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
-import 'package:video_thumbnail/video_thumbnail.dart';
+import 'package:video_player/video_player.dart';
 
 import '../models/post.dart';
 import '../services/profile_activity_service.dart';
@@ -387,24 +385,40 @@ class _CommentGridTileState extends State<_CommentGridTile> {
 //===================================================
 
 String nubifyPostCover(Post post) {
-  final String cover = post.thumbnailUrl.trim();
+  final PostMedia? primary = _primaryPostMedia(post);
 
-  if (cover.isNotEmpty) return cover;
+  if (primary?.isImage == true) {
+    return primary!.url.trim();
+  }
 
+  if (primary?.isVideo == true) {
+    final String mediaThumbnail = primary!.thumbnailUrl.trim();
+
+    if (mediaThumbnail.isNotEmpty) {
+      return mediaThumbnail;
+    }
+
+    return post.thumbnailUrl.trim();
+  }
+
+  return post.thumbnailUrl.trim();
+}
+
+PostMedia? _primaryPostMedia(Post post) {
   final List<PostMedia> media = <PostMedia>[...post.media]
     ..sort((a, b) => a.order.compareTo(b.order));
 
   for (final PostMedia item in media) {
     if (item.isImage && item.url.trim().isNotEmpty) {
-      return item.url.trim();
+      return item;
     }
 
-    if (item.isVideo && item.thumbnailUrl.trim().isNotEmpty) {
-      return item.thumbnailUrl.trim();
+    if (item.isVideo && item.url.trim().isNotEmpty) {
+      return item;
     }
   }
 
-  return '';
+  return null;
 }
 
 String _realPostText(Post post) {
@@ -444,14 +458,11 @@ String _realPostText(Post post) {
   return '';
 }
 
-PostMedia? _legacyVideo(Post post) {
-  final List<PostMedia> sorted = <PostMedia>[...post.media]
-    ..sort((a, b) => a.order.compareTo(b.order));
+PostMedia? _primaryVideo(Post post) {
+  final PostMedia? primary = _primaryPostMedia(post);
 
-  for (final PostMedia media in sorted) {
-    if (media.isVideo && media.url.trim().isNotEmpty) {
-      return media;
-    }
+  if (primary?.isVideo == true) {
+    return primary;
   }
 
   return null;
@@ -461,52 +472,150 @@ PostMedia? _legacyVideo(Post post) {
 // VIDEO COVER GENERATION FOR OLD POSTS
 //===================================================
 
-class _LegacyVideoCover extends StatelessWidget {
-  const _LegacyVideoCover({required this.url, required this.fallback});
+class _PlayableVideoCover extends StatefulWidget {
+  const _PlayableVideoCover({required this.url, required this.fallback});
 
   final String url;
   final Widget fallback;
 
-  static final Map<String, Future<Uint8List?>> _cache =
-      <String, Future<Uint8List?>>{};
+  @override
+  State<_PlayableVideoCover> createState() => _PlayableVideoCoverState();
+}
 
-  static Future<Uint8List?> _thumbnail(String url) async {
+class _PlayableVideoCoverState extends State<_PlayableVideoCover> {
+  VideoPlayerController? _controller;
+  bool _ready = false;
+  bool _failed = false;
+  int _loadGeneration = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _initialize();
+  }
+
+  @override
+  void didUpdateWidget(covariant _PlayableVideoCover oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.url != widget.url) {
+      _initialize();
+    }
+  }
+
+  Future<void> _initialize() async {
+    final int generation = ++_loadGeneration;
+    final VideoPlayerController? previousController = _controller;
+
+    _controller = null;
+    _ready = false;
+    _failed = false;
+    previousController?.dispose();
+
+    final String url = widget.url.trim();
+
+    if (url.isEmpty) {
+      if (mounted) {
+        setState(() {
+          _failed = true;
+        });
+      }
+
+      return;
+    }
+
+    VideoPlayerController? controller;
+
     try {
-      return await VideoThumbnail.thumbnailData(
-        video: url,
-        imageFormat: ImageFormat.JPEG,
-        maxWidth: 360,
-        quality: 65,
-      ).timeout(const Duration(seconds: 12));
-    } catch (_) {
-      return null;
+      controller = VideoPlayerController.networkUrl(
+        Uri.parse(url),
+        videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
+      );
+
+      await controller.initialize().timeout(const Duration(seconds: 15));
+      await controller.setVolume(0.0);
+
+      if (controller.value.duration.inMilliseconds > 300) {
+        await controller.seekTo(const Duration(milliseconds: 200));
+      }
+
+      await controller.pause();
+
+      if (!mounted || generation != _loadGeneration) {
+        await controller.dispose();
+        return;
+      }
+
+      setState(() {
+        _controller = controller;
+        _ready = true;
+      });
+    } catch (error) {
+      await controller?.dispose();
+
+      if (!mounted || generation != _loadGeneration) {
+        return;
+      }
+
+      debugPrint(
+        'Profile video thumbnail failed to load: ${error.runtimeType}',
+      );
+
+      setState(() {
+        _failed = true;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Limit temporary memory usage for long profile grids.
-    if (_cache.length >= 60 && !_cache.containsKey(url)) {
-      _cache.clear();
+    final VideoPlayerController? controller = _controller;
+
+    if (_failed) {
+      return widget.fallback;
     }
 
-    final Future<Uint8List?> future = _cache.putIfAbsent(
-      url,
-      () => _thumbnail(url),
+    if (!_ready || controller == null) {
+      return Stack(
+        fit: StackFit.expand,
+        children: <Widget>[
+          widget.fallback,
+          const Center(
+            child: SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Color(0xFF29B6F6),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    final Size videoSize = controller.value.size;
+
+    if (videoSize.width <= 0 || videoSize.height <= 0) {
+      return widget.fallback;
+    }
+
+    return FittedBox(
+      fit: BoxFit.cover,
+      child: SizedBox(
+        width: videoSize.width,
+        height: videoSize.height,
+        child: VideoPlayer(controller),
+      ),
     );
+  }
 
-    return FutureBuilder<Uint8List?>(
-      future: future,
-      builder: (context, snapshot) {
-        final Uint8List? bytes = snapshot.data;
-
-        if (bytes == null || bytes.isEmpty) {
-          return fallback;
-        }
-
-        return Image.memory(bytes, fit: BoxFit.cover, gaplessPlayback: true);
-      },
-    );
+  @override
+  void dispose() {
+    _loadGeneration++;
+    _controller?.dispose();
+    _controller = null;
+    super.dispose();
   }
 }
 //===================================================
@@ -554,7 +663,8 @@ class _RecoveringPostImageState extends State<_RecoveringPostImage> {
     super.didUpdateWidget(oldWidget);
 
     if (oldWidget.imageUrl != widget.imageUrl ||
-        oldWidget.storagePath != widget.storagePath) {
+        oldWidget.storagePath != widget.storagePath ||
+        oldWidget.videoUrl != widget.videoUrl) {
       _recoveryFuture = null;
     }
   }
@@ -589,7 +699,10 @@ class _RecoveringPostImageState extends State<_RecoveringPostImage> {
 
   Widget _mediaFallback() {
     if (widget.videoUrl.trim().isNotEmpty) {
-      return _LegacyVideoCover(url: widget.videoUrl, fallback: widget.fallback);
+      return _PlayableVideoCover(
+        url: widget.videoUrl,
+        fallback: widget.fallback,
+      );
     }
 
     return widget.fallback;
@@ -608,8 +721,8 @@ class _RecoveringPostImageState extends State<_RecoveringPostImage> {
     return CachedNetworkImage(
       imageUrl: widget.imageUrl.trim(),
       fit: BoxFit.cover,
-      placeholder: (_, __) => widget.fallback,
-      errorWidget: (_, __, error) {
+      placeholder: (_, _) => widget.fallback,
+      errorWidget: (_, _, error) {
         debugPrint(
           'Profile grid cover failed to load: '
           '${error.runtimeType}',
@@ -631,8 +744,8 @@ class _RecoveringPostImageState extends State<_RecoveringPostImage> {
             return CachedNetworkImage(
               imageUrl: freshUrl,
               fit: BoxFit.cover,
-              placeholder: (_, __) => widget.fallback,
-              errorWidget: (_, __, ___) => _mediaFallback(),
+              placeholder: (_, _) => widget.fallback,
+              errorWidget: (_, _, _) => _mediaFallback(),
             );
           },
         );
@@ -678,19 +791,13 @@ class _ContentTile extends StatelessWidget {
     final Post? content = post;
     final Post? wrapper = outerPost;
 
-    final String text = unavailable
-        ? 'Post unavailable'
-        : content != null
-        ? _realPostText(content)
-        : fallbackText.trim().isNotEmpty
-        ? fallbackText.trim()
-        : wrapper?.originalCaption.trim().isNotEmpty == true
-        ? wrapper!.originalCaption.trim()
-        : 'Loading post...';
-
     final String cover = content == null ? '' : nubifyPostCover(content);
 
-    final PostMedia? video = content == null ? null : _legacyVideo(content);
+    final PostMedia? video = content == null ? null : _primaryVideo(content);
+
+    final PostMedia? primaryMedia = content == null
+        ? null
+        : _primaryPostMedia(content);
 
     final bool isVideo =
         content != null &&
@@ -702,16 +809,35 @@ class _ContentTile extends StatelessWidget {
 
     final bool multiple = (content?.media.length ?? 0) > 1;
 
-    final int count = isVideo
-        ? (content?.viewCount ?? 0)
-        : (content?.likeCount ?? 0);
+    final String realText = content == null ? '' : _realPostText(content);
+
+    final String wrapperText =
+        wrapper?.originalCaption.trim().isNotEmpty == true
+        ? wrapper!.originalCaption.trim()
+        : wrapper?.repostText.trim() ?? '';
+
+    final String text = realText.isNotEmpty
+        ? realText
+        : fallbackText.trim().isNotEmpty
+        ? fallbackText.trim()
+        : wrapperText.isNotEmpty
+        ? wrapperText
+        : unavailable
+        ? 'Post no longer exists'
+        : isPoll
+        ? 'Poll'
+        : isVideo
+        ? 'Video'
+        : primaryMedia?.isImage == true
+        ? 'Photo'
+        : content == null
+        ? 'Loading post...'
+        : 'Post';
+
+    final int count = isVideo ? content.viewCount : (content?.likeCount ?? 0);
 
     final Widget fallback = _RealTextCover(
-      text: text.isNotEmpty
-          ? text
-          : unavailable
-          ? 'Post unavailable'
-          : 'Content unavailable',
+      text: text,
       isPoll: isPoll,
       poll: content?.poll,
     );
@@ -1005,7 +1131,7 @@ class _RealTextCover extends StatelessWidget {
           //===================================
           : Center(
               child: Text(
-                text.trim().isNotEmpty ? text.trim() : 'Content unavailable',
+                text.trim().isNotEmpty ? text.trim() : 'Post',
                 maxLines: 8,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
