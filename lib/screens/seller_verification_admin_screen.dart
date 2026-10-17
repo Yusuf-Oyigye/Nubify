@@ -6,6 +6,7 @@ import '../models/seller_verification.dart';
 import '../services/marketplace_admin_service.dart';
 import '../services/seller_verification_service.dart';
 import '../utils/marketplace_theme.dart';
+import 'marketplace_reports_admin_screen.dart';
 import 'marketplace_staff_management_screen.dart';
 
 //===================================================
@@ -65,6 +66,16 @@ class _SellerVerificationAdminScreenState
                 appBar: AppBar(
                   title: const Text('Seller Approvals'),
                   actions: <Widget>[
+                    IconButton(
+                      tooltip: 'Review listing reports',
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute<void>(
+                          builder: (_) => const MarketplaceReportsAdminScreen(),
+                        ),
+                      ),
+                      icon: const Icon(Icons.report_gmailerrorred_rounded),
+                    ),
                     if (access.canManageStaff)
                       IconButton(
                         tooltip: 'Manage Marketplace staff',

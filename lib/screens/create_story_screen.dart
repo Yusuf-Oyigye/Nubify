@@ -20,7 +20,18 @@ import '../widgets/story_link_preview_overlay.dart';
 //===================================================
 
 class CreateStoryScreen extends StatefulWidget {
-  const CreateStoryScreen({super.key});
+  const CreateStoryScreen({
+    super.key,
+    this.initialLinkUrl = '',
+    this.initialText = '',
+    this.initialCaption = '',
+    this.initialBackgroundColor = 0xFF102A43,
+  });
+
+  final String initialLinkUrl;
+  final String initialText;
+  final String initialCaption;
+  final int initialBackgroundColor;
 
   @override
   State<CreateStoryScreen> createState() => _CreateStoryScreenState();
@@ -1498,6 +1509,14 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
   @override
   void initState() {
     super.initState();
+
+    if (widget.initialLinkUrl.trim().isNotEmpty) {
+      _storyLinkUrl = widget.initialLinkUrl.trim();
+      _storyTextController.text = widget.initialText.trim();
+      _captionController.text = widget.initialCaption.trim();
+      _backgroundColor = widget.initialBackgroundColor;
+      _mode = 'text';
+    }
 
     _loadRecentStickers();
 

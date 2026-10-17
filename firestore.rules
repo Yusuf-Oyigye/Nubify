@@ -1374,6 +1374,20 @@ match /calls/{callId} {
       return reporterId + '_' + listingId;
     }
 
+    // reportListing() checks the deterministic document before creating it.
+    // This helper is used only for a path that does not exist yet. Existing
+    // documents are authorized from their stored reporterId below, so a UID
+    // prefix collision can never reveal another reporter's document contents.
+    function marketplaceReportPathMatchesCaller(reportId) {
+      return marketplaceValidId(request.auth.uid) &&
+          reportId is string &&
+          reportId.size() >= 3 &&
+          reportId.size() <= 257 &&
+          reportId.matches(
+            '^' + request.auth.uid + '_[A-Za-z0-9_-]{1,128}$'
+          );
+    }
+
     function marketplaceReportMatchesListing(data) {
       return exists(
             /databases/$(database)/documents/marketplaceProducts/$(data.listingId)
@@ -2284,10 +2298,25 @@ match /calls/{callId} {
             reportId
           );
 
+      // The reporter may read an existing report they own. Before create,
+      // reportListing() may also confirm that its own deterministic path does
+      // not exist. No document data exists in that second branch to expose.
       allow get: if isAuthenticated() &&
           (
-            resource.data.reporterId == request.auth.uid ||
-            isMarketplaceReviewer()
+            isMarketplaceReviewer() ||
+            (
+              exists(
+                /databases/$(database)/documents/marketplaceReports/$(reportId)
+              ) &&
+              resource.data.reporterId == request.auth.uid &&
+              resource.data.reportId == reportId
+            ) ||
+            (
+              !exists(
+                /databases/$(database)/documents/marketplaceReports/$(reportId)
+              ) &&
+              marketplaceReportPathMatchesCaller(reportId)
+            )
           );
 
       allow list: if isMarketplaceReviewer() &&

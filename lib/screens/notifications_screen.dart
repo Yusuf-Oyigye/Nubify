@@ -231,6 +231,20 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       return;
     }
 
+    if (type.startsWith('marketplaceReport')) {
+      final String listingId = (data['marketplaceListingId'] ?? '')
+          .toString()
+          .trim();
+      if (listingId.isNotEmpty) {
+        await Navigator.pushNamed<void>(
+          context,
+          '/marketplace/listing',
+          arguments: listingId,
+        );
+      }
+      return;
+    }
+
     //===================================================
     // STORY
     //===================================================
@@ -908,6 +922,12 @@ class _NotificationTile extends StatelessWidget {
 
       case 'sellerVerificationSuspended':
         return Icons.block_rounded;
+
+      case 'marketplaceReportResolved':
+        return Icons.fact_check_rounded;
+
+      case 'marketplaceReportDismissed':
+        return Icons.rule_rounded;
 
       default:
         return Icons.notifications_rounded;

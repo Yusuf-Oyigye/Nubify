@@ -108,7 +108,7 @@ class MenuScreen extends StatelessWidget {
                     color: MarketplaceTheme.gold,
                     title: 'Marketplace Admin Dashboard',
                     subtitle:
-                        'Review IDs, approve sellers, and manage trusted staff',
+                        'Review IDs, listing reports, sellers, and trusted staff',
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute<void>(

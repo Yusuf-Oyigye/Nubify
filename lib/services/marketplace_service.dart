@@ -220,6 +220,50 @@ class MarketplaceService {
     }
   }
 
+  Future<void> reportListing({
+    required MarketplaceListing listing,
+    required String reason,
+    String explanation = '',
+  }) async {
+    final String? uid = _auth.currentUser?.uid;
+    if (uid == null) {
+      throw StateError('Sign in to report this listing.');
+    }
+    if (uid == listing.sellerId) {
+      throw StateError('You cannot report your own listing.');
+    }
+    if (!MarketplaceConstants.reportReasons.contains(reason)) {
+      throw ArgumentError.value(reason, 'reason', 'Choose a valid reason.');
+    }
+    final String cleanExplanation = explanation.trim();
+    if (reason == 'Other' && cleanExplanation.isEmpty) {
+      throw const FormatException(
+        'Explain why you are reporting this listing.',
+      );
+    }
+    final String reportId = '${uid}_${listing.listingId}';
+    final DocumentReference<Map<String, dynamic>> reference = _firestore
+        .collection('marketplaceReports')
+        .doc(reportId);
+    if ((await reference.get()).exists) {
+      throw StateError('You already reported this listing.');
+    }
+    await reference.set(<String, dynamic>{
+      'reportId': reportId,
+      'reporterId': uid,
+      'listingId': listing.listingId,
+      'sellerId': listing.sellerId,
+      'reason': reason,
+      'explanation': cleanExplanation,
+      'status': 'submitted',
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+      'reviewedAt': null,
+      'reviewedBy': '',
+      'resolutionNote': '',
+    });
+  }
+
   Future<void> publish(String listingId) async {
     await _functions.httpsCallable('publishMarketplaceListing').call<void>(
       <String, dynamic>{'listingId': listingId},

@@ -18,6 +18,7 @@ import 'screens/group_chat_screen.dart';
 import 'screens/marketplace_screen.dart';
 import 'screens/create_marketplace_listing_screen.dart';
 import 'screens/marketplace_listing_details_screen.dart';
+import 'screens/marketplace_reports_admin_screen.dart';
 import 'screens/my_marketplace_listings_screen.dart';
 import 'screens/saved_marketplace_listings_screen.dart';
 import 'screens/seller_verification_admin_screen.dart';
@@ -202,6 +203,13 @@ class MyApp extends StatelessWidget {
       return MaterialPageRoute<void>(
         settings: settings,
         builder: (_) => const SellerVerificationAdminScreen(),
+      );
+    }
+
+    if (settings.name == '/marketplace/admin/reports') {
+      return MaterialPageRoute<void>(
+        settings: settings,
+        builder: (_) => const MarketplaceReportsAdminScreen(),
       );
     }
 

@@ -191,7 +191,7 @@ async function addAudit({actorUid, action, targetUid, details = {}}) {
   });
 }
 
-async function addNotification(receiverId, type, message) {
+async function addNotification(receiverId, type, message, extra = {}) {
   const reference = db.collection("notifications").doc();
   await reference.set({
     notificationId: reference.id,
@@ -207,6 +207,7 @@ async function addNotification(receiverId, type, message) {
     marketplacePath: "/marketplace/verification",
     isRead: false,
     createdAt: Timestamp.now(),
+    ...extra,
   });
 }
 
@@ -652,6 +653,90 @@ exports.transferMarketplaceOwnership = onCall(
       targetUid: newOwnerUid,
     });
     return {ownerUid: newOwnerUid};
+  },
+);
+
+exports.reviewMarketplaceReport = onCall(
+  {region: REGION, timeoutSeconds: 30, memory: "256MiB"},
+  async (request) => {
+    requireReviewer(request);
+    const reviewerUid = request.auth.uid;
+    const reportId = cleanString(
+      request.data?.reportId,
+      "Report ID",
+      3,
+      260,
+    );
+    const decision = cleanString(
+      request.data?.decision,
+      "Decision",
+      6,
+      20,
+    );
+    if (!["reviewing", "resolved", "dismissed"].includes(decision)) {
+      throw new HttpsError("invalid-argument", "Invalid report decision.");
+    }
+    const resolutionNote = optionalString(
+      request.data?.resolutionNote,
+      1000,
+    );
+    if (["resolved", "dismissed"].includes(decision) &&
+        resolutionNote.length < 3) {
+      throw new HttpsError(
+        "invalid-argument",
+        "A clear resolution note is required.",
+      );
+    }
+
+    const reference = db.collection("marketplaceReports").doc(reportId);
+    let reportData;
+    await db.runTransaction(async (transaction) => {
+      const snapshot = await transaction.get(reference);
+      if (!snapshot.exists) {
+        throw new HttpsError("not-found", "Marketplace report not found.");
+      }
+      reportData = snapshot.data();
+      const current = reportData.status;
+      const allowed = (current === "submitted" &&
+          ["reviewing", "resolved", "dismissed"].includes(decision)) ||
+        (current === "reviewing" &&
+          ["resolved", "dismissed"].includes(decision));
+      if (!allowed) {
+        throw new HttpsError(
+          "failed-precondition",
+          `Cannot change ${current || "unknown"} to ${decision}.`,
+        );
+      }
+      const now = Timestamp.now();
+      transaction.update(reference, {
+        status: decision,
+        updatedAt: now,
+        reviewedAt: now,
+        reviewedBy: reviewerUid,
+        resolutionNote,
+      });
+    });
+
+    await addAudit({
+      actorUid: reviewerUid,
+      action: `report_${decision}`,
+      targetUid: reportData.sellerId,
+      details: {reason: resolutionNote},
+    });
+    if (["resolved", "dismissed"].includes(decision)) {
+      await addNotification(
+        reportData.reporterId,
+        `marketplaceReport${decision[0].toUpperCase()}${decision.slice(1)}`,
+        decision === "resolved" ?
+          "Your Marketplace report was reviewed and resolved." :
+          "Your Marketplace report was reviewed and dismissed.",
+        {
+          marketplacePath: "/marketplace/listing",
+          marketplaceListingId: reportData.listingId,
+        },
+      );
+    }
+    return {status: decision};
   },
 );
 

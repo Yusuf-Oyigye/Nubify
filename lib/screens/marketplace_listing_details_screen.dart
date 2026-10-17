@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../models/marketplace_listing.dart';
@@ -10,7 +11,10 @@ import '../services/marketplace_service.dart';
 import '../utils/marketplace_constants.dart';
 import '../utils/marketplace_theme.dart';
 import '../widgets/marketplace_media_gallery.dart';
+import 'chat_forward_screen.dart';
 import 'conversation_screen.dart';
+import 'create_marketplace_listing_screen.dart';
+import 'create_story_screen.dart';
 import 'marketplace_seller_store_screen.dart';
 import 'profile_screen.dart';
 
@@ -97,14 +101,210 @@ class _MarketplaceListingDetailsScreenState
     }
   }
 
-  Future<void> _share(MarketplaceListing listing) async {
+  String _listingLink(MarketplaceListing listing) {
+    return 'https://nubify.app/marketplace/${listing.listingId}';
+  }
+
+  Future<void> _shareExternal(MarketplaceListing listing) async {
     await SharePlus.instance.share(
       ShareParams(
         subject: listing.title,
         text:
-            '${listing.title}\n${listing.priceLabel}\nhttps://nubify.app/marketplace/${listing.listingId}',
+            '${listing.title}\n${listing.priceLabel}\n${_listingLink(listing)}',
       ),
     );
+  }
+
+  Future<void> _copyLink(MarketplaceListing listing) async {
+    await Clipboard.setData(ClipboardData(text: _listingLink(listing)));
+    if (mounted) {
+      _message('Listing link copied.');
+    }
+  }
+
+  Future<void> _shareToStory(MarketplaceListing listing) async {
+    final bool? shared = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute<bool>(
+        builder: (_) => CreateStoryScreen(
+          initialLinkUrl: _listingLink(listing),
+          initialText: '${listing.title}\n${listing.priceLabel}',
+          initialCaption: 'Discover this on NUB Marketplace',
+          initialBackgroundColor: 0xFF102A43,
+        ),
+      ),
+    );
+    if (mounted && shared == true) {
+      _message('Listing added to your Story.');
+    }
+  }
+
+  Future<void> _shareToChat(MarketplaceListing listing) async {
+    final bool? sent = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute<bool>(
+        builder: (_) => ChatForwardScreen(
+          productId: listing.listingId,
+          productSellerId: listing.sellerId,
+          productName: listing.title,
+          productImageUrl: listing.coverUrl,
+          productPrice: listing.priceLabel,
+        ),
+      ),
+    );
+    if (mounted && sent == true) {
+      _message('Listing sent.');
+    }
+  }
+
+  Future<void> _showShareOptions(MarketplaceListing listing) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (BuildContext sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              const Text(
+                'Share Listing',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
+              ),
+              const SizedBox(height: 8),
+              ListTile(
+                leading: const Icon(Icons.auto_stories_outlined),
+                title: const Text('Share to Story'),
+                subtitle: const Text(
+                  'Edit it in the existing Nubify Story editor',
+                ),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  _shareToStory(listing);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.forum_outlined),
+                title: const Text('Share to Chat'),
+                subtitle: const Text('Choose direct messages or groups'),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  _shareToChat(listing);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.link_rounded),
+                title: const Text('Copy Link'),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  _copyLink(listing);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.ios_share_rounded),
+                title: const Text('Share to Other Apps'),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  _shareExternal(listing);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _reportListing(MarketplaceListing listing) async {
+    String reason = MarketplaceConstants.reportReasons.first;
+    final TextEditingController explanation = TextEditingController();
+    final bool? submit = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) => StatefulBuilder(
+        builder: (BuildContext context, StateSetter setDialogState) =>
+            AlertDialog(
+              title: const Text('Report Listing'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    DropdownButtonFormField<String>(
+                      initialValue: reason,
+                      decoration: const InputDecoration(
+                        labelText: 'Reason',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: MarketplaceConstants.reportReasons
+                          .map(
+                            (String value) => DropdownMenuItem<String>(
+                              value: value,
+                              child: Text(value),
+                            ),
+                          )
+                          .toList(growable: false),
+                      onChanged: (String? value) {
+                        if (value != null) {
+                          setDialogState(() => reason = value);
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 14),
+                    TextField(
+                      controller: explanation,
+                      maxLength: 1000,
+                      maxLines: 4,
+                      decoration: InputDecoration(
+                        labelText: reason == 'Other'
+                            ? 'Explanation (required)'
+                            : 'Explanation (optional)',
+                        border: const OutlineInputBorder(),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: <Widget>[
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext, false),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    if (reason == 'Other' && explanation.text.trim().isEmpty) {
+                      ScaffoldMessenger.of(dialogContext).showSnackBar(
+                        const SnackBar(
+                          content: Text('Please add an explanation.'),
+                        ),
+                      );
+                      return;
+                    }
+                    Navigator.pop(dialogContext, true);
+                  },
+                  child: const Text('Submit Report'),
+                ),
+              ],
+            ),
+      ),
+    );
+    final String details = explanation.text;
+    explanation.dispose();
+    if (submit != true) {
+      return;
+    }
+    try {
+      await _service.reportListing(
+        listing: listing,
+        reason: reason,
+        explanation: details,
+      );
+      if (mounted) {
+        _message('Report submitted for moderator review.');
+      }
+    } catch (error) {
+      if (mounted) {
+        _message(error.toString().replaceFirst('Bad state: ', ''));
+      }
+    }
   }
 
   @override
@@ -137,7 +337,7 @@ class _MarketplaceListingDetailsScreenState
                     expandedHeight: 410,
                     actions: <Widget>[
                       IconButton(
-                        onPressed: () => _share(listing),
+                        onPressed: () => _showShareOptions(listing),
                         icon: const Icon(Icons.share_outlined),
                       ),
                       if (owner)
@@ -145,6 +345,10 @@ class _MarketplaceListingDetailsScreenState
                           onSelected: (String value) =>
                               _ownerAction(listing, value),
                           itemBuilder: (_) => <PopupMenuEntry<String>>[
+                            const PopupMenuItem(
+                              value: 'edit',
+                              child: Text('Edit Listing'),
+                            ),
                             if (listing.status ==
                                 'available') ...<PopupMenuEntry<String>>[
                               const PopupMenuItem(
@@ -170,6 +374,26 @@ class _MarketplaceListingDetailsScreenState
                             const PopupMenuItem(
                               value: 'delete',
                               child: Text('Delete'),
+                            ),
+                          ],
+                        ),
+                      if (!owner && listing.isAvailable)
+                        PopupMenuButton<String>(
+                          onSelected: (String value) {
+                            if (value == 'report') {
+                              _reportListing(listing);
+                            } else if (value == 'copy') {
+                              _copyLink(listing);
+                            }
+                          },
+                          itemBuilder: (_) => const <PopupMenuEntry<String>>[
+                            PopupMenuItem(
+                              value: 'copy',
+                              child: Text('Copy Link'),
+                            ),
+                            PopupMenuItem(
+                              value: 'report',
+                              child: Text('Report Listing'),
                             ),
                           ],
                         ),
@@ -377,7 +601,15 @@ class _MarketplaceListingDetailsScreenState
 
   Future<void> _ownerAction(MarketplaceListing listing, String action) async {
     try {
-      if (action == 'delete') {
+      if (action == 'edit') {
+        await Navigator.push<void>(
+          context,
+          MaterialPageRoute<void>(
+            builder: (_) =>
+                CreateMarketplaceListingScreen(listingId: listing.listingId),
+          ),
+        );
+      } else if (action == 'delete') {
         final bool? confirmed = await showDialog<bool>(
           context: context,
           builder: (BuildContext dialogContext) => AlertDialog(

@@ -126,4 +126,37 @@ class MarketplaceAdminService {
     });
     await _auth.currentUser?.getIdToken(true);
   }
+
+  Stream<List<Map<String, dynamic>>> watchReports() {
+    return _firestore
+        .collection('marketplaceReports')
+        .orderBy('createdAt', descending: true)
+        .limit(100)
+        .snapshots()
+        .map(
+          (QuerySnapshot<Map<String, dynamic>> snapshot) => snapshot.docs
+              .map(
+                (QueryDocumentSnapshot<Map<String, dynamic>> document) =>
+                    <String, dynamic>{
+                      ...document.data(),
+                      'reportId': document.id,
+                    },
+              )
+              .toList(growable: false),
+        );
+  }
+
+  Future<void> reviewReport({
+    required String reportId,
+    required String decision,
+    String resolutionNote = '',
+  }) async {
+    await _functions
+        .httpsCallable('reviewMarketplaceReport')
+        .call<void>(<String, dynamic>{
+          'reportId': reportId.trim(),
+          'decision': decision,
+          'resolutionNote': resolutionNote.trim(),
+        });
+  }
 }
