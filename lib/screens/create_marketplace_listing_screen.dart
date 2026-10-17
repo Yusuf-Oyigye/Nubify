@@ -61,6 +61,8 @@ class _CreateMarketplaceListingScreenState
   MarketplaceListing? _editingListing;
   double _progress = 0;
   String _progressLabel = '';
+  MarketplaceUploadCancellation? _uploadCancellation;
+  bool _cancellingUpload = false;
 
   int get _totalMedia => _mediaItems.length;
 
@@ -306,6 +308,7 @@ class _CreateMarketplaceListingScreenState
         .collection('marketplaceProducts')
         .doc(_editingListing?.listingId);
     List<MarketplaceMedia> uploaded = <MarketplaceMedia>[];
+    MarketplaceUploadCancellation? cancellation;
     bool listingSaved = false;
     final bool newlyPublishing =
         publish && (_editingListing?.status ?? 'draft') != 'available';
@@ -322,11 +325,16 @@ class _CreateMarketplaceListingScreenState
           .whereType<PendingMarketplaceMedia>()
           .toList(growable: false);
       if (pendingMedia.isNotEmpty) {
+        cancellation = MarketplaceUploadCancellation();
+        if (mounted) {
+          setState(() => _uploadCancellation = cancellation);
+        }
         uploaded = await _mediaService.upload(
           uid: user.uid,
           listingId: reference.id,
           files: pendingMedia,
           startIndex: 0,
+          cancellation: cancellation,
           onProgress: (double value, String label) {
             if (mounted) {
               setState(() {
@@ -336,6 +344,9 @@ class _CreateMarketplaceListingScreenState
             }
           },
         );
+        if (mounted && identical(_uploadCancellation, cancellation)) {
+          setState(() => _uploadCancellation = null);
+        }
       }
       int uploadedIndex = 0;
       final List<MarketplaceMedia> combined = _mediaItems
@@ -491,12 +502,37 @@ class _CreateMarketplaceListingScreenState
         await _mediaService.deleteUploadedMedia(uploaded);
       }
       if (mounted) {
-        _message(error.toString());
+        _message(
+          cancellation?.isCancelled == true ||
+                  error is MarketplaceUploadCancelledException
+              ? 'Upload cancelled. Nothing was published.'
+              : error.toString(),
+        );
       }
     } finally {
       if (mounted) {
-        setState(() => _saving = false);
+        setState(() {
+          _saving = false;
+          _uploadCancellation = null;
+          _cancellingUpload = false;
+        });
       }
+    }
+  }
+
+  Future<void> _cancelUpload() async {
+    final MarketplaceUploadCancellation? cancellation = _uploadCancellation;
+    if (cancellation == null || _cancellingUpload) {
+      return;
+    }
+    setState(() {
+      _cancellingUpload = true;
+      _progressLabel = 'Cancelling upload…';
+    });
+    try {
+      await cancellation.cancel();
+    } catch (_) {
+      // The upload Future reports the final cancellation result and cleanup.
     }
   }
 
@@ -522,312 +558,335 @@ class _CreateMarketplaceListingScreenState
   @override
   Widget build(BuildContext context) {
     final bool showPrice = _priceType == 'fixed' || _priceType == 'negotiable';
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          _editingListing == null ? 'Sell on Marketplace' : 'Edit Listing',
-        ),
-        actions: <Widget>[
-          TextButton(
-            onPressed: _saving ? null : () => _save(publish: false),
-            child: Text(
-              _editingListing == null ? 'Save Draft' : 'Save Changes',
-            ),
+    return PopScope(
+      canPop: !_saving,
+      onPopInvokedWithResult: (bool didPop, Object? result) {
+        if (!didPop && _saving) {
+          _message('Cancel the current upload before leaving this screen.');
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(
+            _editingListing == null ? 'Sell on Marketplace' : 'Edit Listing',
           ),
-        ],
-      ),
-      body: _loadingExisting
-          ? const Center(child: CircularProgressIndicator())
-          : ListView(
-              padding: const EdgeInsets.fromLTRB(18, 10, 18, 120),
-              children: <Widget>[
-                Row(
-                  children: <Widget>[
-                    const Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Text(
-                            'Show it beautifully',
-                            style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                          Text('Choose up to five photos and videos combined.'),
-                        ],
-                      ),
-                    ),
-                    Text(
-                      '$_totalMedia/5',
-                      style: const TextStyle(
-                        color: MarketplaceTheme.sky,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                SizedBox(
-                  height: 126,
-                  child: ReorderableListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    buildDefaultDragHandles: false,
-                    itemCount: _totalMedia + (_totalMedia < 5 ? 1 : 0),
-                    onReorderItem: _reorderMedia,
-                    itemBuilder: (BuildContext context, int index) {
-                      if (index == _mediaItems.length) {
-                        return Padding(
-                          key: const ValueKey<String>('add-marketplace-media'),
-                          padding: const EdgeInsets.only(right: 10),
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(18),
-                            onTap: _showMediaSource,
-                            child: Ink(
-                              width: 112,
-                              decoration: BoxDecoration(
-                                color: MarketplaceTheme.softSurface(context),
-                                borderRadius: BorderRadius.circular(18),
-                                border: Border.all(
-                                  color: MarketplaceTheme.sky.withValues(
-                                    alpha: 0.4,
-                                  ),
-                                ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: _saving ? null : () => _save(publish: false),
+              child: Text(
+                _editingListing == null ? 'Save Draft' : 'Save Changes',
+              ),
+            ),
+          ],
+        ),
+        body: _loadingExisting
+            ? const Center(child: CircularProgressIndicator())
+            : ListView(
+                padding: const EdgeInsets.fromLTRB(18, 10, 18, 120),
+                children: <Widget>[
+                  Row(
+                    children: <Widget>[
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Text(
+                              'Show it beautifully',
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w900,
                               ),
-                              child: const Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: <Widget>[
-                                  Icon(
-                                    Icons.add_photo_alternate_outlined,
-                                    color: MarketplaceTheme.sky,
-                                    size: 34,
-                                  ),
-                                  SizedBox(height: 7),
-                                  Text(
-                                    'Add media',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w800,
+                            ),
+                            Text(
+                              'Choose up to five photos and videos combined.',
+                            ),
+                          ],
+                        ),
+                      ),
+                      Text(
+                        '$_totalMedia/5',
+                        style: const TextStyle(
+                          color: MarketplaceTheme.sky,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  SizedBox(
+                    height: 126,
+                    child: ReorderableListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      buildDefaultDragHandles: false,
+                      itemCount: _totalMedia + (_totalMedia < 5 ? 1 : 0),
+                      onReorderItem: _reorderMedia,
+                      itemBuilder: (BuildContext context, int index) {
+                        if (index == _mediaItems.length) {
+                          return Padding(
+                            key: const ValueKey<String>(
+                              'add-marketplace-media',
+                            ),
+                            padding: const EdgeInsets.only(right: 10),
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(18),
+                              onTap: _showMediaSource,
+                              child: Ink(
+                                width: 112,
+                                decoration: BoxDecoration(
+                                  color: MarketplaceTheme.softSurface(context),
+                                  borderRadius: BorderRadius.circular(18),
+                                  border: Border.all(
+                                    color: MarketplaceTheme.sky.withValues(
+                                      alpha: 0.4,
                                     ),
                                   ),
-                                ],
+                                ),
+                                child: const Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: <Widget>[
+                                    Icon(
+                                      Icons.add_photo_alternate_outlined,
+                                      color: MarketplaceTheme.sky,
+                                      size: 34,
+                                    ),
+                                    SizedBox(height: 7),
+                                    Text(
+                                      'Add media',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
+                          );
+                        }
+                        final _EditableMarketplaceMedia entry =
+                            _mediaItems[index];
+                        return ReorderableDragStartListener(
+                          key: ValueKey<String>(entry.key),
+                          index: index,
+                          child: Padding(
+                            padding: const EdgeInsets.only(right: 10),
+                            child: entry.existing != null
+                                ? _ExistingMediaTile(
+                                    item: entry.existing!,
+                                    cover: index == _coverIndex,
+                                    onCover: () =>
+                                        setState(() => _coverIndex = index),
+                                    onReplace: () => _replaceMedia(index),
+                                    onRemove: () => _removeMedia(index),
+                                  )
+                                : _PendingMediaTile(
+                                    item: entry.pending!,
+                                    cover: index == _coverIndex,
+                                    onCover: () =>
+                                        setState(() => _coverIndex = index),
+                                    onReplace: () => _replaceMedia(index),
+                                    onRemove: () => _removeMedia(index),
+                                  ),
                           ),
                         );
-                      }
-                      final _EditableMarketplaceMedia entry =
-                          _mediaItems[index];
-                      return ReorderableDragStartListener(
-                        key: ValueKey<String>(entry.key),
-                        index: index,
-                        child: Padding(
-                          padding: const EdgeInsets.only(right: 10),
-                          child: entry.existing != null
-                              ? _ExistingMediaTile(
-                                  item: entry.existing!,
-                                  cover: index == _coverIndex,
-                                  onCover: () =>
-                                      setState(() => _coverIndex = index),
-                                  onReplace: () => _replaceMedia(index),
-                                  onRemove: () => _removeMedia(index),
-                                )
-                              : _PendingMediaTile(
-                                  item: entry.pending!,
-                                  cover: index == _coverIndex,
-                                  onCover: () =>
-                                      setState(() => _coverIndex = index),
-                                  onReplace: () => _replaceMedia(index),
-                                  onRemove: () => _removeMedia(index),
-                                ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                if (_totalMedia > 0) ...<Widget>[
-                  const SizedBox(height: 8),
-                  Text(
-                    'Tap to choose the cover. Hold and drag to reorder. Use the swap icon to replace a file.',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ],
-                const SizedBox(height: 22),
-                TextField(
-                  controller: _title,
-                  maxLength: 120,
-                  textCapitalization: TextCapitalization.sentences,
-                  decoration: const InputDecoration(
-                    labelText: 'Title',
-                    prefixIcon: Icon(Icons.title_rounded),
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  initialValue: _category,
-                  decoration: const InputDecoration(
-                    labelText: 'Category',
-                    prefixIcon: Icon(Icons.category_outlined),
-                    border: OutlineInputBorder(),
-                  ),
-                  items: MarketplaceConstants.categories
-                      .map(
-                        (MarketplaceCategory value) => DropdownMenuItem<String>(
-                          value: value.id,
-                          child: Text(value.label),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (String? value) =>
-                      setState(() => _category = value),
-                ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  initialValue: _condition,
-                  decoration: const InputDecoration(
-                    labelText: 'Condition',
-                    prefixIcon: Icon(Icons.auto_awesome_outlined),
-                    border: OutlineInputBorder(),
-                  ),
-                  items: MarketplaceConstants.conditions
-                      .map(
-                        (String value) => DropdownMenuItem<String>(
-                          value: value,
-                          child: Text(
-                            MarketplaceConstants.conditionLabel(value),
-                          ),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (String? value) =>
-                      setState(() => _condition = value),
-                ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  initialValue: _priceType,
-                  decoration: const InputDecoration(
-                    labelText: 'Pricing',
-                    prefixIcon: Icon(Icons.sell_outlined),
-                    border: OutlineInputBorder(),
-                  ),
-                  items: const <DropdownMenuItem<String>>[
-                    DropdownMenuItem(
-                      value: 'fixed',
-                      child: Text('Fixed Price'),
+                      },
                     ),
-                    DropdownMenuItem(
-                      value: 'negotiable',
-                      child: Text('Negotiable'),
-                    ),
-                    DropdownMenuItem(value: 'free', child: Text('Free')),
-                    DropdownMenuItem(
-                      value: 'contact',
-                      child: Text('Contact for Price'),
+                  ),
+                  if (_totalMedia > 0) ...<Widget>[
+                    const SizedBox(height: 8),
+                    Text(
+                      'Tap to choose the cover. Hold and drag to reorder. Use the swap icon to replace a file.',
+                      style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ],
-                  onChanged: (String? value) =>
-                      setState(() => _priceType = value),
-                ),
-                if (showPrice) ...<Widget>[
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 22),
                   TextField(
-                    controller: _price,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    inputFormatters: <TextInputFormatter>[
-                      FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
-                    ],
+                    controller: _title,
+                    maxLength: 120,
+                    textCapitalization: TextCapitalization.sentences,
                     decoration: const InputDecoration(
-                      labelText: 'Price',
-                      prefixText: 'EGP ',
+                      labelText: 'Title',
+                      prefixIcon: Icon(Icons.title_rounded),
                       border: OutlineInputBorder(),
                     ),
                   ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    initialValue: _category,
+                    decoration: const InputDecoration(
+                      labelText: 'Category',
+                      prefixIcon: Icon(Icons.category_outlined),
+                      border: OutlineInputBorder(),
+                    ),
+                    items: MarketplaceConstants.categories
+                        .map(
+                          (MarketplaceCategory value) =>
+                              DropdownMenuItem<String>(
+                                value: value.id,
+                                child: Text(value.label),
+                              ),
+                        )
+                        .toList(),
+                    onChanged: (String? value) =>
+                        setState(() => _category = value),
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    initialValue: _condition,
+                    decoration: const InputDecoration(
+                      labelText: 'Condition',
+                      prefixIcon: Icon(Icons.auto_awesome_outlined),
+                      border: OutlineInputBorder(),
+                    ),
+                    items: MarketplaceConstants.conditions
+                        .map(
+                          (String value) => DropdownMenuItem<String>(
+                            value: value,
+                            child: Text(
+                              MarketplaceConstants.conditionLabel(value),
+                            ),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (String? value) =>
+                        setState(() => _condition = value),
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    initialValue: _priceType,
+                    decoration: const InputDecoration(
+                      labelText: 'Pricing',
+                      prefixIcon: Icon(Icons.sell_outlined),
+                      border: OutlineInputBorder(),
+                    ),
+                    items: const <DropdownMenuItem<String>>[
+                      DropdownMenuItem(
+                        value: 'fixed',
+                        child: Text('Fixed Price'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'negotiable',
+                        child: Text('Negotiable'),
+                      ),
+                      DropdownMenuItem(value: 'free', child: Text('Free')),
+                      DropdownMenuItem(
+                        value: 'contact',
+                        child: Text('Contact for Price'),
+                      ),
+                    ],
+                    onChanged: (String? value) =>
+                        setState(() => _priceType = value),
+                  ),
+                  if (showPrice) ...<Widget>[
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _price,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      inputFormatters: <TextInputFormatter>[
+                        FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                      ],
+                      decoration: const InputDecoration(
+                        labelText: 'Price',
+                        prefixText: 'EGP ',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _description,
+                    minLines: 5,
+                    maxLines: 10,
+                    maxLength: 5000,
+                    textCapitalization: TextCapitalization.sentences,
+                    decoration: const InputDecoration(
+                      labelText: 'Description',
+                      alignLabelWithHint: true,
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  const Text(
+                    'Buyer contact',
+                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
+                  ),
+                  SwitchListTile.adaptive(
+                    value: _allowMessages,
+                    onChanged: (bool value) =>
+                        setState(() => _allowMessages = value),
+                    title: const Text('Message Seller'),
+                    subtitle: const Text('Use Nubify direct messages.'),
+                    secondary: const Icon(Icons.chat_bubble_outline_rounded),
+                  ),
+                  SwitchListTile.adaptive(
+                    value: _allowCalls,
+                    onChanged: (bool value) =>
+                        setState(() => _allowCalls = value),
+                    title: const Text('Call Seller'),
+                    subtitle: const Text(
+                      'Uses your private Egyptian mobile number and normal phone network.',
+                    ),
+                    secondary: const Icon(Icons.phone_outlined),
+                  ),
+                  if (_allowCalls)
+                    TextButton.icon(
+                      onPressed: () async {
+                        final profile = await PrivateProfileService().getMine();
+                        if (mounted && profile.phoneE164.isEmpty) {
+                          _message(
+                            'Add your mobile number in Edit Profile before enabling calls.',
+                          );
+                        }
+                      },
+                      icon: const Icon(Icons.privacy_tip_outlined),
+                      label: const Text('Check private phone setup'),
+                    ),
+                  if (_saving) ...<Widget>[
+                    const SizedBox(height: 18),
+                    LinearProgressIndicator(
+                      value: _progress > 0 && _progress < 1 ? _progress : null,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(_progressLabel, textAlign: TextAlign.center),
+                    if (_uploadCancellation != null) ...<Widget>[
+                      const SizedBox(height: 8),
+                      OutlinedButton.icon(
+                        onPressed: _cancellingUpload ? null : _cancelUpload,
+                        icon: const Icon(Icons.close_rounded),
+                        label: Text(
+                          _cancellingUpload ? 'Cancelling…' : 'Cancel Upload',
+                        ),
+                      ),
+                    ],
+                  ],
                 ],
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _description,
-                  minLines: 5,
-                  maxLines: 10,
-                  maxLength: 5000,
-                  textCapitalization: TextCapitalization.sentences,
-                  decoration: const InputDecoration(
-                    labelText: 'Description',
-                    alignLabelWithHint: true,
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                const Text(
-                  'Buyer contact',
-                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
-                ),
-                SwitchListTile.adaptive(
-                  value: _allowMessages,
-                  onChanged: (bool value) =>
-                      setState(() => _allowMessages = value),
-                  title: const Text('Message Seller'),
-                  subtitle: const Text('Use Nubify direct messages.'),
-                  secondary: const Icon(Icons.chat_bubble_outline_rounded),
-                ),
-                SwitchListTile.adaptive(
-                  value: _allowCalls,
-                  onChanged: (bool value) =>
-                      setState(() => _allowCalls = value),
-                  title: const Text('Call Seller'),
-                  subtitle: const Text(
-                    'Uses your private Egyptian mobile number and normal phone network.',
-                  ),
-                  secondary: const Icon(Icons.phone_outlined),
-                ),
-                if (_allowCalls)
-                  TextButton.icon(
-                    onPressed: () async {
-                      final profile = await PrivateProfileService().getMine();
-                      if (mounted && profile.phoneE164.isEmpty) {
-                        _message(
-                          'Add your mobile number in Edit Profile before enabling calls.',
-                        );
-                      }
-                    },
-                    icon: const Icon(Icons.privacy_tip_outlined),
-                    label: const Text('Check private phone setup'),
-                  ),
-                if (_saving) ...<Widget>[
-                  const SizedBox(height: 18),
-                  LinearProgressIndicator(
-                    value: _progress > 0 && _progress < 1 ? _progress : null,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(_progressLabel, textAlign: TextAlign.center),
-                ],
-              ],
-            ),
-      bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-          child: FilledButton.icon(
-            onPressed: _saving
-                ? null
-                : () => _save(
-                    publish: (_editingListing?.status ?? 'draft') != 'sold',
-                  ),
-            icon: const Icon(Icons.rocket_launch_rounded),
-            label: Text(
-              _saving
-                  ? 'Saving…'
-                  : _editingListing?.status == 'available'
-                  ? 'Save Changes'
-                  : _editingListing?.status == 'sold'
-                  ? 'Save Sold Listing'
-                  : 'Publish Listing',
-            ),
-            style: FilledButton.styleFrom(
-              backgroundColor: MarketplaceTheme.sky,
-              foregroundColor: MarketplaceTheme.midnight,
-              minimumSize: const Size.fromHeight(54),
-              textStyle: const TextStyle(fontWeight: FontWeight.w900),
+              ),
+        bottomNavigationBar: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+            child: FilledButton.icon(
+              onPressed: _saving
+                  ? null
+                  : () => _save(
+                      publish: (_editingListing?.status ?? 'draft') != 'sold',
+                    ),
+              icon: const Icon(Icons.rocket_launch_rounded),
+              label: Text(
+                _saving
+                    ? 'Saving…'
+                    : _editingListing?.status == 'available'
+                    ? 'Save Changes'
+                    : _editingListing?.status == 'sold'
+                    ? 'Save Sold Listing'
+                    : 'Publish Listing',
+              ),
+              style: FilledButton.styleFrom(
+                backgroundColor: MarketplaceTheme.sky,
+                foregroundColor: MarketplaceTheme.midnight,
+                minimumSize: const Size.fromHeight(54),
+                textStyle: const TextStyle(fontWeight: FontWeight.w900),
+              ),
             ),
           ),
         ),

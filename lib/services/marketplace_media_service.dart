@@ -26,6 +26,47 @@ class PendingMarketplaceMedia {
   bool get isVideo => type == 'video';
 }
 
+class MarketplaceUploadCancelledException implements Exception {
+  const MarketplaceUploadCancelledException();
+
+  @override
+  String toString() => 'Marketplace upload cancelled.';
+}
+
+class MarketplaceUploadCancellation {
+  bool _cancelled = false;
+  UploadTask? _activeTask;
+
+  bool get isCancelled => _cancelled;
+
+  Future<void> cancel() async {
+    _cancelled = true;
+    final UploadTask? task = _activeTask;
+    if (task != null) {
+      await task.cancel();
+    }
+  }
+
+  void attach(UploadTask task) {
+    _activeTask = task;
+    if (_cancelled) {
+      unawaited(task.cancel());
+    }
+  }
+
+  void detach(UploadTask task) {
+    if (identical(_activeTask, task)) {
+      _activeTask = null;
+    }
+  }
+
+  void throwIfCancelled() {
+    if (_cancelled) {
+      throw const MarketplaceUploadCancelledException();
+    }
+  }
+}
+
 //===================================================
 // MARKETPLACE MEDIA PICKING AND FIREBASE UPLOADS
 //===================================================
@@ -79,6 +120,7 @@ class MarketplaceMediaService {
     required List<PendingMarketplaceMedia> files,
     required void Function(double progress, String label) onProgress,
     int startIndex = 0,
+    MarketplaceUploadCancellation? cancellation,
   }) async {
     if (files.isEmpty || files.length > MarketplaceConstants.maxMediaCount) {
       throw StateError('Choose between 1 and 5 photos or videos.');
@@ -88,6 +130,7 @@ class MarketplaceMediaService {
 
     try {
       for (int index = 0; index < files.length; index++) {
+        cancellation?.throwIfCancelled();
         final PendingMarketplaceMedia pending = files[index];
         final String extension = _extension(pending.file.name, pending.type);
         final int displayIndex = startIndex + index;
@@ -97,6 +140,7 @@ class MarketplaceMediaService {
         final Reference mediaReference = _storage.ref(mediaPath);
         createdReferences.add(mediaReference);
         final Uint8List bytes = await pending.file.readAsBytes();
+        cancellation?.throwIfCancelled();
         final UploadTask mediaTask = mediaReference.putData(
           bytes,
           SettableMetadata(
@@ -110,6 +154,7 @@ class MarketplaceMediaService {
             },
           ),
         );
+        cancellation?.attach(mediaTask);
         final StreamSubscription<TaskSnapshot> subscription = mediaTask
             .snapshotEvents
             .listen((TaskSnapshot snapshot) {
@@ -121,8 +166,13 @@ class MarketplaceMediaService {
                 'Uploading ${index + 1} of ${files.length}',
               );
             });
-        await mediaTask;
-        await subscription.cancel();
+        try {
+          await mediaTask;
+        } finally {
+          await subscription.cancel();
+          cancellation?.detach(mediaTask);
+        }
+        cancellation?.throwIfCancelled();
         final String mediaUrl = await mediaReference.getDownloadURL();
 
         String thumbnailUrl = mediaUrl;
@@ -138,7 +188,7 @@ class MarketplaceMediaService {
                 'marketplace/$uid/$listingId/thumbnail_${displayIndex + 1}_$unique.jpg';
             final Reference thumbnailReference = _storage.ref(thumbnailPath);
             createdReferences.add(thumbnailReference);
-            await thumbnailReference.putData(
+            final UploadTask thumbnailTask = thumbnailReference.putData(
               thumbnailBytes,
               SettableMetadata(
                 contentType: 'image/jpeg',
@@ -149,6 +199,13 @@ class MarketplaceMediaService {
                 },
               ),
             );
+            cancellation?.attach(thumbnailTask);
+            try {
+              await thumbnailTask;
+            } finally {
+              cancellation?.detach(thumbnailTask);
+            }
+            cancellation?.throwIfCancelled();
             thumbnailUrl = await thumbnailReference.getDownloadURL();
           }
         }
@@ -164,6 +221,7 @@ class MarketplaceMediaService {
           ),
         );
       }
+      cancellation?.throwIfCancelled();
       onProgress(1, 'Saving listing');
       return uploaded;
     } catch (_) {
