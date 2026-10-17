@@ -5,8 +5,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'firebase_options.dart';
-
 import 'providers/user_provider.dart';
 
 import 'responsive/mobile_screen_layout.dart';
@@ -76,12 +74,10 @@ class MyApp extends StatelessWidget {
 
   Widget _homeLayout() {
     return const IncomingCallListener(
-      child: NubifyDeepLinkGate(
-        child: ResponsiveLayout(
-          mobileScreenLayout: MobileScreenLayout(),
+      child: ResponsiveLayout(
+        mobileScreenLayout: MobileScreenLayout(),
 
-          webScreenLayout: WebScreenLayout(),
-        ),
+        webScreenLayout: WebScreenLayout(),
       ),
     );
   }
@@ -344,49 +340,51 @@ class MyApp extends StatelessWidget {
         ),
         onGenerateRoute: _onGenerateRoute,
         navigatorObservers: <NavigatorObserver>[nubifyMediaRouteObserver],
-        home: StreamBuilder<User?>(
-          stream: FirebaseAuth.instance.authStateChanges(),
-          builder: (BuildContext context, AsyncSnapshot<User?> snapshot) {
-            //===================================================
-            // AUTH ACTIVE
-            //===================================================
+        home: NubifyDeepLinkGate(
+          child: StreamBuilder<User?>(
+            stream: FirebaseAuth.instance.authStateChanges(),
+            builder: (BuildContext context, AsyncSnapshot<User?> snapshot) {
+              //===================================================
+              // AUTH ACTIVE
+              //===================================================
 
-            if (snapshot.connectionState == ConnectionState.active) {
-              if (snapshot.hasData) {
-                return _homeLayout();
-              }
+              if (snapshot.connectionState == ConnectionState.active) {
+                if (snapshot.hasData) {
+                  return _homeLayout();
+                }
 
-              if (snapshot.hasError) {
-                return Scaffold(
-                  body: Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Text(
-                        '${snapshot.error}',
-                        textAlign: TextAlign.center,
+                if (snapshot.hasError) {
+                  return Scaffold(
+                    body: Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Text(
+                          '${snapshot.error}',
+                          textAlign: TextAlign.center,
+                        ),
                       ),
                     ),
+                  );
+                }
+
+                return const SignupScreen();
+              }
+
+              //===================================================
+              // WAITING
+              //===================================================
+
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Scaffold(
+                  body: Center(
+                    child: CircularProgressIndicator(color: primaryColor),
                   ),
                 );
               }
 
               return const SignupScreen();
-            }
-
-            //===================================================
-            // WAITING
-            //===================================================
-
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Scaffold(
-                body: Center(
-                  child: CircularProgressIndicator(color: primaryColor),
-                ),
-              );
-            }
-
-            return const SignupScreen();
-          },
+            },
+          ),
         ),
       ),
     );

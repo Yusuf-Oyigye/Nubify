@@ -5,6 +5,7 @@ import '../models/marketplace_listing.dart';
 import '../services/marketplace_service.dart';
 import '../utils/marketplace_theme.dart';
 import '../widgets/marketplace_listing_card.dart';
+import '../widgets/marketplace_verified_seller_badge.dart';
 import 'marketplace_listing_details_screen.dart';
 import 'profile_screen.dart';
 
@@ -73,10 +74,8 @@ class MarketplaceSellerStoreScreen extends StatelessWidget {
                                     ),
                                   ),
                                   const SizedBox(width: 5),
-                                  const Icon(
-                                    Icons.verified_rounded,
-                                    color: MarketplaceTheme.sky,
-                                    size: 19,
+                                  MarketplaceVerifiedSellerBadge(
+                                    sellerId: sellerId,
                                   ),
                                 ],
                               ),

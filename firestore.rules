@@ -1254,7 +1254,7 @@ match /calls/{callId} {
           data.updatedAt == request.time;
     }
 
-    function marketplaceValidSavedListing(data, uid, listingId) {
+    function marketplaceValidSavedMarker(data, uid, listingId) {
       return data.keys().hasOnly([
             'listingId',
             'ownerUid',
@@ -1269,6 +1269,11 @@ match /calls/{callId} {
           marketplaceValidId(data.listingId) &&
           data.ownerUid == uid &&
           marketplaceValidId(data.ownerUid) &&
+          data.savedAt is timestamp;
+    }
+
+    function marketplaceValidSavedListing(data, uid, listingId) {
+      return marketplaceValidSavedMarker(data, uid, listingId) &&
           data.savedAt == request.time;
     }
 
@@ -1281,6 +1286,30 @@ match /calls/{callId} {
               /databases/$(database)/documents/marketplaceProducts/$(listingId)
             ).data
           );
+    }
+
+    function marketplaceHasOwnedSavedMarker(listingId) {
+      let markerPath = /databases/$(database)/documents/users/$(request.auth.uid)/savedMarketplaceListings/$(listingId);
+
+      return isAuthenticated() &&
+          exists(markerPath) &&
+          marketplaceValidSavedMarker(
+            get(markerPath).data,
+            request.auth.uid,
+            listingId
+          );
+    }
+
+    function marketplaceIsSavedUnavailableListing(data, listingId) {
+      return data.keys().hasAll([
+            'listingId',
+            'status',
+            'publicVisible'
+          ]) &&
+          data.listingId == listingId &&
+          data.status in ['sold', 'unavailable', 'archived'] &&
+          data.publicVisible == false &&
+          marketplaceHasOwnedSavedMarker(listingId);
     }
 
     function marketplaceValidReportReason(reason) {
@@ -2143,6 +2172,9 @@ match /calls/{callId} {
 
       // An individual document may be opened when it is publicly available,
       // belongs to the signed-in seller, or the caller is a trusted reviewer.
+      // A user with a strictly owner-scoped save marker may also get that exact
+      // canonical item after it becomes sold, unavailable, or archived. This
+      // does not grant draft access and does not apply to collection queries.
       // A narrow legacy fallback keeps old shared links readable without
       // permitting unsafe legacy collection browsing.
       allow get: if isAuthenticated() &&
@@ -2150,6 +2182,10 @@ match /calls/{callId} {
             marketplaceIsPublicListing(resource.data) ||
             marketplaceListingOwner(resource.data) ||
             isMarketplaceReviewer() ||
+            marketplaceIsSavedUnavailableListing(
+              resource.data,
+              listingId
+            ) ||
             marketplaceIsLegacyPublicListing(resource.data)
           );
 

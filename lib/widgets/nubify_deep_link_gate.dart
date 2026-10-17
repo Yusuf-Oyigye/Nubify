@@ -1,153 +1,116 @@
 import 'dart:async';
 
 import 'package:app_links/app_links.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../services/nubify_link_router.dart';
 import '../utils/link_detector.dart';
 
 //===================================================
-// NUBIFY DEEP LINK GATE
+// AUTH-AWARE NUBIFY DEEP LINK GATE
 //===================================================
 
-class NubifyDeepLinkGate
-    extends StatefulWidget {
-  const NubifyDeepLinkGate({
-    super.key,
-    required this.child,
-  });
+class NubifyDeepLinkGate extends StatefulWidget {
+  const NubifyDeepLinkGate({super.key, required this.child});
 
   final Widget child;
 
   @override
-  State<NubifyDeepLinkGate>
-  createState() =>
-      _NubifyDeepLinkGateState();
+  State<NubifyDeepLinkGate> createState() => _NubifyDeepLinkGateState();
 }
 
-//===================================================
-// NUBIFY DEEP LINK STATE
-//===================================================
-
-class _NubifyDeepLinkGateState
-    extends State<NubifyDeepLinkGate> {
-  final AppLinks _appLinks =
-  AppLinks();
-
-  StreamSubscription<Uri>?
-  _subscription;
-
-  String _lastUrl =
-      '';
-
-  bool _initialHandled =
-  false;
-
-  //===================================================
-  // INIT
-  //===================================================
+class _NubifyDeepLinkGateState extends State<NubifyDeepLinkGate> {
+  final AppLinks _appLinks = AppLinks();
+  StreamSubscription<Uri>? _linkSubscription;
+  StreamSubscription<User?>? _authSubscription;
+  Uri? _pendingUri;
+  String _lastOpenedUrl = '';
+  bool _initialHandled = false;
+  bool _opening = false;
 
   @override
   void initState() {
     super.initState();
-
     _start();
   }
 
-  //===================================================
-  // START
-  //===================================================
-
   Future<void> _start() async {
-    if (!_initialHandled) {
-      _initialHandled =
-      true;
+    _authSubscription = FirebaseAuth.instance.authStateChanges().listen((
+      User? user,
+    ) {
+      if (user != null && _pendingUri != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) => _openPending());
+      }
+    });
+    _linkSubscription = _appLinks.uriLinkStream.listen(_queueOrOpen);
 
-      try {
-        final Uri? initial =
-        await _appLinks
-            .getInitialLink();
-
-        if (initial !=
-            null) {
-          WidgetsBinding.instance
-              .addPostFrameCallback(
-                (_) {
-              _handle(
-                initial,
-              );
-            },
-          );
-        }
-      } catch (_) {}
+    if (_initialHandled) {
+      return;
     }
-
-    _subscription =
-        _appLinks.uriLinkStream
-            .listen(
-              (
-              Uri uri,
-              ) {
-            _handle(
-              uri,
-            );
-          },
+    _initialHandled = true;
+    try {
+      final Uri? initial = await _appLinks.getInitialLink();
+      if (initial != null) {
+        WidgetsBinding.instance.addPostFrameCallback(
+          (_) => _queueOrOpen(initial),
         );
+      }
+    } catch (_) {
+      // A malformed platform link must never block normal app startup.
+    }
   }
 
-  //===================================================
-  // HANDLE
-  //===================================================
-
-  Future<void> _handle(
-      Uri uri,
-      ) async {
+  Future<void> _queueOrOpen(Uri uri) async {
     if (!mounted) {
       return;
     }
-
-    final String value =
-    uri.toString();
-
-    if (value ==
-        _lastUrl) {
+    final String value = uri.toString();
+    if (!LinkDetector.isNubifyUrl(value) ||
+        value == _lastOpenedUrl ||
+        value == _pendingUri?.toString()) {
       return;
     }
-
-    if (!LinkDetector.isNubifyUrl(
-      value,
-    )) {
+    if (FirebaseAuth.instance.currentUser == null) {
+      _pendingUri = uri;
       return;
     }
-
-    _lastUrl =
-        value;
-
-    await NubifyLinkRouter.open(
-      context,
-      value,
-    );
+    await _open(uri);
   }
 
-  //===================================================
-  // BUILD
-  //===================================================
+  Future<void> _openPending() async {
+    final Uri? pending = _pendingUri;
+    if (pending == null || FirebaseAuth.instance.currentUser == null) {
+      return;
+    }
+    await _open(pending);
+  }
+
+  Future<void> _open(Uri uri) async {
+    if (!mounted || _opening) {
+      _pendingUri = uri;
+      return;
+    }
+    _opening = true;
+    _pendingUri = null;
+    _lastOpenedUrl = uri.toString();
+    try {
+      await NubifyLinkRouter.open(context, uri.toString());
+    } finally {
+      _opening = false;
+      if (_pendingUri != null && mounted) {
+        WidgetsBinding.instance.addPostFrameCallback((_) => _openPending());
+      }
+    }
+  }
 
   @override
-  Widget build(
-      BuildContext context,
-      ) {
-    return widget.child;
-  }
-
-  //===================================================
-  // DISPOSE
-  //===================================================
+  Widget build(BuildContext context) => widget.child;
 
   @override
   void dispose() {
-    _subscription?.cancel();
-
+    _linkSubscription?.cancel();
+    _authSubscription?.cancel();
     super.dispose();
   }
 }

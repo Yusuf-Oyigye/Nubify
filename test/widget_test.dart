@@ -1,30 +1,45 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:nubify/main.dart';
+import 'package:nubify/utils/link_detector.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  group('Nubify Marketplace deep links', () {
+    test('accepts the official Marketplace hosts', () {
+      expect(
+        LinkDetector.isNubifyUrl(
+          'https://nubify.app/marketplace/listing_123',
+        ),
+        isTrue,
+      );
+      expect(
+        LinkDetector.isNubifyUrl(
+          'https://www.nubify.app/product/listing_123',
+        ),
+        isTrue,
+      );
+    });
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    test('rejects lookalike and unrelated hosts', () {
+      expect(
+        LinkDetector.isNubifyUrl(
+          'https://nubify.app.attacker.example/marketplace/listing_123',
+        ),
+        isFalse,
+      );
+      expect(
+        LinkDetector.isNubifyUrl(
+          'https://example.com/marketplace/listing_123',
+        ),
+        isFalse,
+      );
+    });
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    test('removes sentence punctuation from a shared link', () {
+      expect(
+        LinkDetector.cleanUrl(
+          'https://nubify.app/marketplace/listing_123).',
+        ),
+        'https://nubify.app/marketplace/listing_123',
+      );
+    });
   });
 }

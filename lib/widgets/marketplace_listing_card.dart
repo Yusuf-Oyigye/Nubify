@@ -113,7 +113,20 @@ class _MarketplaceListingCardState extends State<MarketplaceListingCard> {
                               ),
                             ),
                           ),
-                          if (listing.hasVideo)
+                          if (!listing.isAvailable)
+                            Positioned(
+                              left: 10,
+                              top: 10,
+                              child: _MediaBadge(
+                                icon: listing.status == 'sold'
+                                    ? Icons.sell_rounded
+                                    : Icons.visibility_off_rounded,
+                                label: listing.status == 'sold'
+                                    ? 'Sold'
+                                    : 'Unavailable',
+                              ),
+                            )
+                          else if (listing.hasVideo)
                             const Positioned(
                               left: 10,
                               top: 10,
@@ -262,11 +275,11 @@ class _CoverImage extends StatelessWidget {
         context,
         MarketplaceMotion.standard,
       ),
-      placeholder: (_, __) => ColoredBox(
+      placeholder: (_, _) => ColoredBox(
         color: MarketplaceTheme.softSurface(context),
         child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
       ),
-      errorWidget: (_, __, ___) => ColoredBox(
+      errorWidget: (_, _, _) => ColoredBox(
         color: MarketplaceTheme.softSurface(context),
         child: const Icon(
           Icons.broken_image_outlined,

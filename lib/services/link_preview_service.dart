@@ -36,15 +36,19 @@ class LinkPreviewService {
     final String url = LinkDetector.cleanUrl(rawUrl);
     final DateTime now = DateTime.now();
 
-    final bool storyLink =
+    final List<String> pathSegments =
+        Uri.tryParse(url)?.pathSegments ?? const <String>[];
+    final bool liveInternalLink =
         LinkDetector.isNubifyUrl(url) &&
-            Uri
-                .tryParse(url)
-                ?.pathSegments
-                .any((part) => part.toLowerCase() == 'story') ==
-                true;
+        pathSegments.any(
+          (String part) => <String>{
+            'story',
+            'marketplace',
+            'product',
+          }.contains(part.toLowerCase()),
+        );
 
-    final Duration lifetime = storyLink
+    final Duration lifetime = liveInternalLink
         ? const Duration(seconds: 30)
         : const Duration(minutes: 3);
 
@@ -788,10 +792,20 @@ class LinkPreviewService {
   //===================================================
 
   Future<LinkPreview> _marketplacePreview(String url, String productId) async {
-    final DocumentSnapshot<Map<String, dynamic>> document = await _firestore
-        .collection('marketplaceProducts')
-        .doc(productId)
-        .get();
+    late final DocumentSnapshot<Map<String, dynamic>> document;
+    try {
+      document = await _firestore
+          .collection('marketplaceProducts')
+          .doc(productId)
+          .get();
+    } on FirebaseException {
+      return _unavailable(
+        url: url,
+        internalType: 'marketplace',
+        internalId: productId,
+        title: 'Marketplace item no longer available',
+      );
+    }
 
     if (!document.exists || document.data() == null) {
       return _unavailable(
@@ -812,17 +826,12 @@ class LinkPreviewService {
 
     final String description = (data['description'] ?? '').toString();
 
-    String imageUrl = (data['imageUrl'] ?? '').toString();
-
-    if (imageUrl.isEmpty &&
-        data['images'] is List &&
-        (data['images'] as List).isNotEmpty) {
-      imageUrl = (data['images'] as List).first.toString();
-    }
-
-    final String price = data['price'] == null ? '' : data['price'].toString();
-
-    final bool available = data['isAvailable'] != false && data['sold'] != true;
+    final String imageUrl = _marketplaceImage(data);
+    final String price = _marketplacePrice(data);
+    final bool modernListing = data.containsKey('status');
+    final bool available = modernListing
+        ? data['status'] == 'available' && data['publicVisible'] == true
+        : data['isAvailable'] != false && data['sold'] != true;
 
     return LinkPreview(
       url: url,
@@ -863,6 +872,77 @@ class LinkPreviewService {
 
       actionLabel: available ? 'View listing' : 'Unavailable',
     );
+  }
+
+  String _marketplaceImage(Map<String, dynamic> data) {
+    final String savedThumbnail = (data['thumbnailUrl'] ?? '')
+        .toString()
+        .trim();
+    if (savedThumbnail.isNotEmpty) {
+      return savedThumbnail;
+    }
+
+    final dynamic rawMedia = data['media'];
+    if (rawMedia is List && rawMedia.isNotEmpty) {
+      final int requestedIndex = data['coverMediaIndex'] is num
+          ? (data['coverMediaIndex'] as num).toInt()
+          : 0;
+      final int index = requestedIndex >= 0 && requestedIndex < rawMedia.length
+          ? requestedIndex
+          : 0;
+      final dynamic selected = rawMedia[index];
+      if (selected is Map) {
+        final String mediaThumbnail = (selected['thumbnailUrl'] ?? '')
+            .toString()
+            .trim();
+        if (mediaThumbnail.isNotEmpty) {
+          return mediaThumbnail;
+        }
+        final String mediaUrl = (selected['url'] ?? '').toString().trim();
+        if (mediaUrl.isNotEmpty && selected['type'] != 'video') {
+          return mediaUrl;
+        }
+      }
+    }
+
+    final String legacyImage = (data['imageUrl'] ?? '').toString().trim();
+    if (legacyImage.isNotEmpty) {
+      return legacyImage;
+    }
+    final dynamic legacyImages = data['images'];
+    if (legacyImages is List && legacyImages.isNotEmpty) {
+      return legacyImages.first.toString().trim();
+    }
+    return '';
+  }
+
+  String _marketplacePrice(Map<String, dynamic> data) {
+    final String priceType = (data['priceType'] ?? 'fixed').toString();
+    final String currency = (data['currency'] ?? 'EGP').toString();
+    final dynamic rawPrice = data['price'];
+    final double? value = rawPrice is num
+        ? rawPrice.toDouble()
+        : double.tryParse(rawPrice?.toString() ?? '');
+    switch (priceType) {
+      case 'free':
+        return 'Free';
+      case 'contact':
+        return 'Contact for Price';
+      case 'negotiable':
+        return value == null
+            ? 'Negotiable'
+            : '$currency ${_marketplaceNumber(value)} · Negotiable';
+      default:
+        return value == null
+            ? 'Price unavailable'
+            : '$currency ${_marketplaceNumber(value)}';
+    }
+  }
+
+  String _marketplaceNumber(double value) {
+    return value == value.roundToDouble()
+        ? value.toInt().toString()
+        : value.toStringAsFixed(2);
   }
 
   //===================================================

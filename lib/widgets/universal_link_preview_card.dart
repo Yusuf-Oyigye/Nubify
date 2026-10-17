@@ -130,6 +130,11 @@ class UniversalLinkPreviewCard extends StatelessWidget {
   //===================================================
 
   Widget _hero(bool dark) {
+    final String unavailableLabel =
+        preview.statusText.trim().isNotEmpty &&
+            preview.statusText.toLowerCase() != 'restricted'
+        ? preview.statusText.trim()
+        : 'Content unavailable';
     return AspectRatio(
       aspectRatio: compact ? 1.65 : 16 / 9,
       child: Stack(
@@ -141,8 +146,8 @@ class UniversalLinkPreviewCard extends StatelessWidget {
               imageUrl: preview.imageUrl.trim(),
               fit: BoxFit.cover,
               fadeInDuration: const Duration(milliseconds: 180),
-              placeholder: (_, __) => _heroFallback(),
-              errorWidget: (_, __, ___) => _heroFallback(),
+              placeholder: (_, _) => _heroFallback(),
+              errorWidget: (_, _, _) => _heroFallback(),
             )
           else
             _heroFallback(),
@@ -176,18 +181,18 @@ class UniversalLinkPreviewCard extends StatelessWidget {
                   color: Colors.black.withValues(alpha: 0.75),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
+                  children: <Widget>[
+                    const Icon(
                       Icons.lock_outline_rounded,
                       color: Colors.white,
                       size: 17,
                     ),
-                    SizedBox(width: 7),
+                    const SizedBox(width: 7),
                     Text(
-                      'Content unavailable',
-                      style: TextStyle(
+                      unavailableLabel,
+                      style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w700,
                       ),

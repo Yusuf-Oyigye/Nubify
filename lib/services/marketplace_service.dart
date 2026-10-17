@@ -187,15 +187,21 @@ class MarketplaceService {
         .limit(MarketplaceConstants.pageSize)
         .snapshots()
         .asyncMap((QuerySnapshot<Map<String, dynamic>> snapshot) async {
-          final List<MarketplaceListing> listings = <MarketplaceListing>[];
-          for (final QueryDocumentSnapshot<Map<String, dynamic>> saved
-              in snapshot.docs) {
-            final MarketplaceListing? listing = await getListing(saved.id);
-            if (listing != null) {
-              listings.add(listing);
-            }
-          }
-          return listings;
+          final List<MarketplaceListing?> loaded = await Future.wait(
+            snapshot.docs.map((
+              QueryDocumentSnapshot<Map<String, dynamic>> saved,
+            ) async {
+              try {
+                return await getListing(saved.id);
+              } on FirebaseException {
+                // A seller can return an archived item to a private draft.
+                // That one inaccessible item must not prevent every other
+                // saved item from loading. Its save marker stays removable.
+                return null;
+              }
+            }),
+          );
+          return loaded.whereType<MarketplaceListing>().toList(growable: false);
         });
   }
 
