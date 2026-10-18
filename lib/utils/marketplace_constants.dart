@@ -1,12 +1,19 @@
+import 'package:flutter/material.dart';
+
 //===================================================
 // NUB MARKETPLACE DOMAIN CONSTANTS
 //===================================================
 
 class MarketplaceCategory {
-  const MarketplaceCategory({required this.id, required this.label});
+  const MarketplaceCategory({
+    required this.id,
+    required this.label,
+    required this.icon,
+  });
 
   final String id;
   final String label;
+  final IconData icon;
 }
 
 abstract final class MarketplaceConstants {
@@ -15,43 +22,69 @@ abstract final class MarketplaceConstants {
   static const String currency = 'EGP';
 
   static const List<MarketplaceCategory> categories = <MarketplaceCategory>[
-    MarketplaceCategory(id: 'rent_housing', label: 'Rent & Housing'),
-    MarketplaceCategory(id: 'food_snacks', label: 'Food & Snacks'),
-    MarketplaceCategory(id: 'electrical_gadgets', label: 'Electrical Gadgets'),
-    MarketplaceCategory(id: 'textbooks_books', label: 'Textbooks & Books'),
     MarketplaceCategory(
-      id: 'medical_laboratory',
-      label: 'Medical & Laboratory Items',
+      id: 'textbooks_books',
+      label: 'Textbooks & Books',
+      icon: Icons.menu_book_rounded,
+    ),
+    MarketplaceCategory(
+      id: 'food_snacks',
+      label: 'Food & Snacks',
+      icon: Icons.restaurant_rounded,
     ),
     MarketplaceCategory(
       id: 'printing_photocopying',
       label: 'Printing & Photocopying',
+      icon: Icons.print_rounded,
     ),
-    MarketplaceCategory(id: 'clothes_fashion', label: 'Clothes & Fashion'),
+    MarketplaceCategory(
+      id: 'medical_laboratory',
+      label: 'Medical & Laboratory Items',
+      icon: Icons.biotech_rounded,
+    ),
+    MarketplaceCategory(
+      id: 'rent_housing',
+      label: 'Rent & Housing',
+      icon: Icons.apartment_rounded,
+    ),
+    MarketplaceCategory(
+      id: 'electrical_gadgets',
+      label: 'Electrical Gadgets',
+      icon: Icons.devices_other_rounded,
+    ),
+    MarketplaceCategory(
+      id: 'clothes_fashion',
+      label: 'Clothes & Fashion',
+      icon: Icons.checkroom_rounded,
+    ),
     MarketplaceCategory(
       id: 'furniture_room',
       label: 'Furniture & Room Essentials',
+      icon: Icons.chair_rounded,
     ),
     MarketplaceCategory(
       id: 'watches_accessories',
       label: 'Watches & Accessories',
+      icon: Icons.watch_rounded,
     ),
-    MarketplaceCategory(id: 'student_services', label: 'Student Services'),
+    MarketplaceCategory(
+      id: 'student_services',
+      label: 'Student Services',
+      icon: Icons.design_services_rounded,
+    ),
     MarketplaceCategory(
       id: 'beauty_personal_care',
       label: 'Beauty & Personal Care',
+      icon: Icons.spa_rounded,
     ),
-    MarketplaceCategory(id: 'other', label: 'Other'),
+    MarketplaceCategory(
+      id: 'other',
+      label: 'Other',
+      icon: Icons.category_rounded,
+    ),
   ];
 
   static const List<String> conditions = <String>['new', 'used', 'service'];
-
-  static const List<String> priceTypes = <String>[
-    'fixed',
-    'negotiable',
-    'free',
-    'contact',
-  ];
 
   static const List<String> listingStatuses = <String>[
     'draft',

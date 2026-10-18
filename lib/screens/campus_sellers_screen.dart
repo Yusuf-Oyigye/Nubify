@@ -75,8 +75,12 @@ class _CampusSellersScreenState extends State<CampusSellersScreen> {
                             )
                             .toList();
                     if (docs.isEmpty) {
-                      return const Center(
-                        child: Text('No campus sellers match this search.'),
+                      return Center(
+                        child: Text(
+                          _query.isEmpty
+                              ? 'No campus seller yet.'
+                              : 'No campus seller matches this search.',
+                        ),
                       );
                     }
                     return GridView.builder(

@@ -296,8 +296,9 @@ class _MarketplaceSellerStoreScreenState
                       SliverFillRemaining(
                         child: _StoreState(
                           icon: Icons.cloud_off_rounded,
-                          title: 'Store could not load',
-                          message: _loadError.toString(),
+                          title: 'No available listings yet',
+                          message:
+                              'This seller has no Marketplace item showing right now.',
                           actionLabel: 'Try Again',
                           onAction: () => unawaited(_loadListings(reset: true)),
                         ),

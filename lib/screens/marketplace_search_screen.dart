@@ -203,9 +203,9 @@ class _MarketplaceSearchScreenState extends State<MarketplaceSearchScreen> {
                 if (_results.isEmpty && _loadError != null) {
                   return _SearchState(
                     icon: Icons.manage_search_rounded,
-                    title: 'Search needs attention',
+                    title: 'No matching listings',
                     message:
-                        'A Firebase index may still be building for this filter. $_loadError',
+                        'Nothing matches this search yet. Pull down or try again.',
                     actionLabel: 'Try Again',
                     onAction: () => unawaited(_loadResults(reset: true)),
                   );

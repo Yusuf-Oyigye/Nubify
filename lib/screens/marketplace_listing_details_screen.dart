@@ -584,7 +584,7 @@ class _MarketplaceListingDetailsScreenState
                       children: <Widget>[
                         Expanded(
                           child: FilledButton.icon(
-                            onPressed: _working || !listing.allowMessages
+                            onPressed: _working
                                 ? null
                                 : () => _messageSeller(listing),
                             icon: const Icon(Icons.chat_bubble_outline_rounded),
@@ -594,19 +594,17 @@ class _MarketplaceListingDetailsScreenState
                             ),
                           ),
                         ),
-                        if (listing.allowCalls) ...<Widget>[
-                          const SizedBox(width: 10),
-                          IconButton.filled(
-                            tooltip: 'Call Seller',
-                            onPressed: _working
-                                ? null
-                                : () => _callSeller(listing),
-                            icon: const Icon(Icons.phone_rounded),
-                            style: IconButton.styleFrom(
-                              minimumSize: const Size(54, 54),
-                            ),
+                        const SizedBox(width: 10),
+                        IconButton.filled(
+                          tooltip: 'Call Seller',
+                          onPressed: _working
+                              ? null
+                              : () => _callSeller(listing),
+                          icon: const Icon(Icons.phone_rounded),
+                          style: IconButton.styleFrom(
+                            minimumSize: const Size(54, 54),
                           ),
-                        ],
+                        ),
                       ],
                     ),
                   ),

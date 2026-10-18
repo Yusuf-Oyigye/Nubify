@@ -21,7 +21,7 @@ class CellularCallService {
     );
     final String phone = (data['phoneE164'] ?? '').toString().trim();
     if (phone.isEmpty) {
-      throw StateError('This seller has not enabled phone contact.');
+      throw StateError('This seller has not added a valid phone number.');
     }
     return phone;
   }

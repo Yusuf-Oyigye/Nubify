@@ -125,7 +125,7 @@ class AuthMethods {
       batch.set(privateUser, <String, dynamic>{
         'uid': cred.user!.uid,
         'phoneE164': phoneE164,
-        'allowMarketplaceCalls': false,
+        'allowMarketplaceCalls': true,
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       });

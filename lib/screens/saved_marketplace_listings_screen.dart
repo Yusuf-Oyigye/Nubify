@@ -127,15 +127,6 @@ class _SavedMarketplaceListingsScreenState
     if (_loading) {
       return const Center(child: CircularProgressIndicator());
     }
-    if (_listings.isEmpty && _loadError != null) {
-      return _SavedState(
-        icon: Icons.cloud_off_rounded,
-        title: 'Saved listings could not load',
-        message: _loadError.toString(),
-        actionLabel: 'Try Again',
-        onAction: () => unawaited(_loadSaved(reset: true)),
-      );
-    }
     if (_listings.isEmpty) {
       return RefreshIndicator(
         onRefresh: () => _loadSaved(reset: true),
@@ -229,15 +220,11 @@ class _SavedState extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.message,
-    this.actionLabel,
-    this.onAction,
   });
 
   final IconData icon;
   final String title;
   final String message;
-  final String? actionLabel;
-  final VoidCallback? onAction;
 
   @override
   Widget build(BuildContext context) {
@@ -256,10 +243,6 @@ class _SavedState extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(message, textAlign: TextAlign.center),
-            if (actionLabel != null && onAction != null) ...<Widget>[
-              const SizedBox(height: 12),
-              FilledButton(onPressed: onAction, child: Text(actionLabel!)),
-            ],
           ],
         ),
       ),

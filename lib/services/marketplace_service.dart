@@ -53,13 +53,11 @@ class MarketplaceHomeDiscovery {
     required this.userId,
     required this.categoryCounts,
     required this.campusSellers,
-    required this.currentUserPhotoUrl,
   });
 
   final String userId;
   final Map<String, int> categoryCounts;
   final List<MarketplaceSellerSummary> campusSellers;
-  final String currentUserPhotoUrl;
 }
 
 class MarketplaceService {
@@ -124,7 +122,7 @@ class MarketplaceService {
   }
 
   /// Loads the small discovery datasets used at the top of Marketplace in
-  /// three parallel one-time reads. Previously the home screen maintained 14
+  /// two parallel one-time reads. Previously the home screen maintained 14
   /// separate live listeners for this data, including one per category.
   Future<MarketplaceHomeDiscovery> fetchHomeDiscovery({
     int sellerLimit = 10,
@@ -140,26 +138,24 @@ class MarketplaceService {
     );
 
     final List<Object?> results = await Future.wait<Object?>(<Future<Object?>>[
-      _firestore
-          .collection('marketplaceCategoryStats')
-          .limit(MarketplaceConstants.categories.length)
-          .get(),
-      sellerQuery.limit(sellerLimit).get(),
-      uid.isEmpty
-          ? Future<Object?>.value(null)
-          : _firestore.collection('users').doc(uid).get(),
+      _optionalRead(
+        _firestore
+            .collection('marketplaceCategoryStats')
+            .limit(MarketplaceConstants.categories.length)
+            .get(),
+      ),
+      _optionalRead(sellerQuery.limit(sellerLimit).get()),
     ]);
 
-    final QuerySnapshot<Map<String, dynamic>> categorySnapshot =
-        results[0]! as QuerySnapshot<Map<String, dynamic>>;
-    final QuerySnapshot<Map<String, dynamic>> sellerSnapshot =
-        results[1]! as QuerySnapshot<Map<String, dynamic>>;
-    final DocumentSnapshot<Map<String, dynamic>>? profileSnapshot =
-        results[2] as DocumentSnapshot<Map<String, dynamic>>?;
+    final QuerySnapshot<Map<String, dynamic>>? categorySnapshot =
+        results[0] as QuerySnapshot<Map<String, dynamic>>?;
+    final QuerySnapshot<Map<String, dynamic>>? sellerSnapshot =
+        results[1] as QuerySnapshot<Map<String, dynamic>>?;
 
     final Map<String, int> categoryCounts = <String, int>{
       for (final QueryDocumentSnapshot<Map<String, dynamic>> document
-          in categorySnapshot.docs)
+          in categorySnapshot?.docs ??
+              const <QueryDocumentSnapshot<Map<String, dynamic>>>[])
         document.id: document.data()['availableListingCount'] is num
             ? (document.data()['availableListingCount'] as num).toInt()
             : 0,
@@ -168,13 +164,21 @@ class MarketplaceService {
       userId: uid,
       categoryCounts: Map<String, int>.unmodifiable(categoryCounts),
       campusSellers: List<MarketplaceSellerSummary>.unmodifiable(
-        sellerSnapshot.docs.map(MarketplaceSellerSummary.fromFirestore),
+        (sellerSnapshot?.docs ??
+                const <QueryDocumentSnapshot<Map<String, dynamic>>>[])
+            .map(MarketplaceSellerSummary.fromFirestore),
       ),
-      currentUserPhotoUrl: (profileSnapshot?.data()?['photoUrl'] ?? '')
-          .toString(),
     );
     _cachedHomeDiscovery = discovery;
     return discovery;
+  }
+
+  Future<T?> _optionalRead<T>(Future<T> read) async {
+    try {
+      return await read;
+    } on FirebaseException {
+      return null;
+    }
   }
 
   Stream<List<MarketplaceListing>> watchSearch(MarketplaceFilter filter) {

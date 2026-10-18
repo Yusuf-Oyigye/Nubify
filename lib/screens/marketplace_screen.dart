@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../models/marketplace_listing.dart';
@@ -15,8 +14,8 @@ import 'chat_screen.dart';
 import 'marketplace_listing_details_screen.dart';
 import 'marketplace_search_screen.dart';
 import 'marketplace_seller_store_screen.dart';
+import 'my_marketplace_listings_screen.dart';
 import 'notifications_screen.dart';
-import 'profile_screen.dart';
 import 'saved_marketplace_listings_screen.dart';
 
 class MarketplaceScreen extends StatefulWidget {
@@ -42,7 +41,6 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
   late final Stream<Set<String>> _savedIdsStream;
   MarketplaceHomeDiscovery? _discovery;
   bool _loadingDiscovery = true;
-  Object? _discoveryError;
 
   @override
   void initState() {
@@ -131,7 +129,6 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     if (_discovery == null && mounted) {
       setState(() {
         _loadingDiscovery = true;
-        _discoveryError = null;
       });
     }
     try {
@@ -143,15 +140,13 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
       setState(() {
         _discovery = discovery;
         _loadingDiscovery = false;
-        _discoveryError = null;
       });
-    } catch (error) {
+    } catch (_) {
       if (!mounted) {
         return;
       }
       setState(() {
         _loadingDiscovery = false;
-        _discoveryError = error;
       });
     }
   }
@@ -192,9 +187,9 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final String currentUid = FirebaseAuth.instance.currentUser?.uid ?? '';
     return Scaffold(
       appBar: AppBar(
+        toolbarHeight: 64,
         title: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
@@ -209,37 +204,62 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
           ],
         ),
         actions: <Widget>[
-          IconButton(
-            tooltip: 'Saved Listings',
+          _MarketplaceHeaderAction(
+            title: 'Saved Listings',
+            label: 'Saved',
+            color: Colors.redAccent,
             onPressed: () => Navigator.push(
               context,
               MaterialPageRoute<void>(
                 builder: (_) => const SavedMarketplaceListingsScreen(),
               ),
             ),
-            icon: const Icon(Icons.favorite_border_rounded),
+            child: const Icon(Icons.favorite_rounded, size: 20),
           ),
-          IconButton(
-            tooltip: 'Chats',
+          _MarketplaceHeaderAction(
+            title: 'Chats',
+            label: 'Chat',
+            color: MarketplaceTheme.sky,
             onPressed: () => Navigator.push(
               context,
               MaterialPageRoute<void>(builder: (_) => const ChatScreen()),
             ),
-            icon: const Icon(Icons.chat_bubble_outline_rounded),
+            child: const Icon(Icons.chat_bubble_rounded, size: 19),
           ),
-          IconButton(
-            tooltip: 'Notifications',
+          _MarketplaceHeaderAction(
+            title: 'Notifications',
+            label: 'Alerts',
+            color: MarketplaceTheme.gold,
             onPressed: () => Navigator.push(
               context,
               MaterialPageRoute<void>(
                 builder: (_) => const NotificationsScreen(),
               ),
             ),
-            icon: const Icon(Icons.notifications_none_rounded),
+            child: CachedNetworkImage(
+              imageUrl:
+                  'https://img.icons8.com/?size=100&id=F5WMYjiT3vpJ&format=png&color=000000',
+              width: 21,
+              height: 21,
+              fit: BoxFit.contain,
+              errorWidget: (_, _, _) => const Icon(
+                Icons.notifications_rounded,
+                size: 20,
+                color: Colors.black,
+              ),
+            ),
           ),
-          _ProfileAction(
-            uid: currentUid,
-            photoUrl: _discovery?.currentUserPhotoUrl ?? '',
+          _MarketplaceHeaderAction(
+            title: 'My Listings',
+            label: 'Mine',
+            color: MarketplaceTheme.copper,
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute<void>(
+                builder: (_) => const MyMarketplaceListingsScreen(),
+              ),
+            ),
+            child: const Icon(Icons.inventory_2_rounded, size: 19),
           ),
           const SizedBox(width: 6),
         ],
@@ -304,23 +324,14 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
               child: _SectionHeading(
                 title: 'Campus Sellers',
                 subtitle: 'Students with available listings',
-                action: TextButton(onPressed: null, child: Text('')),
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: Padding(
-                  padding: const EdgeInsets.only(right: 12),
-                  child: TextButton(
-                    onPressed: () => Navigator.push(
-                      context,
-                      MaterialPageRoute<void>(
-                        builder: (_) => const CampusSellersScreen(),
-                      ),
+                action: TextButton(
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute<void>(
+                      builder: (_) => const CampusSellersScreen(),
                     ),
-                    child: const Text('View All Sellers'),
                   ),
+                  child: const Text('View All'),
                 ),
               ),
             ),
@@ -330,8 +341,6 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                     _discovery?.campusSellers ??
                     const <MarketplaceSellerSummary>[],
                 loading: _loadingDiscovery,
-                error: _discoveryError,
-                onRetry: _loadDiscovery,
               ),
             ),
             const SliverToBoxAdapter(
@@ -347,22 +356,12 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                   child: Center(child: CircularProgressIndicator()),
                 ),
               )
-            else if (_freshListings.isEmpty && _freshError != null)
-              SliverToBoxAdapter(
-                child: _MarketplaceState(
-                  icon: Icons.cloud_off_rounded,
-                  title: 'Listings could not load',
-                  message: _freshError.toString(),
-                  actionLabel: 'Try Again',
-                  onAction: () => unawaited(_loadFreshListings(reset: true)),
-                ),
-              )
             else if (_freshListings.isEmpty)
               const SliverToBoxAdapter(
                 child: _MarketplaceState(
                   icon: Icons.storefront_outlined,
-                  title: 'Campus Marketplace is ready',
-                  message: 'Students can publish the first real listing.',
+                  title: 'No fresh listings yet',
+                  message: 'New Marketplace items will appear here.',
                 ),
               )
             else
@@ -465,7 +464,7 @@ class _HeroBanner extends StatelessWidget {
         ),
       ),
       child: Container(
-        padding: const EdgeInsets.all(22),
+        padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           gradient: MarketplaceTheme.heroGradient,
           borderRadius: BorderRadius.circular(28),
@@ -480,41 +479,21 @@ class _HeroBanner extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: MarketplaceTheme.copper.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(30),
-                border: Border.all(
-                  color: MarketplaceTheme.copper.withValues(alpha: 0.5),
-                ),
-              ),
-              child: const Text(
-                'FOR NAHDA UNIVERSITY STUDENTS',
-                style: TextStyle(
-                  color: MarketplaceTheme.ivory,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 0.7,
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
             const Text(
-              'Good finds.\nReal campus sellers.',
+              'Good finds. Real sellers.',
               style: TextStyle(
                 color: Colors.white,
-                fontSize: 29,
+                fontSize: 26,
                 height: 1.05,
                 fontWeight: FontWeight.w900,
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
             const Text(
-              'Discover products and services, then connect directly with real student sellers.',
+              'Discover products and services, then connect directly with sellers.',
               style: TextStyle(color: Colors.white70, height: 1.4),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 14),
             Row(
               children: <Widget>[
                 Expanded(
@@ -587,10 +566,7 @@ class _CategoriesStrip extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Icon(
-                    _categoryIcon(category.id),
-                    color: _categoryColor(index),
-                  ),
+                  Icon(category.icon, color: _categoryColor(index)),
                   const Spacer(),
                   Text(
                     category.label,
@@ -619,22 +595,15 @@ class _CategoriesStrip extends StatelessWidget {
 }
 
 class _CampusSellerStrip extends StatelessWidget {
-  const _CampusSellerStrip({
-    required this.sellers,
-    required this.loading,
-    required this.error,
-    required this.onRetry,
-  });
+  const _CampusSellerStrip({required this.sellers, required this.loading});
 
   final List<MarketplaceSellerSummary> sellers;
   final bool loading;
-  final Object? error;
-  final Future<void> Function() onRetry;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 142,
+      height: sellers.isEmpty ? 72 : 142,
       child: loading && sellers.isEmpty
           ? const Center(child: CircularProgressIndicator(strokeWidth: 2))
           : sellers.isEmpty
@@ -642,15 +611,7 @@ class _CampusSellerStrip extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 18),
               child: Align(
                 alignment: Alignment.centerLeft,
-                child: error == null
-                    ? const Text(
-                        'Sellers with available listings will appear here.',
-                      )
-                    : TextButton.icon(
-                        onPressed: onRetry,
-                        icon: const Icon(Icons.refresh_rounded),
-                        label: const Text('Could not load sellers — retry'),
-                      ),
+                child: const Text('No campus sellers yet.'),
               ),
             )
           : ListView.separated(
@@ -721,35 +682,66 @@ class _CampusSellerStrip extends StatelessWidget {
   }
 }
 
-class _ProfileAction extends StatelessWidget {
-  const _ProfileAction({required this.uid, required this.photoUrl});
+class _MarketplaceHeaderAction extends StatelessWidget {
+  const _MarketplaceHeaderAction({
+    required this.title,
+    required this.label,
+    required this.color,
+    required this.onPressed,
+    required this.child,
+  });
 
-  final String uid;
-  final String photoUrl;
+  final String title;
+  final String label;
+  final Color color;
+  final VoidCallback onPressed;
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
-    if (uid.isEmpty) {
-      return const SizedBox.shrink();
-    }
-    return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute<void>(builder: (_) => ProfileScreen(userId: uid)),
-      ),
-      child: CircleAvatar(
-        radius: 16,
-        backgroundColor: MarketplaceTheme.sky.withValues(alpha: 0.2),
-        backgroundImage: photoUrl.isEmpty
-            ? null
-            : CachedNetworkImageProvider(photoUrl),
-        child: photoUrl.isEmpty
-            ? const Icon(
-                Icons.person_rounded,
-                size: 18,
-                color: MarketplaceTheme.sky,
-              )
-            : null,
+    return Tooltip(
+      message: title,
+      child: SizedBox(
+        width: 43,
+        child: Semantics(
+          button: true,
+          label: title,
+          child: InkWell(
+            onTap: onPressed,
+            borderRadius: BorderRadius.circular(12),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.18),
+                    shape: BoxShape.circle,
+                  ),
+                  child: SizedBox(
+                    width: 30,
+                    height: 30,
+                    child: IconTheme(
+                      data: IconThemeData(color: color),
+                      child: Center(child: child),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 1),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.fade,
+                  softWrap: false,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 8,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -806,15 +798,11 @@ class _MarketplaceState extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.message,
-    this.actionLabel,
-    this.onAction,
   });
 
   final IconData icon;
   final String title;
   final String message;
-  final String? actionLabel;
-  final VoidCallback? onAction;
 
   @override
   Widget build(BuildContext context) {
@@ -831,42 +819,9 @@ class _MarketplaceState extends StatelessWidget {
           ),
           const SizedBox(height: 5),
           Text(message, textAlign: TextAlign.center),
-          if (actionLabel != null && onAction != null) ...<Widget>[
-            const SizedBox(height: 12),
-            FilledButton(onPressed: onAction, child: Text(actionLabel!)),
-          ],
         ],
       ),
     );
-  }
-}
-
-IconData _categoryIcon(String id) {
-  switch (id) {
-    case 'rent_housing':
-      return Icons.home_work_outlined;
-    case 'food_snacks':
-      return Icons.restaurant_outlined;
-    case 'electrical_gadgets':
-      return Icons.devices_other_outlined;
-    case 'textbooks_books':
-      return Icons.menu_book_rounded;
-    case 'medical_laboratory':
-      return Icons.biotech_outlined;
-    case 'printing_photocopying':
-      return Icons.print_outlined;
-    case 'clothes_fashion':
-      return Icons.checkroom_outlined;
-    case 'furniture_room':
-      return Icons.chair_outlined;
-    case 'watches_accessories':
-      return Icons.watch_outlined;
-    case 'student_services':
-      return Icons.design_services_outlined;
-    case 'beauty_personal_care':
-      return Icons.spa_outlined;
-    default:
-      return Icons.grid_view_rounded;
   }
 }
 

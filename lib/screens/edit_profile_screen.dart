@@ -76,8 +76,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   bool _saving = false;
 
-  bool _allowMarketplaceCalls = false;
-
   //===================================================
   // COLOR
   //===================================================
@@ -132,7 +130,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
       final privateProfile = await _privateProfileService.getMine();
       _phoneController.text = privateProfile.phoneE164;
-      _allowMarketplaceCalls = privateProfile.allowMarketplaceCalls;
     } catch (error) {
       if (mounted) {
         _showMessage('Unable to load your profile.');
@@ -311,7 +308,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       } else {
         await _privateProfileService.savePhone(
           phone: phone,
-          allowMarketplaceCalls: _allowMarketplaceCalls,
+          allowMarketplaceCalls: true,
         );
       }
 
@@ -425,7 +422,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       newPassword: newPassword,
                     );
 
-                    if (!mounted) {
+                    if (!mounted || !dialogContext.mounted) {
                       return;
                     }
 
@@ -900,33 +897,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   const SizedBox(height: 14),
 
                   //===================================================
-                  // PRIVATE MOBILE NUMBER + CALL PERMISSION
+                  // PRIVATE MOBILE NUMBER
                   //===================================================
                   _field(
                     controller: _phoneController,
                     label: 'Egyptian mobile number',
                     icon: Icons.phone_android_rounded,
                     keyboardType: TextInputType.phone,
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  Card(
-                    margin: EdgeInsets.zero,
-                    child: SwitchListTile.adaptive(
-                      value: _allowMarketplaceCalls,
-                      onChanged: (bool value) {
-                        setState(() {
-                          _allowMarketplaceCalls = value;
-                        });
-                      },
-                      secondary: const Icon(Icons.call_outlined),
-                      title: const Text('Allow Marketplace calls'),
-                      subtitle: const Text(
-                        'Your number remains private. Nubify only returns it when an eligible buyer taps Call Seller.',
-                      ),
-                      activeThumbColor: _blue,
-                    ),
                   ),
 
                   const SizedBox(height: 14),

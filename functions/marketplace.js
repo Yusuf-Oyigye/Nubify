@@ -133,7 +133,7 @@ function validateListingForPublish(data, uid) {
     );
   }
   cleanString(data.title, "Title", 2, 120);
-  cleanString(data.description, "Description", 3, 5000);
+  optionalString(data.description, 5000);
   if (!ALLOWED_CATEGORIES.has(data.category)) {
     throw new HttpsError("invalid-argument", "Choose a valid category.");
   }
@@ -342,8 +342,7 @@ exports.getMarketplaceSellerContact = onCall(
     const listing = await db.collection(LISTINGS).doc(listingId).get();
     const data = listing.data();
     if (!listing.exists || data?.status !== "available" ||
-        data?.publicVisible !== true ||
-        data?.contactPreferences?.allowCalls !== true) {
+        data?.publicVisible !== true) {
       throw new HttpsError(
         "failed-precondition",
         "Phone contact is not available for this listing.",
@@ -353,12 +352,11 @@ exports.getMarketplaceSellerContact = onCall(
       .doc(data.sellerId)
       .get();
     const phone = contact.data()?.phoneE164;
-    if (contact.data()?.allowMarketplaceCalls !== true ||
-        typeof phone !== "string" ||
+    if (typeof phone !== "string" ||
         !/^\+201[0125]\d{8}$/u.test(phone)) {
       throw new HttpsError(
         "failed-precondition",
-        "This seller has not enabled phone contact.",
+        "This seller has not added a valid phone number.",
       );
     }
     return {phoneE164: phone};

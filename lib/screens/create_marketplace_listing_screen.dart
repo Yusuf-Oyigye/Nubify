@@ -6,7 +6,6 @@ import 'package:flutter/services.dart';
 import '../models/marketplace_listing.dart';
 import '../services/marketplace_media_service.dart';
 import '../services/marketplace_service.dart';
-import '../services/private_profile_service.dart';
 import '../utils/marketplace_constants.dart';
 import '../utils/marketplace_theme.dart';
 import 'marketplace_listing_details_screen.dart';
@@ -50,10 +49,7 @@ class _CreateMarketplaceListingScreenState
 
   String? _category;
   String? _condition;
-  String? _priceType;
   int _coverIndex = 0;
-  bool _allowMessages = true;
-  bool _allowCalls = false;
   bool _saving = false;
   bool _loadingExisting = false;
   MarketplaceListing? _editingListing;
@@ -90,9 +86,6 @@ class _CreateMarketplaceListingScreenState
       _price.text = listing.price?.toString() ?? '';
       _category = listing.category.isEmpty ? null : listing.category;
       _condition = listing.condition.isEmpty ? null : listing.condition;
-      _priceType = listing.priceType.isEmpty ? null : listing.priceType;
-      _allowMessages = listing.allowMessages;
-      _allowCalls = listing.allowCalls;
       _mediaItems
         ..clear()
         ..addAll(listing.media.map(_EditableMarketplaceMedia.existing));
@@ -367,11 +360,7 @@ class _CreateMarketplaceListingScreenState
           : (normalized[safeCover].thumbnailUrl.trim().isEmpty
                 ? normalized[safeCover].url
                 : normalized[safeCover].thumbnailUrl);
-      final String selectedPriceType = _priceType ?? '';
-      final double? numericPrice =
-          selectedPriceType == 'fixed' || selectedPriceType == 'negotiable'
-          ? double.tryParse(_price.text.trim())
-          : null;
+      final double? numericPrice = double.tryParse(_price.text.trim());
 
       final Map<String, dynamic> listingData = <String, dynamic>{
         'listingId': reference.id,
@@ -382,7 +371,7 @@ class _CreateMarketplaceListingScreenState
         'description': _description.text.trim(),
         'category': _category ?? '',
         'condition': _condition ?? '',
-        'priceType': selectedPriceType,
+        'priceType': 'fixed',
         'price': numericPrice,
         'currency': MarketplaceConstants.currency,
         'media': normalized
@@ -394,8 +383,8 @@ class _CreateMarketplaceListingScreenState
         'status': _editingListing?.status ?? 'draft',
         'publicVisible': _editingListing?.publicVisible ?? false,
         'contactPreferences': <String, dynamic>{
-          'allowMessages': _allowMessages,
-          'allowCalls': _allowCalls,
+          'allowMessages': true,
+          'allowCalls': true,
         },
         'searchPrefixes':
             publish || (_editingListing?.status ?? 'draft') == 'available'
@@ -492,7 +481,7 @@ class _CreateMarketplaceListingScreenState
           cancellation?.isCancelled == true ||
                   error is MarketplaceUploadCancelledException
               ? 'Upload cancelled. Nothing was published.'
-              : error.toString(),
+              : _saveError(error),
         );
       }
     } finally {
@@ -525,25 +514,27 @@ class _CreateMarketplaceListingScreenState
   String? _validatePublish() {
     if (_totalMedia == 0) return 'Add at least one photo or video.';
     if (_title.text.trim().length < 2) return 'Enter a clear listing title.';
-    if (_description.text.trim().length < 3) return 'Add a useful description.';
     if (_category == null) return 'Choose a category.';
     if (_condition == null) return 'Choose the condition.';
-    if (_priceType == null) return 'Choose how the item is priced.';
-    if ((_priceType == 'fixed' || _priceType == 'negotiable')) {
-      final double? value = double.tryParse(_price.text.trim());
-      if (value == null || value <= 0 || value > 100000000) {
-        return 'Enter a valid price greater than zero.';
-      }
-    }
-    if (!_allowMessages && !_allowCalls) {
-      return 'Enable at least one way for buyers to contact you.';
+    final double? value = double.tryParse(_price.text.trim());
+    if (value == null || value <= 0 || value > 100000000) {
+      return 'Enter a valid price greater than zero.';
     }
     return null;
   }
 
+  String _saveError(Object error) {
+    final String value = error.toString();
+    final String normalized = value.toLowerCase();
+    if (normalized.contains('unauthorized') ||
+        normalized.contains('permission-denied')) {
+      return 'Nubify could not upload this listing. Please refresh and try again.';
+    }
+    return value.replaceFirst('Exception: ', '');
+  }
+
   @override
   Widget build(BuildContext context) {
-    final bool showPrice = _priceType == 'fixed' || _priceType == 'negotiable';
     return PopScope(
       canPop: !_saving,
       onPopInvokedWithResult: (bool didPop, Object? result) {
@@ -690,7 +681,7 @@ class _CreateMarketplaceListingScreenState
                     maxLength: 120,
                     textCapitalization: TextCapitalization.sentences,
                     decoration: const InputDecoration(
-                      labelText: 'Title',
+                      labelText: 'Title (required)',
                       prefixIcon: Icon(Icons.title_rounded),
                       border: OutlineInputBorder(),
                     ),
@@ -698,9 +689,18 @@ class _CreateMarketplaceListingScreenState
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
                     initialValue: _category,
-                    decoration: const InputDecoration(
-                      labelText: 'Category',
-                      prefixIcon: Icon(Icons.category_outlined),
+                    decoration: InputDecoration(
+                      labelText: 'Category (required)',
+                      prefixIcon: Icon(
+                        _category == null
+                            ? Icons.category_outlined
+                            : MarketplaceConstants.categories
+                                  .firstWhere(
+                                    (MarketplaceCategory item) =>
+                                        item.id == _category,
+                                  )
+                                  .icon,
+                      ),
                       border: OutlineInputBorder(),
                     ),
                     items: MarketplaceConstants.categories
@@ -708,7 +708,17 @@ class _CreateMarketplaceListingScreenState
                           (MarketplaceCategory value) =>
                               DropdownMenuItem<String>(
                                 value: value.id,
-                                child: Text(value.label),
+                                child: Row(
+                                  children: <Widget>[
+                                    Icon(
+                                      value.icon,
+                                      size: 20,
+                                      color: MarketplaceTheme.sky,
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Flexible(child: Text(value.label)),
+                                  ],
+                                ),
                               ),
                         )
                         .toList(),
@@ -719,7 +729,7 @@ class _CreateMarketplaceListingScreenState
                   DropdownButtonFormField<String>(
                     initialValue: _condition,
                     decoration: const InputDecoration(
-                      labelText: 'Condition',
+                      labelText: 'Condition (required)',
                       prefixIcon: Icon(Icons.auto_awesome_outlined),
                       border: OutlineInputBorder(),
                     ),
@@ -737,48 +747,21 @@ class _CreateMarketplaceListingScreenState
                         setState(() => _condition = value),
                   ),
                   const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    initialValue: _priceType,
+                  TextField(
+                    controller: _price,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    inputFormatters: <TextInputFormatter>[
+                      FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                    ],
                     decoration: const InputDecoration(
-                      labelText: 'Pricing',
-                      prefixIcon: Icon(Icons.sell_outlined),
+                      labelText: 'Price (required)',
+                      prefixText: 'EGP ',
+                      prefixIcon: Icon(Icons.payments_outlined),
                       border: OutlineInputBorder(),
                     ),
-                    items: const <DropdownMenuItem<String>>[
-                      DropdownMenuItem(
-                        value: 'fixed',
-                        child: Text('Fixed Price'),
-                      ),
-                      DropdownMenuItem(
-                        value: 'negotiable',
-                        child: Text('Negotiable'),
-                      ),
-                      DropdownMenuItem(value: 'free', child: Text('Free')),
-                      DropdownMenuItem(
-                        value: 'contact',
-                        child: Text('Contact for Price'),
-                      ),
-                    ],
-                    onChanged: (String? value) =>
-                        setState(() => _priceType = value),
                   ),
-                  if (showPrice) ...<Widget>[
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: _price,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      inputFormatters: <TextInputFormatter>[
-                        FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
-                      ],
-                      decoration: const InputDecoration(
-                        labelText: 'Price',
-                        prefixText: 'EGP ',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                  ],
                   const SizedBox(height: 12),
                   TextField(
                     controller: _description,
@@ -787,47 +770,11 @@ class _CreateMarketplaceListingScreenState
                     maxLength: 5000,
                     textCapitalization: TextCapitalization.sentences,
                     decoration: const InputDecoration(
-                      labelText: 'Description',
+                      labelText: 'Description (optional)',
                       alignLabelWithHint: true,
                       border: OutlineInputBorder(),
                     ),
                   ),
-                  const SizedBox(height: 10),
-                  const Text(
-                    'Buyer contact',
-                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
-                  ),
-                  SwitchListTile.adaptive(
-                    value: _allowMessages,
-                    onChanged: (bool value) =>
-                        setState(() => _allowMessages = value),
-                    title: const Text('Message Seller'),
-                    subtitle: const Text('Use Nubify direct messages.'),
-                    secondary: const Icon(Icons.chat_bubble_outline_rounded),
-                  ),
-                  SwitchListTile.adaptive(
-                    value: _allowCalls,
-                    onChanged: (bool value) =>
-                        setState(() => _allowCalls = value),
-                    title: const Text('Call Seller'),
-                    subtitle: const Text(
-                      'Uses your private Egyptian mobile number and normal phone network.',
-                    ),
-                    secondary: const Icon(Icons.phone_outlined),
-                  ),
-                  if (_allowCalls)
-                    TextButton.icon(
-                      onPressed: () async {
-                        final profile = await PrivateProfileService().getMine();
-                        if (mounted && profile.phoneE164.isEmpty) {
-                          _message(
-                            'Add your mobile number in Edit Profile before enabling calls.',
-                          );
-                        }
-                      },
-                      icon: const Icon(Icons.privacy_tip_outlined),
-                      label: const Text('Check private phone setup'),
-                    ),
                   if (_saving) ...<Widget>[
                     const SizedBox(height: 18),
                     LinearProgressIndicator(

@@ -17,5 +17,23 @@ void main() {
       MarketplaceConstants.categories.map((category) => category.id).toSet(),
       hasLength(12),
     );
+    expect(
+      MarketplaceConstants.categories
+          .take(4)
+          .map((category) => category.id)
+          .toList(),
+      <String>[
+        'textbooks_books',
+        'food_snacks',
+        'printing_photocopying',
+        'medical_laboratory',
+      ],
+    );
+    expect(
+      MarketplaceConstants.categories
+          .map((category) => category.icon.codePoint)
+          .toSet(),
+      hasLength(12),
+    );
   });
 }

@@ -489,7 +489,7 @@ class _EmptyStatus extends StatelessWidget {
             const SizedBox(height: 6),
             Text(
               error != null
-                  ? error.toString()
+                  ? 'Your listings are not showing right now. Pull down or try again.'
                   : status == 'available'
                   ? 'Published listings will appear here.'
                   : 'This section is currently empty.',
