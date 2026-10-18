@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 
-import '../config/marketplace_feature_flags.dart';
 import '../services/marketplace_admin_service.dart';
 import '../utils/marketplace_theme.dart';
 import 'edit_profile_screen.dart';
 import 'marketplace_screen.dart';
+import 'marketplace_reports_admin_screen.dart';
 import 'my_marketplace_listings_screen.dart';
 import 'saved_marketplace_listings_screen.dart';
-import 'seller_verification_admin_screen.dart';
-import 'seller_verification_screen.dart';
 
 class MenuScreen extends StatelessWidget {
   const MenuScreen({super.key});
@@ -38,11 +36,9 @@ class MenuScreen extends StatelessWidget {
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                Text(
-                  MarketplaceFeatureFlags.requireSellerApproval
-                      ? 'Manage your profile, Marketplace activity, and trusted seller access.'
-                      : 'Manage your profile and Marketplace buying and selling activity.',
-                  style: const TextStyle(color: Colors.white70, height: 1.4),
+                const Text(
+                  'Manage your profile and Marketplace buying and selling activity.',
+                  style: TextStyle(color: Colors.white70, height: 1.4),
                 ),
               ],
             ),
@@ -84,19 +80,6 @@ class MenuScreen extends StatelessWidget {
               ),
             ),
           ),
-          if (MarketplaceFeatureFlags.requireSellerApproval)
-            _MenuTile(
-              icon: Icons.verified_user_outlined,
-              color: MarketplaceTheme.emerald,
-              title: 'Seller Verification',
-              subtitle: 'Apply once or check your approval status',
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute<void>(
-                  builder: (_) => const SellerVerificationScreen(),
-                ),
-              ),
-            ),
           FutureBuilder<MarketplaceAdminAccess>(
             future: MarketplaceAdminService().access(),
             builder:
@@ -111,13 +94,12 @@ class MenuScreen extends StatelessWidget {
                     icon: Icons.admin_panel_settings_rounded,
                     color: MarketplaceTheme.gold,
                     title: 'Marketplace Admin Dashboard',
-                    subtitle: MarketplaceFeatureFlags.requireSellerApproval
-                        ? 'Review IDs, listing reports, sellers, and trusted staff'
-                        : 'Manage listing reports and Marketplace administration',
+                    subtitle:
+                        'Manage listing reports and Marketplace administration',
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute<void>(
-                        builder: (_) => const SellerVerificationAdminScreen(),
+                        builder: (_) => const MarketplaceReportsAdminScreen(),
                       ),
                     ),
                   );

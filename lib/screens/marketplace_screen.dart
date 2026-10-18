@@ -4,10 +4,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-import '../config/marketplace_feature_flags.dart';
 import '../models/marketplace_listing.dart';
 import '../services/marketplace_service.dart';
-import '../services/seller_verification_service.dart';
 import '../utils/marketplace_constants.dart';
 import '../utils/marketplace_motion.dart';
 import '../utils/marketplace_theme.dart';
@@ -20,7 +18,6 @@ import 'marketplace_seller_store_screen.dart';
 import 'notifications_screen.dart';
 import 'profile_screen.dart';
 import 'saved_marketplace_listings_screen.dart';
-import 'seller_verification_screen.dart';
 
 class MarketplaceScreen extends StatefulWidget {
   const MarketplaceScreen({super.key, this.initialProductId = ''});
@@ -184,21 +181,6 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
   }
 
   Future<void> _startSelling() async {
-    if (MarketplaceFeatureFlags.requireSellerApproval) {
-      final verification = await SellerVerificationService().getMine();
-      if (!mounted) {
-        return;
-      }
-      if (!verification.isApproved) {
-        await Navigator.push(
-          context,
-          MaterialPageRoute<void>(
-            builder: (_) => const SellerVerificationScreen(),
-          ),
-        );
-        return;
-      }
-    }
     if (!mounted) {
       return;
     }
@@ -720,14 +702,6 @@ class _CampusSellerStrip extends StatelessWidget {
                                 ),
                               ),
                             ),
-                            if (seller.verifiedSeller) ...<Widget>[
-                              const SizedBox(width: 3),
-                              const Icon(
-                                Icons.verified_rounded,
-                                size: 14,
-                                color: MarketplaceTheme.sky,
-                              ),
-                            ],
                           ],
                         ),
                         Text(

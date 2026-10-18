@@ -9,7 +9,6 @@ import '../services/chat_sevice.dart';
 import '../services/marketplace_service.dart';
 import '../utils/marketplace_theme.dart';
 import '../widgets/marketplace_listing_card.dart';
-import '../widgets/marketplace_verified_seller_badge.dart';
 import 'conversation_screen.dart';
 import 'marketplace_listing_details_screen.dart';
 import 'profile_screen.dart';
@@ -230,10 +229,6 @@ class _MarketplaceSellerStoreScreenState
                                             fontWeight: FontWeight.w900,
                                           ),
                                         ),
-                                      ),
-                                      const SizedBox(width: 5),
-                                      MarketplaceVerifiedSellerBadge(
-                                        sellerId: widget.sellerId,
                                       ),
                                     ],
                                   ),

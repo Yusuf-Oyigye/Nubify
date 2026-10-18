@@ -3,16 +3,13 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../config/marketplace_feature_flags.dart';
 import '../models/marketplace_listing.dart';
 import '../services/marketplace_media_service.dart';
 import '../services/marketplace_service.dart';
 import '../services/private_profile_service.dart';
-import '../services/seller_verification_service.dart';
 import '../utils/marketplace_constants.dart';
 import '../utils/marketplace_theme.dart';
 import 'marketplace_listing_details_screen.dart';
-import 'seller_verification_screen.dart';
 
 class _EditableMarketplaceMedia {
   _EditableMarketplaceMedia.existing(this.existing)
@@ -283,20 +280,6 @@ class _CreateMarketplaceListingScreenState
       if (validation != null) {
         _message(validation);
         return;
-      }
-      if (MarketplaceFeatureFlags.requireSellerApproval) {
-        final verification = await SellerVerificationService().getMine();
-        if (!verification.isApproved) {
-          if (mounted) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute<void>(
-                builder: (_) => const SellerVerificationScreen(),
-              ),
-            );
-          }
-          return;
-        }
       }
     }
 

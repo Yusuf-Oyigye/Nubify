@@ -61,14 +61,6 @@ abstract final class MarketplaceConstants {
     'archived',
   ];
 
-  static const List<String> verificationStatuses = <String>[
-    'notSubmitted',
-    'pending',
-    'approved',
-    'rejected',
-    'suspended',
-  ];
-
   static const List<String> reportReasons = <String>[
     'Scam or Fraud',
     'Misleading Information',

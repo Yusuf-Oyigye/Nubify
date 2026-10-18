@@ -2,7 +2,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
-import '../config/marketplace_feature_flags.dart';
 import '../utils/marketplace_theme.dart';
 import 'marketplace_seller_store_screen.dart';
 
@@ -24,13 +23,9 @@ class _CampusSellersScreenState extends State<CampusSellersScreen> {
     Query<Map<String, dynamic>> query = FirebaseFirestore.instance.collection(
       'marketplaceSellerStats',
     );
-    if (MarketplaceFeatureFlags.requireSellerApproval) {
-      query = query.where('active', isEqualTo: true).orderBy('sellerName');
-    } else {
-      query = query
-          .where('availableListingCount', isGreaterThan: 0)
-          .orderBy('availableListingCount', descending: true);
-    }
+    query = query
+        .where('availableListingCount', isGreaterThan: 0)
+        .orderBy('availableListingCount', descending: true);
     _sellerStream = query.limit(100).snapshots();
   }
 
@@ -143,14 +138,6 @@ class _CampusSellersScreenState extends State<CampusSellersScreen> {
                                         ),
                                       ),
                                     ),
-                                    if (data['verifiedSeller'] == true) ...[
-                                      const SizedBox(width: 4),
-                                      const Icon(
-                                        Icons.verified_rounded,
-                                        color: MarketplaceTheme.sky,
-                                        size: 17,
-                                      ),
-                                    ],
                                   ],
                                 ),
                                 const SizedBox(height: 4),

@@ -226,11 +226,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
     final String storyId = (data['storyId'] ?? '').toString().trim();
 
-    if (type.startsWith('sellerVerification')) {
-      await Navigator.pushNamed<void>(context, '/marketplace/verification');
-      return;
-    }
-
     if (type.startsWith('marketplaceReport')) {
       final String listingId = (data['marketplaceListingId'] ?? '')
           .toString()
@@ -726,7 +721,9 @@ class _NotificationTile extends StatelessWidget {
               },
 
               child: Material(
-                color: isRead ? Colors.transparent : _blue.withOpacity(0.07),
+                color: isRead
+                    ? Colors.transparent
+                    : _blue.withValues(alpha: 0.07),
 
                 child: InkWell(
                   onTap: onOpen,
@@ -758,7 +755,7 @@ class _NotificationTile extends StatelessWidget {
                               CircleAvatar(
                                 radius: 25,
 
-                                backgroundColor: _blue.withOpacity(0.16),
+                                backgroundColor: _blue.withValues(alpha: 0.16),
 
                                 backgroundImage: photoUrl.isNotEmpty
                                     ? NetworkImage(photoUrl)
@@ -821,7 +818,7 @@ class _NotificationTile extends StatelessWidget {
                                           color: Theme.of(context)
                                               .colorScheme
                                               .onSurface
-                                              .withOpacity(0.82),
+                                              .withValues(alpha: 0.82),
                                         ),
                                       ),
                                   ],
@@ -913,15 +910,6 @@ class _NotificationTile extends StatelessWidget {
 
       case 'storyReshare':
         return Icons.ios_share_rounded;
-
-      case 'sellerVerificationApproved':
-        return Icons.verified_rounded;
-
-      case 'sellerVerificationRejected':
-        return Icons.info_outline_rounded;
-
-      case 'sellerVerificationSuspended':
-        return Icons.block_rounded;
 
       case 'marketplaceReportResolved':
         return Icons.fact_check_rounded;

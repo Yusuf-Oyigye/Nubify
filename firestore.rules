@@ -30,24 +30,9 @@ rules_version = '2';
 //   createdAt/updatedAt: timestamp (required; createdAt immutable)
 //   publishedAt/soldAt/unavailableAt/archivedAt: timestamp or null (required)
 //
-// sellerVerifications/{uid}
-//   uid: string (required, immutable, equals document id)
-//   verificationId: string (required, max 128)
-//   fullName: string (required, 2-100)
-//   studentIdNumber: string (required, 3-40; format deliberately not invented)
-//   studentIdStoragePath: string (required, scoped to uid/verification id)
-//   status: string (required; notSubmitted, pending, approved, rejected, suspended)
-//   submittedAt/updatedAt: timestamp (required)
-//   reviewedAt: timestamp or null (required)
-//   reviewedBy/rejectionReason/suspensionReason: string (required, bounded)
-//
-// sellerVerifications/{uid}/history/{eventId}
-//   uid, verificationId, action, actorUid, reason, createdAt
-//   (all required and strictly bounded)
-//
 // marketplaceSellerStats/{uid}
-//   sellerId, sellerName, sellerPhotoUrl, verificationStatus, verifiedSeller,
-//   availableListingCount, active, updatedAt
+//   sellerId, sellerName, sellerPhotoUrl, availableListingCount, active,
+//   updatedAt
 //   (server-maintained; authenticated read only)
 //
 // marketplaceCategoryStats/{categoryId}
@@ -516,16 +501,6 @@ match /calls/{callId} {
           data[field] is timestamp;
     }
 
-    function marketplaceValidVerificationStatus(status) {
-      return status in [
-        'notSubmitted',
-        'pending',
-        'approved',
-        'rejected',
-        'suspended'
-      ];
-    }
-
     function marketplaceValidListingStatus(status) {
       return status in [
         'draft',
@@ -710,34 +685,6 @@ match /calls/{callId} {
             values.size() < 5 ||
             marketplaceValidMediaItem(values[4], sellerId, listingId)
           );
-    }
-
-    function marketplaceHasApprovedVerification(uid) {
-      return exists(
-            /databases/$(database)/documents/sellerVerifications/$(uid)
-          ) &&
-          get(
-            /databases/$(database)/documents/sellerVerifications/$(uid)
-          ).data.status == 'approved';
-    }
-
-    //===================================================
-    // TEMPORARY MARKETPLACE SELLER-APPROVAL SWITCH
-    //
-    // `false` means authenticated listing owners may publish without seller
-    // approval while Marketplace development is in progress. Change only the
-    // return value below to `true` to restore mandatory admin approval.
-    // Verification submissions, reviewer permissions, private student data,
-    // and every other Marketplace security rule remain fully enforced.
-    //===================================================
-
-    function marketplaceSellerApprovalRequiredForPublishing() {
-      return false;
-    }
-
-    function marketplaceSellerMayPublish(uid) {
-      return !marketplaceSellerApprovalRequiredForPublishing() ||
-          marketplaceHasApprovedVerification(uid);
     }
 
     function marketplaceListingOwner(data) {
@@ -925,7 +872,6 @@ match /calls/{callId} {
             ) ||
             (
               data.status == 'available' &&
-              marketplaceSellerMayPublish(data.sellerId) &&
               data.publishedAt == request.time
             )
           );
@@ -978,6 +924,14 @@ match /calls/{callId} {
           ) ||
           (
             oldStatus == 'archived' &&
+            newStatus == 'available' &&
+            request.resource.data.publishedAt == request.time &&
+            request.resource.data.soldAt == null &&
+            request.resource.data.unavailableAt == null &&
+            request.resource.data.archivedAt == null
+          ) ||
+          (
+            oldStatus == 'archived' &&
             newStatus == 'draft' &&
             request.resource.data.publishedAt == null &&
             request.resource.data.soldAt == null &&
@@ -994,11 +948,7 @@ match /calls/{callId} {
           data.sellerId == resource.data.sellerId &&
           data.createdAt == resource.data.createdAt &&
           data.updatedAt == request.time &&
-          marketplaceValidListingTransition() &&
-          (
-            data.status != 'available' ||
-            marketplaceSellerMayPublish(data.sellerId)
-          );
+          marketplaceValidListingTransition();
     }
 
     function marketplaceIsPublicListing(data) {
@@ -1013,226 +963,6 @@ match /calls/{callId} {
       return !data.keys().hasAll(['status', 'publicVisible']) &&
           data.get('isAvailable', false) == true &&
           data.get('sold', true) == false;
-    }
-
-    function marketplaceValidVerificationPath(path, uid, verificationId) {
-      return path is string &&
-          path.size() <= 512 &&
-          path.matches(
-            '^seller_verifications/' + uid + '/' + verificationId +
-            '/student_id[.](jpg|jpeg|png|webp)$'
-          );
-    }
-
-    function marketplaceValidSellerVerification(data, uid) {
-      return data.keys().hasOnly([
-            'uid',
-            'verificationId',
-            'fullName',
-            'studentIdNumber',
-            'studentIdStoragePath',
-            'status',
-            'submittedAt',
-            'updatedAt',
-            'reviewedAt',
-            'reviewedBy',
-            'rejectionReason',
-            'suspensionReason'
-          ]) &&
-          data.keys().hasAll([
-            'uid',
-            'verificationId',
-            'fullName',
-            'studentIdNumber',
-            'studentIdStoragePath',
-            'status',
-            'submittedAt',
-            'updatedAt',
-            'reviewedAt',
-            'reviewedBy',
-            'rejectionReason',
-            'suspensionReason'
-          ]) &&
-          data.uid == uid &&
-          marketplaceValidId(data.uid) &&
-          marketplaceValidId(data.verificationId) &&
-          marketplaceValidRequiredString(data.fullName, 2, 100) &&
-          marketplaceValidRequiredString(data.studentIdNumber, 3, 40) &&
-          marketplaceValidVerificationPath(
-            data.studentIdStoragePath,
-            uid,
-            data.verificationId
-          ) &&
-          marketplaceValidVerificationStatus(data.status) &&
-          data.submittedAt is timestamp &&
-          data.updatedAt is timestamp &&
-          marketplaceNullOrTimestamp(data, 'reviewedAt') &&
-          marketplaceValidOptionalString(data.reviewedBy, 128) &&
-          marketplaceValidOptionalString(data.rejectionReason, 500) &&
-          marketplaceValidOptionalString(data.suspensionReason, 500) &&
-          (
-            data.status != 'approved' ||
-            (
-              data.reviewedAt is timestamp &&
-              marketplaceValidRequiredString(data.reviewedBy, 1, 128) &&
-              data.rejectionReason == '' &&
-              data.suspensionReason == ''
-            )
-          ) &&
-          (
-            data.status != 'rejected' ||
-            (
-              data.reviewedAt is timestamp &&
-              marketplaceValidRequiredString(data.reviewedBy, 1, 128) &&
-              marketplaceValidRequiredString(data.rejectionReason, 1, 500) &&
-              data.suspensionReason == ''
-            )
-          ) &&
-          (
-            data.status != 'suspended' ||
-            (
-              data.reviewedAt is timestamp &&
-              marketplaceValidRequiredString(data.reviewedBy, 1, 128) &&
-              marketplaceValidRequiredString(data.suspensionReason, 1, 500)
-            )
-          ) &&
-          (
-            data.status != 'pending' ||
-            (
-              data.reviewedAt == null &&
-              data.reviewedBy == '' &&
-              data.rejectionReason == '' &&
-              data.suspensionReason == ''
-            )
-          );
-    }
-
-    function marketplaceValidVerificationCreate(data, uid) {
-      return marketplaceValidSellerVerification(data, uid) &&
-          isOwner(uid) &&
-          uidUnchanged(data) &&
-          data.status == 'pending' &&
-          data.submittedAt == request.time &&
-          data.updatedAt == request.time;
-    }
-
-    function marketplaceValidApplicantResubmission(data, uid) {
-      return marketplaceValidSellerVerification(data, uid) &&
-          isOwner(uid) &&
-          uidNotModified() &&
-          resource.data.status == 'rejected' &&
-          data.status == 'pending' &&
-          data.verificationId != resource.data.verificationId &&
-          data.submittedAt == request.time &&
-          data.updatedAt == request.time &&
-          request.resource.data
-              .diff(resource.data)
-              .affectedKeys()
-              .hasOnly([
-                'verificationId',
-                'fullName',
-                'studentIdNumber',
-                'studentIdStoragePath',
-                'status',
-                'submittedAt',
-                'updatedAt',
-                'reviewedAt',
-                'reviewedBy',
-                'rejectionReason',
-                'suspensionReason'
-              ]);
-    }
-
-    function marketplaceValidReviewTransition(oldStatus, newStatus) {
-      return (
-            oldStatus == 'pending' &&
-            newStatus in ['approved', 'rejected']
-          ) ||
-          (
-            oldStatus == 'approved' &&
-            newStatus == 'suspended'
-          ) ||
-          (
-            oldStatus == 'suspended' &&
-            newStatus == 'approved'
-          );
-    }
-
-    function marketplaceValidReviewerDecision(data, uid) {
-      return marketplaceValidSellerVerification(data, uid) &&
-          isMarketplaceReviewer() &&
-          uidNotModified() &&
-          marketplaceValidReviewTransition(
-            resource.data.status,
-            data.status
-          ) &&
-          data.verificationId == resource.data.verificationId &&
-          data.fullName == resource.data.fullName &&
-          data.studentIdNumber == resource.data.studentIdNumber &&
-          data.studentIdStoragePath == resource.data.studentIdStoragePath &&
-          data.submittedAt == resource.data.submittedAt &&
-          data.updatedAt == request.time &&
-          data.reviewedAt == request.time &&
-          data.reviewedBy == request.auth.uid &&
-          request.resource.data
-              .diff(resource.data)
-              .affectedKeys()
-              .hasOnly([
-                'status',
-                'updatedAt',
-                'reviewedAt',
-                'reviewedBy',
-                'rejectionReason',
-                'suspensionReason'
-              ]);
-    }
-
-    function marketplaceValidVerificationHistory(data, uid, eventId) {
-      return data.keys().hasOnly([
-            'uid',
-            'verificationId',
-            'action',
-            'actorUid',
-            'reason',
-            'createdAt'
-          ]) &&
-          data.keys().hasAll([
-            'uid',
-            'verificationId',
-            'action',
-            'actorUid',
-            'reason',
-            'createdAt'
-          ]) &&
-          marketplaceValidId(eventId) &&
-          data.uid == uid &&
-          marketplaceValidId(data.uid) &&
-          marketplaceValidId(data.verificationId) &&
-          data.action in [
-            'submitted',
-            'approved',
-            'rejected',
-            'suspended'
-          ] &&
-          marketplaceValidId(data.actorUid) &&
-          marketplaceValidOptionalString(data.reason, 500) &&
-          data.createdAt == request.time;
-    }
-
-    function marketplaceValidReviewerHistoryCreate(data, uid, eventId) {
-      return isMarketplaceReviewer() &&
-          marketplaceValidVerificationHistory(data, uid, eventId) &&
-          data.actorUid == request.auth.uid &&
-          data.action in ['approved', 'rejected', 'suspended'] &&
-          existsAfter(
-            /databases/$(database)/documents/sellerVerifications/$(uid)
-          ) &&
-          getAfter(
-            /databases/$(database)/documents/sellerVerifications/$(uid)
-          ).data.verificationId == data.verificationId &&
-          getAfter(
-            /databases/$(database)/documents/sellerVerifications/$(uid)
-          ).data.status == data.action;
     }
 
     function marketplaceValidPrivateUser(data, uid) {
@@ -1516,16 +1246,12 @@ match /calls/{callId} {
             'sellerId',
             'sellerName',
             'sellerPhotoUrl',
-            'verificationStatus',
-            'verifiedSeller',
             'availableListingCount',
             'active',
             'updatedAt'
           ]) &&
           data.keys().hasAll([
             'sellerId',
-            'verificationStatus',
-            'verifiedSeller',
             'updatedAt'
           ]) &&
           data.sellerId == uid &&
@@ -1538,9 +1264,6 @@ match /calls/{callId} {
             !('sellerPhotoUrl' in data) ||
             marketplaceValidHttpsUrl(data.sellerPhotoUrl, true)
           ) &&
-          marketplaceValidVerificationStatus(data.verificationStatus) &&
-          data.verifiedSeller is bool &&
-          data.verifiedSeller == (data.verificationStatus == 'approved') &&
           (
             !('availableListingCount' in data) ||
             (
@@ -1555,13 +1278,7 @@ match /calls/{callId} {
               data.active is bool &&
               (
                 data.active == false ||
-                (
-                  (
-                    !marketplaceSellerApprovalRequiredForPublishing() ||
-                    data.verificationStatus == 'approved'
-                  ) &&
-                  data.get('availableListingCount', 0) > 0
-                )
+                data.get('availableListingCount', 0) > 0
               )
             )
           ) &&
@@ -2238,55 +1955,6 @@ match /calls/{callId} {
 
       allow delete: if marketplaceListingOwner(resource.data) &&
           resource.data.listingId == listingId;
-    }
-
-    //===================================================
-    // PRIVATE SELLER VERIFICATION
-    //===================================================
-
-    match /sellerVerifications/{uid} {
-
-      allow get: if isOwner(uid) ||
-          isMarketplaceReviewer();
-
-      allow list: if isMarketplaceReviewer() &&
-          marketplaceHasSafeListLimit(100);
-
-      allow create: if marketplaceValidVerificationCreate(
-        request.resource.data,
-        uid
-      );
-
-      allow update: if marketplaceValidApplicantResubmission(
-            request.resource.data,
-            uid
-          ) ||
-          marketplaceValidReviewerDecision(
-            request.resource.data,
-            uid
-          );
-
-      allow delete: if false;
-
-      match /history/{eventId} {
-
-        allow get: if isOwner(uid) ||
-            isMarketplaceReviewer();
-
-        allow list: if (
-              isOwner(uid) ||
-              isMarketplaceReviewer()
-            ) &&
-            marketplaceHasSafeListLimit(100);
-
-        allow create: if marketplaceValidReviewerHistoryCreate(
-          request.resource.data,
-          uid,
-          eventId
-        );
-
-        allow update, delete: if false;
-      }
     }
 
     //===================================================

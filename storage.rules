@@ -6,20 +6,6 @@ service firebase.storage {
       return request.auth != null;
     }
 
-    function isReviewer() {
-      return signedIn() && (
-        request.auth.token.marketplaceOwner == true ||
-        request.auth.token.admin == true ||
-        request.auth.token.moderator == true ||
-        request.auth.token.marketplaceReviewer == true
-      );
-    }
-
-    function isImage() {
-      return request.resource != null &&
-        request.resource.contentType.matches('image/.*');
-    }
-
     function isMarketplaceMedia() {
       return request.resource != null && (
         request.resource.contentType.matches('image/.*') ||
@@ -37,21 +23,6 @@ service firebase.storage {
         request.auth.uid == uid &&
         request.resource.size <= 30 * 1024 * 1024 &&
         isMarketplaceMedia();
-      allow delete: if signedIn() && request.auth.uid == uid;
-    }
-
-    //===================================================
-    // PRIVATE UNIVERSITY ID DOCUMENTS
-    //===================================================
-
-    match /seller_verifications/{uid}/{verificationId}/{fileName} {
-      allow read: if signedIn() &&
-        (request.auth.uid == uid || isReviewer());
-      allow create, update: if signedIn() &&
-        request.auth.uid == uid &&
-        fileName.matches('student_id\\.(jpg|jpeg|png)') &&
-        request.resource.size <= 10 * 1024 * 1024 &&
-        isImage();
       allow delete: if signedIn() && request.auth.uid == uid;
     }
 

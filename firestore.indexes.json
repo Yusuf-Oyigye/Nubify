@@ -195,11 +195,6 @@
       "fields": [{"fieldPath":"active","order":"ASCENDING"},{"fieldPath":"sellerName","order":"ASCENDING"}]
     },
     {
-      "collectionGroup": "sellerVerifications",
-      "queryScope": "COLLECTION",
-      "fields": [{"fieldPath":"status","order":"ASCENDING"},{"fieldPath":"submittedAt","order":"DESCENDING"}]
-    },
-    {
       "collectionGroup": "marketplaceProducts",
       "queryScope": "COLLECTION",
       "fields": [{"fieldPath":"sellerId","order":"ASCENDING"},{"fieldPath":"status","order":"ASCENDING"},{"fieldPath":"publicVisible","order":"ASCENDING"}]

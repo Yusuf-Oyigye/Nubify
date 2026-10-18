@@ -271,38 +271,6 @@ class _ReportCardState extends State<_ReportCard> {
     }
   }
 
-  Future<void> _suspendSeller() async {
-    final String? reason = await _askForNote('Suspend seller');
-    if (reason == null || reason.isEmpty) {
-      return;
-    }
-    setState(() => _working = true);
-    try {
-      await widget.admin.review(
-        applicantUid: _sellerId,
-        decision: 'suspended',
-        reason: reason,
-      );
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Seller suspended and public listings hidden.'),
-          ),
-        );
-      }
-    } catch (error) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not suspend seller: $error')),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _working = false);
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final dynamic rawCreatedAt = widget.report['createdAt'];
@@ -370,17 +338,6 @@ class _ReportCardState extends State<_ReportCard> {
                 OutlinedButton(
                   onPressed: _working ? null : () => _review('dismissed'),
                   child: const Text('Dismiss'),
-                ),
-                TextButton.icon(
-                  onPressed: _working ? null : _suspendSeller,
-                  icon: const Icon(
-                    Icons.block_rounded,
-                    color: Colors.redAccent,
-                  ),
-                  label: const Text(
-                    'Suspend Seller',
-                    style: TextStyle(color: Colors.redAccent),
-                  ),
                 ),
               ],
             ],

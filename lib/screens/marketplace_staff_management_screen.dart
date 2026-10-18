@@ -248,7 +248,7 @@ class _UserRoleCard extends StatelessWidget {
             onChanged: disabled
                 ? null
                 : (bool value) => onRoleChanged('marketplaceReviewer', value),
-            title: const Text('Seller verification reviewer'),
+            title: const Text('Marketplace report reviewer'),
             subtitle: const Text(
               'Can inspect private applications and decide them.',
             ),

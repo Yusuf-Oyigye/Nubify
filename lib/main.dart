@@ -19,8 +19,6 @@ import 'screens/marketplace_listing_details_screen.dart';
 import 'screens/marketplace_reports_admin_screen.dart';
 import 'screens/my_marketplace_listings_screen.dart';
 import 'screens/saved_marketplace_listings_screen.dart';
-import 'screens/seller_verification_admin_screen.dart';
-import 'screens/seller_verification_screen.dart';
 import 'screens/story_viewer_screen.dart';
 import 'screens/hidden_posts_screen.dart';
 import 'screens/post_engagements_screen.dart';
@@ -188,17 +186,10 @@ class MyApp extends StatelessWidget {
       );
     }
 
-    if (settings.name == '/marketplace/verification') {
-      return MaterialPageRoute<void>(
-        settings: settings,
-        builder: (_) => const SellerVerificationScreen(),
-      );
-    }
-
     if (settings.name == '/marketplace/admin') {
       return MaterialPageRoute<void>(
         settings: settings,
-        builder: (_) => const SellerVerificationAdminScreen(),
+        builder: (_) => const MarketplaceReportsAdminScreen(),
       );
     }
 

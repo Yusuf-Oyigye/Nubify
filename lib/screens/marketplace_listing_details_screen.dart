@@ -12,7 +12,6 @@ import '../utils/marketplace_constants.dart';
 import '../utils/marketplace_theme.dart';
 import '../widgets/marketplace_media_gallery.dart';
 import '../widgets/marketplace_more_from_seller.dart';
-import '../widgets/marketplace_verified_seller_badge.dart';
 import 'chat_forward_screen.dart';
 import 'conversation_screen.dart';
 import 'create_marketplace_listing_screen.dart';
@@ -523,9 +522,13 @@ class _MarketplaceListingDetailsScreenState
                                     ],
                                   ),
                                   const SizedBox(height: 5),
-                                  MarketplaceVerifiedSellerBadge(
-                                    sellerId: listing.sellerId,
-                                    fallbackText: 'Student Seller',
+                                  const Text(
+                                    'Student Seller',
+                                    style: TextStyle(
+                                      color: MarketplaceTheme.sky,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                    ),
                                   ),
                                 ],
                               ),

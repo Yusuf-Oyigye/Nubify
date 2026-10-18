@@ -1,8 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-import '../config/marketplace_feature_flags.dart';
 import '../models/marketplace_filter.dart';
 import '../models/marketplace_listing.dart';
 import '../utils/marketplace_constants.dart';
@@ -29,7 +27,6 @@ class MarketplaceSellerSummary {
     required this.sellerName,
     required this.sellerPhotoUrl,
     required this.availableListingCount,
-    required this.verifiedSeller,
   });
 
   factory MarketplaceSellerSummary.fromFirestore(
@@ -42,7 +39,6 @@ class MarketplaceSellerSummary {
       sellerName: (data['sellerName'] ?? 'Student seller').toString(),
       sellerPhotoUrl: (data['sellerPhotoUrl'] ?? '').toString(),
       availableListingCount: rawCount is num ? rawCount.toInt() : 0,
-      verifiedSeller: data['verifiedSeller'] == true,
     );
   }
 
@@ -50,7 +46,6 @@ class MarketplaceSellerSummary {
   final String sellerName;
   final String sellerPhotoUrl;
   final int availableListingCount;
-  final bool verifiedSeller;
 }
 
 class MarketplaceHomeDiscovery {
@@ -68,18 +63,12 @@ class MarketplaceHomeDiscovery {
 }
 
 class MarketplaceService {
-  MarketplaceService({
-    FirebaseAuth? auth,
-    FirebaseFirestore? firestore,
-    FirebaseFunctions? functions,
-  }) : _auth = auth ?? FirebaseAuth.instance,
-       _firestore = firestore ?? FirebaseFirestore.instance,
-       _functions =
-           functions ?? FirebaseFunctions.instanceFor(region: 'europe-west1');
+  MarketplaceService({FirebaseAuth? auth, FirebaseFirestore? firestore})
+    : _auth = auth ?? FirebaseAuth.instance,
+      _firestore = firestore ?? FirebaseFirestore.instance;
 
   final FirebaseAuth _auth;
   final FirebaseFirestore _firestore;
-  final FirebaseFunctions _functions;
 
   static MarketplaceListingPage? _cachedFreshPage;
   static MarketplaceHomeDiscovery? _cachedHomeDiscovery;
@@ -144,14 +133,7 @@ class MarketplaceService {
     Query<Map<String, dynamic>> sellerQuery = _firestore.collection(
       'marketplaceSellerStats',
     );
-    if (MarketplaceFeatureFlags.requireSellerApproval) {
-      sellerQuery = sellerQuery.where('active', isEqualTo: true);
-    } else {
-      sellerQuery = sellerQuery.where(
-        'availableListingCount',
-        isGreaterThan: 0,
-      );
-    }
+    sellerQuery = sellerQuery.where('availableListingCount', isGreaterThan: 0);
     sellerQuery = sellerQuery.orderBy(
       'availableListingCount',
       descending: true,
@@ -309,15 +291,69 @@ class MarketplaceService {
   }
 
   Future<Map<String, int>> myListingCounts() async {
-    final HttpsCallableResult<dynamic> result = await _functions
-        .httpsCallable('getMyMarketplaceListingCounts')
-        .call<dynamic>();
-    final Map<String, dynamic> data = Map<String, dynamic>.from(
-      result.data as Map,
-    );
+    final String? uid = _auth.currentUser?.uid;
+    if (uid == null) {
+      throw StateError('Sign in to manage your Marketplace listings.');
+    }
+    final List<AggregateQuerySnapshot> snapshots =
+        await Future.wait<AggregateQuerySnapshot>(
+          MarketplaceConstants.listingStatuses.map(
+            (String status) => _listings
+                .where('sellerId', isEqualTo: uid)
+                .where('status', isEqualTo: status)
+                .limit(50)
+                .count()
+                .get(),
+          ),
+        );
     return <String, int>{
-      for (final String status in MarketplaceConstants.listingStatuses)
-        status: data[status] is num ? (data[status] as num).toInt() : 0,
+      for (
+        int index = 0;
+        index < MarketplaceConstants.listingStatuses.length;
+        index++
+      )
+        MarketplaceConstants.listingStatuses[index]:
+            snapshots[index].count ?? 0,
+    };
+  }
+
+  Future<DocumentSnapshot<Map<String, dynamic>>> _ownedListing(
+    Transaction transaction,
+    String listingId,
+    String uid,
+  ) async {
+    final DocumentReference<Map<String, dynamic>> reference = _listings.doc(
+      listingId,
+    );
+    final DocumentSnapshot<Map<String, dynamic>> snapshot = await transaction
+        .get(reference);
+    final Map<String, dynamic>? data = snapshot.data();
+    if (!snapshot.exists || data == null) {
+      throw StateError('This Marketplace listing no longer exists.');
+    }
+    if ((data['sellerId'] ?? '').toString() != uid) {
+      throw StateError('Only the listing owner can manage this listing.');
+    }
+    return snapshot;
+  }
+
+  Future<Map<String, String>> _ownerProfile(
+    Transaction transaction,
+    String uid,
+  ) async {
+    final DocumentSnapshot<Map<String, dynamic>> profile = await transaction
+        .get(_firestore.collection('users').doc(uid));
+    final Map<String, dynamic>? data = profile.data();
+    if (!profile.exists || data == null) {
+      throw StateError('Complete your Nubify profile before selling.');
+    }
+    final String sellerName = (data['fullName'] ?? '').toString().trim();
+    if (sellerName.isEmpty) {
+      throw StateError('Add your full name in Edit Profile before selling.');
+    }
+    return <String, String>{
+      'sellerName': sellerName,
+      'sellerPhotoUrl': (data['photoUrl'] ?? '').toString(),
     };
   }
 
@@ -504,17 +540,117 @@ class MarketplaceService {
   }
 
   Future<void> publish(String listingId) async {
-    await _functions.httpsCallable('publishMarketplaceListing').call<void>(
-      <String, dynamic>{'listingId': listingId},
-    );
+    final String? uid = _auth.currentUser?.uid;
+    if (uid == null) {
+      throw StateError('Sign in before publishing a listing.');
+    }
+    await _firestore.runTransaction<void>((Transaction transaction) async {
+      final Map<String, String> profile = await _ownerProfile(transaction, uid);
+      final DocumentSnapshot<Map<String, dynamic>> snapshot =
+          await _ownedListing(transaction, listingId, uid);
+      final Map<String, dynamic> listing = snapshot.data()!;
+      final String currentStatus = (listing['status'] ?? 'draft').toString();
+      if (currentStatus == 'available') {
+        return;
+      }
+      if (!<String>{
+        'draft',
+        'unavailable',
+        'archived',
+      }.contains(currentStatus)) {
+        throw StateError(
+          'This listing cannot be published from its current state.',
+        );
+      }
+      transaction.update(snapshot.reference, <String, dynamic>{
+        'status': 'available',
+        'publicVisible': true,
+        ...profile,
+        'searchPrefixes': MarketplaceConstants.buildSearchPrefixes(<String>[
+          (listing['title'] ?? '').toString(),
+          (listing['description'] ?? '').toString(),
+          (listing['category'] ?? '').toString(),
+          profile['sellerName']!,
+        ]),
+        'publishedAt': FieldValue.serverTimestamp(),
+        'soldAt': null,
+        'unavailableAt': null,
+        'archivedAt': null,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    });
     _cachedFreshPage = null;
     _cachedHomeDiscovery = null;
   }
 
   Future<void> updateStatus(String listingId, String status) async {
-    await _functions.httpsCallable('updateMarketplaceListingStatus').call<void>(
-      <String, dynamic>{'listingId': listingId, 'status': status},
-    );
+    final String? uid = _auth.currentUser?.uid;
+    if (uid == null) {
+      throw StateError('Sign in to manage this listing.');
+    }
+    if (!<String>{
+      'available',
+      'sold',
+      'unavailable',
+      'archived',
+    }.contains(status)) {
+      throw ArgumentError.value(
+        status,
+        'status',
+        'Unsupported listing status.',
+      );
+    }
+    await _firestore.runTransaction<void>((Transaction transaction) async {
+      final Map<String, String> profile = await _ownerProfile(transaction, uid);
+      final DocumentSnapshot<Map<String, dynamic>> snapshot =
+          await _ownedListing(transaction, listingId, uid);
+      final Map<String, dynamic> listing = snapshot.data()!;
+      final String currentStatus = (listing['status'] ?? 'draft').toString();
+      if (currentStatus == status) {
+        return;
+      }
+      const Map<String, Set<String>> allowed = <String, Set<String>>{
+        'draft': <String>{'available', 'archived'},
+        'available': <String>{'sold', 'unavailable', 'archived'},
+        'unavailable': <String>{'available', 'archived'},
+        'sold': <String>{'archived'},
+        'archived': <String>{'available'},
+      };
+      if (!(allowed[currentStatus] ?? const <String>{}).contains(status)) {
+        throw StateError(
+          'This listing cannot move from $currentStatus to $status.',
+        );
+      }
+
+      final Map<String, dynamic> changes = <String, dynamic>{
+        'status': status,
+        'publicVisible': status == 'available',
+        ...profile,
+        'updatedAt': FieldValue.serverTimestamp(),
+      };
+      switch (status) {
+        case 'available':
+          changes.addAll(<String, dynamic>{
+            'searchPrefixes': MarketplaceConstants.buildSearchPrefixes(<String>[
+              (listing['title'] ?? '').toString(),
+              (listing['description'] ?? '').toString(),
+              (listing['category'] ?? '').toString(),
+              profile['sellerName']!,
+            ]),
+            'publishedAt': FieldValue.serverTimestamp(),
+            'soldAt': null,
+            'unavailableAt': null,
+            'archivedAt': null,
+          });
+        case 'sold':
+          changes['soldAt'] = FieldValue.serverTimestamp();
+        case 'unavailable':
+          changes['unavailableAt'] = FieldValue.serverTimestamp();
+        case 'archived':
+          changes['archivedAt'] = FieldValue.serverTimestamp();
+      }
+      transaction.update(snapshot.reference, changes);
+    });
     _cachedFreshPage = null;
     _cachedHomeDiscovery = null;
   }

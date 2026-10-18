@@ -3,8 +3,6 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../models/marketplace_admin_audit.dart';
-import '../models/seller_verification.dart';
-import '../models/seller_verification_history.dart';
 
 //===================================================
 // TRUSTED MARKETPLACE ACCESS STATE
@@ -66,37 +64,6 @@ class MarketplaceAdminService {
     );
   }
 
-  Stream<List<SellerVerification>> watchApplications(String status) {
-    return _firestore
-        .collection('sellerVerifications')
-        .where('status', isEqualTo: status)
-        .orderBy('submittedAt', descending: true)
-        .limit(100)
-        .snapshots()
-        .map(
-          (QuerySnapshot<Map<String, dynamic>> snapshot) => snapshot.docs
-              .map(SellerVerification.fromFirestore)
-              .toList(growable: false),
-        );
-  }
-
-  Stream<List<SellerVerificationHistory>> watchVerificationHistory(
-    String applicantUid,
-  ) {
-    return _firestore
-        .collection('sellerVerifications')
-        .doc(applicantUid)
-        .collection('history')
-        .orderBy('createdAt', descending: true)
-        .limit(100)
-        .snapshots()
-        .map(
-          (QuerySnapshot<Map<String, dynamic>> snapshot) => snapshot.docs
-              .map(SellerVerificationHistory.fromFirestore)
-              .toList(growable: false),
-        );
-  }
-
   Stream<List<MarketplaceAdminAudit>> watchAuditLog() {
     return _firestore
         .collection('marketplaceAdminAudit')
@@ -135,21 +102,6 @@ class MarketplaceAdminService {
     } catch (_) {
       return cleanUid;
     }
-  }
-
-  Future<void> review({
-    required String applicantUid,
-    required String decision,
-    String reason = '',
-  }) async {
-    final HttpsCallable callable = _functions.httpsCallable(
-      'reviewSellerVerification',
-    );
-    await callable.call<void>(<String, dynamic>{
-      'applicantUid': applicantUid.trim(),
-      'decision': decision,
-      'reason': reason.trim(),
-    });
   }
 
   Future<Map<String, dynamic>> findUserByEmail(String email) async {

@@ -12,26 +12,12 @@ const {
   getFirestore,
   Timestamp,
 } = require("firebase-admin/firestore");
-const {
-  getStorage,
-} = require("firebase-admin/storage");
 
 const db = getFirestore();
 const auth = getAuth();
-const storage = getStorage();
 
 const REGION = "europe-west1";
 const LISTINGS = "marketplaceProducts";
-const VERIFICATIONS = "sellerVerifications";
-
-//===================================================
-// TEMPORARY MARKETPLACE SELLER-APPROVAL SWITCH
-//
-// Keep this value in sync with lib/config/marketplace_feature_flags.dart and
-// firestore.rules. Change all three switches to true when admin approval is
-// ready to become mandatory again.
-//===================================================
-const REQUIRE_SELLER_APPROVAL_FOR_PUBLISHING = false;
 const ALLOWED_CATEGORIES = new Set([
   "rent_housing",
   "food_snacks",
@@ -180,19 +166,6 @@ function validateListingForPublish(data, uid) {
   }
 }
 
-async function requireApprovedSeller(uid) {
-  if (!REQUIRE_SELLER_APPROVAL_FOR_PUBLISHING) {
-    return;
-  }
-  const snapshot = await db.collection(VERIFICATIONS).doc(uid).get();
-  if (!snapshot.exists || snapshot.data()?.status !== "approved") {
-    throw new HttpsError(
-      "failed-precondition",
-      "Your seller verification must be approved before publishing.",
-    );
-  }
-}
-
 async function addAudit({actorUid, action, targetUid, details = {}}) {
   await db.collection("marketplaceAdminAudit").add({
     actorUid,
@@ -216,212 +189,12 @@ async function addNotification(receiverId, type, message, extra = {}) {
     commentId: null,
     replyId: null,
     storyId: null,
-    marketplacePath: "/marketplace/verification",
+    marketplacePath: "/marketplace",
     isRead: false,
     createdAt: Timestamp.now(),
     ...extra,
   });
 }
-
-exports.submitSellerVerification = onCall(
-  {region: REGION, timeoutSeconds: 30, memory: "256MiB"},
-  async (request) => {
-    const uid = requireAuthenticated(request);
-    const verificationId = cleanString(
-      request.data?.verificationId,
-      "Verification ID",
-      10,
-      100,
-    );
-    const fullName = cleanString(
-      request.data?.fullName,
-      "Full name",
-      2,
-      100,
-    );
-    const studentIdNumber = cleanString(
-      request.data?.studentIdNumber,
-      "Student ID number",
-      3,
-      40,
-    );
-    const studentIdStoragePath = cleanString(
-      request.data?.studentIdStoragePath,
-      "Student ID document path",
-      20,
-      300,
-    );
-    const expectedPrefix =
-      `seller_verifications/${uid}/${verificationId}/student_id.`;
-    if (!studentIdStoragePath.startsWith(expectedPrefix)) {
-      throw new HttpsError(
-        "invalid-argument",
-        "The private document path does not belong to this application.",
-      );
-    }
-    try {
-      await storage.bucket().file(studentIdStoragePath).getMetadata();
-    } catch (_) {
-      throw new HttpsError(
-        "failed-precondition",
-        "Upload the student ID image before submitting.",
-      );
-    }
-
-    const reference = db.collection(VERIFICATIONS).doc(uid);
-    await db.runTransaction(async (transaction) => {
-      const existing = await transaction.get(reference);
-      const currentStatus = existing.data()?.status || "notSubmitted";
-      if (["pending", "approved", "suspended"].includes(currentStatus)) {
-        throw new HttpsError(
-          "failed-precondition",
-          "This verification cannot be submitted again in its current state.",
-        );
-      }
-      const now = Timestamp.now();
-      transaction.set(reference, {
-        uid,
-        verificationId,
-        fullName,
-        studentIdNumber,
-        studentIdStoragePath,
-        status: "pending",
-        rejectionReason: "",
-        suspensionReason: "",
-        submittedAt: now,
-        updatedAt: now,
-        reviewedAt: null,
-        reviewedBy: "",
-      });
-      transaction.set(reference.collection("history").doc(), {
-        uid,
-        verificationId,
-        action: "submitted",
-        actorUid: uid,
-        reason: "",
-        createdAt: now,
-      });
-    });
-    return {status: "pending"};
-  },
-);
-
-exports.reviewSellerVerification = onCall(
-  {region: REGION, timeoutSeconds: 60, memory: "256MiB"},
-  async (request) => {
-    requireReviewer(request);
-    const reviewerUid = request.auth.uid;
-    const applicantUid = cleanString(
-      request.data?.applicantUid,
-      "Applicant",
-      10,
-      128,
-    );
-    const decision = cleanString(
-      request.data?.decision,
-      "Decision",
-      6,
-      20,
-    );
-    if (!["approved", "rejected", "suspended"].includes(decision)) {
-      throw new HttpsError("invalid-argument", "Invalid review decision.");
-    }
-    const reason = optionalString(request.data?.reason, 500);
-    if (["rejected", "suspended"].includes(decision) && reason.length < 3) {
-      throw new HttpsError(
-        "invalid-argument",
-        "A clear reason is required for this decision.",
-      );
-    }
-
-    const reference = db.collection(VERIFICATIONS).doc(applicantUid);
-    await db.runTransaction(async (transaction) => {
-      const snapshot = await transaction.get(reference);
-      if (!snapshot.exists) {
-        throw new HttpsError("not-found", "Verification application not found.");
-      }
-      const current = snapshot.data()?.status;
-      const allowed = decision === "suspended" ?
-        current === "approved" : current === "pending";
-      if (!allowed) {
-        throw new HttpsError(
-          "failed-precondition",
-          `Cannot change ${current || "unknown"} to ${decision}.`,
-        );
-      }
-      const now = Timestamp.now();
-      transaction.update(reference, {
-        status: decision,
-        rejectionReason: decision === "rejected" ? reason : "",
-        suspensionReason: decision === "suspended" ? reason : "",
-        reviewedAt: now,
-        reviewedBy: reviewerUid,
-        updatedAt: now,
-      });
-      transaction.set(reference.collection("history").doc(), {
-        uid: applicantUid,
-        verificationId: snapshot.data()?.verificationId || "",
-        action: decision,
-        actorUid: reviewerUid,
-        reason,
-        createdAt: now,
-      });
-      transaction.set(
-        db.collection("marketplaceSellerStats").doc(applicantUid),
-        {
-          sellerId: applicantUid,
-          verificationStatus: decision,
-          verifiedSeller: decision === "approved",
-          updatedAt: now,
-        },
-        {merge: true},
-      );
-    });
-
-    if (decision === "suspended") {
-      const activeListings = await db.collection(LISTINGS)
-        .where("sellerId", "==", applicantUid)
-        .where("status", "==", "available")
-        .get();
-      const chunks = [];
-      for (let start = 0; start < activeListings.docs.length; start += 400) {
-        chunks.push(activeListings.docs.slice(start, start + 400));
-      }
-      for (const chunk of chunks) {
-        const batch = db.batch();
-        for (const listing of chunk) {
-          batch.update(listing.ref, {
-            status: "unavailable",
-            publicVisible: false,
-            unavailableAt: Timestamp.now(),
-            updatedAt: Timestamp.now(),
-          });
-        }
-        await batch.commit();
-      }
-    }
-
-    const messages = {
-      approved: "Your NUB Marketplace seller verification was approved.",
-      rejected: "Your seller verification needs correction. Open it for details.",
-      suspended: "Your NUB Marketplace selling access was suspended.",
-    };
-    await Promise.all([
-      addNotification(
-        applicantUid,
-        `sellerVerification${decision[0].toUpperCase()}${decision.slice(1)}`,
-        messages[decision],
-      ),
-      addAudit({
-        actorUid: reviewerUid,
-        action: `verification_${decision}`,
-        targetUid: applicantUid,
-        details: {reason},
-      }),
-    ]);
-    return {status: decision};
-  },
-);
 
 exports.getMyMarketplaceListingCounts = onCall(
   {region: REGION, timeoutSeconds: 30, memory: "256MiB"},
@@ -461,7 +234,6 @@ exports.publishMarketplaceListing = onCall(
       10,
       100,
     );
-    await requireApprovedSeller(uid);
     const reference = db.collection(LISTINGS).doc(listingId);
     await db.runTransaction(async (transaction) => {
       const snapshot = await transaction.get(reference);
@@ -516,9 +288,6 @@ exports.updateMarketplaceListingStatus = onCall(
       targetStatus,
     )) {
       throw new HttpsError("invalid-argument", "Invalid listing status.");
-    }
-    if (targetStatus === "available") {
-      await requireApprovedSeller(uid);
     }
     const reference = db.collection(LISTINGS).doc(listingId);
     await db.runTransaction(async (transaction) => {
@@ -784,28 +553,23 @@ async function updateSellerStats(sellerId) {
   if (!sellerId) {
     return;
   }
-  const [countSnapshot, verification, profile] = await Promise.all([
+  const [countSnapshot, profile] = await Promise.all([
     db.collection(LISTINGS)
       .where("sellerId", "==", sellerId)
       .where("status", "==", "available")
       .where("publicVisible", "==", true)
       .count()
       .get(),
-    db.collection(VERIFICATIONS).doc(sellerId).get(),
     db.collection("users").doc(sellerId).get(),
   ]);
-  const status = verification.data()?.status || "notSubmitted";
   await db.collection("marketplaceSellerStats").doc(sellerId).set({
     sellerId,
     sellerName: String(profile.data()?.fullName || "").slice(0, 100),
     sellerPhotoUrl: String(profile.data()?.photoUrl || "").slice(0, 2048),
     availableListingCount: countSnapshot.data().count,
-    verificationStatus: status,
-    verifiedSeller: status === "approved",
-    active: (!REQUIRE_SELLER_APPROVAL_FOR_PUBLISHING ||
-      status === "approved") && countSnapshot.data().count > 0,
+    active: countSnapshot.data().count > 0,
     updatedAt: Timestamp.now(),
-  }, {merge: true});
+  });
 }
 
 async function updateCategoryStats(category) {
