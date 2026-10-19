@@ -196,14 +196,14 @@ class _CreateMarketplaceListingScreenState
     });
   }
 
-  void _reorderMedia(int oldIndex, int newIndex) {
-    if (oldIndex < 0 || oldIndex >= _mediaItems.length) {
+  void _moveMedia(int oldIndex, int newIndex) {
+    if (oldIndex < 0 ||
+        oldIndex >= _mediaItems.length ||
+        newIndex < 0 ||
+        newIndex >= _mediaItems.length ||
+        oldIndex == newIndex) {
       return;
     }
-    if (newIndex > oldIndex) {
-      newIndex -= 1;
-    }
-    newIndex = newIndex.clamp(0, _mediaItems.length - 1);
     setState(() {
       final _EditableMarketplaceMedia? cover = _mediaItems.isEmpty
           ? null
@@ -592,11 +592,9 @@ class _CreateMarketplaceListingScreenState
                   const SizedBox(height: 14),
                   SizedBox(
                     height: 126,
-                    child: ReorderableListView.builder(
+                    child: ListView.builder(
                       scrollDirection: Axis.horizontal,
-                      buildDefaultDragHandles: false,
                       itemCount: _totalMedia + (_totalMedia < 5 ? 1 : 0),
-                      onReorderItem: _reorderMedia,
                       itemBuilder: (BuildContext context, int index) {
                         if (index == _mediaItems.length) {
                           return Padding(
@@ -641,28 +639,61 @@ class _CreateMarketplaceListingScreenState
                         }
                         final _EditableMarketplaceMedia entry =
                             _mediaItems[index];
-                        return ReorderableDragStartListener(
+                        final Widget tile = entry.existing != null
+                            ? _ExistingMediaTile(
+                                item: entry.existing!,
+                                cover: index == _coverIndex,
+                                onCover: () =>
+                                    setState(() => _coverIndex = index),
+                                onReplace: () => _replaceMedia(index),
+                                onRemove: () => _removeMedia(index),
+                              )
+                            : _PendingMediaTile(
+                                item: entry.pending!,
+                                cover: index == _coverIndex,
+                                onCover: () =>
+                                    setState(() => _coverIndex = index),
+                                onReplace: () => _replaceMedia(index),
+                                onRemove: () => _removeMedia(index),
+                              );
+                        return Padding(
                           key: ValueKey<String>(entry.key),
-                          index: index,
-                          child: Padding(
-                            padding: const EdgeInsets.only(right: 10),
-                            child: entry.existing != null
-                                ? _ExistingMediaTile(
-                                    item: entry.existing!,
-                                    cover: index == _coverIndex,
-                                    onCover: () =>
-                                        setState(() => _coverIndex = index),
-                                    onReplace: () => _replaceMedia(index),
-                                    onRemove: () => _removeMedia(index),
-                                  )
-                                : _PendingMediaTile(
-                                    item: entry.pending!,
-                                    cover: index == _coverIndex,
-                                    onCover: () =>
-                                        setState(() => _coverIndex = index),
-                                    onReplace: () => _replaceMedia(index),
-                                    onRemove: () => _removeMedia(index),
+                          padding: const EdgeInsets.only(right: 10),
+                          child: SizedBox(
+                            width: 112,
+                            height: 126,
+                            child: Stack(
+                              children: <Widget>[
+                                tile,
+                                if (_mediaItems.length > 1)
+                                  Positioned(
+                                    left: 4,
+                                    top: 4,
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: <Widget>[
+                                        _MediaMoveButton(
+                                          tooltip: 'Move left',
+                                          icon: Icons.chevron_left_rounded,
+                                          onTap: index > 0
+                                              ? () =>
+                                                    _moveMedia(index, index - 1)
+                                              : null,
+                                        ),
+                                        const SizedBox(width: 3),
+                                        _MediaMoveButton(
+                                          tooltip: 'Move right',
+                                          icon: Icons.chevron_right_rounded,
+                                          onTap: index < _mediaItems.length - 1
+                                              ? () =>
+                                                    _moveMedia(index, index + 1)
+                                              : null,
+                                        ),
+                                      ],
+                                    ),
                                   ),
+                              ],
+                            ),
                           ),
                         );
                       },
@@ -671,7 +702,7 @@ class _CreateMarketplaceListingScreenState
                   if (_totalMedia > 0) ...<Widget>[
                     const SizedBox(height: 8),
                     Text(
-                      'Tap to choose the cover. Hold and drag to reorder. Use the swap icon to replace a file.',
+                      'Tap to choose the cover. Use the arrow buttons to reorder and the swap icon to replace a file.',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ],
@@ -839,6 +870,41 @@ class _CreateMarketplaceListingScreenState
     _description.dispose();
     _price.dispose();
     super.dispose();
+  }
+}
+
+class _MediaMoveButton extends StatelessWidget {
+  const _MediaMoveButton({
+    required this.tooltip,
+    required this.icon,
+    required this.onTap,
+  });
+
+  final String tooltip;
+  final IconData icon;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.black54,
+        shape: const CircleBorder(),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(3),
+            child: Icon(
+              icon,
+              size: 17,
+              color: onTap == null ? Colors.white38 : Colors.white,
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 

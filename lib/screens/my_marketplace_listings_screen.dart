@@ -210,13 +210,6 @@ class _ListingStatusTabState extends State<_ListingStatusTab>
     if (_loading) {
       return const Center(child: CircularProgressIndicator());
     }
-    if (_listings.isEmpty && _loadError != null) {
-      return _EmptyStatus(
-        status: widget.status,
-        error: _loadError,
-        onRetry: () => unawaited(_loadListings(reset: true)),
-      );
-    }
     if (_listings.isEmpty) {
       return RefreshIndicator(
         onRefresh: () => _loadListings(reset: true),
@@ -458,11 +451,27 @@ class _OwnerListingTileState extends State<_OwnerListingTile> {
 }
 
 class _EmptyStatus extends StatelessWidget {
-  const _EmptyStatus({required this.status, this.error, this.onRetry});
+  const _EmptyStatus({required this.status});
 
   final String status;
-  final Object? error;
-  final VoidCallback? onRetry;
+
+  String get _title => switch (status) {
+    'available' => 'No available listings yet',
+    'sold' => 'No sold listings yet',
+    'unavailable' => 'No unavailable listings',
+    'draft' => 'No drafts yet',
+    'archived' => 'No archived listings',
+    _ => 'No listings yet',
+  };
+
+  String get _message => switch (status) {
+    'available' => 'Tap New Listing to publish your first Marketplace item.',
+    'sold' => 'Items you mark as sold will appear here.',
+    'unavailable' => 'Items you temporarily hide will appear here.',
+    'draft' => 'Listings you save before publishing will appear here.',
+    'archived' => 'Listings you archive will appear here.',
+    _ => 'Your Marketplace items will appear here.',
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -472,33 +481,18 @@ class _EmptyStatus extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            Icon(
-              error == null
-                  ? Icons.inventory_2_outlined
-                  : Icons.cloud_off_rounded,
+            const Icon(
+              Icons.inventory_2_outlined,
               size: 60,
               color: MarketplaceTheme.sky,
             ),
             const SizedBox(height: 14),
             Text(
-              error == null
-                  ? 'No ${status == 'draft' ? 'drafts' : '$status listings'}'
-                  : 'Unable to load listings',
+              _title,
               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 6),
-            Text(
-              error != null
-                  ? 'Your listings are not showing right now. Pull down or try again.'
-                  : status == 'available'
-                  ? 'Published listings will appear here.'
-                  : 'This section is currently empty.',
-              textAlign: TextAlign.center,
-            ),
-            if (error != null && onRetry != null) ...<Widget>[
-              const SizedBox(height: 12),
-              FilledButton(onPressed: onRetry, child: const Text('Try Again')),
-            ],
+            Text(_message, textAlign: TextAlign.center),
           ],
         ),
       ),
