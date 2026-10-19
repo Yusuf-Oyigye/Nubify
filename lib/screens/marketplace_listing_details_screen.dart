@@ -93,7 +93,7 @@ class _MarketplaceListingDetailsScreenState
       await _calls.callSeller(listing.listingId);
     } catch (error) {
       if (mounted) {
-        _message(error.toString());
+        _message(_contactError(error));
       }
     } finally {
       if (mounted) {
@@ -104,6 +104,25 @@ class _MarketplaceListingDetailsScreenState
 
   String _listingLink(MarketplaceListing listing) {
     return 'https://nubify.app/marketplace/${listing.listingId}';
+  }
+
+  String _contactError(Object error) {
+    final String value = error.toString();
+    final String lower = value.toLowerCase();
+    if (lower.contains('not-found') ||
+        lower.contains('has not added a valid phone')) {
+      return 'This seller has not added an Egyptian mobile number yet.';
+    }
+    if (lower.contains('permission-denied') ||
+        lower.contains('unauthenticated')) {
+      return 'Sign in to call this seller.';
+    }
+    if (lower.contains('call_unavailable') || lower.contains('missingplugin')) {
+      return 'Calling is not available on this device.';
+    }
+    return value
+        .replaceFirst('Bad state: ', '')
+        .replaceFirst('Exception: ', '');
   }
 
   Future<void> _shareExternal(MarketplaceListing listing) async {
@@ -337,7 +356,14 @@ class _MarketplaceListingDetailsScreenState
             slivers: <Widget>[
               SliverAppBar(
                 pinned: true,
-                expandedHeight: 410,
+                expandedHeight: 390,
+                backgroundColor: MarketplaceTheme.midnight,
+                foregroundColor: Colors.white,
+                surfaceTintColor: Colors.transparent,
+                title: const Text(
+                  'Listing details',
+                  style: TextStyle(fontWeight: FontWeight.w900),
+                ),
                 actions: <Widget>[
                   IconButton(
                     onPressed: () => _showShareOptions(listing),
@@ -399,9 +425,30 @@ class _MarketplaceListingDetailsScreenState
                     ),
                 ],
                 flexibleSpace: FlexibleSpaceBar(
-                  background: Hero(
-                    tag: 'marketplace-cover-${listing.listingId}',
-                    child: MarketplaceMediaGallery(listing: listing),
+                  background: Stack(
+                    fit: StackFit.expand,
+                    children: <Widget>[
+                      Hero(
+                        tag: 'marketplace-cover-${listing.listingId}',
+                        child: MarketplaceMediaGallery(listing: listing),
+                      ),
+                      IgnorePointer(
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: <Color>[
+                                Colors.black.withValues(alpha: 0.24),
+                                Colors.transparent,
+                                Colors.black.withValues(alpha: 0.28),
+                              ],
+                              stops: const <double>[0, 0.3, 1],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -427,67 +474,94 @@ class _MarketplaceListingDetailsScreenState
                           ),
                         ),
                       ),
-                    Text(
-                      listing.priceLabel,
-                      style: const TextStyle(
-                        color: MarketplaceTheme.sky,
-                        fontSize: 27,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      listing.title,
-                      style: const TextStyle(
-                        fontSize: 25,
-                        height: 1.15,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    const SizedBox(height: 14),
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
                       children: <Widget>[
-                        Chip(
-                          label: Text(
-                            MarketplaceConstants.categoryLabel(
-                              listing.category,
-                            ),
+                        _ListingBadge(
+                          icon: MarketplaceConstants.categories
+                              .firstWhere(
+                                (MarketplaceCategory category) =>
+                                    category.id == listing.category,
+                                orElse: () =>
+                                    MarketplaceConstants.categories.last,
+                              )
+                              .icon,
+                          label: MarketplaceConstants.categoryLabel(
+                            listing.category,
                           ),
                         ),
-                        Chip(
-                          label: Text(
-                            MarketplaceConstants.conditionLabel(
-                              listing.condition,
-                            ),
+                        _ListingBadge(
+                          icon: listing.condition == 'service'
+                              ? Icons.design_services_rounded
+                              : listing.condition == 'new'
+                              ? Icons.auto_awesome_rounded
+                              : Icons.recycling_rounded,
+                          label: MarketplaceConstants.conditionLabel(
+                            listing.condition,
                           ),
                         ),
-                        Chip(label: Text(listing.status.toUpperCase())),
+                        if (listing.isAvailable)
+                          const _ListingBadge(
+                            icon: Icons.check_circle_outline_rounded,
+                            label: 'Available',
+                            accent: MarketplaceTheme.emerald,
+                          ),
                       ],
                     ),
-                    const SizedBox(height: 22),
-                    const Text(
-                      'Description',
+                    const SizedBox(height: 18),
+                    Text(
+                      listing.title,
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize: 28,
+                        height: 1.12,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      listing.description,
-                      style: const TextStyle(height: 1.5),
+                      listing.priceLabel,
+                      style: const TextStyle(
+                        color: MarketplaceTheme.sky,
+                        fontSize: 25,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
-                    const SizedBox(height: 24),
+                    if (listing.description.trim().isNotEmpty) ...<Widget>[
+                      const SizedBox(height: 26),
+                      const Text(
+                        'Description',
+                        style: TextStyle(
+                          fontSize: 19,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 9),
+                      Text(
+                        listing.description,
+                        style: TextStyle(
+                          color: MarketplaceTheme.mutedText(context),
+                          fontSize: 16,
+                          height: 1.55,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 28),
+                    const Text(
+                      'Seller',
+                      style: TextStyle(
+                        fontSize: 19,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
                     InkWell(
                       borderRadius: BorderRadius.circular(20),
                       onTap: () => Navigator.push(
                         context,
                         MaterialPageRoute<void>(
-                          builder: (_) => MarketplaceSellerStoreScreen(
-                            sellerId: listing.sellerId,
-                          ),
+                          builder: (_) =>
+                              ProfileScreen(userId: listing.sellerId),
                         ),
                       ),
                       child: Ink(
@@ -522,27 +596,32 @@ class _MarketplaceListingDetailsScreenState
                                     ],
                                   ),
                                   const SizedBox(height: 5),
-                                  const Text(
-                                    'Student Seller',
+                                  Text(
+                                    'View seller’s Nubify profile',
                                     style: TextStyle(
-                                      color: MarketplaceTheme.sky,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w700,
+                                      color: MarketplaceTheme.mutedText(
+                                        context,
+                                      ),
+                                      fontSize: 13,
                                     ),
                                   ),
                                 ],
                               ),
                             ),
-                            IconButton(
-                              tooltip: 'Nubify Profile',
-                              onPressed: () => Navigator.push(
-                                context,
-                                MaterialPageRoute<void>(
-                                  builder: (_) =>
-                                      ProfileScreen(userId: listing.sellerId),
+                            Container(
+                              width: 38,
+                              height: 38,
+                              decoration: BoxDecoration(
+                                color: MarketplaceTheme.sky.withValues(
+                                  alpha: 0.12,
                                 ),
+                                shape: BoxShape.circle,
                               ),
-                              icon: const Icon(Icons.person_outline_rounded),
+                              child: const Icon(
+                                Icons.arrow_forward_ios_rounded,
+                                color: MarketplaceTheme.sky,
+                                size: 17,
+                              ),
                             ),
                           ],
                         ),
@@ -578,31 +657,80 @@ class _MarketplaceListingDetailsScreenState
           bottomNavigationBar: owner || !listing.isAvailable
               ? null
               : SafeArea(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(14, 8, 14, 12),
+                  child: Container(
+                    padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
+                    decoration: BoxDecoration(
+                      color: MarketplaceTheme.surface(context),
+                      border: Border(
+                        top: BorderSide(
+                          color: Theme.of(
+                            context,
+                          ).dividerColor.withValues(alpha: 0.3),
+                        ),
+                      ),
+                    ),
                     child: Row(
                       children: <Widget>[
                         Expanded(
-                          child: FilledButton.icon(
-                            onPressed: _working
-                                ? null
-                                : () => _messageSeller(listing),
-                            icon: const Icon(Icons.chat_bubble_outline_rounded),
-                            label: const Text('Message Seller'),
-                            style: FilledButton.styleFrom(
-                              minimumSize: const Size.fromHeight(52),
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              gradient: _working
+                                  ? null
+                                  : MarketplaceTheme.sellGradient,
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                            child: FilledButton.icon(
+                              onPressed: _working
+                                  ? null
+                                  : () => _messageSeller(listing),
+                              icon: const Icon(
+                                Icons.chat_bubble_outline_rounded,
+                              ),
+                              label: const Text('Message seller'),
+                              style: FilledButton.styleFrom(
+                                backgroundColor: Colors.transparent,
+                                foregroundColor: MarketplaceTheme.midnight,
+                                shadowColor: Colors.transparent,
+                                minimumSize: const Size.fromHeight(56),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(18),
+                                ),
+                                textStyle: const TextStyle(
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
                             ),
                           ),
                         ),
                         const SizedBox(width: 10),
-                        IconButton.filled(
-                          tooltip: 'Call Seller',
-                          onPressed: _working
-                              ? null
-                              : () => _callSeller(listing),
-                          icon: const Icon(Icons.phone_rounded),
-                          style: IconButton.styleFrom(
-                            minimumSize: const Size(54, 54),
+                        Semantics(
+                          button: true,
+                          label: 'Call seller using cellular phone',
+                          child: IconButton.filled(
+                            tooltip: 'Call seller',
+                            onPressed: _working
+                                ? null
+                                : () => _callSeller(listing),
+                            icon: _working
+                                ? const SizedBox.square(
+                                    dimension: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Icon(Icons.phone_in_talk_rounded),
+                            style: IconButton.styleFrom(
+                              backgroundColor: MarketplaceTheme.softSurface(
+                                context,
+                              ),
+                              foregroundColor: MarketplaceTheme.sky,
+                              side: BorderSide(
+                                color: MarketplaceTheme.sky.withValues(
+                                  alpha: 0.38,
+                                ),
+                              ),
+                              minimumSize: const Size(56, 56),
+                            ),
                           ),
                         ),
                       ],
@@ -658,6 +786,41 @@ class _MarketplaceListingDetailsScreenState
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(value)));
+  }
+}
+
+class _ListingBadge extends StatelessWidget {
+  const _ListingBadge({
+    required this.icon,
+    required this.label,
+    this.accent = MarketplaceTheme.sky,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: accent.withValues(alpha: 0.24)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(icon, size: 17, color: accent),
+          const SizedBox(width: 7),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
+          ),
+        ],
+      ),
+    );
   }
 }
 

@@ -561,6 +561,65 @@ class _CreateMarketplaceListingScreenState
             : ListView(
                 padding: const EdgeInsets.fromLTRB(18, 10, 18, 120),
                 children: <Widget>[
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      gradient: MarketplaceTheme.heroGradient,
+                      borderRadius: BorderRadius.circular(26),
+                      border: Border.all(
+                        color: MarketplaceTheme.sky.withValues(alpha: 0.24),
+                      ),
+                      boxShadow: <BoxShadow>[
+                        BoxShadow(
+                          color: MarketplaceTheme.sky.withValues(alpha: 0.13),
+                          blurRadius: 28,
+                          offset: const Offset(0, 12),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: <Widget>[
+                        Container(
+                          width: 54,
+                          height: 54,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          child: const Icon(
+                            Icons.storefront_rounded,
+                            color: MarketplaceTheme.sky,
+                            size: 30,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              Text(
+                                'Create a standout listing',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                'Clear photos and a simple title help students discover it faster.',
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  height: 1.35,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
                   Row(
                     children: <Widget>[
                       const Expanded(
@@ -568,14 +627,14 @@ class _CreateMarketplaceListingScreenState
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: <Widget>[
                             Text(
-                              'Show it beautifully',
+                              'Photos & videos',
                               style: TextStyle(
                                 fontSize: 22,
                                 fontWeight: FontWeight.w900,
                               ),
                             ),
                             Text(
-                              'Choose up to five photos and videos combined.',
+                              'Add up to five. Tap one to make it the cover.',
                             ),
                           ],
                         ),
@@ -608,7 +667,18 @@ class _CreateMarketplaceListingScreenState
                               child: Ink(
                                 width: 112,
                                 decoration: BoxDecoration(
-                                  color: MarketplaceTheme.softSurface(context),
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: <Color>[
+                                      MarketplaceTheme.sky.withValues(
+                                        alpha: 0.2,
+                                      ),
+                                      MarketplaceTheme.navy.withValues(
+                                        alpha: 0.55,
+                                      ),
+                                    ],
+                                  ),
                                   borderRadius: BorderRadius.circular(18),
                                   border: Border.all(
                                     color: MarketplaceTheme.sky.withValues(
@@ -626,7 +696,8 @@ class _CreateMarketplaceListingScreenState
                                     ),
                                     SizedBox(height: 7),
                                     Text(
-                                      'Add media',
+                                      'Add photos\nor videos',
+                                      textAlign: TextAlign.center,
                                       style: TextStyle(
                                         fontWeight: FontWeight.w800,
                                       ),
@@ -707,104 +778,16 @@ class _CreateMarketplaceListingScreenState
                     ),
                   ],
                   const SizedBox(height: 22),
-                  TextField(
-                    controller: _title,
-                    maxLength: 120,
-                    textCapitalization: TextCapitalization.sentences,
-                    decoration: const InputDecoration(
-                      labelText: 'Title (required)',
-                      prefixIcon: Icon(Icons.title_rounded),
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    initialValue: _category,
-                    decoration: InputDecoration(
-                      labelText: 'Category (required)',
-                      prefixIcon: Icon(
-                        _category == null
-                            ? Icons.category_outlined
-                            : MarketplaceConstants.categories
-                                  .firstWhere(
-                                    (MarketplaceCategory item) =>
-                                        item.id == _category,
-                                  )
-                                  .icon,
-                      ),
-                      border: OutlineInputBorder(),
-                    ),
-                    items: MarketplaceConstants.categories
-                        .map(
-                          (MarketplaceCategory value) =>
-                              DropdownMenuItem<String>(
-                                value: value.id,
-                                child: Row(
-                                  children: <Widget>[
-                                    Icon(
-                                      value.icon,
-                                      size: 20,
-                                      color: MarketplaceTheme.sky,
-                                    ),
-                                    const SizedBox(width: 10),
-                                    Flexible(child: Text(value.label)),
-                                  ],
-                                ),
-                              ),
-                        )
-                        .toList(),
-                    onChanged: (String? value) =>
+                  _ListingFormPanel(
+                    titleController: _title,
+                    priceController: _price,
+                    descriptionController: _description,
+                    category: _category,
+                    condition: _condition,
+                    onCategoryChanged: (String? value) =>
                         setState(() => _category = value),
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    initialValue: _condition,
-                    decoration: const InputDecoration(
-                      labelText: 'Condition (required)',
-                      prefixIcon: Icon(Icons.auto_awesome_outlined),
-                      border: OutlineInputBorder(),
-                    ),
-                    items: MarketplaceConstants.conditions
-                        .map(
-                          (String value) => DropdownMenuItem<String>(
-                            value: value,
-                            child: Text(
-                              MarketplaceConstants.conditionLabel(value),
-                            ),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (String? value) =>
+                    onConditionChanged: (String? value) =>
                         setState(() => _condition = value),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _price,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    inputFormatters: <TextInputFormatter>[
-                      FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
-                    ],
-                    decoration: const InputDecoration(
-                      labelText: 'Price (required)',
-                      prefixText: 'EGP ',
-                      prefixIcon: Icon(Icons.payments_outlined),
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _description,
-                    minLines: 5,
-                    maxLines: 10,
-                    maxLength: 5000,
-                    textCapitalization: TextCapitalization.sentences,
-                    decoration: const InputDecoration(
-                      labelText: 'Description (optional)',
-                      alignLabelWithHint: true,
-                      border: OutlineInputBorder(),
-                    ),
                   ),
                   if (_saving) ...<Widget>[
                     const SizedBox(height: 18),
@@ -827,29 +810,60 @@ class _CreateMarketplaceListingScreenState
                 ],
               ),
         bottomNavigationBar: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-            child: FilledButton.icon(
-              onPressed: _saving
-                  ? null
-                  : () => _save(
-                      publish: (_editingListing?.status ?? 'draft') != 'sold',
-                    ),
-              icon: const Icon(Icons.rocket_launch_rounded),
-              label: Text(
-                _saving
-                    ? 'Saving…'
-                    : _editingListing?.status == 'available'
-                    ? 'Save Changes'
-                    : _editingListing?.status == 'sold'
-                    ? 'Save Sold Listing'
-                    : 'Publish Listing',
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+            decoration: BoxDecoration(
+              color: MarketplaceTheme.surface(context),
+              border: Border(
+                top: BorderSide(
+                  color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
+                ),
               ),
-              style: FilledButton.styleFrom(
-                backgroundColor: MarketplaceTheme.sky,
-                foregroundColor: MarketplaceTheme.midnight,
-                minimumSize: const Size.fromHeight(54),
-                textStyle: const TextStyle(fontWeight: FontWeight.w900),
+            ),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: _saving ? null : MarketplaceTheme.sellGradient,
+                color: _saving ? Theme.of(context).disabledColor : null,
+                borderRadius: BorderRadius.circular(18),
+                boxShadow: _saving
+                    ? null
+                    : <BoxShadow>[
+                        BoxShadow(
+                          color: MarketplaceTheme.sky.withValues(alpha: 0.24),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+              ),
+              child: FilledButton.icon(
+                onPressed: _saving
+                    ? null
+                    : () => _save(
+                        publish: (_editingListing?.status ?? 'draft') != 'sold',
+                      ),
+                icon: const Icon(Icons.storefront_rounded),
+                label: Text(
+                  _saving
+                      ? 'Saving…'
+                      : _editingListing?.status == 'available'
+                      ? 'Save Changes'
+                      : _editingListing?.status == 'sold'
+                      ? 'Save Sold Listing'
+                      : 'Publish Listing',
+                ),
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  foregroundColor: MarketplaceTheme.midnight,
+                  shadowColor: Colors.transparent,
+                  minimumSize: const Size.fromHeight(58),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  textStyle: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
               ),
             ),
           ),
@@ -870,6 +884,187 @@ class _CreateMarketplaceListingScreenState
     _description.dispose();
     _price.dispose();
     super.dispose();
+  }
+}
+
+class _ListingFormPanel extends StatelessWidget {
+  const _ListingFormPanel({
+    required this.titleController,
+    required this.priceController,
+    required this.descriptionController,
+    required this.category,
+    required this.condition,
+    required this.onCategoryChanged,
+    required this.onConditionChanged,
+  });
+
+  final TextEditingController titleController;
+  final TextEditingController priceController;
+  final TextEditingController descriptionController;
+  final String? category;
+  final String? condition;
+  final ValueChanged<String?> onCategoryChanged;
+  final ValueChanged<String?> onConditionChanged;
+
+  InputDecoration _decoration(
+    BuildContext context, {
+    required String label,
+    required IconData icon,
+    String? hint,
+    String? prefixText,
+    bool alignLabelWithHint = false,
+  }) {
+    final OutlineInputBorder border = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(17),
+      borderSide: BorderSide(
+        color: Theme.of(context).dividerColor.withValues(alpha: 0.32),
+      ),
+    );
+    return InputDecoration(
+      labelText: label,
+      hintText: hint,
+      prefixText: prefixText,
+      prefixIcon: Icon(icon, color: MarketplaceTheme.sky),
+      alignLabelWithHint: alignLabelWithHint,
+      filled: true,
+      fillColor: MarketplaceTheme.softSurface(context),
+      enabledBorder: border,
+      focusedBorder: border.copyWith(
+        borderSide: const BorderSide(color: MarketplaceTheme.sky, width: 1.6),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final MarketplaceCategory? selectedCategory = category == null
+        ? null
+        : MarketplaceConstants.categories
+              .where((MarketplaceCategory item) => item.id == category)
+              .firstOrNull;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: MarketplaceTheme.premiumCard(context),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          const Text(
+            'Listing details',
+            style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Add the important information buyers need.',
+            style: TextStyle(color: MarketplaceTheme.mutedText(context)),
+          ),
+          const SizedBox(height: 18),
+          TextField(
+            controller: titleController,
+            maxLength: 120,
+            textCapitalization: TextCapitalization.sentences,
+            decoration: _decoration(
+              context,
+              label: 'Item or service name',
+              hint: 'What are you selling?',
+              icon: Icons.title_rounded,
+            ),
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String>(
+            initialValue: category,
+            isExpanded: true,
+            decoration: _decoration(
+              context,
+              label: 'Category',
+              icon: selectedCategory?.icon ?? Icons.category_outlined,
+            ),
+            items: MarketplaceConstants.categories
+                .map(
+                  (MarketplaceCategory value) => DropdownMenuItem<String>(
+                    value: value.id,
+                    child: Row(
+                      children: <Widget>[
+                        Icon(value.icon, size: 20, color: MarketplaceTheme.sky),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            value.label,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+                .toList(),
+            onChanged: onCategoryChanged,
+          ),
+          const SizedBox(height: 12),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Expanded(
+                child: TextField(
+                  controller: priceController,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  inputFormatters: <TextInputFormatter>[
+                    FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                  ],
+                  decoration: _decoration(
+                    context,
+                    label: 'Price',
+                    prefixText: 'EGP ',
+                    icon: Icons.payments_outlined,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: DropdownButtonFormField<String>(
+                  initialValue: condition,
+                  isExpanded: true,
+                  decoration: _decoration(
+                    context,
+                    label: 'Condition',
+                    icon: Icons.auto_awesome_outlined,
+                  ),
+                  items: MarketplaceConstants.conditions
+                      .map(
+                        (String value) => DropdownMenuItem<String>(
+                          value: value,
+                          child: Text(
+                            MarketplaceConstants.conditionLabel(value),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: onConditionChanged,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: descriptionController,
+            minLines: 4,
+            maxLines: 8,
+            maxLength: 5000,
+            textCapitalization: TextCapitalization.sentences,
+            decoration: _decoration(
+              context,
+              label: 'Description (optional)',
+              hint: 'Describe the item, service, or availability.',
+              icon: Icons.notes_rounded,
+              alignLabelWithHint: true,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
