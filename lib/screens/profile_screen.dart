@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../models/post.dart';
+import '../resources/auth_method.dart';
 import '../services/profile_activity_service.dart';
 import '../services/profile_service.dart';
 import '../widgets/post_card.dart';
@@ -98,6 +99,10 @@ class _ProfileScreenState extends State<ProfileScreen>
   bool _isBlocked = false;
 
   bool _historyPrepared = false;
+
+  bool _profileRepairStarted = false;
+
+  Object? _profileRepairError;
 
   //===================================================
   // COLOR
@@ -199,6 +204,8 @@ class _ProfileScreenState extends State<ProfileScreen>
     _likesReceivedStream = _profileService.likesReceivedStream(uid);
 
     if (_isOwner) {
+      _repairMissingOwnerProfile();
+
       _savedPostsStream = _profileService.savedPostsStream(uid);
 
       _likedPostsStream = _profileActivityService.likedPostsStream(uid);
@@ -215,6 +222,38 @@ class _ProfileScreenState extends State<ProfileScreen>
     }
 
     _loadBlockedState();
+  }
+
+  //===================================================
+  // REPAIR PARTIAL SIGNUP
+  //===================================================
+
+  Future<void> _repairMissingOwnerProfile() async {
+    if (!_isOwner || _profileRepairStarted) {
+      return;
+    }
+
+    _profileRepairStarted = true;
+    _profileRepairError = null;
+
+    try {
+      await AuthMethods().ensureCurrentUserProfile();
+    } catch (error) {
+      _profileRepairError = error;
+
+      if (mounted) {
+        setState(() {});
+      }
+    }
+  }
+
+  void _retryProfileRepair() {
+    setState(() {
+      _profileRepairStarted = false;
+      _profileRepairError = null;
+    });
+
+    _repairMissingOwnerProfile();
   }
 
   //===================================================
@@ -1637,6 +1676,68 @@ class _ProfileScreenState extends State<ProfileScreen>
             if (!userSnapshot.hasData ||
                 !userSnapshot.data!.exists ||
                 userSnapshot.data!.data() == null) {
+              if (_isOwner) {
+                final Object? repairError = _profileRepairError;
+
+                return Scaffold(
+                  appBar: AppBar(
+                    leading: IconButton(
+                      onPressed: _goBack,
+                      icon: const Icon(Icons.arrow_back_rounded),
+                    ),
+                    title: const Text('Profile'),
+                  ),
+                  body: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(28),
+                      child: repairError == null
+                          ? const Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: <Widget>[
+                                CircularProgressIndicator(color: _blue),
+                                SizedBox(height: 16),
+                                Text(
+                                  'Finishing your profile setup...',
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            )
+                          : Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: <Widget>[
+                                const Icon(
+                                  Icons.person_off_outlined,
+                                  color: _blue,
+                                  size: 52,
+                                ),
+                                const SizedBox(height: 12),
+                                const Text(
+                                  'Your profile setup needs another try.',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  '$repairError',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: Colors.grey.shade500),
+                                ),
+                                const SizedBox(height: 16),
+                                FilledButton.icon(
+                                  onPressed: _retryProfileRepair,
+                                  icon: const Icon(Icons.refresh_rounded),
+                                  label: const Text('Try Again'),
+                                ),
+                              ],
+                            ),
+                    ),
+                  ),
+                );
+              }
+
               return Scaffold(
                 appBar: AppBar(
                   leading: IconButton(
@@ -2055,8 +2156,8 @@ class _ProfileCommentPost extends StatelessWidget {
                             Text(
                               activity.isReply
                                   ? activity.replyToUsername.isNotEmpty
-                                      ? 'You replied to @${activity.replyToUsername}'
-                                      : 'You posted a reply'
+                                        ? 'You replied to @${activity.replyToUsername}'
+                                        : 'You posted a reply'
                                   : 'You commented on this post',
 
                               style: const TextStyle(

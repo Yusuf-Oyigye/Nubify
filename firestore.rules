@@ -48,7 +48,7 @@ rules_version = '2';
 //   (server-maintained, reviewer-readable only)
 //
 // userPrivate/{uid}
-//   uid, phoneE164, allowMarketplaceCalls, updatedAt
+//   uid, phoneE164, allowMarketplaceCalls, createdAt, updatedAt
 //   (owner-only; never publicly readable)
 //
 // users/{uid}/savedMarketplaceListings/{listingId}
@@ -692,15 +692,24 @@ match /calls/{callId} {
     }
 
     function marketplaceListingIdentityMatchesProfile(data) {
-      return exists(
-            /databases/$(database)/documents/users/$(data.sellerId)
+      let profilePath = /databases/$(database)/documents/users/$(data.sellerId);
+
+      return exists(profilePath) &&
+          (
+            data.sellerName == get(profilePath).data.get('fullName', '') ||
+            data.sellerName == get(profilePath).data.get('username', '') ||
+            (
+              data.sellerName == '' &&
+              get(profilePath).data.get('fullName', null) == null
+            )
           ) &&
-          data.sellerName == get(
-            /databases/$(database)/documents/users/$(data.sellerId)
-          ).data.fullName &&
-          data.sellerPhotoUrl == get(
-            /databases/$(database)/documents/users/$(data.sellerId)
-          ).data.photoUrl;
+          (
+            data.sellerPhotoUrl == get(profilePath).data.get('photoUrl', '') ||
+            (
+              data.sellerPhotoUrl == '' &&
+              get(profilePath).data.get('photoUrl', null) == null
+            )
+          );
     }
 
     function marketplaceValidListingTimestamps(data) {
@@ -899,11 +908,13 @@ match /calls/{callId} {
           (
             oldStatus == 'available' &&
             newStatus == 'sold' &&
+            request.resource.data.publishedAt == resource.data.publishedAt &&
             request.resource.data.soldAt == request.time
           ) ||
           (
             oldStatus == 'available' &&
             newStatus == 'unavailable' &&
+            request.resource.data.publishedAt == resource.data.publishedAt &&
             request.resource.data.unavailableAt == request.time
           ) ||
           (
@@ -970,12 +981,14 @@ match /calls/{callId} {
             'uid',
             'phoneE164',
             'allowMarketplaceCalls',
+            'createdAt',
             'updatedAt'
           ]) &&
           data.keys().hasAll([
             'uid',
             'phoneE164',
             'allowMarketplaceCalls',
+            'createdAt',
             'updatedAt'
           ]) &&
           data.uid == uid &&
@@ -986,6 +999,7 @@ match /calls/{callId} {
             data.phoneE164.matches('^[+]20(10|11|12|15)[0-9]{8}$')
           ) &&
           data.allowMarketplaceCalls is bool &&
+          data.createdAt is timestamp &&
           data.updatedAt is timestamp;
     }
 
@@ -993,6 +1007,7 @@ match /calls/{callId} {
       return isOwner(uid) &&
           uidUnchanged(data) &&
           marketplaceValidPrivateUser(data, uid) &&
+          data.createdAt == request.time &&
           data.updatedAt == request.time;
     }
 
@@ -1000,6 +1015,7 @@ match /calls/{callId} {
       return isOwner(uid) &&
           uidNotModified() &&
           marketplaceValidPrivateUser(data, uid) &&
+          data.createdAt == resource.data.createdAt &&
           data.updatedAt == request.time;
     }
 

@@ -22,14 +22,107 @@ class AuthMethods {
   //===================================================
 
   Future<model.User> getUserDetails() async {
-    final User currentUser = _auth.currentUser!;
+    return ensureCurrentUserProfile();
+  }
 
-    final DocumentSnapshot<Map<String, dynamic>> snap = await _firestore
+  //===================================================
+  // ENSURE CURRENT USER PROFILE
+  //
+  // Firebase Authentication and Firestore are separate
+  // systems. A network/rules failure can create the Auth
+  // account before users/{uid} is saved. This method repairs
+  // that partial signup without overwriting an existing
+  // profile.
+  //===================================================
+
+  Future<model.User> ensureCurrentUserProfile({
+    String? username,
+    String? fullName,
+    String? faculty,
+    String? hobbies,
+    String? favoriteQuote,
+    String? photoUrl,
+  }) async {
+    final User? currentUser = _auth.currentUser;
+
+    if (currentUser == null) {
+      throw StateError('No signed-in user is available.');
+    }
+
+    final DocumentReference<Map<String, dynamic>> userRef = _firestore
         .collection('users')
-        .doc(currentUser.uid)
-        .get();
+        .doc(currentUser.uid);
+    final DocumentSnapshot<Map<String, dynamic>> existing = await userRef.get();
 
-    return model.User.fromSnap(snap);
+    if (existing.exists && existing.data() != null) {
+      return model.User.fromSnap(existing);
+    }
+
+    final String email = (currentUser.email ?? '').trim();
+    final String emailName = email.contains('@')
+        ? email.substring(0, email.indexOf('@')).trim()
+        : '';
+    final String cleanUsername = _firstNonEmpty(<String?>[
+      username,
+      emailName,
+      'user_${currentUser.uid.substring(0, 6)}',
+    ]);
+    final String cleanFullName = _firstNonEmpty(<String?>[
+      fullName,
+      currentUser.displayName,
+      cleanUsername,
+    ]);
+    final String cleanPhotoUrl = _firstNonEmpty(<String?>[
+      photoUrl,
+      currentUser.photoURL,
+    ]);
+
+    final model.User repairedUser = model.User(
+      email: email,
+      uid: currentUser.uid,
+      photoUrl: cleanPhotoUrl,
+      username: cleanUsername,
+      fullName: cleanFullName,
+      faculty: faculty?.trim() ?? '',
+      hobbies: hobbies?.trim() ?? '',
+      favoriteQuote: favoriteQuote?.trim() ?? '',
+      followers: const <String>[],
+      following: const <String>[],
+      pinnedPostIds: const <String>[],
+    );
+
+    await _firestore.runTransaction<void>((Transaction transaction) async {
+      final DocumentSnapshot<Map<String, dynamic>> latest = await transaction
+          .get(userRef);
+
+      if (!latest.exists) {
+        transaction.set(userRef, <String, dynamic>{
+          ...repairedUser.toJson(),
+          'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      }
+    });
+
+    final DocumentSnapshot<Map<String, dynamic>> repaired = await userRef.get();
+
+    if (!repaired.exists || repaired.data() == null) {
+      throw StateError('Nubify could not create the missing profile document.');
+    }
+
+    return model.User.fromSnap(repaired);
+  }
+
+  String _firstNonEmpty(List<String?> values) {
+    for (final String? value in values) {
+      final String cleanValue = value?.trim() ?? '';
+
+      if (cleanValue.isNotEmpty) {
+        return cleanValue;
+      }
+    }
+
+    return '';
   }
 
   //===================================================
@@ -79,6 +172,19 @@ class AuthMethods {
         password: password,
       );
 
+      await cred.user!.updateDisplayName(cleanFullName);
+
+      // Save the public profile immediately. Optional photo upload and private
+      // contact storage happen afterwards, so either one failing cannot leave
+      // a valid Auth account without users/{uid}.
+      await ensureCurrentUserProfile(
+        username: cleanUsername,
+        fullName: cleanFullName,
+        faculty: cleanFaculty,
+        hobbies: hobbies,
+        favoriteQuote: favoriteQuote,
+      );
+
       String photoUrl = '';
 
       if (file != null) {
@@ -113,7 +219,6 @@ class AuthMethods {
         photoUrl: photoUrl,
       );
 
-      final WriteBatch batch = _firestore.batch();
       final DocumentReference<Map<String, dynamic>> publicUser = _firestore
           .collection('users')
           .doc(cred.user!.uid);
@@ -121,15 +226,17 @@ class AuthMethods {
           .collection('userPrivate')
           .doc(cred.user!.uid);
 
-      batch.set(publicUser, user.toJson());
-      batch.set(privateUser, <String, dynamic>{
+      await publicUser.set(<String, dynamic>{
+        ...user.toJson(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+      await privateUser.set(<String, dynamic>{
         'uid': cred.user!.uid,
         'phoneE164': phoneE164,
         'allowMarketplaceCalls': true,
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
-      await batch.commit();
 
       res = 'success';
     } on FirebaseAuthException catch (e) {
@@ -169,6 +276,8 @@ class AuthMethods {
 
         password: password,
       );
+
+      await ensureCurrentUserProfile();
 
       res = 'success';
     } on FirebaseAuthException catch (e) {

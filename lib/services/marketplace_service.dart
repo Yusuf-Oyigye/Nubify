@@ -351,9 +351,13 @@ class MarketplaceService {
     if (!profile.exists || data == null) {
       throw StateError('Complete your Nubify profile before selling.');
     }
-    final String sellerName = (data['fullName'] ?? '').toString().trim();
+    final String fullName = (data['fullName'] ?? '').toString().trim();
+    final String username = (data['username'] ?? '').toString().trim();
+    final String sellerName = fullName.isNotEmpty ? fullName : username;
     if (sellerName.isEmpty) {
-      throw StateError('Add your full name in Edit Profile before selling.');
+      throw StateError(
+        'Add your name or username in Edit Profile before selling.',
+      );
     }
     return <String, String>{
       'sellerName': sellerName,

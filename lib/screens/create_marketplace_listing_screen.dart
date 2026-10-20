@@ -299,6 +299,23 @@ class _CreateMarketplaceListingScreenState
               .get();
       final Map<String, dynamic> userData =
           profile.data() ?? <String, dynamic>{};
+      final String profileFullName = (userData['fullName'] ?? '')
+          .toString()
+          .trim();
+      final String profileUsername = (userData['username'] ?? '')
+          .toString()
+          .trim();
+      final String sellerName = profileFullName.isNotEmpty
+          ? profileFullName
+          : profileUsername;
+      if (sellerName.isEmpty) {
+        throw StateError(
+          'Add your name or username in Edit Profile before selling.',
+        );
+      }
+      final String sellerPhotoUrl = (userData['photoUrl'] ?? '')
+          .toString()
+          .trim();
       final List<PendingMarketplaceMedia> pendingMedia = _mediaItems
           .map((_EditableMarketplaceMedia item) => item.pending)
           .whereType<PendingMarketplaceMedia>()
@@ -365,8 +382,8 @@ class _CreateMarketplaceListingScreenState
       final Map<String, dynamic> listingData = <String, dynamic>{
         'listingId': reference.id,
         'sellerId': user.uid,
-        'sellerName': (userData['fullName'] ?? '').toString(),
-        'sellerPhotoUrl': (userData['photoUrl'] ?? '').toString(),
+        'sellerName': sellerName,
+        'sellerPhotoUrl': sellerPhotoUrl,
         'title': _title.text.trim(),
         'description': _description.text.trim(),
         'category': _category ?? '',
@@ -392,7 +409,7 @@ class _CreateMarketplaceListingScreenState
                 _title.text,
                 _description.text,
                 _category ?? '',
-                (userData['fullName'] ?? '').toString(),
+                sellerName,
               ])
             : <String>[],
         'createdAt': _editingListing?.createdAt == null
@@ -473,6 +490,7 @@ class _CreateMarketplaceListingScreenState
         Navigator.pop(context);
       }
     } catch (error) {
+      debugPrint('Marketplace listing save failed: $error');
       if (!listingSaved && uploaded.isNotEmpty) {
         await _mediaService.deleteUploadedMedia(uploaded);
       }
