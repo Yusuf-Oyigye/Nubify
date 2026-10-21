@@ -583,133 +583,8 @@ match /calls/{callId} {
           value.allowCalls is bool;
     }
 
-    function marketplaceValidSearchPrefix(value) {
-      return value is string &&
-          value.size() >= 1 &&
-          value.size() <= 64;
-    }
-
-    // Firestore Rules has no list loop. Because searchPrefixes is capped at
-    // twenty items, every possible element is explicitly validated.
-    function marketplaceValidSearchPrefixes(values) {
-      return values is list &&
-          values.size() <= 20 &&
-          (values.size() < 1 || marketplaceValidSearchPrefix(values[0])) &&
-          (values.size() < 2 || marketplaceValidSearchPrefix(values[1])) &&
-          (values.size() < 3 || marketplaceValidSearchPrefix(values[2])) &&
-          (values.size() < 4 || marketplaceValidSearchPrefix(values[3])) &&
-          (values.size() < 5 || marketplaceValidSearchPrefix(values[4])) &&
-          (values.size() < 6 || marketplaceValidSearchPrefix(values[5])) &&
-          (values.size() < 7 || marketplaceValidSearchPrefix(values[6])) &&
-          (values.size() < 8 || marketplaceValidSearchPrefix(values[7])) &&
-          (values.size() < 9 || marketplaceValidSearchPrefix(values[8])) &&
-          (values.size() < 10 || marketplaceValidSearchPrefix(values[9])) &&
-          (values.size() < 11 || marketplaceValidSearchPrefix(values[10])) &&
-          (values.size() < 12 || marketplaceValidSearchPrefix(values[11])) &&
-          (values.size() < 13 || marketplaceValidSearchPrefix(values[12])) &&
-          (values.size() < 14 || marketplaceValidSearchPrefix(values[13])) &&
-          (values.size() < 15 || marketplaceValidSearchPrefix(values[14])) &&
-          (values.size() < 16 || marketplaceValidSearchPrefix(values[15])) &&
-          (values.size() < 17 || marketplaceValidSearchPrefix(values[16])) &&
-          (values.size() < 18 || marketplaceValidSearchPrefix(values[17])) &&
-          (values.size() < 19 || marketplaceValidSearchPrefix(values[18])) &&
-          (values.size() < 20 || marketplaceValidSearchPrefix(values[19]));
-    }
-
-    function marketplaceValidStoragePath(path, sellerId, listingId) {
-      return path is string &&
-          path.size() >= 1 &&
-          path.size() <= 512 &&
-          path.matches(
-            '^marketplace/' + sellerId + '/' + listingId +
-            '/[A-Za-z0-9_.-]{1,180}$'
-          );
-    }
-
-    function marketplaceValidMediaItem(item, sellerId, listingId) {
-      return item is map &&
-          item.keys().hasOnly([
-            'type',
-            'url',
-            'thumbnailUrl',
-            'durationMs',
-            'displayOrder',
-            'storagePath'
-          ]) &&
-          item.keys().hasAll([
-            'type',
-            'url',
-            'thumbnailUrl',
-            'durationMs',
-            'displayOrder',
-            'storagePath'
-          ]) &&
-          item.type in ['image', 'video'] &&
-          marketplaceValidHttpsUrl(item.url, false) &&
-          marketplaceValidHttpsUrl(item.thumbnailUrl, item.type == 'image') &&
-          item.durationMs is int &&
-          item.durationMs >= 0 &&
-          item.durationMs <= 600000 &&
-          item.displayOrder is int &&
-          item.displayOrder >= 0 &&
-          item.displayOrder <= 4 &&
-          marketplaceValidStoragePath(
-            item.storagePath,
-            sellerId,
-            listingId
-          );
-    }
-
-    // The five-item cap lets us inspect each media map instead of trusting
-    // only the outer list type.
-    function marketplaceValidMediaList(values, sellerId, listingId) {
-      return values is list &&
-          values.size() <= 5 &&
-          (
-            values.size() < 1 ||
-            marketplaceValidMediaItem(values[0], sellerId, listingId)
-          ) &&
-          (
-            values.size() < 2 ||
-            marketplaceValidMediaItem(values[1], sellerId, listingId)
-          ) &&
-          (
-            values.size() < 3 ||
-            marketplaceValidMediaItem(values[2], sellerId, listingId)
-          ) &&
-          (
-            values.size() < 4 ||
-            marketplaceValidMediaItem(values[3], sellerId, listingId)
-          ) &&
-          (
-            values.size() < 5 ||
-            marketplaceValidMediaItem(values[4], sellerId, listingId)
-          );
-    }
-
     function marketplaceListingOwner(data) {
       return isOwner(data.sellerId);
-    }
-
-    function marketplaceListingIdentityMatchesProfile(data) {
-      let profilePath = /databases/$(database)/documents/users/$(data.sellerId);
-
-      return exists(profilePath) &&
-          (
-            data.sellerName == get(profilePath).data.get('fullName', '') ||
-            data.sellerName == get(profilePath).data.get('username', '') ||
-            (
-              data.sellerName == '' &&
-              get(profilePath).data.get('fullName', null) == null
-            )
-          ) &&
-          (
-            data.sellerPhotoUrl == get(profilePath).data.get('photoUrl', '') ||
-            (
-              data.sellerPhotoUrl == '' &&
-              get(profilePath).data.get('photoUrl', null) == null
-            )
-          );
     }
 
     function marketplaceValidListingTimestamps(data) {
@@ -762,65 +637,12 @@ match /calls/{callId} {
     }
 
     function marketplaceValidListing(data, listingId) {
-      return data.keys().hasOnly([
-            'listingId',
-            'sellerId',
-            'sellerName',
-            'sellerPhotoUrl',
-            'title',
-            'description',
-            'category',
-            'condition',
-            'priceType',
-            'price',
-            'currency',
-            'media',
-            'mediaCount',
-            'coverMediaIndex',
-            'thumbnailUrl',
-            'status',
-            'publicVisible',
-            'contactPreferences',
-            'searchPrefixes',
-            'createdAt',
-            'updatedAt',
-            'publishedAt',
-            'soldAt',
-            'unavailableAt',
-            'archivedAt'
-          ]) &&
-          data.keys().hasAll([
-            'listingId',
-            'sellerId',
-            'sellerName',
-            'sellerPhotoUrl',
-            'title',
-            'description',
-            'category',
-            'condition',
-            'priceType',
-            'price',
-            'currency',
-            'media',
-            'mediaCount',
-            'coverMediaIndex',
-            'thumbnailUrl',
-            'status',
-            'publicVisible',
-            'contactPreferences',
-            'searchPrefixes',
-            'createdAt',
-            'updatedAt',
-            'publishedAt',
-            'soldAt',
-            'unavailableAt',
-            'archivedAt'
-          ]) &&
-          marketplaceValidId(data.listingId) &&
+      return marketplaceValidId(data.listingId) &&
           data.listingId == listingId &&
           marketplaceValidId(data.sellerId) &&
           marketplaceValidOptionalString(data.sellerName, 120) &&
-          marketplaceValidHttpsUrl(data.sellerPhotoUrl, true) &&
+          data.sellerPhotoUrl is string &&
+          data.sellerPhotoUrl.size() <= 2048 &&
           marketplaceValidOptionalString(data.title, 120) &&
           marketplaceValidOptionalString(data.description, 5000) &&
           data.category is string &&
@@ -831,7 +653,8 @@ match /calls/{callId} {
           data.priceType.size() <= 16 &&
           data.currency == 'EGP' &&
           marketplaceValidPrice(data) &&
-          marketplaceValidMediaList(data.media, data.sellerId, listingId) &&
+          data.media is list &&
+          data.media.size() <= 5 &&
           data.mediaCount is int &&
           data.mediaCount == data.media.size() &&
           data.coverMediaIndex is int &&
@@ -846,12 +669,14 @@ match /calls/{callId} {
               data.coverMediaIndex < data.mediaCount
             )
           ) &&
-          marketplaceValidHttpsUrl(data.thumbnailUrl, true) &&
+          data.thumbnailUrl is string &&
+          data.thumbnailUrl.size() <= 4096 &&
           marketplaceValidListingStatus(data.status) &&
           data.publicVisible is bool &&
           data.publicVisible == (data.status == 'available') &&
           marketplaceValidContactPreferences(data.contactPreferences) &&
-          marketplaceValidSearchPrefixes(data.searchPrefixes) &&
+          data.searchPrefixes is list &&
+          data.searchPrefixes.size() <= 20 &&
           marketplaceValidListingTimestamps(data) &&
           (
             data.status == 'draft' ||
@@ -860,28 +685,38 @@ match /calls/{callId} {
               marketplaceValidRequiredString(data.title, 1, 120) &&
               marketplaceValidCategory(data.category) &&
               marketplaceValidCondition(data.condition) &&
-              marketplaceValidPriceType(data.priceType) &&
+              data.priceType == 'fixed' &&
               data.mediaCount >= 1 &&
-              marketplaceValidHttpsUrl(data.thumbnailUrl, false) &&
+              data.thumbnailUrl.size() >= 1 &&
               data.searchPrefixes.size() >= 1
             )
           );
     }
 
     function marketplaceValidListingCreate(data, listingId) {
-      return marketplaceValidListing(data, listingId) &&
-          marketplaceListingOwner(data) &&
-          marketplaceListingIdentityMatchesProfile(data) &&
+      return request.auth != null &&
+          request.auth.uid == data.sellerId &&
+          data.media is list &&
+          data.media.size() <= 5 &&
+          marketplaceValidListing(data, listingId) &&
           data.createdAt == request.time &&
           data.updatedAt == request.time &&
           (
             (
               data.status == 'draft' &&
-              data.publicVisible == false
+              data.publicVisible == false &&
+              data.publishedAt == null &&
+              data.soldAt == null &&
+              data.unavailableAt == null &&
+              data.archivedAt == null
             ) ||
             (
               data.status == 'available' &&
-              data.publishedAt == request.time
+              data.publicVisible == true &&
+              data.publishedAt == request.time &&
+              data.soldAt == null &&
+              data.unavailableAt == null &&
+              data.archivedAt == null
             )
           );
     }
@@ -890,74 +725,37 @@ match /calls/{callId} {
       let oldStatus = resource.data.status;
       let newStatus = request.resource.data.status;
 
-      return (
-            oldStatus == newStatus &&
-            request.resource.data.publishedAt == resource.data.publishedAt &&
-            request.resource.data.soldAt == resource.data.soldAt &&
-            request.resource.data.unavailableAt == resource.data.unavailableAt &&
-            request.resource.data.archivedAt == resource.data.archivedAt
-          ) ||
+      return oldStatus == newStatus ||
           (
             oldStatus == 'draft' &&
-            newStatus == 'available' &&
-            request.resource.data.publishedAt == request.time &&
-            request.resource.data.soldAt == null &&
-            request.resource.data.unavailableAt == null &&
-            request.resource.data.archivedAt == null
+            newStatus in ['available', 'archived']
           ) ||
           (
             oldStatus == 'available' &&
-            newStatus == 'sold' &&
-            request.resource.data.publishedAt == resource.data.publishedAt &&
-            request.resource.data.soldAt == request.time
-          ) ||
-          (
-            oldStatus == 'available' &&
-            newStatus == 'unavailable' &&
-            request.resource.data.publishedAt == resource.data.publishedAt &&
-            request.resource.data.unavailableAt == request.time
-          ) ||
-          (
-            oldStatus in ['draft', 'available', 'unavailable', 'sold'] &&
-            newStatus == 'archived' &&
-            request.resource.data.publishedAt == resource.data.publishedAt &&
-            request.resource.data.soldAt == resource.data.soldAt &&
-            request.resource.data.unavailableAt == resource.data.unavailableAt &&
-            request.resource.data.archivedAt == request.time
+            newStatus in ['sold', 'unavailable', 'archived']
           ) ||
           (
             oldStatus == 'unavailable' &&
-            newStatus == 'available' &&
-            request.resource.data.publishedAt == request.time &&
-            request.resource.data.soldAt == null &&
-            request.resource.data.unavailableAt == null &&
-            request.resource.data.archivedAt == null
+            newStatus in ['available', 'archived']
+          ) ||
+          (
+            oldStatus == 'sold' &&
+            newStatus == 'archived'
           ) ||
           (
             oldStatus == 'archived' &&
-            newStatus == 'available' &&
-            request.resource.data.publishedAt == request.time &&
-            request.resource.data.soldAt == null &&
-            request.resource.data.unavailableAt == null &&
-            request.resource.data.archivedAt == null
-          ) ||
-          (
-            oldStatus == 'archived' &&
-            newStatus == 'draft' &&
-            request.resource.data.publishedAt == null &&
-            request.resource.data.soldAt == null &&
-            request.resource.data.unavailableAt == null &&
-            request.resource.data.archivedAt == null
+            newStatus in ['available', 'draft']
           );
     }
 
     function marketplaceValidListingUpdate(data, listingId) {
-      return marketplaceValidListing(data, listingId) &&
-          marketplaceListingOwner(resource.data) &&
-          marketplaceListingIdentityMatchesProfile(data) &&
+      return marketplaceListingOwner(resource.data) &&
+          data.media is list &&
+          data.media.size() <= 5 &&
           data.listingId == resource.data.listingId &&
           data.sellerId == resource.data.sellerId &&
           data.createdAt == resource.data.createdAt &&
+          marketplaceValidListing(data, listingId) &&
           data.updatedAt == request.time &&
           marketplaceValidListingTransition();
     }

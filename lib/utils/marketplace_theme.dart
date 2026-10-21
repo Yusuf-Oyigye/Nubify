@@ -25,6 +25,55 @@ abstract final class MarketplaceTheme {
     colors: <Color>[sky, Color(0xFF168BC0)],
   );
 
+  static const LinearGradient publishGradient = LinearGradient(
+    begin: Alignment.centerLeft,
+    end: Alignment.centerRight,
+    colors: <Color>[Color(0xFF1F6F68), Color(0xFF214761), plum],
+  );
+
+  static const LinearGradient mediaAccentGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: <Color>[plum, copper],
+  );
+
+  static const LinearGradient addMediaGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: <Color>[Color(0xFF2C294B), Color(0xFF173F4F)],
+  );
+
+  static LinearGradient composerBackground(BuildContext context) {
+    final bool dark = Theme.of(context).brightness == Brightness.dark;
+    return LinearGradient(
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+      colors: dark
+          ? const <Color>[Color(0xFF0A101B), Color(0xFF111827)]
+          : const <Color>[Color(0xFFF8F6F1), Color(0xFFF1F5F4)],
+    );
+  }
+
+  static BoxDecoration composerCard(BuildContext context) {
+    final bool dark = Theme.of(context).brightness == Brightness.dark;
+    return BoxDecoration(
+      color: dark ? const Color(0xFF151D2B) : const Color(0xFFFFFDFC),
+      borderRadius: BorderRadius.circular(24),
+      border: Border.all(
+        color: dark
+            ? gold.withValues(alpha: 0.18)
+            : plum.withValues(alpha: 0.12),
+      ),
+      boxShadow: <BoxShadow>[
+        BoxShadow(
+          color: (dark ? Colors.black : navy).withValues(alpha: 0.12),
+          blurRadius: 28,
+          offset: const Offset(0, 12),
+        ),
+      ],
+    );
+  }
+
   static Color surface(BuildContext context) {
     return Theme.of(context).brightness == Brightness.dark
         ? const Color(0xFF121B2A)

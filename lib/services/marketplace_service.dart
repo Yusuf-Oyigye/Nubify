@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../models/marketplace_filter.dart';
 import '../models/marketplace_listing.dart';
 import '../utils/marketplace_constants.dart';
+import 'marketplace_media_service.dart';
 
 //===================================================
 // MARKETPLACE DATA SERVICE
@@ -61,12 +62,17 @@ class MarketplaceHomeDiscovery {
 }
 
 class MarketplaceService {
-  MarketplaceService({FirebaseAuth? auth, FirebaseFirestore? firestore})
-    : _auth = auth ?? FirebaseAuth.instance,
-      _firestore = firestore ?? FirebaseFirestore.instance;
+  MarketplaceService({
+    FirebaseAuth? auth,
+    FirebaseFirestore? firestore,
+    MarketplaceMediaService? mediaService,
+  }) : _auth = auth ?? FirebaseAuth.instance,
+       _firestore = firestore ?? FirebaseFirestore.instance,
+       _mediaService = mediaService ?? MarketplaceMediaService();
 
   final FirebaseAuth _auth;
   final FirebaseFirestore _firestore;
+  final MarketplaceMediaService _mediaService;
 
   static MarketplaceListingPage? _cachedFreshPage;
   static MarketplaceHomeDiscovery? _cachedHomeDiscovery;
@@ -669,6 +675,7 @@ class MarketplaceService {
       throw StateError('Only the listing owner can delete this listing.');
     }
     await _listings.doc(listing.listingId).delete();
+    await _mediaService.deleteUploadedMedia(listing.media);
     _cachedFreshPage = null;
     _cachedHomeDiscovery = null;
   }
