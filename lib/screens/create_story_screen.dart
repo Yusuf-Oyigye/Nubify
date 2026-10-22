@@ -332,7 +332,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
 
   String _textAlign = 'center';
 
-  double _textSize = 34;
+  final double _textSize = 34;
 
   String _sticker = '';
   //=============================
@@ -3471,7 +3471,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
                 margin: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
                   color: selected
-                      ? const Color(0xFF29B6F6).withOpacity(0.15)
+                      ? const Color(0xFF29B6F6).withValues(alpha: 0.15)
                       : Colors.transparent,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
@@ -3931,7 +3931,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
                 width: 128,
                 height: 128,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF29B6F6).withOpacity(0.16),
+                  color: const Color(0xFF29B6F6).withValues(alpha: 0.16),
                   shape: BoxShape.circle,
                   border: Border.all(color: const Color(0xFF29B6F6), width: 3),
                 ),
@@ -3982,7 +3982,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
                   width: 120,
                   height: 120,
                   decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.18),
+                    color: Colors.red.withValues(alpha: 0.18),
                     shape: BoxShape.circle,
                     border: Border.all(color: Colors.redAccent, width: 3),
                   ),
@@ -4063,7 +4063,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
               width: 82,
               height: 82,
               decoration: BoxDecoration(
-                color: const Color(0xFF29B6F6).withOpacity(0.15),
+                color: const Color(0xFF29B6F6).withValues(alpha: 0.15),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
@@ -4093,7 +4093,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
             Container(
               padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.28),
+                color: Colors.black.withValues(alpha: 0.28),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: Colors.white12),
               ),
@@ -4561,8 +4561,8 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
                       child: Container(
                         decoration: BoxDecoration(
                           color: active
-                              ? const Color(0xFF29B6F6).withOpacity(0.14)
-                              : Colors.white.withOpacity(0.05),
+                              ? const Color(0xFF29B6F6).withValues(alpha: 0.14)
+                              : Colors.white.withValues(alpha: 0.05),
                           borderRadius: BorderRadius.circular(15),
                           border: Border.all(
                             color: active
@@ -4764,7 +4764,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
                           ),
                           boxShadow: <BoxShadow>[
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.25),
+                              color: Colors.black.withValues(alpha: 0.25),
                               blurRadius: 5,
                             ),
                           ],
@@ -4790,7 +4790,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
                     vertical: 12,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.05),
+                    color: Colors.white.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(color: Colors.white12),
                   ),

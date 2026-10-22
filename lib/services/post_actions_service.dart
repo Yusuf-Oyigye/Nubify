@@ -1,12 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/foundation.dart';
 
 class PostActionsService {
   final FirebaseFirestore _firestore =
       FirebaseFirestore.instance;
-
-  final FirebaseStorage _storage =
-      FirebaseStorage.instance;
 
   //===================================================
   // DELETE POST
@@ -572,7 +569,7 @@ class PostActionsService {
       // OLD REPOST QUERY HAS A PROBLEM.
       //===================================================
 
-      print(
+      debugPrint(
         'Root repost visibility query error: $error',
       );
     }
@@ -609,7 +606,7 @@ class PostActionsService {
         }
       }
     } catch (error) {
-      print(
+      debugPrint(
         'Old repost visibility query error: $error',
       );
     }

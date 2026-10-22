@@ -163,7 +163,7 @@ class FeedPostListState
         final Map<String, dynamic>
         data =
         Map<String, dynamic>.from(
-          raw as Map,
+          raw,
         );
 
         return _feedService

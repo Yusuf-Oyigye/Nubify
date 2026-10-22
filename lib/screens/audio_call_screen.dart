@@ -39,11 +39,6 @@ class AudioCallScreen extends StatefulWidget {
 
 class _AudioCallScreenState
     extends State<AudioCallScreen> {
-  static const Color _blue =
-  Color(
-    0xFF29B6F6,
-  );
-
   final FirebaseFirestore _firestore =
       FirebaseFirestore.instance;
 

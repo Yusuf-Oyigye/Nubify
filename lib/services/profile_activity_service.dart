@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 
 import '../models/post.dart';
 
@@ -313,7 +314,7 @@ class ProfileActivityService {
               post,
             );
           } catch (error) {
-            print(
+            debugPrint(
               'Liked post load error $postId: $error',
             );
           }
@@ -400,7 +401,7 @@ class ProfileActivityService {
         );
       }
     } catch (error) {
-      print(
+      debugPrint(
         'Old likes backfill error: $error',
       );
     }
@@ -435,7 +436,7 @@ class ProfileActivityService {
         );
       }
     } catch (error) {
-      print(
+      debugPrint(
         'likedUserIds backfill error: $error',
       );
     }
@@ -520,7 +521,7 @@ class ProfileActivityService {
       try {
         await batch.commit();
       } catch (error) {
-        print(
+        debugPrint(
           'Like history batch error: $error',
         );
       }
@@ -612,7 +613,7 @@ class ProfileActivityService {
         );
       }
     } catch (error) {
-      print(
+      debugPrint(
         'Comments backfill error: $error',
       );
     }
@@ -698,7 +699,7 @@ class ProfileActivityService {
         );
       }
     } catch (error) {
-      print(
+      debugPrint(
         'Replies backfill error: $error',
       );
     }
@@ -800,7 +801,7 @@ class ProfileActivityService {
       try {
         await batch.commit();
       } catch (error) {
-        print(
+        debugPrint(
           'Comment history batch error: $error',
         );
       }

@@ -45,12 +45,23 @@ Future<void> showReportUserDialog({
             content:
             SingleChildScrollView(
               child:
-              Column(
-                mainAxisSize:
-                MainAxisSize.min,
+              RadioGroup<String>(
+                groupValue: reason,
+                onChanged: (String? value) {
+                  if (value == null) {
+                    return;
+                  }
 
-                children:
-                <Widget>[
+                  setDialogState(() {
+                    reason = value;
+                  });
+                },
+                child: Column(
+                  mainAxisSize:
+                  MainAxisSize.min,
+
+                  children:
+                  <Widget>[
                   ...<String>[
                     'Spam',
                     'Harassment',
@@ -66,9 +77,6 @@ Future<void> showReportUserDialog({
                           value:
                           item,
 
-                          groupValue:
-                          reason,
-
                           contentPadding:
                           EdgeInsets.zero,
 
@@ -76,23 +84,6 @@ Future<void> showReportUserDialog({
                           Text(
                             item,
                           ),
-
-                          onChanged:
-                              (
-                              String? value,
-                              ) {
-                            if (value ==
-                                null) {
-                              return;
-                            }
-
-                            setDialogState(
-                                  () {
-                                reason =
-                                    value;
-                              },
-                            );
-                          },
                         ),
                   ),
 
@@ -131,7 +122,8 @@ Future<void> showReportUserDialog({
                       OutlineInputBorder(),
                     ),
                   ),
-                ],
+                  ],
+                ),
               ),
             ),
 

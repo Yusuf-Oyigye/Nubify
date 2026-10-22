@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 
 import '../models/marketplace_listing.dart';
@@ -20,90 +21,171 @@ class MarketplaceMoreFromSeller extends StatelessWidget {
 
   final String sellerId;
   final String currentListingId;
+
   final ValueChanged<MarketplaceListing> onOpenListing;
   final VoidCallback onViewStore;
-  final MarketplaceService _service = MarketplaceService();
+
+  final MarketplaceService _service =
+  MarketplaceService();
 
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<Set<String>>(
       stream: _service.watchSavedIds(),
-      builder: (BuildContext context, AsyncSnapshot<Set<String>> saved) {
+      builder: (
+          BuildContext context,
+          AsyncSnapshot<Set<String>> saved,
+          ) {
         return StreamBuilder<List<MarketplaceListing>>(
-          stream: _service.watchAvailable(sellerId: sellerId, limit: 10),
-          builder:
-              (
-                BuildContext context,
-                AsyncSnapshot<List<MarketplaceListing>> snapshot,
+          stream: _service.watchAvailable(
+            sellerId: sellerId,
+            limit: 10,
+          ),
+          builder: (
+              BuildContext context,
+              AsyncSnapshot<List<MarketplaceListing>>
+              snapshot,
               ) {
-                final List<MarketplaceListing> listings =
-                    (snapshot.data ?? const <MarketplaceListing>[])
-                        .where(
-                          (MarketplaceListing item) =>
-                              item.listingId != currentListingId,
-                        )
-                        .take(8)
-                        .toList(growable: false);
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 30),
-                    child: Center(
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                  );
-                }
-                if (listings.isEmpty) {
-                  return const SizedBox.shrink();
-                }
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Row(
-                      children: <Widget>[
-                        const Expanded(
-                          child: Text(
-                            'More From This Seller',
-                            style: TextStyle(
-                              fontSize: 19,
-                              fontWeight: FontWeight.w900,
-                            ),
+            //===================================================
+            // EXCLUDE CURRENT LISTING
+            //===================================================
+
+            final List<MarketplaceListing> listings =
+            (snapshot.data ??
+                const <MarketplaceListing>[])
+                .where(
+                  (MarketplaceListing item) =>
+              item.listingId !=
+                  currentListingId,
+            )
+                .take(8)
+                .toList(growable: false);
+
+            //===================================================
+            // LOADING
+            //===================================================
+
+            if (snapshot.connectionState ==
+                ConnectionState.waiting) {
+              return const Padding(
+                padding: EdgeInsets.symmetric(
+                  vertical: 30,
+                ),
+                child: Center(
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                  ),
+                ),
+              );
+            }
+
+            //===================================================
+            // NO OTHER AVAILABLE LISTINGS
+            //===================================================
+
+            if (listings.isEmpty) {
+              return Column(
+                crossAxisAlignment:
+                CrossAxisAlignment.start,
+                children: <Widget>[
+                  Row(
+                    children: <Widget>[
+                      const Expanded(
+                        child: Text(
+                          'More from this seller',
+                          style: TextStyle(
+                            fontSize: 19,
+                            fontWeight: FontWeight.w900,
                           ),
                         ),
-                        TextButton(
-                          onPressed: onViewStore,
-                          child: const Text('View Store'),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    SizedBox(
-                      height: 286,
-                      child: ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: listings.length,
-                        separatorBuilder: (_, _) => const SizedBox(width: 12),
-                        itemBuilder: (BuildContext context, int index) {
-                          final MarketplaceListing listing = listings[index];
-                          return SizedBox(
-                            width: 184,
-                            child: MarketplaceListingCard(
-                              listing: listing,
-                              saved:
-                                  saved.data?.contains(listing.listingId) ??
-                                  false,
-                              onOpen: () => onOpenListing(listing),
-                            ),
-                          );
-                        },
+                      ),
+                      TextButton(
+                        onPressed: onViewStore,
+                        child: const Text('View Store'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'No other available listings.',
+                    style: TextStyle(
+                      color:
+                      MarketplaceTheme.mutedText(
+                        context,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Divider(
-                      color: MarketplaceTheme.sky.withValues(alpha: 0.18),
+                  ),
+                ],
+              );
+            }
+
+            //===================================================
+            // SELLER'S OTHER AVAILABLE PRODUCTS
+            //===================================================
+
+            return Column(
+              crossAxisAlignment:
+              CrossAxisAlignment.start,
+              children: <Widget>[
+                Row(
+                  children: <Widget>[
+                    const Expanded(
+                      child: Text(
+                        'More From This Seller',
+                        style: TextStyle(
+                          fontSize: 19,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: onViewStore,
+                      child: const Text('View Store'),
                     ),
                   ],
-                );
-              },
+                ),
+
+                const SizedBox(height: 8),
+
+                SizedBox(
+                  height: 286,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: listings.length,
+                    separatorBuilder: (_, _) =>
+                    const SizedBox(width: 12),
+                    itemBuilder: (
+                        BuildContext context,
+                        int index,
+                        ) {
+                      final MarketplaceListing listing =
+                      listings[index];
+
+                      return SizedBox(
+                        width: 184,
+                        child: MarketplaceListingCard(
+                          listing: listing,
+                          saved: saved.data?.contains(
+                            listing.listingId,
+                          ) ??
+                              false,
+                          onOpen: () =>
+                              onOpenListing(listing),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+
+                const SizedBox(height: 4),
+
+                Divider(
+                  color: MarketplaceTheme.sky
+                      .withValues(alpha: 0.18),
+                ),
+              ],
+            );
+          },
         );
       },
     );

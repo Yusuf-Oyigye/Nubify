@@ -61,7 +61,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
 
   XFile? _selectedCommentImage;
 
-  bool _isPickingImage = false;
+  final bool _isPickingImage = false;
 
   //===================================================
   // REPLY STATE
@@ -1497,7 +1497,7 @@ class _CommentNetworkImage extends StatelessWidget {
                     width: 220,
                     height: 180,
                     alignment: Alignment.center,
-                    color: Colors.grey.withOpacity(0.12),
+                    color: Colors.grey.withValues(alpha: 0.12),
                     child: const CircularProgressIndicator(
                       strokeWidth: 2,
                       color: Color(0xFF29B6F6),
@@ -1510,7 +1510,7 @@ class _CommentNetworkImage extends StatelessWidget {
                     width: 220,
                     height: 150,
                     alignment: Alignment.center,
-                    color: Colors.grey.withOpacity(0.12),
+                    color: Colors.grey.withValues(alpha: 0.12),
                     child: const Column(
                       mainAxisSize: MainAxisSize.min,
                       children: <Widget>[

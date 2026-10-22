@@ -1,3 +1,4 @@
+
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -93,11 +94,11 @@ class _MarketplaceSellerStoreScreenState
         _listings = reset
             ? page.listings
             : <MarketplaceListing>[
-                ..._listings,
-                ...page.listings.where(
-                  (MarketplaceListing item) => existingIds.add(item.listingId),
-                ),
-              ];
+          ..._listings,
+          ...page.listings.where(
+                (MarketplaceListing item) => existingIds.add(item.listingId),
+          ),
+        ];
         _lastPage = page;
         _hasMore = page.hasMore;
         _loading = false;
@@ -132,8 +133,8 @@ class _MarketplaceSellerStoreScreenState
           builder: (_) => ConversationScreen(
             otherUserId: widget.sellerId,
             otherName:
-                (profile['fullName'] ?? profile['username'] ?? 'Student Seller')
-                    .toString(),
+            (profile['fullName'] ?? profile['username'] ?? 'Student Seller')
+                .toString(),
             otherUsername: (profile['username'] ?? '').toString(),
             otherPhotoUrl: (profile['photoUrl'] ?? '').toString(),
           ),
@@ -164,232 +165,232 @@ class _MarketplaceSellerStoreScreenState
             .snapshots(),
         builder:
             (
-              BuildContext context,
-              AsyncSnapshot<DocumentSnapshot<Map<String, dynamic>>>
-              profileSnapshot,
+            BuildContext context,
+            AsyncSnapshot<DocumentSnapshot<Map<String, dynamic>>>
+            profileSnapshot,
             ) {
-              final Map<String, dynamic> profile =
-                  profileSnapshot.data?.data() ?? <String, dynamic>{};
-              final String name =
-                  (profile['fullName'] ??
-                          profile['username'] ??
-                          'Student Seller')
-                      .toString();
-              final String photo = (profile['photoUrl'] ?? '').toString();
-              return RefreshIndicator(
-                onRefresh: () => _loadListings(reset: true),
-                child: CustomScrollView(
-                  controller: _scrollController,
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  slivers: <Widget>[
-                    SliverAppBar.large(
-                      pinned: true,
-                      expandedHeight: 290,
-                      title: Text(name),
-                      flexibleSpace: FlexibleSpaceBar(
-                        background: Container(
-                          decoration: const BoxDecoration(
-                            gradient: MarketplaceTheme.heroGradient,
+          final Map<String, dynamic> profile =
+              profileSnapshot.data?.data() ?? <String, dynamic>{};
+          final String name =
+          (profile['fullName'] ??
+              profile['username'] ??
+              'Student Seller')
+              .toString();
+          final String photo = (profile['photoUrl'] ?? '').toString();
+          return RefreshIndicator(
+            onRefresh: () => _loadListings(reset: true),
+            child: CustomScrollView(
+              controller: _scrollController,
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: <Widget>[
+                SliverAppBar.large(
+                  pinned: true,
+                  expandedHeight: 290,
+                  title: Text(name),
+                  flexibleSpace: FlexibleSpaceBar(
+                    background: Container(
+                      decoration: const BoxDecoration(
+                        gradient: MarketplaceTheme.heroGradient,
+                      ),
+                      child: SafeArea(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(
+                            20,
+                            42,
+                            20,
+                            18,
                           ),
-                          child: SafeArea(
-                            child: Padding(
-                              padding: const EdgeInsets.fromLTRB(
-                                20,
-                                42,
-                                20,
-                                18,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: <Widget>[
+                              CircleAvatar(
+                                radius: 44,
+                                backgroundImage: photo.isEmpty
+                                    ? null
+                                    : NetworkImage(photo),
+                                child: photo.isEmpty
+                                    ? const Icon(
+                                  Icons.person_rounded,
+                                  size: 42,
+                                )
+                                    : null,
                               ),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.end,
+                              const SizedBox(height: 8),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
                                 children: <Widget>[
-                                  CircleAvatar(
-                                    radius: 44,
-                                    backgroundImage: photo.isEmpty
-                                        ? null
-                                        : NetworkImage(photo),
-                                    child: photo.isEmpty
-                                        ? const Icon(
-                                            Icons.person_rounded,
-                                            size: 42,
-                                          )
-                                        : null,
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: <Widget>[
-                                      Flexible(
-                                        child: Text(
-                                          name,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 20,
-                                            fontWeight: FontWeight.w900,
-                                          ),
-                                        ),
+                                  Flexible(
+                                    child: Text(
+                                      name,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.w900,
                                       ),
-                                    ],
-                                  ),
-                                  _SellerListingCount(
-                                    sellerId: widget.sellerId,
-                                  ),
-                                  const SizedBox(height: 10),
-                                  Row(
-                                    children: <Widget>[
-                                      Expanded(
-                                        child: OutlinedButton.icon(
-                                          onPressed: () => Navigator.push(
-                                            context,
-                                            MaterialPageRoute<void>(
-                                              builder: (_) => ProfileScreen(
-                                                userId: widget.sellerId,
-                                              ),
-                                            ),
-                                          ),
-                                          icon: const Icon(
-                                            Icons.person_outline_rounded,
-                                          ),
-                                          label: const Text('Nubify Profile'),
-                                          style: OutlinedButton.styleFrom(
-                                            foregroundColor: Colors.white,
-                                          ),
-                                        ),
-                                      ),
-                                      if (!owner) ...<Widget>[
-                                        const SizedBox(width: 10),
-                                        Expanded(
-                                          child: FilledButton.icon(
-                                            onPressed: _openingChat
-                                                ? null
-                                                : () => _messageSeller(profile),
-                                            icon: _openingChat
-                                                ? const SizedBox.square(
-                                                    dimension: 16,
-                                                    child:
-                                                        CircularProgressIndicator(
-                                                          strokeWidth: 2,
-                                                        ),
-                                                  )
-                                                : const Icon(
-                                                    Icons.chat_bubble_outline,
-                                                  ),
-                                            label: const Text('Message Seller'),
-                                          ),
-                                        ),
-                                      ],
-                                    ],
+                                    ),
                                   ),
                                 ],
                               ),
-                            ),
+                              _SellerListingCount(
+                                sellerId: widget.sellerId,
+                              ),
+                              const SizedBox(height: 10),
+                              Row(
+                                children: <Widget>[
+                                  Expanded(
+                                    child: OutlinedButton.icon(
+                                      onPressed: () => Navigator.push(
+                                        context,
+                                        MaterialPageRoute<void>(
+                                          builder: (_) => ProfileScreen(
+                                            userId: widget.sellerId,
+                                          ),
+                                        ),
+                                      ),
+                                      icon: const Icon(
+                                        Icons.person_outline_rounded,
+                                      ),
+                                      label: const Text('Nubify Profile'),
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                  if (!owner) ...<Widget>[
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: FilledButton.icon(
+                                        onPressed: _openingChat
+                                            ? null
+                                            : () => _messageSeller(profile),
+                                        icon: _openingChat
+                                            ? const SizedBox.square(
+                                          dimension: 16,
+                                          child:
+                                          CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                          ),
+                                        )
+                                            : const Icon(
+                                          Icons.chat_bubble_outline,
+                                        ),
+                                        label: const Text('Message Seller'),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ],
                           ),
                         ),
                       ),
                     ),
-                    if (_loading)
-                      const SliverFillRemaining(
-                        child: Center(child: CircularProgressIndicator()),
-                      )
-                    else if (_listings.isEmpty && _loadError != null)
-                      SliverFillRemaining(
-                        child: _StoreState(
-                          icon: Icons.cloud_off_rounded,
-                          title: 'No available listings yet',
-                          message:
-                              'This seller has no Marketplace item showing right now.',
-                          actionLabel: 'Try Again',
-                          onAction: () => unawaited(_loadListings(reset: true)),
-                        ),
-                      )
-                    else if (_listings.isEmpty)
-                      const SliverFillRemaining(
-                        child: _StoreState(
-                          icon: Icons.storefront_outlined,
-                          title: 'No available listings',
-                          message:
-                              'This seller does not have a public item or service right now.',
-                        ),
-                      )
-                    else
-                      StreamBuilder<Set<String>>(
-                        stream: _service.watchSavedIds(),
-                        builder:
-                            (
-                              BuildContext context,
-                              AsyncSnapshot<Set<String>> saved,
-                            ) {
-                              return SliverPadding(
-                                padding: const EdgeInsets.fromLTRB(
-                                  14,
-                                  14,
-                                  14,
-                                  8,
-                                ),
-                                sliver: SliverGrid.builder(
-                                  itemCount: _listings.length,
-                                  gridDelegate:
-                                      const SliverGridDelegateWithFixedCrossAxisCount(
-                                        crossAxisCount: 2,
-                                        mainAxisSpacing: 12,
-                                        crossAxisSpacing: 12,
-                                        childAspectRatio: 0.69,
-                                      ),
-                                  itemBuilder: (BuildContext context, int index) {
-                                    final MarketplaceListing listing =
-                                        _listings[index];
-                                    return MarketplaceListingCard(
-                                      listing: listing,
-                                      saved:
-                                          saved.data?.contains(
-                                            listing.listingId,
-                                          ) ??
-                                          false,
-                                      onOpen: () => Navigator.push(
-                                        context,
-                                        MaterialPageRoute<void>(
-                                          builder: (_) =>
-                                              MarketplaceListingDetailsScreen(
-                                                listingId: listing.listingId,
-                                              ),
+                  ),
+                ),
+                if (_loading)
+                  const SliverFillRemaining(
+                    child: Center(child: CircularProgressIndicator()),
+                  )
+                else if (_listings.isEmpty && _loadError != null)
+                  SliverFillRemaining(
+                    child: _StoreState(
+                      icon: Icons.cloud_off_rounded,
+                      title: 'No available listings yet',
+                      message:
+                      'This seller has no Marketplace item showing right now.',
+                      actionLabel: 'Try Again',
+                      onAction: () => unawaited(_loadListings(reset: true)),
+                    ),
+                  )
+                else if (_listings.isEmpty)
+                    const SliverFillRemaining(
+                      child: _StoreState(
+                        icon: Icons.storefront_outlined,
+                        title: 'No available listings',
+                        message:
+                        'This seller does not have a public item or service right now.',
+                      ),
+                    )
+                  else
+                    StreamBuilder<Set<String>>(
+                      stream: _service.watchSavedIds(),
+                      builder:
+                          (
+                          BuildContext context,
+                          AsyncSnapshot<Set<String>> saved,
+                          ) {
+                        return SliverPadding(
+                          padding: const EdgeInsets.fromLTRB(
+                            14,
+                            14,
+                            14,
+                            8,
+                          ),
+                          sliver: SliverGrid.builder(
+                            itemCount: _listings.length,
+                            gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              mainAxisSpacing: 12,
+                              crossAxisSpacing: 12,
+                              childAspectRatio: 0.69,
+                            ),
+                            itemBuilder: (BuildContext context, int index) {
+                              final MarketplaceListing listing =
+                              _listings[index];
+                              return MarketplaceListingCard(
+                                listing: listing,
+                                saved:
+                                saved.data?.contains(
+                                  listing.listingId,
+                                ) ??
+                                    false,
+                                onOpen: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute<void>(
+                                    builder: (_) =>
+                                        MarketplaceListingDetailsScreen(
+                                          listingId: listing.listingId,
                                         ),
-                                      ),
-                                    );
-                                  },
+                                  ),
                                 ),
                               );
                             },
-                      ),
-                    if (_listings.isNotEmpty)
-                      SliverToBoxAdapter(
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-                          child: Center(
-                            child: _loadingMore
-                                ? const CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  )
-                                : _loadError != null
-                                ? TextButton.icon(
-                                    onPressed: () => unawaited(_loadListings()),
-                                    icon: const Icon(Icons.refresh_rounded),
-                                    label: const Text(
-                                      'Could not load more — retry',
-                                    ),
-                                  )
-                                : !_hasMore
-                                ? const Text(
-                                    'You reached the end of this store.',
-                                  )
-                                : const SizedBox(height: 20),
                           ),
-                        ),
+                        );
+                      },
+                    ),
+                if (_listings.isNotEmpty)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+                      child: Center(
+                        child: _loadingMore
+                            ? const CircularProgressIndicator(
+                          strokeWidth: 2,
+                        )
+                            : _loadError != null
+                            ? TextButton.icon(
+                          onPressed: () => unawaited(_loadListings()),
+                          icon: const Icon(Icons.refresh_rounded),
+                          label: const Text(
+                            'Could not load more — retry',
+                          ),
+                        )
+                            : !_hasMore
+                            ? const Text(
+                          'You reached the end of this store.',
+                        )
+                            : const SizedBox(height: 20),
                       ),
-                  ],
-                ),
-              );
-            },
+                    ),
+                  ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
@@ -408,23 +409,46 @@ class _SellerListingCount extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final FirebaseFirestore firestore = FirebaseFirestore.instance;
     return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      stream: FirebaseFirestore.instance
+      stream: firestore
           .collection('marketplaceSellerStats')
           .doc(sellerId)
           .snapshots(),
-      builder:
-          (
-            BuildContext context,
-            AsyncSnapshot<DocumentSnapshot<Map<String, dynamic>>> snapshot,
-          ) {
-            final dynamic raw = snapshot.data?.data()?['availableListingCount'];
-            final int count = raw is num ? raw.toInt() : 0;
+      builder: (BuildContext context,
+          AsyncSnapshot<DocumentSnapshot<Map<String, dynamic>>> snapshot) {
+        final dynamic raw = snapshot.data?.data()?['availableListingCount'];
+        if (raw is num) {
+          final int count = raw.toInt();
+          return Text(
+            '$count available ${count == 1 ? 'listing' : 'listings'}',
+            style: const TextStyle(color: Colors.white70, fontSize: 12),
+          );
+        }
+        // Newly published sellers may not have a statistics document yet.
+        // Count actual available records rather than claiming zero listings.
+        return FutureBuilder<AggregateQuerySnapshot>(
+          future: firestore
+              .collection('marketplaceProducts')
+              .where('sellerId', isEqualTo: sellerId)
+              .where('status', isEqualTo: 'available')
+              .where('publicVisible', isEqualTo: true)
+              .count()
+              .get(),
+          builder: (BuildContext context,
+              AsyncSnapshot<AggregateQuerySnapshot> countSnapshot) {
+            if (!countSnapshot.hasData) {
+              return const Text('Available listings',
+                  style: TextStyle(color: Colors.white70, fontSize: 12));
+            }
+            final int count = countSnapshot.data?.count ?? 0;
             return Text(
               '$count available ${count == 1 ? 'listing' : 'listings'}',
               style: const TextStyle(color: Colors.white70, fontSize: 12),
             );
           },
+        );
+      },
     );
   }
 }

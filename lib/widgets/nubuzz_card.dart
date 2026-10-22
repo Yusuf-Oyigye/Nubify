@@ -63,6 +63,8 @@ class _NubuzzCardState extends State<NubuzzCard>
 
   final RepostService _repostService = RepostService();
 
+  // Retained for the dormant share-to-story action.
+  // ignore: unused_field
   final StoryService _storyService = StoryService();
 
   //===================================================
@@ -101,6 +103,8 @@ class _NubuzzCardState extends State<NubuzzCard>
   late int _likeCount;
   late int _commentCount;
   late int _repostCount;
+  // Synced for the dormant share-count presentation.
+  // ignore: unused_field
   late int _shareCount;
   late int _viewCount;
 
@@ -421,7 +425,6 @@ class _NubuzzCardState extends State<NubuzzCard>
 
     if (wasPlaying &&
         widget.isActive &&
-        controller != null &&
         controller.value.isInitialized) {
       await controller.setVolume(widget.isMuted ? 0 : 1);
 
@@ -624,7 +627,6 @@ class _NubuzzCardState extends State<NubuzzCard>
 
     if (wasPlaying &&
         widget.isActive &&
-        controller != null &&
         controller.value.isInitialized) {
       await controller.setVolume(widget.isMuted ? 0 : 1);
 
@@ -737,6 +739,7 @@ class _NubuzzCardState extends State<NubuzzCard>
   // QUOTE REPOST
   //===================================================
 
+  // ignore: unused_element
   Future<void> _quoteRepost() async {
     final User? user = _auth.currentUser;
 
@@ -872,6 +875,7 @@ class _NubuzzCardState extends State<NubuzzCard>
   // EXTERNAL SHARE
   //===================================================
 
+  // ignore: unused_element
   Future<void> _sharePost() async {
     final String shareText = <String>[
       if (_caption.trim().isNotEmpty) _caption.trim(),
@@ -1179,7 +1183,7 @@ class _NubuzzCardState extends State<NubuzzCard>
             child: ListView.separated(
               shrinkWrap: true,
               itemCount: reasons.length,
-              separatorBuilder: (_, __) => const Divider(height: 1),
+              separatorBuilder: (_, _) => const Divider(height: 1),
               itemBuilder: (BuildContext context, int index) {
                 return ListTile(
                   title: Text(reasons[index]),
@@ -1849,7 +1853,7 @@ class _NubuzzCardState extends State<NubuzzCard>
           ),
 
           Positioned.fill(
-            child: ColoredBox(color: Colors.black.withOpacity(0.32)),
+            child: ColoredBox(color: Colors.black.withValues(alpha: 0.32)),
           ),
 
           Positioned.fill(
@@ -1881,9 +1885,9 @@ class _NubuzzCardState extends State<NubuzzCard>
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: <Color>[
-              Colors.black.withOpacity(0.18),
+              Colors.black.withValues(alpha: 0.18),
               Colors.transparent,
-              Colors.black.withOpacity(0.78),
+              Colors.black.withValues(alpha: 0.78),
             ],
             stops: const <double>[0, 0.52, 1],
           ),
@@ -2135,7 +2139,7 @@ class _NubuzzCardState extends State<NubuzzCard>
             width: 45,
             height: 45,
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.36),
+              color: Colors.black.withValues(alpha: 0.36),
               shape: BoxShape.circle,
             ),
             alignment: Alignment.center,

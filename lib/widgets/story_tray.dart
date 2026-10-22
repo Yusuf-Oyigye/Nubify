@@ -528,7 +528,7 @@ class _StoryTrayState extends State<StoryTray> {
 
     final bool hasUnread =
         hasStory &&
-            myGroup!.hasUnreadFor(
+            myGroup.hasUnreadFor(
               currentUid,
             );
 
@@ -550,7 +550,7 @@ class _StoryTrayState extends State<StoryTray> {
                 () {
               if (hasStory) {
                 _openStoryGroup(
-                  myGroup!,
+                  myGroup,
                 );
               } else {
                 _createStory();
@@ -956,8 +956,8 @@ class _TrayHeartBorderPainter
       final Paint glowPaint =
       Paint()
         ..color =
-        color.withOpacity(
-          0.22,
+        color.withValues(
+          alpha: 0.22,
         )
         ..style =
             PaintingStyle.stroke

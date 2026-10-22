@@ -250,7 +250,7 @@ class _UniversalLinkComposerPreviewState
                 separatorBuilder:
                     (
                     _,
-                    __,
+                    _,
                     ) =>
                 const SizedBox(
                   width:

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 
 import 'notification_service.dart';
 
@@ -231,7 +232,7 @@ class LikeService {
           (
           Object error,
           ) {
-            print(
+            debugPrint(
               'Like notification error: $error',
             );
           },
@@ -824,7 +825,7 @@ class LikeService {
 
       await batch.commit();
     } catch (error) {
-      print(
+      debugPrint(
         'Like history repair error: $error',
       );
     }
@@ -926,7 +927,7 @@ class LikeService {
         return;
       }
     } catch (error) {
-      print(
+      debugPrint(
         'Like support pre-check error: $error',
       );
 
@@ -1124,7 +1125,7 @@ class LikeService {
         ),
       );
     } catch (error) {
-      print(
+      debugPrint(
         'Like support-document error: $error',
       );
     }
@@ -1181,7 +1182,7 @@ class LikeService {
         ),
       );
     } catch (error) {
-      print(
+      debugPrint(
         'Unlike support-document error: $error',
       );
     }
@@ -1191,6 +1192,8 @@ class LikeService {
   // REPAIR MAIN POST LIKE ARRAYS
   //===================================================
 
+  // Retained for manual repair of older like-array records.
+  // ignore: unused_element
   Future<void> _repairMainPostLikeArrays({
     required String postId,
     required String uid,
@@ -1226,7 +1229,7 @@ class LikeService {
         ),
       );
     } catch (error) {
-      print(
+      debugPrint(
         'Like-array repair error: $error',
       );
     }
@@ -1288,6 +1291,8 @@ class LikeService {
 // LIKE TRANSACTION RESULT
 //===================================================
 
+// Retained for compatibility with the older transaction implementation.
+// ignore: unused_element
 class _LikeTransactionResult {
   final bool newlyLiked;
 

@@ -74,8 +74,12 @@ class _PostCardState extends State<PostCard> {
 
   final RepostService _repostService = RepostService();
 
+  // Retained for the dormant share-to-story action.
+  // ignore: unused_field
   final StoryService _storyService = StoryService();
 
+  // Retained for the dormant direct-chat share action.
+  // ignore: unused_field
   final ChatService _chatService = ChatService();
 
   //===================================================
@@ -102,6 +106,8 @@ class _PostCardState extends State<PostCard> {
 
   int _repostCount = 0;
 
+  // Synced for the dormant share-count presentation.
+  // ignore: unused_field
   int _shareCount = 0;
 
   bool _likeActionLocked = false;
@@ -157,6 +163,8 @@ class _PostCardState extends State<PostCard> {
 
   int? _winnerOptionIndex;
 
+  // Stored for future closed-poll timestamp presentation.
+  // ignore: unused_field
   DateTime? _pollClosedAt;
 
   //===================================================
@@ -1228,6 +1236,10 @@ class _PostCardState extends State<PostCard> {
       debugPrint('Quote repost status error: $error');
     }
 
+    if (!mounted) {
+      return;
+    }
+
     //===================================================
     // QUOTE TEXT
     //===================================================
@@ -1592,7 +1604,7 @@ class _PostCardState extends State<PostCard> {
             child: ListView.separated(
               shrinkWrap: true,
               itemCount: reasons.length,
-              separatorBuilder: (_, __) => const Divider(height: 1),
+              separatorBuilder: (_, _) => const Divider(height: 1),
               itemBuilder: (BuildContext context, int index) {
                 return ListTile(
                   title: Text(reasons[index]),
@@ -2615,7 +2627,7 @@ class _PostCardState extends State<PostCard> {
               Container(
                 padding: const EdgeInsets.all(7),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF29B6F6).withOpacity(0.15),
+                  color: const Color(0xFF29B6F6).withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Icon(
@@ -2987,7 +2999,7 @@ class _PostCardState extends State<PostCard> {
                       },
                     ),
                   )
-                  .toList(),
+                  ,
 
               const SizedBox(height: 8),
             ],
@@ -3356,7 +3368,7 @@ class _PostCardState extends State<PostCard> {
                     margin: const EdgeInsets.fromLTRB(12, 0, 12, 10),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.grey.withOpacity(0.30)),
+                      border: Border.all(color: Colors.grey.withValues(alpha: 0.30)),
                     ),
                     child: const Center(
                       child: CircularProgressIndicator(strokeWidth: 2),
@@ -3457,7 +3469,7 @@ class _PostCardState extends State<PostCard> {
             clipBehavior: Clip.antiAlias,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.grey.withOpacity(0.35)),
+              border: Border.all(color: Colors.grey.withValues(alpha: 0.35)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -3725,7 +3737,7 @@ class _PostCardState extends State<PostCard> {
                   height: 80,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(13),
-                    border: Border.all(color: Colors.grey.withOpacity(0.25)),
+                    border: Border.all(color: Colors.grey.withValues(alpha: 0.25)),
                   ),
                   child: const Center(
                     child: CircularProgressIndicator(strokeWidth: 2),
@@ -3775,7 +3787,7 @@ class _PostCardState extends State<PostCard> {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(13),
-        border: Border.all(color: Colors.grey.withOpacity(0.25)),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.25)),
       ),
       child: Row(
         children: <Widget>[
@@ -3854,7 +3866,7 @@ class _PostCardState extends State<PostCard> {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(13),
-          border: Border.all(color: Colors.grey.withOpacity(0.30)),
+          border: Border.all(color: Colors.grey.withValues(alpha: 0.30)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -4229,7 +4241,7 @@ class _PostCardState extends State<PostCard> {
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.grey.withOpacity(0.35)),
+                border: Border.all(color: Colors.grey.withValues(alpha: 0.35)),
               ),
               child: Row(
                 children: <Widget>[
@@ -4274,9 +4286,9 @@ class _PostCardState extends State<PostCard> {
       margin: const EdgeInsets.fromLTRB(12, 2, 12, 8),
       padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.orange.withOpacity(0.10),
+        color: Colors.orange.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.orange.withOpacity(0.40)),
+        border: Border.all(color: Colors.orange.withValues(alpha: 0.40)),
       ),
       child: Row(
         children: <Widget>[

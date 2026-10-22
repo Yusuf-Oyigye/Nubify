@@ -73,8 +73,8 @@ class FullPhotoViewer
             errorBuilder:
                 (
                 _,
-                __,
-                ___,
+                _,
+                _,
                 ) =>
             const Icon(
               Icons.broken_image_outlined,

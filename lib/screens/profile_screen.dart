@@ -50,8 +50,6 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-
   //===================================================
   // SERVICES
   //===================================================
@@ -94,7 +92,7 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   bool _followLoading = false;
 
-  bool _menuLoading = false;
+  final bool _menuLoading = false;
 
   bool _isBlocked = false;
 
@@ -339,7 +337,7 @@ class _ProfileScreenState extends State<ProfileScreen>
 
       barrierLabel: 'Profile picture',
 
-      barrierColor: Colors.black.withOpacity(0.96),
+      barrierColor: Colors.black.withValues(alpha: 0.96),
 
       transitionDuration: const Duration(milliseconds: 180),
 
@@ -957,7 +955,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 child: CircleAvatar(
                   radius: 43,
 
-                  backgroundColor: _blue.withOpacity(0.15),
+                  backgroundColor: _blue.withValues(alpha: 0.15),
 
                   backgroundImage: photoUrl.isNotEmpty
                       ? NetworkImage(photoUrl)
@@ -1890,6 +1888,8 @@ class _ProfileScreenState extends State<ProfileScreen>
 // FIVE OF THESE FIT ON ONE PHONE WIDTH.
 //===================================================
 
+// Retained for the compact labeled-tab variant.
+// ignore: unused_element
 class _ProfileTab extends StatelessWidget {
   const _ProfileTab({required this.icon, required this.label});
 
@@ -1989,11 +1989,11 @@ class _ProfileInfoChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
 
       decoration: BoxDecoration(
-        color: _blue.withOpacity(0.09),
+        color: _blue.withValues(alpha: 0.09),
 
         borderRadius: BorderRadius.circular(17),
 
-        border: Border.all(color: _blue.withOpacity(0.30)),
+        border: Border.all(color: _blue.withValues(alpha: 0.30)),
       ),
 
       child: Row(
@@ -2128,11 +2128,11 @@ class _ProfileCommentPost extends StatelessWidget {
                     padding: const EdgeInsets.all(12),
 
                     decoration: BoxDecoration(
-                      color: _blue.withOpacity(0.08),
+                      color: _blue.withValues(alpha: 0.08),
 
                       borderRadius: BorderRadius.circular(14),
 
-                      border: Border.all(color: _blue.withOpacity(0.30)),
+                      border: Border.all(color: _blue.withValues(alpha: 0.30)),
                     ),
 
                     child: Column(

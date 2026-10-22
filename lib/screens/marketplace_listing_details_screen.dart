@@ -365,10 +365,12 @@ class _MarketplaceListingDetailsScreenState
                   style: TextStyle(fontWeight: FontWeight.w900),
                 ),
                 actions: <Widget>[
-                  IconButton(
-                    onPressed: () => _showShareOptions(listing),
-                    icon: const Icon(Icons.share_outlined),
-                  ),
+                  if (owner || !listing.isAvailable)
+                    IconButton(
+                      tooltip: 'Share listing',
+                      onPressed: () => _showShareOptions(listing),
+                      icon: const Icon(Icons.share_outlined),
+                    ),
                   if (owner)
                     PopupMenuButton<String>(
                       onSelected: (String value) =>
@@ -453,7 +455,7 @@ class _MarketplaceListingDetailsScreenState
                 ),
               ),
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(20, 22, 20, 130),
+                padding: const EdgeInsets.fromLTRB(20, 18, 20, 34),
                 sliver: SliverList.list(
                   children: <Widget>[
                     if (!listing.isAvailable)
@@ -501,12 +503,6 @@ class _MarketplaceListingDetailsScreenState
                             listing.condition,
                           ),
                         ),
-                        if (listing.isAvailable)
-                          const _ListingBadge(
-                            icon: Icons.check_circle_outline_rounded,
-                            label: 'Available',
-                            accent: MarketplaceTheme.emerald,
-                          ),
                       ],
                     ),
                     const SizedBox(height: 18),
@@ -546,17 +542,9 @@ class _MarketplaceListingDetailsScreenState
                         ),
                       ),
                     ],
-                    const SizedBox(height: 28),
-                    const Text(
-                      'Seller',
-                      style: TextStyle(
-                        fontSize: 19,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 30),
                     InkWell(
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(18),
                       onTap: () => Navigator.push(
                         context,
                         MaterialPageRoute<void>(
@@ -564,13 +552,12 @@ class _MarketplaceListingDetailsScreenState
                               ProfileScreen(userId: listing.sellerId),
                         ),
                       ),
-                      child: Ink(
-                        padding: const EdgeInsets.all(16),
-                        decoration: MarketplaceTheme.premiumCard(context),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
                         child: Row(
                           children: <Widget>[
                             CircleAvatar(
-                              radius: 28,
+                              radius: 25,
                               backgroundImage: listing.sellerPhotoUrl.isEmpty
                                   ? null
                                   : NetworkImage(listing.sellerPhotoUrl),
@@ -583,21 +570,18 @@ class _MarketplaceListingDetailsScreenState
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: <Widget>[
-                                  Row(
-                                    children: <Widget>[
-                                      Flexible(
-                                        child: Text(
-                                          listing.sellerName,
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.w900,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 5),
                                   Text(
-                                    'View seller’s Nubify profile',
+                                    listing.sellerName,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'View seller profile',
                                     style: TextStyle(
                                       color: MarketplaceTheme.mutedText(
                                         context,
@@ -608,21 +592,7 @@ class _MarketplaceListingDetailsScreenState
                                 ],
                               ),
                             ),
-                            Container(
-                              width: 38,
-                              height: 38,
-                              decoration: BoxDecoration(
-                                color: MarketplaceTheme.sky.withValues(
-                                  alpha: 0.12,
-                                ),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.arrow_forward_ios_rounded,
-                                color: MarketplaceTheme.sky,
-                                size: 17,
-                              ),
-                            ),
+                            const Icon(Icons.chevron_right_rounded, size: 26),
                           ],
                         ),
                       ),
@@ -733,6 +703,28 @@ class _MarketplaceListingDetailsScreenState
                             ),
                           ),
                         ),
+                        const SizedBox(width: 8),
+                        Semantics(
+                          button: true,
+                          label: 'Share listing to Story or Chat',
+                          child: IconButton.filled(
+                            tooltip: 'Share to Story or Chat',
+                            onPressed: () => _showShareOptions(listing),
+                            icon: const Icon(Icons.send_rounded),
+                            style: IconButton.styleFrom(
+                              backgroundColor: MarketplaceTheme.softSurface(
+                                context,
+                              ),
+                              foregroundColor: MarketplaceTheme.sky,
+                              side: BorderSide(
+                                color: MarketplaceTheme.sky.withValues(
+                                  alpha: 0.38,
+                                ),
+                              ),
+                              minimumSize: const Size(52, 56),
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -790,18 +782,14 @@ class _MarketplaceListingDetailsScreenState
 }
 
 class _ListingBadge extends StatelessWidget {
-  const _ListingBadge({
-    required this.icon,
-    required this.label,
-    this.accent = MarketplaceTheme.sky,
-  });
+  const _ListingBadge({required this.icon, required this.label});
 
   final IconData icon;
   final String label;
-  final Color accent;
 
   @override
   Widget build(BuildContext context) {
+    const Color accent = MarketplaceTheme.sky;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
       decoration: BoxDecoration(

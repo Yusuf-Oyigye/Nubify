@@ -115,6 +115,8 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
 
   int _shareCount = 0;
 
+  // Updated by retained reshare flows that can be re-enabled from the viewer.
+  // ignore: unused_field
   int _reshareCount = 0;
 
   //===================================================
@@ -995,6 +997,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
   // RESHARE
   //===================================================
 
+  // ignore: unused_element
   Future<void> _reshareStory(NubifyStory story) async {
     try {
       await _storyService.reshareStory(story);
@@ -1019,6 +1022,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
   // EXTERNAL SHARE
   //===================================================
 
+  // ignore: unused_element
   Future<void> _shareExternal(NubifyStory story) async {
     final String link = 'https://nubify.app/story/${story.storyId}';
 
@@ -1120,6 +1124,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
   // SEND STORY TO CHAT
   //===================================================
 
+  // ignore: unused_element
   Future<bool> _sendStoryToChat(NubifyStory story, StoryPerson person) async {
     final String senderUid = _currentUid;
 
@@ -2188,6 +2193,7 @@ class _HeartClipper extends CustomClipper<Path> {
 // HEART BORDER
 //===================================================
 
+// ignore: unused_element
 class _HeartBorderPainter extends CustomPainter {
   const _HeartBorderPainter({required this.color, required this.strokeWidth});
 
@@ -2623,6 +2629,7 @@ class _StoryText extends StatelessWidget {
   // STICKER POSITION
   //=============================
 
+  // ignore: unused_element
   Offset _savedStickerPosition() {
     final String raw = story.textAlign.trim();
 
@@ -2656,6 +2663,7 @@ class _StoryText extends StatelessWidget {
   // STICKER SIZE
   //=============================
 
+  // ignore: unused_element
   double _savedStickerSize() {
     if (!story.textAlign.trim().startsWith('sticker:')) {
       return 52.0;
@@ -3967,7 +3975,7 @@ class _StoryPollViewState extends State<_StoryPollView> {
                 alignment: Alignment.centerLeft,
                 widthFactor: percentage.clamp(0.0, 1.0).toDouble(),
                 child: Container(
-                  color: const Color(0xFF29B6F6).withOpacity(0.28),
+                  color: const Color(0xFF29B6F6).withValues(alpha: 0.28),
                 ),
               ),
 
@@ -4296,7 +4304,7 @@ class _SharedPostStory extends StatelessWidget {
                   vertical: 10,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.45),
+                  color: Colors.black.withValues(alpha: 0.45),
                   borderRadius: BorderRadius.circular(18),
                 ),
                 child: Text(
@@ -4370,6 +4378,7 @@ class _SharedPostStory extends StatelessWidget {
   // SHARED POST CONTENT
   //===================================================
 
+  // ignore: unused_element
   Widget _sharedPostContent(BuildContext context, Post post) {
     final String displayName = post.fullName.trim().isNotEmpty
         ? post.fullName.trim()
@@ -4401,7 +4410,7 @@ class _SharedPostStory extends StatelessWidget {
           border: Border.all(color: Colors.white24),
           boxShadow: <BoxShadow>[
             BoxShadow(
-              color: Colors.black.withOpacity(0.30),
+              color: Colors.black.withValues(alpha: 0.30),
               blurRadius: 24,
               offset: const Offset(0, 10),
             ),

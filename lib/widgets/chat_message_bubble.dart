@@ -149,7 +149,7 @@ class ChatMessageBubble extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 7),
       padding: const EdgeInsets.fromLTRB(9, 7, 9, 7),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.18),
+        color: Colors.black.withValues(alpha: 0.18),
         borderRadius: BorderRadius.circular(9),
         border: const Border(left: BorderSide(color: Colors.white70, width: 3)),
       ),
@@ -182,6 +182,8 @@ class ChatMessageBubble extends StatelessWidget {
   // STORY CARD
   //===============================
 
+  // Retained as a fallback renderer for legacy message documents.
+  // ignore: unused_element
   Widget _buildStoryCard() {
     return InkWell(
       onTap: onOpenStory,
@@ -203,7 +205,7 @@ class ChatMessageBubble extends StatelessWidget {
                 width: double.infinity,
                 height: 140,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => _storyFallback(),
+                errorBuilder: (_, _, _) => _storyFallback(),
               )
             else
               _storyFallback(),
@@ -267,6 +269,8 @@ class ChatMessageBubble extends StatelessWidget {
   // POST CARD
   //===============================
 
+  // Retained as a fallback renderer for legacy message documents.
+  // ignore: unused_element
   Widget _buildPostCard() {
     final String name = message.postFullName.trim().isNotEmpty
         ? message.postFullName
@@ -335,7 +339,7 @@ class ChatMessageBubble extends StatelessWidget {
                 width: double.infinity,
                 height: 145,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                errorBuilder: (_, _, _) => const SizedBox.shrink(),
               ),
 
             if (message.postCaption.trim().isNotEmpty)
@@ -380,6 +384,8 @@ class ChatMessageBubble extends StatelessWidget {
   // PRODUCT CARD
   //===============================
 
+  // Retained as a fallback renderer for legacy message documents.
+  // ignore: unused_element
   Widget _buildProductCard() {
     return InkWell(
       onTap: onOpenProduct,
@@ -503,7 +509,7 @@ class ChatMessageBubble extends StatelessWidget {
             width: 230,
             height: 230,
             fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => Container(
+            errorBuilder: (_, _, _) => Container(
               width: 230,
               height: 150,
               alignment: Alignment.center,

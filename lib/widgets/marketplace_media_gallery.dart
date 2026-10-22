@@ -59,9 +59,9 @@ class _MarketplaceMediaGalleryState extends State<MarketplaceMediaGallery> {
                 child: CachedNetworkImage(
                   imageUrl: item.url,
                   fit: BoxFit.cover,
-                  placeholder: (_, __) =>
+                  placeholder: (_, _) =>
                       const Center(child: CircularProgressIndicator()),
-                  errorWidget: (_, __, ___) =>
+                  errorWidget: (_, _, _) =>
                       const Center(child: Icon(Icons.broken_image_outlined)),
                 ),
               ),

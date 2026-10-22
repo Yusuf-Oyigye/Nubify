@@ -172,7 +172,7 @@ class SharedPostStoryCard extends StatelessWidget {
             boxShadow: isRoot
                 ? <BoxShadow>[
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.24),
+                      color: Colors.black.withValues(alpha: 0.24),
                       blurRadius: 20,
                       offset: const Offset(0, 8),
                     ),
@@ -527,7 +527,7 @@ class SharedPostStoryCard extends StatelessWidget {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.grey.withOpacity(0.30)),
+          border: Border.all(color: Colors.grey.withValues(alpha: 0.30)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

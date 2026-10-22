@@ -969,8 +969,8 @@ class _GroupInfoScreenState
             decoration:
             BoxDecoration(
               color:
-              _blue.withOpacity(
-                0.12,
+              _blue.withValues(
+                alpha: 0.12,
               ),
               borderRadius:
               BorderRadius.circular(

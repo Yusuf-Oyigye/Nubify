@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 
 import 'notification_service.dart';
 
@@ -523,7 +524,7 @@ class RepostService {
           .update(<String, dynamic>{'repostCount': FieldValue.increment(1)})
           .timeout(const Duration(seconds: 6))
           .catchError((Object error) {
-            print('Source repost-count error: $error');
+            debugPrint('Source repost-count error: $error');
           }),
     );
 
@@ -538,7 +539,7 @@ class RepostService {
             .update(<String, dynamic>{'repostCount': FieldValue.increment(1)})
             .timeout(const Duration(seconds: 6))
             .catchError((Object error) {
-              print('Root repost-count error: $error');
+              debugPrint('Root repost-count error: $error');
             }),
       );
     }
@@ -565,7 +566,7 @@ class RepostService {
         notificationFuture.timeout(const Duration(seconds: 6)).catchError((
           Object error,
         ) {
-          print('Repost notification error: $error');
+          debugPrint('Repost notification error: $error');
         }),
       );
     }

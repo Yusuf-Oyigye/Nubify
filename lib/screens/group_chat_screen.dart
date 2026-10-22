@@ -45,9 +45,6 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
   static const Color _blue = Color(0xFF29B6F6);
 
 
-  late final Stream<DocumentSnapshot<Map<String, dynamic>>>
-  _groupStream;
-
   Stream<QuerySnapshot<Map<String, dynamic>>>?
   _groupMessagesStream;
 
@@ -93,8 +90,8 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
 
   final TextEditingController _messageController = TextEditingController();
 
-  bool _sending = false;
-  bool _linkPreviewDisabled = false;
+  final bool _sending = false;
+  final bool _linkPreviewDisabled = false;
 
   ChatMessage? _replyingTo;
   //===============================
@@ -130,10 +127,6 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
   @override
   void initState() {
     super.initState();
-
-    _groupStream = _groupService.groupStream(
-      widget.groupId,
-    );
 
     _markSeen();
   }
@@ -489,7 +482,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
           width: 210,
           height: 210,
           fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => const SizedBox(
+          errorBuilder: (_, _, _) => const SizedBox(
             width: 210,
             height: 120,
             child: Center(
@@ -1056,7 +1049,6 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
     required ChatGroup group,
   }) {
     final String currentUid = _auth.currentUser?.uid ?? '';
-    final bool linkPreviewDisabled = _linkPreviewDisabled;
     final bool mine = message.senderId == currentUid;
 
     return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(

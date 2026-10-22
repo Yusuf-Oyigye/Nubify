@@ -232,7 +232,7 @@ class BlockedUsersScreen
             separatorBuilder:
                 (
                 _,
-                __,
+                _,
                 ) =>
             const Divider(
               height:

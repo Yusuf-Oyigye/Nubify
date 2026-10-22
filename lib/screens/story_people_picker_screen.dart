@@ -616,8 +616,8 @@ class _StoryPeoplePickerScreenState
                               color:
                               const Color(
                                 0xFF29B6F6,
-                              ).withOpacity(
-                                0.12,
+                              ).withValues(
+                                alpha: 0.12,
                               ),
                               borderRadius:
                               BorderRadius.circular(

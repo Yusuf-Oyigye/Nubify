@@ -1,3 +1,4 @@
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -28,11 +29,12 @@ class MarketplaceSellerSummary {
     required this.sellerName,
     required this.sellerPhotoUrl,
     required this.availableListingCount,
+    this.countVerified = true,
   });
 
   factory MarketplaceSellerSummary.fromFirestore(
-    QueryDocumentSnapshot<Map<String, dynamic>> snapshot,
-  ) {
+      QueryDocumentSnapshot<Map<String, dynamic>> snapshot,
+      ) {
     final Map<String, dynamic> data = snapshot.data();
     final dynamic rawCount = data['availableListingCount'];
     return MarketplaceSellerSummary(
@@ -47,6 +49,7 @@ class MarketplaceSellerSummary {
   final String sellerName;
   final String sellerPhotoUrl;
   final int availableListingCount;
+  final bool countVerified;
 }
 
 class MarketplaceHomeDiscovery {
@@ -67,8 +70,8 @@ class MarketplaceService {
     FirebaseFirestore? firestore,
     MarketplaceMediaService? mediaService,
   }) : _auth = auth ?? FirebaseAuth.instance,
-       _firestore = firestore ?? FirebaseFirestore.instance,
-       _mediaService = mediaService ?? MarketplaceMediaService();
+        _firestore = firestore ?? FirebaseFirestore.instance,
+        _mediaService = mediaService ?? MarketplaceMediaService();
 
   final FirebaseAuth _auth;
   final FirebaseFirestore _firestore;
@@ -78,6 +81,12 @@ class MarketplaceService {
   static MarketplaceHomeDiscovery? _cachedHomeDiscovery;
 
   MarketplaceListingPage? get cachedFreshPage => _cachedFreshPage;
+
+  /// Refresh both Marketplace and seller-discovery data after publishing.
+  void invalidateDiscoveryCache() {
+    _cachedFreshPage = null;
+    _cachedHomeDiscovery = null;
+  }
 
   MarketplaceHomeDiscovery? get cachedHomeDiscovery {
     final MarketplaceHomeDiscovery? cached = _cachedHomeDiscovery;
@@ -127,9 +136,7 @@ class MarketplaceService {
     return page;
   }
 
-  /// Loads the small discovery datasets used at the top of Marketplace in
-  /// two parallel one-time reads. Previously the home screen maintained 14
-  /// separate live listeners for this data, including one per category.
+  /// Load small discovery datasets in parallel.
   Future<MarketplaceHomeDiscovery> fetchHomeDiscovery({
     int sellerLimit = 10,
   }) async {
@@ -154,14 +161,14 @@ class MarketplaceService {
     ]);
 
     final QuerySnapshot<Map<String, dynamic>>? categorySnapshot =
-        results[0] as QuerySnapshot<Map<String, dynamic>>?;
+    results[0] as QuerySnapshot<Map<String, dynamic>>?;
     final QuerySnapshot<Map<String, dynamic>>? sellerSnapshot =
-        results[1] as QuerySnapshot<Map<String, dynamic>>?;
+    results[1] as QuerySnapshot<Map<String, dynamic>>?;
 
     final Map<String, int> categoryCounts = <String, int>{
       for (final QueryDocumentSnapshot<Map<String, dynamic>> document
-          in categorySnapshot?.docs ??
-              const <QueryDocumentSnapshot<Map<String, dynamic>>>[])
+      in categorySnapshot?.docs ??
+          const <QueryDocumentSnapshot<Map<String, dynamic>>>[])
         document.id: document.data()['availableListingCount'] is num
             ? (document.data()['availableListingCount'] as num).toInt()
             : 0,
@@ -171,7 +178,7 @@ class MarketplaceService {
       categoryCounts: Map<String, int>.unmodifiable(categoryCounts),
       campusSellers: List<MarketplaceSellerSummary>.unmodifiable(
         (sellerSnapshot?.docs ??
-                const <QueryDocumentSnapshot<Map<String, dynamic>>>[])
+            const <QueryDocumentSnapshot<Map<String, dynamic>>>[])
             .map(MarketplaceSellerSummary.fromFirestore),
       ),
     );
@@ -194,10 +201,10 @@ class MarketplaceService {
   }
 
   Future<MarketplaceListingPage> fetchSearchPage(
-    MarketplaceFilter filter, {
-    DocumentSnapshot<Map<String, dynamic>>? after,
-    int limit = MarketplaceConstants.pageSize,
-  }) async {
+      MarketplaceFilter filter, {
+        DocumentSnapshot<Map<String, dynamic>>? after,
+        int limit = MarketplaceConstants.pageSize,
+      }) async {
     Query<Map<String, dynamic>> query = _searchQuery(filter);
     if (after != null) {
       query = query.startAfterDocument(after);
@@ -249,9 +256,9 @@ class MarketplaceService {
         filter.minimumPrice != null || filter.maximumPrice != null;
     final MarketplaceSort effectiveSort = hasPriceRange
         ? switch (filter.sort) {
-            MarketplaceSort.priceHighToLow => MarketplaceSort.priceHighToLow,
-            _ => MarketplaceSort.priceLowToHigh,
-          }
+      MarketplaceSort.priceHighToLow => MarketplaceSort.priceHighToLow,
+      _ => MarketplaceSort.priceLowToHigh,
+    }
         : filter.sort;
     switch (effectiveSort) {
       case MarketplaceSort.oldest:
@@ -306,32 +313,32 @@ class MarketplaceService {
       throw StateError('Sign in to manage your Marketplace listings.');
     }
     final List<AggregateQuerySnapshot> snapshots =
-        await Future.wait<AggregateQuerySnapshot>(
-          MarketplaceConstants.listingStatuses.map(
+    await Future.wait<AggregateQuerySnapshot>(
+      MarketplaceConstants.listingStatuses.map(
             (String status) => _listings
-                .where('sellerId', isEqualTo: uid)
-                .where('status', isEqualTo: status)
-                .limit(50)
-                .count()
-                .get(),
-          ),
-        );
+            .where('sellerId', isEqualTo: uid)
+            .where('status', isEqualTo: status)
+            .limit(50)
+            .count()
+            .get(),
+      ),
+    );
     return <String, int>{
       for (
-        int index = 0;
-        index < MarketplaceConstants.listingStatuses.length;
-        index++
+      int index = 0;
+      index < MarketplaceConstants.listingStatuses.length;
+      index++
       )
         MarketplaceConstants.listingStatuses[index]:
-            snapshots[index].count ?? 0,
+        snapshots[index].count ?? 0,
     };
   }
 
   Future<DocumentSnapshot<Map<String, dynamic>>> _ownedListing(
-    Transaction transaction,
-    String listingId,
-    String uid,
-  ) async {
+      Transaction transaction,
+      String listingId,
+      String uid,
+      ) async {
     final DocumentReference<Map<String, dynamic>> reference = _listings.doc(
       listingId,
     );
@@ -348,9 +355,9 @@ class MarketplaceService {
   }
 
   Future<Map<String, String>> _ownerProfile(
-    Transaction transaction,
-    String uid,
-  ) async {
+      Transaction transaction,
+      String uid,
+      ) async {
     final DocumentSnapshot<Map<String, dynamic>> profile = await transaction
         .get(_firestore.collection('users').doc(uid));
     final Map<String, dynamic>? data = profile.data();
@@ -391,9 +398,9 @@ class MarketplaceService {
         .snapshots()
         .map(
           (DocumentSnapshot<Map<String, dynamic>> snapshot) => snapshot.exists
-              ? MarketplaceListing.fromFirestore(snapshot)
-              : null,
-        );
+          ? MarketplaceListing.fromFirestore(snapshot)
+          : null,
+    );
   }
 
   Future<MarketplaceListing?> getListing(String listingId) async {
@@ -415,9 +422,9 @@ class MarketplaceService {
         .snapshots()
         .map(
           (QuerySnapshot<Map<String, dynamic>> snapshot) => snapshot.docs
-              .map((QueryDocumentSnapshot<Map<String, dynamic>> doc) => doc.id)
-              .toSet(),
-        );
+          .map((QueryDocumentSnapshot<Map<String, dynamic>> doc) => doc.id)
+          .toSet(),
+    );
   }
 
   Stream<List<MarketplaceListing>> watchSavedListings() {
@@ -433,22 +440,21 @@ class MarketplaceService {
         .limit(MarketplaceConstants.pageSize)
         .snapshots()
         .asyncMap((QuerySnapshot<Map<String, dynamic>> snapshot) async {
-          final List<MarketplaceListing?> loaded = await Future.wait(
-            snapshot.docs.map((
-              QueryDocumentSnapshot<Map<String, dynamic>> saved,
+      final List<MarketplaceListing?> loaded = await Future.wait(
+        snapshot.docs.map((
+            QueryDocumentSnapshot<Map<String, dynamic>> saved,
             ) async {
-              try {
-                return await getListing(saved.id);
-              } on FirebaseException {
-                // A seller can return an archived item to a private draft.
-                // That one inaccessible item must not prevent every other
-                // saved item from loading. Its save marker stays removable.
-                return null;
-              }
-            }),
-          );
-          return loaded.whereType<MarketplaceListing>().toList(growable: false);
-        });
+          try {
+            return await getListing(saved.id);
+          } on FirebaseException {
+            // An inaccessible saved item should not prevent
+            // all other saved items from loading.
+            return null;
+          }
+        }),
+      );
+      return loaded.whereType<MarketplaceListing>().toList(growable: false);
+    });
   }
 
   Future<MarketplaceListingPage> fetchSavedPage({
@@ -472,8 +478,8 @@ class MarketplaceService {
         .get();
     final List<MarketplaceListing?> loaded = await Future.wait(
       snapshot.docs.map((
-        QueryDocumentSnapshot<Map<String, dynamic>> marker,
-      ) async {
+          QueryDocumentSnapshot<Map<String, dynamic>> marker,
+          ) async {
         try {
           return await getListing(marker.id);
         } on FirebaseException {
@@ -561,7 +567,7 @@ class MarketplaceService {
     await _firestore.runTransaction<void>((Transaction transaction) async {
       final Map<String, String> profile = await _ownerProfile(transaction, uid);
       final DocumentSnapshot<Map<String, dynamic>> snapshot =
-          await _ownedListing(transaction, listingId, uid);
+      await _ownedListing(transaction, listingId, uid);
       final Map<String, dynamic> listing = snapshot.data()!;
       final String currentStatus = (listing['status'] ?? 'draft').toString();
       if (currentStatus == 'available') {
@@ -617,7 +623,7 @@ class MarketplaceService {
     await _firestore.runTransaction<void>((Transaction transaction) async {
       final Map<String, String> profile = await _ownerProfile(transaction, uid);
       final DocumentSnapshot<Map<String, dynamic>> snapshot =
-          await _ownedListing(transaction, listingId, uid);
+      await _ownedListing(transaction, listingId, uid);
       final Map<String, dynamic> listing = snapshot.data()!;
       final String currentStatus = (listing['status'] ?? 'draft').toString();
       if (currentStatus == status) {
@@ -681,17 +687,17 @@ class MarketplaceService {
   }
 
   List<MarketplaceListing> _mapListings(
-    QuerySnapshot<Map<String, dynamic>> snapshot,
-  ) {
+      QuerySnapshot<Map<String, dynamic>> snapshot,
+      ) {
     return snapshot.docs
         .map(MarketplaceListing.fromFirestore)
         .toList(growable: false);
   }
 
   MarketplaceListingPage _pageFromSnapshot(
-    QuerySnapshot<Map<String, dynamic>> snapshot, {
-    required int limit,
-  }) {
+      QuerySnapshot<Map<String, dynamic>> snapshot, {
+        required int limit,
+      }) {
     return MarketplaceListingPage(
       listings: _mapListings(snapshot),
       lastDocument: snapshot.docs.isEmpty ? null : snapshot.docs.last,

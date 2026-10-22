@@ -8,10 +8,10 @@ class ResponsiveLayout extends StatefulWidget {
   final Widget mobileScreenLayout;
 
   const ResponsiveLayout({
-    Key? key,
+    super.key,
     required this.webScreenLayout,
     required this.mobileScreenLayout,
-  }) : super(key: key);
+  });
 
   @override
   State<ResponsiveLayout> createState() => _ResponsiveLayoutState();
@@ -25,11 +25,11 @@ class _ResponsiveLayoutState extends State<ResponsiveLayout> {
     addData();
   }
 
-  addData() async {
-    UserProvider _userProvider =
+  Future<void> addData() async {
+    UserProvider userProvider =
     Provider.of(context, listen: false);
 
-    await _userProvider.refreshUser();
+    await userProvider.refreshUser();
   }
 
   @override

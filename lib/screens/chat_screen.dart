@@ -249,7 +249,7 @@ class _ChatScreenState
                   SwitchListTile(
                     value:
                     current,
-                    activeColor:
+                    activeThumbColor:
                     _blue,
                     secondary:
                     Icon(
@@ -668,7 +668,7 @@ class _ChatScreenState
           separatorBuilder:
               (
               _,
-              __,
+              _,
               ) =>
           const Divider(
             height:
@@ -820,8 +820,8 @@ class _ChatScreenState
             BoxDecoration(
               color:
               _blue
-                  .withOpacity(
-                0.10,
+                  .withValues(
+                alpha: 0.10,
               ),
               shape:
               BoxShape.circle,
@@ -894,10 +894,6 @@ class _ChatScreenState
   Widget build(
       BuildContext context,
       ) {
-    final String? uid =
-        _auth.currentUser
-            ?.uid;
-
     return Scaffold(
       backgroundColor:
       const Color(

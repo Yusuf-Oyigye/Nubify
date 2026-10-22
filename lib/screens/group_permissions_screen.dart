@@ -193,7 +193,7 @@ class GroupPermissionsScreen
                   );
                 }
                     : null,
-                activeColor:
+                activeThumbColor:
                 _blue,
                 secondary:
                 const Icon(
@@ -232,7 +232,7 @@ class GroupPermissionsScreen
                   );
                 }
                     : null,
-                activeColor:
+                activeThumbColor:
                 _blue,
                 secondary:
                 const Icon(
@@ -271,7 +271,7 @@ class GroupPermissionsScreen
                   );
                 }
                     : null,
-                activeColor:
+                activeThumbColor:
                 _blue,
                 secondary:
                 const Icon(
@@ -312,7 +312,7 @@ class GroupPermissionsScreen
                   );
                 }
                     : null,
-                activeColor:
+                activeThumbColor:
                 _blue,
                 secondary:
                 const Icon(
@@ -379,7 +379,7 @@ class GroupPermissionsScreen
                   );
                 }
                     : null,
-                activeColor:
+                activeThumbColor:
                 _blue,
                 secondary:
                 const Icon(

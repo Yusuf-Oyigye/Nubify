@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/foundation.dart';
 
 import 'notification_service.dart';
 
@@ -412,7 +413,7 @@ class CommentService {
       // ARROW SPINNING FOREVER WHILE THAT WRITE SYNCS.
       //===================================================
 
-      print(
+      debugPrint(
         'Comment sync timeout: $error',
       );
 
@@ -478,7 +479,7 @@ class CommentService {
         (
         Object error,
         ) {
-          print(
+          debugPrint(
             'Comment activity error: $error',
           );
         },
@@ -844,7 +845,7 @@ class CommentService {
         ),
       );
     } on TimeoutException catch (error) {
-      print(
+      debugPrint(
         'Reply sync timeout: $error',
       );
 
@@ -910,7 +911,7 @@ class CommentService {
         (
         Object error,
         ) {
-          print(
+          debugPrint(
             'Reply activity error: $error',
           );
         },
@@ -1734,7 +1735,7 @@ class CommentService {
         ),
       );
     } catch (error) {
-      print(
+      debugPrint(
         'Comment notification error: $error',
       );
     }
@@ -1794,7 +1795,7 @@ class CommentService {
         ),
       );
     } catch (error) {
-      print(
+      debugPrint(
         'Reply notification error: $error',
       );
     }

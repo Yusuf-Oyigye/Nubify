@@ -270,7 +270,7 @@ class _PreviewSkeletonState extends State<_PreviewSkeleton>
     return AnimatedBuilder(
       animation: _controller,
 
-      builder: (_, __) {
+      builder: (_, _) {
         final double opacity = 0.07 + _controller.value * 0.08;
 
         return Container(
@@ -279,7 +279,7 @@ class _PreviewSkeletonState extends State<_PreviewSkeleton>
           height: widget.compact ? 88 : 145,
 
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(opacity),
+            color: Colors.white.withValues(alpha: opacity),
 
             borderRadius: BorderRadius.circular(17),
 

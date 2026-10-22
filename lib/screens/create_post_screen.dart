@@ -167,10 +167,6 @@ class _CreatePostScreenState
         path.endsWith('.webm');
   }
 
-  bool _isImage(XFile file) {
-    return !_isVideo(file);
-  }
-
   // ============================================================
   // NUBUZZ DETECTION
   //
@@ -724,13 +720,11 @@ class _CreatePostScreenState
         'Unable to create post.',
       );
     } finally {
-      if (!mounted) {
-        return;
+      if (mounted) {
+        setState(() {
+          _isPosting = false;
+        });
       }
-
-      setState(() {
-        _isPosting = false;
-      });
     }
   }
 
@@ -1041,8 +1035,8 @@ class _CreatePostScreenState
                     decoration:
                     BoxDecoration(
                       color: Colors.black
-                          .withOpacity(
-                        0.65,
+                          .withValues(
+                        alpha: 0.65,
                       ),
                       borderRadius:
                       BorderRadius
@@ -1075,8 +1069,8 @@ class _CreatePostScreenState
                       decoration:
                       BoxDecoration(
                         color: Colors.black
-                            .withOpacity(
-                          0.65,
+                            .withValues(
+                          alpha: 0.65,
                         ),
                         borderRadius:
                         BorderRadius
@@ -1526,8 +1520,8 @@ class _CreatePostScreenState
                           color:
                           const Color(
                             0xFF29B6F6,
-                          ).withOpacity(
-                            0.10,
+                          ).withValues(
+                            alpha: 0.10,
                           ),
 
                           borderRadius:

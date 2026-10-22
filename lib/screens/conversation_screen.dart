@@ -131,13 +131,10 @@ class _ConversationScreenState
 
   Timer? _typingTimer;
 
-  bool _sending =
+  final bool _sending =
   false;
 
   bool _blocked =
-  false;
-
-  bool _checkingBlocked =
   false;
 
   bool _searching =
@@ -1265,6 +1262,8 @@ class _ConversationScreenState
   //===============================
 
   Future<void>
+  // Kept for the conversation-menu mute action when it is re-enabled.
+  // ignore: unused_element
   _toggleMute() async {
     final String? uid =
         _auth.currentUser
@@ -1774,6 +1773,8 @@ class _ConversationScreenState
 // OPEN PROFILE PHOTO
 //===============================
 
+  // Kept for the full-size avatar action when it is re-enabled.
+  // ignore: unused_element
   void _openProfilePhoto() {
     Navigator.push(
       context,
@@ -2320,8 +2321,8 @@ class _ConversationScreenState
               errorBuilder:
                   (
                   _,
-                  __,
-                  ___,
+                  _,
+                  _,
                   ) =>
               const SizedBox(
                 width:
@@ -2691,8 +2692,8 @@ class _ConversationScreenState
                   BoxDecoration(
                     color:
                     Colors.black
-                        .withOpacity(
-                      0.15,
+                        .withValues(
+                      alpha: 0.15,
                     ),
 
                     borderRadius:

@@ -294,7 +294,7 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
                           width: 24,
                           height: 24,
                           fit: BoxFit.contain,
-                          errorBuilder: (_, __, ___) {
+                          errorBuilder: (_, _, _) {
                             return const Icon(
                               Icons.storefront_outlined,
                               size: 20,
@@ -353,7 +353,7 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
                           _notificationsIcon,
                           width: 24,
                           height: 24,
-                          errorBuilder: (_, __, ___) {
+                          errorBuilder: (_, _, _) {
                             return const Icon(
                               Icons.notifications_none,
                               size: 20,
@@ -401,7 +401,7 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
               _aiTutorIcon,
               width: 24,
               height: 24,
-              errorBuilder: (_, __, ___) {
+              errorBuilder: (_, _, _) {
                 return const Icon(Icons.smart_toy_outlined);
               },
             ),
@@ -413,7 +413,7 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
               _nubuzzIcon,
               width: 24,
               height: 24,
-              errorBuilder: (_, __, ___) {
+              errorBuilder: (_, _, _) {
                 return const Icon(Icons.play_circle_outline);
               },
             ),
@@ -425,7 +425,7 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
               _egyptianArabicIcon,
               width: 24,
               height: 24,
-              errorBuilder: (_, __, ___) {
+              errorBuilder: (_, _, _) {
                 return const Icon(Icons.language);
               },
             ),

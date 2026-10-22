@@ -120,7 +120,7 @@ class GroupMessageBubble extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 7),
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.17),
+        color: Colors.black.withValues(alpha: 0.17),
         borderRadius: BorderRadius.circular(9),
         border: const Border(left: BorderSide(color: Colors.white70, width: 3)),
       ),
@@ -154,6 +154,8 @@ class GroupMessageBubble extends StatelessWidget {
   // SHARED CARD
   //===============================
 
+  // Retained as a fallback renderer for legacy group messages.
+  // ignore: unused_element
   Widget _sharedCard({
     required IconData icon,
     required String title,
@@ -177,7 +179,7 @@ class GroupMessageBubble extends StatelessWidget {
               width: double.infinity,
               height: 135,
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+              errorBuilder: (_, _, _) => const SizedBox.shrink(),
             ),
 
           Padding(
@@ -255,7 +257,7 @@ class GroupMessageBubble extends StatelessWidget {
           width: 230,
           height: 230,
           fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => Container(
+          errorBuilder: (_, _, _) => Container(
             width: 230,
             height: 150,
             alignment: Alignment.center,

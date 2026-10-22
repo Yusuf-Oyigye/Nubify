@@ -117,41 +117,6 @@ class _ChatComposerState
 
   Timer? _recordTimer;
 
-  static const List<String>
-  _stickers =
-  <String>[
-    '😂',
-    '🤣',
-    '😭',
-    '🥹',
-    '😍',
-    '🥰',
-    '😘',
-    '😎',
-    '🤓',
-    '🥳',
-    '🤯',
-    '😡',
-    '🤬',
-    '😴',
-    '🤔',
-    '🫡',
-    '🤝',
-    '👏',
-    '🙌',
-    '🙏',
-    '👍',
-    '👎',
-    '❤️',
-    '💔',
-    '🔥',
-    '💯',
-    '🎉',
-    '✨',
-    '😹',
-    '🙈',
-  ];
-
   //===============================
   // INIT
   //===============================
@@ -187,6 +152,8 @@ class _ChatComposerState
   // TOGGLE EMOJI
   //===============================
 
+  // Retained for the alternate inline emoji-panel layout.
+  // ignore: unused_element
   void _toggleEmoji() {
     if (!widget.enabled) {
       return;
@@ -719,23 +686,21 @@ class _ChatComposerState
         );
       }
     } finally {
-      if (!mounted) {
-        return;
+      if (mounted) {
+        setState(() {
+          _recording =
+          false;
+          _recordingPaused = false;
+          _processingVoice =
+          false;
+
+          _recordSeconds =
+          0;
+          _recordingPaused = false;
+          _recordPath =
+          '';
+        });
       }
-
-      setState(() {
-        _recording =
-        false;
-        _recordingPaused = false;
-        _processingVoice =
-        false;
-
-        _recordSeconds =
-        0;
-        _recordingPaused = false;
-        _recordPath =
-        '';
-      });
     }
   }
 
@@ -870,6 +835,8 @@ class _ChatComposerState
   // EMOJI PANEL
   //===============================
 
+  // Retained for the alternate inline emoji-panel layout.
+  // ignore: unused_element
   Widget _buildEmojiPanel() {
     return Container(
       color:
@@ -1423,8 +1390,8 @@ class _AttachmentButton
               decoration:
               BoxDecoration(
                 color:
-                color.withOpacity(
-                  0.16,
+                color.withValues(
+                  alpha: 0.16,
                 ),
                 borderRadius:
                 BorderRadius.circular(

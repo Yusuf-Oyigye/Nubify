@@ -191,7 +191,7 @@ class StoryService {
         SettableMetadata(contentType: 'image/jpeg'),
       );
 
-      return snapshot.ref.getDownloadURL();
+      return await snapshot.ref.getDownloadURL();
     } catch (error) {
       debugPrint('Story thumbnail error: $error');
 

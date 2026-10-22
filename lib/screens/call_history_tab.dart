@@ -369,7 +369,7 @@ class _CallHistoryTabState extends State<CallHistoryTab> {
 
       itemCount: visible.length,
 
-      separatorBuilder: (_, __) =>
+      separatorBuilder: (_, _) =>
           const Divider(height: 1, indent: 74, color: Colors.white10),
 
       itemBuilder: (_, int index) => _tile(visible[index]),

@@ -352,8 +352,8 @@ class _ArchiveStoryTile
                 color:
                 story.isExpired
                     ? Colors.white10
-                    : _blue.withOpacity(
-                  0.15,
+                    : _blue.withValues(
+                  alpha: 0.15,
                 ),
 
                 borderRadius:

@@ -137,44 +137,6 @@ class _SharePostToStoryScreenState
     0xFF0D47A1,
   ];
 
-  //===================================================
-  // STICKERS
-  //===================================================
-
-  static const List<String> _stickers =
-      <String>[
-    '😀',
-    '😂',
-    '🥰',
-    '😍',
-    '😎',
-    '🔥',
-    '❤️',
-    '💙',
-    '✨',
-    '🎉',
-    '👏',
-    '💯',
-    '🤍',
-    '🤝',
-    '🙌',
-    '📚',
-    '🎓',
-    '🩺',
-    '⚽',
-    '🎵',
-    '📍',
-    '☀️',
-    '🌙',
-    '⭐',
-    '✅',
-    '💪',
-    '🙏',
-    '👀',
-    '🥳',
-    '😅',
-  ];
-
   //=============================
 // INIT STATE
 //=============================
@@ -1309,8 +1271,8 @@ class _SharePostToStoryScreenState
                               fillColor:
                               Colors
                                   .black
-                                  .withOpacity(
-                                0.28,
+                                  .withValues(
+                                alpha: 0.28,
                               ),
                               contentPadding:
                               const EdgeInsets
@@ -1497,6 +1459,8 @@ class _SharePostToStoryScreenState
   // SHARED POST CARD
   //===================================================
 
+  // Retained as the compact fallback for older shared-post stories.
+  // ignore: unused_element
   Widget _sharedPostCard(
       Post post,
       ) {
@@ -1544,8 +1508,8 @@ class _SharePostToStoryScreenState
           BoxShadow(
             color:
             Colors.black
-                .withOpacity(
-              0.22,
+                .withValues(
+              alpha: 0.22,
             ),
             blurRadius:
             18,

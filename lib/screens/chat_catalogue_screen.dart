@@ -305,7 +305,7 @@ class ChatCatalogueScreen
                   separatorBuilder:
                       (
                       _,
-                      __,
+                      _,
                       ) =>
                   const Divider(
                     height:

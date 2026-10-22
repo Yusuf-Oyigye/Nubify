@@ -178,7 +178,7 @@ class Post {
       //=============================
       thumbnailUrl: (data['thumbnailUrl'] ?? '').toString(),
 
-      media: mediaData.where((dynamic item) => item is Map).map((dynamic item) {
+      media: mediaData.whereType<Map>().map((dynamic item) {
         return PostMedia.fromMap(Map<String, dynamic>.from(item as Map));
       }).toList(),
 
@@ -192,7 +192,7 @@ class Post {
           ? Map<String, dynamic>.from(data['poll'] as Map)
           : null,
 
-      taggedUsers: taggedData.where((dynamic item) => item is Map).map((
+      taggedUsers: taggedData.whereType<Map>().map((
         dynamic item,
       ) {
         return TaggedUser.fromMap(Map<String, dynamic>.from(item as Map));

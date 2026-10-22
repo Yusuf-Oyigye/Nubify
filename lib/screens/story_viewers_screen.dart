@@ -107,7 +107,7 @@ class StoryViewersScreen
             docs.length,
 
             separatorBuilder:
-                (_, __) =>
+                (_, _) =>
             const Divider(
               height:
               1,

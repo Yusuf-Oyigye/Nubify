@@ -24,8 +24,6 @@ class _NubifySharedChatCardState extends State<NubifySharedChatCard> {
 
   late Future<LinkPreview> _future;
 
-  static const Color _blue = Color(0xFF29B6F6);
-
   //===========================================
   // CONTENT URL
   //===========================================
