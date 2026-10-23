@@ -8,6 +8,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../models/story.dart';
+import '../models/story_drawing.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 
@@ -278,6 +279,9 @@ class StoryService {
     String textStyle = 'bold',
     String textAlign = 'center',
     double textSize = 34,
+    double textX = 0.50,
+    double textY = 0.50,
+    List<StoryDrawingStroke> drawings = const <StoryDrawingStroke>[],
     int durationSeconds = 8,
 
     //===================================================
@@ -401,6 +405,15 @@ class StoryService {
       'textAlign': textAlign,
 
       'textSize': textSize,
+
+      'textX': textX.clamp(0.06, 0.94).toDouble(),
+
+      'textY': textY.clamp(0.08, 0.92).toDouble(),
+
+      'drawings': drawings
+          .take(StoryDrawingLimits.maxStrokes)
+          .map((StoryDrawingStroke stroke) => stroke.toMap())
+          .toList(growable: false),
 
       'durationSeconds': safeDuration,
 
@@ -930,6 +943,12 @@ class StoryService {
       textAlign: source.textAlign,
 
       textSize: source.textSize,
+
+      textX: source.textX,
+
+      textY: source.textY,
+
+      drawings: source.drawings,
 
       durationSeconds: source.durationSeconds,
 

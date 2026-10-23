@@ -17,6 +17,7 @@ import 'comment_screen.dart';
 import 'chat_forward_screen.dart';
 import '../widgets/draggable_story_tags.dart';
 import '../widgets/story_link_preview_overlay.dart';
+import '../widgets/story_drawing_canvas.dart';
 import '../services/nubify_link_router.dart';
 import '../utils/link_detector.dart';
 
@@ -2372,7 +2373,7 @@ class _StoryContent extends StatelessWidget {
         break;
 
       case 'video':
-        return _StoryVideo(
+        content = _StoryVideo(
           url: story.mediaUrl,
 
           forcePaused: forcePaused,
@@ -2383,6 +2384,7 @@ class _StoryContent extends StatelessWidget {
 
           onCompleted: onVideoCompleted,
         );
+        break;
 
       case 'voice':
         content = _StoryVoicePlayer(
@@ -2449,7 +2451,16 @@ class _StoryContent extends StatelessWidget {
     // backwards-compatible sticker rendering.
     //===================================================
 
-    if (story.sticker.trim().isEmpty) {
+    final bool showTextOverlay = story.type != 'text' &&
+        story.type != 'postShare' &&
+        story.type != 'post_share' &&
+        story.type != 'videoShare' &&
+        story.type != 'video_share' &&
+        story.text.trim().isNotEmpty;
+
+    if (story.sticker.trim().isEmpty &&
+        !showTextOverlay &&
+        story.drawings.isEmpty) {
       return content;
     }
 
@@ -2458,8 +2469,96 @@ class _StoryContent extends StatelessWidget {
       children: <Widget>[
         content,
 
-        IgnorePointer(child: _StoryStickerOverlay(story: story)),
+        if (story.drawings.isNotEmpty)
+          Positioned.fill(
+            child: StoryDrawingCanvas(strokes: story.drawings),
+          ),
+
+        if (showTextOverlay)
+          IgnorePointer(child: _StoryTextOverlay(story: story)),
+
+        if (story.sticker.trim().isNotEmpty)
+          IgnorePointer(child: _StoryStickerOverlay(story: story)),
       ],
+    );
+  }
+}
+
+//===================================================
+// MOVABLE STORY TEXT DISPLAY
+//===================================================
+
+class _StoryTextOverlay extends StatelessWidget {
+  const _StoryTextOverlay({required this.story});
+
+  final NubifyStory story;
+
+  TextAlign get _alignment {
+    if (story.textAlign == 'left') {
+      return TextAlign.left;
+    }
+    if (story.textAlign == 'right') {
+      return TextAlign.right;
+    }
+    return TextAlign.center;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        return Stack(
+          clipBehavior: Clip.none,
+          children: <Widget>[
+            Positioned(
+              left: (story.textX * constraints.maxWidth)
+                  .clamp(0.0, constraints.maxWidth)
+                  .toDouble(),
+              top: (story.textY * constraints.maxHeight)
+                  .clamp(0.0, constraints.maxHeight)
+                  .toDouble(),
+              child: FractionalTranslation(
+                translation: const Offset(-0.5, -0.5),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: constraints.maxWidth * 0.84,
+                  ),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 13,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.28),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Text(
+                      story.text.trim(),
+                      textAlign: _alignment,
+                      style: TextStyle(
+                        color: Color(story.textColor),
+                        fontSize: story.textSize.clamp(18.0, 72.0),
+                        fontWeight: story.textStyle == 'bold'
+                            ? FontWeight.w800
+                            : FontWeight.w500,
+                        fontStyle: story.textStyle == 'italic'
+                            ? FontStyle.italic
+                            : FontStyle.normal,
+                        fontFamily: story.textStyle == 'mono'
+                            ? 'monospace'
+                            : null,
+                        shadows: const <Shadow>[
+                          Shadow(color: Colors.black54, blurRadius: 6),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

@@ -9,11 +9,13 @@ import 'package:record/record.dart';
 import 'package:video_player/video_player.dart';
 
 import '../models/story.dart';
+import '../models/story_drawing.dart';
 import '../services/story_service.dart';
 import '../services/story_sticker_service.dart';
 import 'story_people_picker_screen.dart';
 import '../widgets/draggable_story_tags.dart';
 import '../widgets/story_link_preview_overlay.dart';
+import '../widgets/story_drawing_canvas.dart';
 
 //===================================================
 // CREATE STORY SCREEN
@@ -48,158 +50,13 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
 
   String _storyLinkUrl = '';
 
-  String _storyLinkStyle = 'medium';
+  final String _storyLinkStyle = 'medium';
 
   double _storyLinkX = 0.50;
 
   double _storyLinkY = 0.52;
 
   double _storyLinkScale = 1.0;
-  //===================================================
-  // OPEN STORY LINK PICKER
-  //===================================================
-
-  Future<void> _openStoryLinkPicker() async {
-    final TextEditingController controller = TextEditingController(
-      text: _storyLinkUrl,
-    );
-
-    String style = _storyLinkStyle;
-
-    final Map<String, String>?
-    result = await showModalBottomSheet<Map<String, String>>(
-      context: context,
-
-      isScrollControlled: true,
-
-      backgroundColor: const Color(0xFF151D23),
-
-      builder: (BuildContext sheetContext) {
-        return StatefulBuilder(
-          builder:
-              (
-                BuildContext context,
-                void Function(void Function()) setSheetState,
-              ) {
-                return Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    16,
-                    18,
-                    16,
-                    MediaQuery.of(context).viewInsets.bottom + 18,
-                  ),
-
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-
-                    crossAxisAlignment: CrossAxisAlignment.start,
-
-                    children: <Widget>[
-                      const Text(
-                        'Add link',
-
-                        style: TextStyle(
-                          color: Colors.white,
-
-                          fontSize: 20,
-
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-
-                      const SizedBox(height: 14),
-
-                      TextField(
-                        controller: controller,
-
-                        keyboardType: TextInputType.url,
-
-                        decoration: const InputDecoration(
-                          hintText: 'https://example.com',
-
-                          prefixIcon: Icon(Icons.link_rounded),
-                        ),
-                      ),
-
-                      const SizedBox(height: 14),
-
-                      Wrap(
-                        spacing: 8,
-
-                        children: <Widget>[
-                          for (final String option in <String>[
-                            'compact',
-                            'medium',
-                            'large',
-                          ])
-                            ChoiceChip(
-                              label: Text(
-                                option[0].toUpperCase() + option.substring(1),
-                              ),
-
-                              selected: style == option,
-
-                              onSelected: (_) {
-                                setSheetState(() {
-                                  style = option;
-                                });
-                              },
-                            ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 18),
-
-                      Row(
-                        children: <Widget>[
-                          if (_storyLinkUrl.isNotEmpty)
-                            TextButton(
-                              onPressed: () {
-                                Navigator.pop(sheetContext, <String, String>{
-                                  'url': '',
-
-                                  'style': style,
-                                });
-                              },
-
-                              child: const Text('Remove'),
-                            ),
-
-                          const Spacer(),
-
-                          FilledButton(
-                            onPressed: () {
-                              Navigator.pop(sheetContext, <String, String>{
-                                'url': controller.text.trim(),
-
-                                'style': style,
-                              });
-                            },
-
-                            child: const Text('Done'),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                );
-              },
-        );
-      },
-    );
-
-    controller.dispose();
-
-    if (result == null || !mounted) {
-      return;
-    }
-
-    setState(() {
-      _storyLinkUrl = result['url'] ?? '';
-
-      _storyLinkStyle = result['style'] ?? 'medium';
-    });
-  }
   //===================================================
   // SERVICES
   //===================================================
@@ -332,7 +189,25 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
 
   String _textAlign = 'center';
 
-  final double _textSize = 34;
+  double _textSize = 34;
+
+  double _textStartSize = 34;
+
+  double _textX = 0.50;
+
+  double _textY = 0.50;
+
+  //===================================================
+  // FINGER DRAWING
+  //===================================================
+
+  bool _isDrawing = false;
+
+  int _drawingColor = 0xFFFFFFFF;
+
+  double _drawingWidth = 5.0;
+
+  List<StoryDrawingStroke> _drawingStrokes = <StoryDrawingStroke>[];
 
   String _sticker = '';
   //=============================
@@ -368,23 +243,32 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
   //===================================================
 
   final List<int> _backgroundColors = <int>[
-    0xFF101114,
-    0xFF102A43,
-    0xFF003B5C,
-    0xFF5B2C83,
-    0xFF7A1F3D,
-    0xFF6B4F1D,
-    0xFF00695C,
-    0xFF263238,
+    0xFF0B0D12,
+    0xFF15243A,
+    0xFF173C3A,
+    0xFF3C3151,
+    0xFF542E3A,
+    0xFF4B3B2A,
+    0xFF243238,
+    0xFF1B2C46,
   ];
 
   final List<int> _textColors = <int>[
     0xFFFFFFFF,
-    0xFF29B6F6,
-    0xFFFFE082,
-    0xFFFF8A80,
-    0xFFB9F6CA,
-    0xFFE1BEE7,
+    0xFF62D8CF,
+    0xFFE0C27A,
+    0xFFE88978,
+    0xFF9ED0B2,
+    0xFFB89AD8,
+    0xFF111111,
+  ];
+
+  final List<int> _drawingColors = <int>[
+    0xFFFFFFFF,
+    0xFF62D8CF,
+    0xFFE0C27A,
+    0xFFE88978,
+    0xFFB89AD8,
     0xFF111111,
   ];
 
@@ -2930,6 +2814,202 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
   }
 
   //===================================================
+  // TEXT OVERLAY EDITOR
+  //===================================================
+
+  Future<void> _openOverlayTextEditor() async {
+    final TextEditingController controller = TextEditingController(
+      text: _storyTextController.text,
+    );
+    double size = _textSize;
+
+    final Map<String, dynamic>? result =
+        await showModalBottomSheet<Map<String, dynamic>>(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: const Color(0xFF121720),
+          showDragHandle: true,
+          builder: (BuildContext sheetContext) {
+            return StatefulBuilder(
+              builder: (
+                BuildContext context,
+                void Function(void Function()) setSheetState,
+              ) {
+                return SafeArea(
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      18,
+                      4,
+                      18,
+                      MediaQuery.viewInsetsOf(context).bottom + 18,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        const Row(
+                          children: <Widget>[
+                            Icon(
+                              Icons.title_rounded,
+                              color: Color(0xFF62D8CF),
+                            ),
+                            SizedBox(width: 10),
+                            Text(
+                              'Add text to your story',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'After adding it, drag with one finger and pinch with two fingers to resize.',
+                          style: TextStyle(color: Colors.white60, height: 1.35),
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: controller,
+                          autofocus: true,
+                          maxLength: 220,
+                          minLines: 2,
+                          maxLines: 5,
+                          style: TextStyle(
+                            color: Color(_textColor),
+                            fontSize: size.clamp(20.0, 38.0),
+                            fontWeight: FontWeight.w700,
+                          ),
+                          decoration: InputDecoration(
+                            hintText: 'Write something...',
+                            hintStyle: const TextStyle(color: Colors.white38),
+                            filled: true,
+                            fillColor: Colors.white.withValues(alpha: 0.06),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(18),
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: <Widget>[
+                            const Icon(
+                              Icons.text_increase_rounded,
+                              color: Colors.white60,
+                            ),
+                            Expanded(
+                              child: Slider(
+                                min: 18,
+                                max: 72,
+                                divisions: 18,
+                                value: size.clamp(18.0, 72.0),
+                                activeColor: const Color(0xFF62D8CF),
+                                inactiveColor: Colors.white24,
+                                onChanged: (double value) {
+                                  setSheetState(() {
+                                    size = value;
+                                  });
+                                },
+                              ),
+                            ),
+                            SizedBox(
+                              width: 42,
+                              child: Text(
+                                size.round().toString(),
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: <Widget>[
+                            if (_storyTextController.text.trim().isNotEmpty)
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.pop(sheetContext, <String, dynamic>{
+                                    'text': '',
+                                    'size': size,
+                                  });
+                                },
+                                child: const Text(
+                                  'Remove text',
+                                  style: TextStyle(color: Color(0xFFE88978)),
+                                ),
+                              ),
+                            const Spacer(),
+                            FilledButton.icon(
+                              style: FilledButton.styleFrom(
+                                backgroundColor: const Color(0xFF62D8CF),
+                                foregroundColor: const Color(0xFF071310),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                  vertical: 13,
+                                ),
+                              ),
+                              onPressed: () {
+                                Navigator.pop(sheetContext, <String, dynamic>{
+                                  'text': controller.text.trim(),
+                                  'size': size,
+                                });
+                              },
+                              icon: const Icon(Icons.check_rounded),
+                              label: const Text(
+                                'Add to story',
+                                style: TextStyle(fontWeight: FontWeight.w800),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+        );
+
+    controller.dispose();
+
+    if (result == null || !mounted) {
+      return;
+    }
+
+    setState(() {
+      _storyTextController.text = (result['text'] ?? '').toString();
+      _textSize = ((result['size'] as num?)?.toDouble() ?? _textSize)
+          .clamp(18.0, 72.0)
+          .toDouble();
+      _textStartSize = _textSize;
+    });
+  }
+
+  void _undoDrawingStroke() {
+    if (_drawingStrokes.isEmpty) {
+      return;
+    }
+
+    setState(() {
+      _drawingStrokes = _drawingStrokes
+          .take(_drawingStrokes.length - 1)
+          .toList(growable: true);
+    });
+  }
+
+  void _clearDrawing() {
+    setState(() {
+      _drawingStrokes = <StoryDrawingStroke>[];
+    });
+  }
+
+  //===================================================
   // POST STORY
   //===================================================
 
@@ -3142,6 +3222,9 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
         textStyle: _textStyle,
         textAlign: _textAlign,
         textSize: _textSize,
+        textX: _textX,
+        textY: _textY,
+        drawings: _drawingStrokes,
         durationSeconds: durationSeconds,
         layoutCount: _layoutCount,
         layoutStyle: _layoutStyle,
@@ -3172,35 +3255,51 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: const Color(0xFF080A0F),
       appBar: AppBar(
-        backgroundColor: Colors.black,
-        title: const Text(
-          'Create Story',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        backgroundColor: const Color(0xFF080A0F),
+        surfaceTintColor: Colors.transparent,
+        title: const Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(
+              'Story Studio',
+              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 21),
+            ),
+            Text(
+              'Create something worth watching',
+              style: TextStyle(
+                color: Colors.white54,
+                fontSize: 10,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
         ),
         actions: <Widget>[
           Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: TextButton(
+            padding: const EdgeInsets.fromLTRB(4, 7, 10, 7),
+            child: FilledButton.icon(
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFF62D8CF),
+                foregroundColor: const Color(0xFF071310),
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+              ),
               onPressed: _isPosting ? null : _postStory,
-              child: _isPosting
+              icon: _isPosting
                   ? const SizedBox(
-                      width: 20,
-                      height: 20,
+                      width: 16,
+                      height: 16,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: Color(0xFF29B6F6),
+                        color: Color(0xFF071310),
                       ),
                     )
-                  : const Text(
-                      'Share',
-                      style: TextStyle(
-                        color: Color(0xFF29B6F6),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
+                  : const Icon(Icons.arrow_upward_rounded, size: 18),
+              label: const Text(
+                'Share',
+                style: TextStyle(fontWeight: FontWeight.w800),
+              ),
             ),
           ),
         ],
@@ -3217,26 +3316,37 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
                   borderRadius: BorderRadius.circular(22),
                   child: Container(
                     width: double.infinity,
-                    color: Color(_backgroundColor),
+                    decoration: BoxDecoration(
+                      color: Color(_backgroundColor),
+                      border: Border.all(color: Colors.white12),
+                    ),
                     child: Stack(
                       fit: StackFit.expand,
                       children: <Widget>[
                         _buildCanvasContent(),
 
-                        if ((_mode == 'media' || _mode == 'layout') &&
-                            _storyTextController.text.trim().isNotEmpty)
-                          Center(
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 24,
-                              ),
-                              child: Text(
-                                _storyTextController.text.trim(),
-                                textAlign: _selectedTextAlign,
-                                style: _buildTextStyle(),
-                              ),
+                        if (_storyLinkUrl.trim().isNotEmpty)
+                          Positioned.fill(
+                            child: StoryLinkPreviewOverlay(
+                              url: _storyLinkUrl,
+                              style: _storyLinkStyle,
+                              x: _storyLinkX,
+                              y: _storyLinkY,
+                              scale: _storyLinkScale,
+                              editable: !_isDrawing,
+                              onChanged: (double x, double y, double scale) {
+                                setState(() {
+                                  _storyLinkX = x;
+                                  _storyLinkY = y;
+                                  _storyLinkScale = scale;
+                                });
+                              },
                             ),
                           ),
+
+                        if (_mode != 'text' &&
+                            _storyTextController.text.trim().isNotEmpty)
+                          _buildEditableTextOverlay(),
                         //=============================
                         // DRAGGABLE + RESIZABLE STICKER
                         //
@@ -3363,6 +3473,20 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
                               },
                             ),
                           ),
+
+                        Positioned.fill(
+                          child: StoryDrawingCanvas(
+                            strokes: _drawingStrokes,
+                            editing: _isDrawing,
+                            color: _drawingColor,
+                            strokeWidth: _drawingWidth,
+                            onChanged: (List<StoryDrawingStroke> strokes) {
+                              setState(() {
+                                _drawingStrokes = strokes;
+                              });
+                            },
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -3370,8 +3494,14 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
               ),
             ),
 
-            _buildEditingControls(),
-            Padding(
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 220),
+              child: _isDrawing
+                  ? _buildDrawingControls()
+                  : _buildEditingControls(),
+            ),
+            if (!_isDrawing)
+              Padding(
               padding: const EdgeInsets.fromLTRB(12, 5, 12, 10),
               child: TextField(
                 controller: _captionController,
@@ -3380,13 +3510,17 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
                   counterText: '',
-                  hintText: 'Add a caption...',
+                  hintText: 'Add a caption for your viewers...',
                   hintStyle: const TextStyle(color: Colors.white54),
                   filled: true,
-                  fillColor: Colors.white10,
+                  fillColor: const Color(0xFF151A24),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(18),
+                    borderRadius: BorderRadius.circular(20),
                     borderSide: BorderSide.none,
+                  ),
+                  prefixIcon: const Icon(
+                    Icons.short_text_rounded,
+                    color: Color(0xFF62D8CF),
                   ),
                 ),
               ),
@@ -3431,10 +3565,10 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
     ];
 
     return SizedBox(
-      height: 68,
+      height: 66,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 7),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         itemCount: modes.length,
         itemBuilder: (BuildContext context, int index) {
           final String id = modes[index]['id'] as String;
@@ -3455,17 +3589,31 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
                   : () {
                       _selectMode(id);
                     },
-              child: Container(
-                width: 72,
-                margin: const EdgeInsets.all(4),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeOutCubic,
+                width: 78,
+                margin: const EdgeInsets.symmetric(horizontal: 3),
                 decoration: BoxDecoration(
                   color: selected
-                      ? const Color(0xFF29B6F6).withValues(alpha: 0.15)
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(16),
+                      ? const Color(0xFF62D8CF).withValues(alpha: 0.16)
+                      : const Color(0xFF151A24),
+                  borderRadius: BorderRadius.circular(18),
                   border: Border.all(
-                    color: selected ? const Color(0xFF29B6F6) : Colors.white12,
+                    color: selected
+                        ? const Color(0xFF62D8CF)
+                        : Colors.white12,
                   ),
+                  boxShadow: selected
+                      ? <BoxShadow>[
+                          BoxShadow(
+                            color: const Color(
+                              0xFF62D8CF,
+                            ).withValues(alpha: 0.12),
+                            blurRadius: 12,
+                          ),
+                        ]
+                      : null,
                 ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -3473,14 +3621,14 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
                     Icon(
                       modes[index]['icon'] as IconData,
                       color: selected
-                          ? const Color(0xFF29B6F6)
+                          ? const Color(0xFF62D8CF)
                           : Colors.white70,
                     ),
                     Text(
                       modes[index]['label'] as String,
                       style: TextStyle(
                         color: selected
-                            ? const Color(0xFF29B6F6)
+                            ? const Color(0xFF62D8CF)
                             : Colors.white70,
                         fontSize: 11,
                       ),
@@ -4241,11 +4389,212 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
   }
 
   //===================================================
+  // MOVABLE + RESIZABLE TEXT OVERLAY
+  //===================================================
+
+  Widget _buildEditableTextOverlay() {
+    return Positioned.fill(
+      child: IgnorePointer(
+        ignoring: _isDrawing,
+        child: LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            return Stack(
+              clipBehavior: Clip.none,
+              children: <Widget>[
+                Positioned(
+                  left: (_textX * constraints.maxWidth)
+                      .clamp(0.0, constraints.maxWidth)
+                      .toDouble(),
+                  top: (_textY * constraints.maxHeight)
+                      .clamp(0.0, constraints.maxHeight)
+                      .toDouble(),
+                  child: FractionalTranslation(
+                    translation: const Offset(-0.5, -0.5),
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.translucent,
+                      onTap: _openOverlayTextEditor,
+                      onScaleStart: (_) {
+                        _textStartSize = _textSize;
+                      },
+                      onScaleUpdate: (ScaleUpdateDetails details) {
+                        setState(() {
+                          if (constraints.maxWidth > 0) {
+                            _textX = (_textX +
+                                    details.focalPointDelta.dx /
+                                        constraints.maxWidth)
+                                .clamp(0.10, 0.90)
+                                .toDouble();
+                          }
+
+                          if (constraints.maxHeight > 0) {
+                            _textY = (_textY +
+                                    details.focalPointDelta.dy /
+                                        constraints.maxHeight)
+                                .clamp(0.12, 0.88)
+                                .toDouble();
+                          }
+
+                          _textSize = (_textStartSize * details.scale)
+                              .clamp(18.0, 72.0)
+                              .toDouble();
+                        });
+                      },
+                      onScaleEnd: (_) {
+                        _textStartSize = _textSize;
+                      },
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          maxWidth: constraints.maxWidth * 0.84,
+                        ),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 13,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.28),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.14),
+                            ),
+                          ),
+                          child: Text(
+                            _storyTextController.text.trim(),
+                            textAlign: _selectedTextAlign,
+                            style: _buildTextStyle(),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  //===================================================
+  // PEN TOOLBAR
+  //===================================================
+
+  Widget _buildDrawingControls() {
+    return Container(
+      key: const ValueKey<String>('story-drawing-controls'),
+      height: 74,
+      margin: const EdgeInsets.fromLTRB(10, 4, 10, 3),
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFF151A24),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: Colors.white12),
+      ),
+      child: Row(
+        children: <Widget>[
+          IconButton.filled(
+            style: IconButton.styleFrom(
+              backgroundColor: const Color(0xFF62D8CF),
+              foregroundColor: const Color(0xFF071310),
+            ),
+            tooltip: 'Finish drawing',
+            onPressed: () {
+              setState(() {
+                _isDrawing = false;
+              });
+            },
+            icon: const Icon(Icons.check_rounded),
+          ),
+          IconButton(
+            tooltip: 'Undo last line',
+            onPressed: _drawingStrokes.isEmpty ? null : _undoDrawingStroke,
+            icon: const Icon(Icons.undo_rounded),
+          ),
+          IconButton(
+            tooltip: 'Clear drawing',
+            onPressed: _drawingStrokes.isEmpty ? null : _clearDrawing,
+            icon: const Icon(Icons.delete_sweep_outlined),
+          ),
+          const SizedBox(width: 3),
+          Expanded(
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: _drawingColors.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 8),
+              itemBuilder: (BuildContext context, int index) {
+                final int value = _drawingColors[index];
+                final bool selected = value == _drawingColor;
+
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _drawingColor = value;
+                    });
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 160),
+                    width: selected ? 34 : 28,
+                    height: selected ? 34 : 28,
+                    margin: const EdgeInsets.symmetric(vertical: 18),
+                    decoration: BoxDecoration(
+                      color: Color(value),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: selected
+                            ? const Color(0xFF62D8CF)
+                            : Colors.white30,
+                        width: selected ? 3 : 1,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          PopupMenuButton<double>(
+            tooltip: 'Pen thickness',
+            initialValue: _drawingWidth,
+            color: const Color(0xFF1A202C),
+            onSelected: (double value) {
+              setState(() {
+                _drawingWidth = value;
+              });
+            },
+            itemBuilder: (_) => <PopupMenuEntry<double>>[
+              for (final double width in <double>[3, 5, 8, 12])
+                PopupMenuItem<double>(
+                  value: width,
+                  child: Row(
+                    children: <Widget>[
+                      Container(
+                        width: 42,
+                        height: width,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text('${width.round()} px'),
+                    ],
+                  ),
+                ),
+            ],
+            icon: const Icon(Icons.line_weight_rounded),
+          ),
+        ],
+      ),
+    );
+  }
+
+  //===================================================
   // EDITING CONTROLS
   //===================================================
 
   Widget _buildEditingControls() {
     return SizedBox(
+      key: const ValueKey<String>('story-editing-controls'),
       height: 58,
       child: ListView(
         scrollDirection: Axis.horizontal,
@@ -4263,20 +4612,32 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
             onTap: _showStickers,
           ),
 
+          _controlButton(
+            icon: Icons.title_rounded,
+            label: _mode == 'text'
+                ? 'Text size'
+                : _storyTextController.text.trim().isEmpty
+                ? 'Add text'
+                : 'Edit text',
+            onTap: _openOverlayTextEditor,
+          ),
+
+          _controlButton(
+            icon: Icons.draw_rounded,
+            label: 'Draw',
+            onTap: () {
+              setState(() {
+                _isDrawing = true;
+              });
+            },
+          ),
+
           if (_mode == 'layout')
             _controlButton(
               icon: Icons.dashboard_customize_outlined,
               label: 'Layout',
               onTap: _showLayoutSettings,
             ),
-          _controlButton(
-            icon: Icons.link_rounded,
-
-            label: 'Link',
-
-            onTap: _openStoryLinkPicker,
-          ),
-
           _controlButton(
             icon: Icons.format_align_center,
             label: 'Align',
@@ -4297,7 +4658,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
 
           _controlButton(
             icon: Icons.format_color_text,
-            label: 'Text',
+            label: 'Text colour',
             onTap: _showTextColorPicker,
           ),
         ],
@@ -4317,12 +4678,17 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
     return InkWell(
       onTap: onTap,
       child: Container(
-        width: 78,
+        width: 82,
         margin: const EdgeInsets.symmetric(horizontal: 3, vertical: 5),
+        decoration: BoxDecoration(
+          color: const Color(0xFF151A24),
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(color: Colors.white10),
+        ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            Icon(icon, color: Colors.white70, size: 21),
+            Icon(icon, color: const Color(0xFF62D8CF), size: 21),
             const SizedBox(height: 2),
             Text(
               label,
@@ -4578,38 +4944,6 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
                                 ],
                               ),
                             ),
-                            //===================================================
-                            // STORY LINK PREVIEW
-                            //===================================================
-
-                            if (_storyLinkUrl.trim().isNotEmpty)
-                              Positioned.fill(
-                                child: StoryLinkPreviewOverlay(
-                                  url: _storyLinkUrl,
-
-                                  style: _storyLinkStyle,
-
-                                  x: _storyLinkX,
-
-                                  y: _storyLinkY,
-
-                                  scale: _storyLinkScale,
-
-                                  editable: true,
-
-                                  onChanged:
-                                      (double x, double y, double scale) {
-                                        setState(() {
-                                          _storyLinkX = x;
-
-                                          _storyLinkY = y;
-
-                                          _storyLinkScale = scale;
-                                        });
-                                      },
-                                ),
-                              ),
-
                             if (active)
                               const Positioned(
                                 top: 7,

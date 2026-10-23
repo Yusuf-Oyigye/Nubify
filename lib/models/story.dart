@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import 'story_drawing.dart';
+
 //===================================================
 // DATETIME BACKWARD COMPATIBILITY
 //===================================================
@@ -291,6 +293,9 @@ class NubifyStory {
   final String textStyle;
   final String textAlign;
   final double textSize;
+  final double textX;
+  final double textY;
+  final List<StoryDrawingStroke> drawings;
   final int durationSeconds;
 
   //===================================================
@@ -374,6 +379,9 @@ class NubifyStory {
     required this.textStyle,
     required this.textAlign,
     required this.textSize,
+    this.textX = 0.50,
+    this.textY = 0.50,
+    this.drawings = const <StoryDrawingStroke>[],
     required this.durationSeconds,
     required this.layoutCount,
     required this.layoutStyle,
@@ -525,6 +533,10 @@ class NubifyStory {
         ? map['sourceMediaUrls'] as List<dynamic>
         : <dynamic>[];
 
+    final List<dynamic> rawDrawings = map['drawings'] is List
+        ? map['drawings'] as List<dynamic>
+        : <dynamic>[];
+
     StoryPoll? poll;
 
     if (map['poll'] is Map) {
@@ -614,6 +626,27 @@ class NubifyStory {
       textAlign: (map['textAlign'] ?? 'center').toString(),
 
       textSize: _toDouble(map['textSize'], fallback: 34),
+
+      textX: _toDouble(
+        map['textX'],
+        fallback: 0.50,
+      ).clamp(0.06, 0.94).toDouble(),
+
+      textY: _toDouble(
+        map['textY'],
+        fallback: 0.50,
+      ).clamp(0.08, 0.92).toDouble(),
+
+      drawings: rawDrawings
+          .whereType<Map>()
+          .take(80)
+          .map(
+            (Map<dynamic, dynamic> stroke) => StoryDrawingStroke.fromMap(
+              Map<String, dynamic>.from(stroke),
+            ),
+          )
+          .where((StoryDrawingStroke stroke) => stroke.points.isNotEmpty)
+          .toList(growable: false),
 
       //===================================================
       // 3 MINUTES = 180 SECONDS
@@ -722,6 +755,12 @@ class NubifyStory {
       'textStyle': textStyle,
       'textAlign': textAlign,
       'textSize': textSize,
+      'textX': textX,
+      'textY': textY,
+      'drawings': drawings
+          .take(80)
+          .map((StoryDrawingStroke stroke) => stroke.toMap())
+          .toList(growable: false),
       'durationSeconds': durationSeconds,
       'layoutCount': layoutCount,
       'layoutStyle': layoutStyle,
@@ -783,6 +822,9 @@ class NubifyStory {
     String? textStyle,
     String? textAlign,
     double? textSize,
+    double? textX,
+    double? textY,
+    List<StoryDrawingStroke>? drawings,
     int? durationSeconds,
     int? layoutCount,
     String? layoutStyle,
@@ -841,6 +883,9 @@ class NubifyStory {
       textStyle: textStyle ?? this.textStyle,
       textAlign: textAlign ?? this.textAlign,
       textSize: textSize ?? this.textSize,
+      textX: textX ?? this.textX,
+      textY: textY ?? this.textY,
+      drawings: drawings ?? this.drawings,
       durationSeconds: durationSeconds ?? this.durationSeconds,
       layoutCount: layoutCount ?? this.layoutCount,
       layoutStyle: layoutStyle ?? this.layoutStyle,
