@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:nubify/widgets/feed_post_list.dart';
 
@@ -8,7 +9,10 @@ class HomeScreen
     extends StatefulWidget {
   const HomeScreen({
     super.key,
+    required this.playbackEnabled,
   });
+
+  final ValueListenable<bool> playbackEnabled;
 
   @override
   State<HomeScreen>
@@ -71,10 +75,21 @@ class HomeScreenState
           //=====================================================
 
           Expanded(
-            child:
-            FeedPostList(
-              key:
-              _feedKey,
+            child: ValueListenableBuilder<bool>(
+              valueListenable: widget.playbackEnabled,
+              child: FeedPostList(
+                key: _feedKey,
+              ),
+              builder: (
+                BuildContext context,
+                bool playbackEnabled,
+                Widget? child,
+              ) {
+                return TickerMode(
+                  enabled: playbackEnabled,
+                  child: child!,
+                );
+              },
             ),
           ),
         ],

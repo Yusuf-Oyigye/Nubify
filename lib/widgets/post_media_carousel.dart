@@ -193,7 +193,9 @@ class _PostMediaCarouselState extends State<PostMediaCarousel> {
         //============================
         loop: !widget.storyPlayback,
 
-        forcePaused: widget.forcePaused,
+        // PageView keeps neighbouring pages alive for smooth swiping. Only
+        // the media page the user has actually reached may play.
+        forcePaused: widget.forcePaused || index != _currentPage,
 
         //============================
         // ONLY CURRENT PAGE CONTROLS

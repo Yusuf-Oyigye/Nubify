@@ -50,6 +50,11 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
 
   final GlobalKey<HomeScreenState> _homeKey = GlobalKey<HomeScreenState>();
 
+  // The Home screen can remain alive while another bottom-navigation page is
+  // shown. This explicit signal prevents feed videos from relying only on
+  // visibility calculations, which may arrive late on some Android devices.
+  final ValueNotifier<bool> _homePlaybackEnabled = ValueNotifier<bool>(true);
+
   //===================================================
   // NUBUZZ KEY
   //===================================================
@@ -62,7 +67,10 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
   //===================================================
 
   late final List<Widget> _pages = <Widget>[
-    HomeScreen(key: _homeKey),
+    HomeScreen(
+      key: _homeKey,
+      playbackEnabled: _homePlaybackEnabled,
+    ),
     const NUBAiTutorScreen(),
     NubuzzScreen(key: _nubuzzKey, onBackToHome: _goHomeFromNubuzz),
     const EgyptianArabicScreen(),
@@ -78,6 +86,8 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
       return;
     }
 
+    _homePlaybackEnabled.value = true;
+
     setState(() {
       _page = 0;
     });
@@ -91,6 +101,10 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
     if (!mounted) {
       return;
     }
+
+    // Stop Home/feed media before the new page is painted. This closes the
+    // short window where Android could otherwise keep the old audio playing.
+    _homePlaybackEnabled.value = page == 0;
 
     //===================================================
     // HOME TAP
@@ -127,6 +141,13 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
     setState(() {
       _page = page;
     });
+  }
+
+  @override
+  void dispose() {
+    _homePlaybackEnabled.value = false;
+    _homePlaybackEnabled.dispose();
+    super.dispose();
   }
 
   //===================================================

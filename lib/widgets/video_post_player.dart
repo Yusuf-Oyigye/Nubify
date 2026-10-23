@@ -60,6 +60,15 @@ class _VideoPostPlayerState extends State<VideoPostPlayer>
 
   bool _userPaused = false;
 
+  // Every playback decision gets a new number. If an older asynchronous
+  // play request finishes after the video has been hidden, it is rejected
+  // instead of starting audio in the background.
+  int _playbackDecision = 0;
+
+  bool _isDisposed = false;
+
+  bool _progressListenerAttached = false;
+
   //============================
   // VIDEO COMPLETION
   //============================
@@ -142,7 +151,8 @@ class _VideoPostPlayerState extends State<VideoPostPlayer>
   }
 
   bool get _canPlay {
-    return _isInitialized &&
+    return !_isDisposed &&
+        _isInitialized &&
         !_routeIsCovered &&
         !widget.forcePaused &&
         _appIsActive &&
@@ -152,20 +162,49 @@ class _VideoPostPlayerState extends State<VideoPostPlayer>
   }
 
   Future<void> _syncPlayback() async {
-    if (!_controller.value.isInitialized) {
+    final int decision = ++_playbackDecision;
+
+    if (_isDisposed || !_controller.value.isInitialized) {
       return;
     }
 
     final bool shouldPlay = _canPlay;
 
-    if (shouldPlay && !_controller.value.isPlaying) {
-      await _controller.setVolume(_isMuted ? 0.0 : 1.0);
-      await _controller.play();
-    } else if (!shouldPlay && _controller.value.isPlaying) {
-      await _controller.pause();
+    try {
+      if (shouldPlay) {
+        await _controller.setVolume(_isMuted ? 0.0 : 1.0);
+
+        if (_isDisposed ||
+            decision != _playbackDecision ||
+            !_canPlay) {
+          await _silenceAndPause();
+          return;
+        }
+
+        if (!_controller.value.isPlaying) {
+          await _controller.play();
+        }
+
+        // The page can become inactive while the native play call is being
+        // processed. Check once more after it returns.
+        if (_isDisposed ||
+            decision != _playbackDecision ||
+            !_canPlay) {
+          await _silenceAndPause();
+          return;
+        }
+      } else {
+        // Pause even when Dart says it is already paused. The native player
+        // can briefly be ahead of the cached isPlaying value.
+        await _silenceAndPause();
+      }
+    } catch (error) {
+      if (!_isDisposed) {
+        debugPrint('Video playback sync error: $error');
+      }
     }
 
-    if (!mounted) {
+    if (!mounted || _isDisposed || decision != _playbackDecision) {
       return;
     }
 
@@ -175,6 +214,24 @@ class _VideoPostPlayerState extends State<VideoPostPlayer>
       setState(() {
         _showPlayIcon = showPlay;
       });
+    }
+  }
+
+  Future<void> _silenceAndPause() async {
+    if (!_controller.value.isInitialized) {
+      return;
+    }
+
+    try {
+      await _controller.setVolume(0.0);
+    } catch (_) {
+      // The native controller may already be shutting down.
+    }
+
+    try {
+      await _controller.pause();
+    } catch (_) {
+      // The native controller may already be shutting down.
     }
   }
 
@@ -205,11 +262,19 @@ class _VideoPostPlayerState extends State<VideoPostPlayer>
     try {
       await _controller.initialize();
 
+      if (_isDisposed || !mounted) {
+        return;
+      }
+
       //============================
       // SOUND ON BY DEFAULT
       //============================
 
       await _controller.setVolume(1.0);
+
+      if (_isDisposed || !mounted) {
+        return;
+      }
 
       _isMuted = false;
 
@@ -219,11 +284,16 @@ class _VideoPostPlayerState extends State<VideoPostPlayer>
 
       await _controller.setLooping(widget.loop);
 
+      if (_isDisposed || !mounted) {
+        return;
+      }
+
       //============================
       // REAL VIDEO PROGRESS
       //============================
 
       _controller.addListener(_handleVideoProgress);
+      _progressListenerAttached = true;
 
       //============================
       // VIDEO IS READY
@@ -233,7 +303,7 @@ class _VideoPostPlayerState extends State<VideoPostPlayer>
 
       widget.onReady?.call();
 
-      if (!mounted) {
+      if (!mounted || _isDisposed) {
         return;
       }
 
@@ -309,21 +379,11 @@ class _VideoPostPlayerState extends State<VideoPostPlayer>
 
     if (_controller.value.isPlaying) {
       _userPaused = true;
-
-      unawaited(_controller.pause());
-
-      setState(() {
-        _showPlayIcon = true;
-      });
     } else {
       _userPaused = false;
-
-      unawaited(_controller.play());
-
-      setState(() {
-        _showPlayIcon = false;
-      });
     }
+
+    _syncPlayback();
   }
 
   // ============================================================
@@ -347,15 +407,30 @@ class _VideoPostPlayerState extends State<VideoPostPlayer>
   // ============================================================
   @override
   void dispose() {
+    _isDisposed = true;
+    _playbackDecision++;
+
     WidgetsBinding.instance.removeObserver(this);
 
     nubifyMediaRouteObserver.unsubscribe(this);
 
-    _controller.removeListener(_handleVideoProgress);
+    if (_progressListenerAttached) {
+      _controller.removeListener(_handleVideoProgress);
+    }
 
-    _controller.dispose();
+    unawaited(_disposeController());
 
     super.dispose();
+  }
+
+  Future<void> _disposeController() async {
+    await _silenceAndPause();
+
+    try {
+      await _controller.dispose();
+    } catch (_) {
+      // A controller that failed during initialization can already be closed.
+    }
   }
 
   // ============================================================
