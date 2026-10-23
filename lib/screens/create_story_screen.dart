@@ -292,7 +292,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
 
   Timer? _voiceTimer;
 
-  Timer? _waveformTimer;
+  StreamSubscription<Amplitude>? _waveformTimer;
 
   //===================================================
   // VOICE PLAYER
@@ -2139,7 +2139,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
           //===================================================
           // ANDROID AUDIO
           //===================================================
-          androidConfig: AndroidRecordConfig(manageBluetooth: true),
+          androidConfig: AndroidRecordConfig(manageBluetooth: false),
         ),
 
         path: path,
@@ -2201,41 +2201,30 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
       // LIVE WAVEFORM
       //===================================================
 
-      _waveformTimer = Timer.periodic(const Duration(milliseconds: 120), (
-        Timer timer,
-      ) async {
-        if (!mounted || !_isRecording) {
-          return;
-        }
+      _waveformTimer = _audioRecorder
+          .onAmplitudeChanged(const Duration(milliseconds: 80))
+          .listen((Amplitude amplitude) {
+            if (!mounted || !_isRecording) {
+              return;
+            }
 
-        try {
-          final Amplitude amplitude = await _audioRecorder.getAmplitude();
+            // Most phone microphones report roughly -55 dB for silence and move
+            // toward 0 dB as the voice becomes louder. Using the stronger of the
+            // current/peak readings makes the animation responsive without fake
+            // random movement.
+            final double decibels = amplitude.current > amplitude.max
+                ? amplitude.current
+                : amplitude.max;
+            final double normalized = ((decibels + 55) / 55)
+                .clamp(0.06, 1.0)
+                .toDouble();
+            final double nextHeight = 8 + normalized * 50;
 
-          //===================================================
-          // IMPORTANT:
-          //
-          // THE 60 BELOW IS AUDIO dB NORMALIZATION.
-          // IT IS NOT THE 60-SECOND RECORD LIMIT.
-          // DO NOT CHANGE THIS TO 300.
-          //===================================================
-
-          final double normalized = ((amplitude.current + 60) / 60)
-              .clamp(0.0, 1.0)
-              .toDouble();
-
-          final double nextHeight = 10 + normalized * 48;
-
-          if (!mounted || !_isRecording) {
-            return;
-          }
-
-          setState(() {
-            _waveformHeights.removeAt(0);
-
-            _waveformHeights.add(nextHeight);
+            setState(() {
+              _waveformHeights.removeAt(0);
+              _waveformHeights.add(nextHeight);
+            });
           });
-        } catch (_) {}
-      });
     } catch (error) {
       _voiceTimer?.cancel();
 

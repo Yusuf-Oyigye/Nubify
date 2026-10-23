@@ -192,7 +192,7 @@ class GroupChatService {
       }
     }
 
-    yield* query.orderBy('createdAt', descending: true).snapshots();
+    yield* query.orderBy('createdAt', descending: true).limit(150).snapshots();
   }
 
   //===============================

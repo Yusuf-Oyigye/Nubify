@@ -8,77 +8,49 @@ import '../models/chat_message.dart';
 //===============================
 
 class ChatService {
-  final FirebaseFirestore
-  _firestore =
-      FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  final FirebaseAuth
-  _auth =
-      FirebaseAuth.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
   //===============================
   // CURRENT USER
   //===============================
 
-  String? get currentUserId =>
-      _auth.currentUser?.uid;
+  String? get currentUserId => _auth.currentUser?.uid;
 
   //===============================
   // CONVERSATION ID
   //===============================
 
-  String getConversationId(
-      String otherUserId,
-      ) {
-    final String? uid =
-        currentUserId;
+  String getConversationId(String otherUserId) {
+    final String? uid = currentUserId;
 
-    if (uid == null ||
-        uid.isEmpty) {
-      throw Exception(
-        'User is not logged in.',
-      );
+    if (uid == null || uid.isEmpty) {
+      throw Exception('User is not logged in.');
     }
 
-    final List<String> ids =
-    <String>[
-      uid,
-      otherUserId,
-    ]..sort();
+    final List<String> ids = <String>[uid, otherUserId]..sort();
 
-    return ids.join(
-      '_',
-    );
+    return ids.join('_');
   }
 
   //===============================
   // CONVERSATION REFERENCE
   //===============================
 
-  DocumentReference<
-      Map<String, dynamic>>
-  _conversationReference(
-      String otherUserId,
-      ) {
+  DocumentReference<Map<String, dynamic>> _conversationReference(
+    String otherUserId,
+  ) {
     return _firestore
-        .collection(
-      'conversations',
-    )
-        .doc(
-      getConversationId(
-        otherUserId,
-      ),
-    );
+        .collection('conversations')
+        .doc(getConversationId(otherUserId));
   }
-//===============================
-// ENSURE CONVERSATION
-//===============================
+  //===============================
+  // ENSURE CONVERSATION
+  //===============================
 
-  Future<void> ensureConversationExists(
-      String otherUserId,
-      ) async {
-    final String? uid =
-        currentUserId;
+  Future<void> ensureConversationExists(String otherUserId) async {
+    final String? uid = currentUserId;
 
     if (uid == null ||
         uid.isEmpty ||
@@ -87,51 +59,30 @@ class ChatService {
       return;
     }
 
-    final DocumentReference<
-        Map<String, dynamic>>
-    reference =
-    _conversationReference(
-      otherUserId,
-    );
+    final DocumentReference<Map<String, dynamic>> reference =
+        _conversationReference(otherUserId);
 
-    final List<String> participants =
-    <String>[
-      uid,
-      otherUserId,
-    ]..sort();
+    final List<String> participants = <String>[uid, otherUserId]..sort();
 
-    await reference.set(
-      <String, dynamic>{
-        'conversationId':
-        reference.id,
+    await reference.set(<String, dynamic>{
+      'conversationId': reference.id,
 
-        'type':
-        'direct',
+      'type': 'direct',
 
-        'participants':
-        participants,
+      'participants': participants,
 
-        'participantIds':
-        participants,
+      'participantIds': participants,
 
-        'members':
-        participants,
+      'members': participants,
 
-        'updatedAt':
-        Timestamp.now(),
-      },
-      SetOptions(
-        merge:
-        true,
-      ),
-    );
+      'updatedAt': Timestamp.now(),
+    }, SetOptions(merge: true));
   }
   //===============================
   // GENERIC SEND
   //===============================
 
-  Future<String>
-  _sendDirectMessage({
+  Future<String> _sendDirectMessage({
     bool isForwarded = false,
     bool linkPreviewDisabled = false,
 
@@ -168,302 +119,178 @@ class ChatService {
     String replyToSenderName = '',
     String replyToText = '',
     String replyToType = '',
-
   }) async {
-    final String? senderId =
-        currentUserId;
+    final String? senderId = currentUserId;
 
-    if (senderId == null ||
-        senderId.isEmpty) {
-      throw Exception(
-        'User is not logged in.',
-      );
+    if (senderId == null || senderId.isEmpty) {
+      throw Exception('User is not logged in.');
     }
 
-    if (receiverId
-        .trim()
-        .isEmpty ||
-        receiverId ==
-            senderId) {
-      throw Exception(
-        'Invalid receiver.',
-      );
+    if (receiverId.trim().isEmpty || receiverId == senderId) {
+      throw Exception('Invalid receiver.');
     }
 
-    final String conversationId =
-    getConversationId(
-      receiverId,
-    );
+    final String conversationId = getConversationId(receiverId);
 
-    final DocumentReference<
-        Map<String, dynamic>>
-    conversation =
-    _firestore
-        .collection(
-      'conversations',
-    )
-        .doc(
-      conversationId,
-    );
+    final DocumentReference<Map<String, dynamic>> conversation = _firestore
+        .collection('conversations')
+        .doc(conversationId);
 
-    final DocumentReference<
-        Map<String, dynamic>>
-    messageReference =
-    conversation
-        .collection(
-      'messages',
-    )
-        .doc();
+    final DocumentReference<Map<String, dynamic>> messageReference =
+        conversation.collection('messages').doc();
 
-    final Timestamp now =
-    Timestamp.now();
+    final Timestamp now = Timestamp.now();
 
-    final List<String> participants =
-    <String>[
-      senderId,
-      receiverId,
-    ]..sort();
+    final List<String> participants = <String>[senderId, receiverId]..sort();
 
-    final WriteBatch batch =
-    _firestore.batch();
+    final WriteBatch batch = _firestore.batch();
 
     //===============================
     // MESSAGE
     //===============================
 
-    batch.set(
-      messageReference,
-      <String, dynamic>{
-        'linkPreviewDisabled':
-        linkPreviewDisabled,
-        'messageId':
-        messageReference.id,
+    batch.set(messageReference, <String, dynamic>{
+      'linkPreviewDisabled': linkPreviewDisabled,
+      'messageId': messageReference.id,
 
-        'conversationId':
-        conversationId,
+      'conversationId': conversationId,
 
-        'senderId':
-        senderId,
+      'senderId': senderId,
 
-        'senderUid':
-        senderId,
+      'senderUid': senderId,
 
-        'receiverId':
-        receiverId,
+      'receiverId': receiverId,
 
-        'recipientId':
-        receiverId,
+      'recipientId': receiverId,
 
-        'type':
-        type,
+      'type': type,
 
-        'messageType':
-        type,
+      'messageType': type,
 
-        'text':
-        text,
+      'text': text,
 
-        'mediaUrl':
-        mediaUrl,
+      'mediaUrl': mediaUrl,
 
-        'fileName':
-        fileName,
+      'fileName': fileName,
 
-        'durationMs':
-        durationMs,
+      'durationMs': durationMs,
 
-        'storyId':
-        storyId,
+      'storyId': storyId,
 
-        'sharedStoryId':
-        storyId,
+      'sharedStoryId': storyId,
 
-        'storyOwnerId':
-        storyOwnerId,
+      'storyOwnerId': storyOwnerId,
 
-        'storyUsername':
-        storyUsername,
+      'storyUsername': storyUsername,
 
-        'storyType':
-        storyType,
+      'storyType': storyType,
 
-        'storyPreviewUrl':
-        storyPreviewUrl,
+      'storyPreviewUrl': storyPreviewUrl,
 
-        'storyMediaUrl':
-        storyPreviewUrl,
+      'storyMediaUrl': storyPreviewUrl,
 
-        'postId':
-        postId,
+      'postId': postId,
 
-        'sharedPostId':
-        postId,
+      'sharedPostId': postId,
 
-        'postOwnerId':
-        postOwnerId,
+      'postOwnerId': postOwnerId,
 
-        'postUsername':
-        postUsername,
+      'postUsername': postUsername,
 
-        'postFullName':
-        postFullName,
+      'postFullName': postFullName,
 
-        'postCaption':
-        postCaption,
+      'postCaption': postCaption,
 
-        'postPreviewUrl':
-        postPreviewUrl,
+      'postPreviewUrl': postPreviewUrl,
 
-        'productId':
-        productId,
+      'productId': productId,
 
-        'productSellerId':
-        productSellerId,
+      'productSellerId': productSellerId,
 
-        'productName':
-        productName,
+      'productName': productName,
 
-        'productImageUrl':
-        productImageUrl,
+      'productImageUrl': productImageUrl,
 
-        'productPrice':
-        productPrice,
+      'productPrice': productPrice,
 
-        'replyToMessageId':
-        replyToMessageId,
+      'replyToMessageId': replyToMessageId,
 
-        'replyToSenderId':
-        replyToSenderId,
+      'replyToSenderId': replyToSenderId,
 
-        'replyToSenderName':
-        replyToSenderName,
+      'replyToSenderName': replyToSenderName,
 
-        'replyToText':
-        replyToText,
+      'replyToText': replyToText,
 
-        'replyToType':
-        replyToType,
+      'replyToType': replyToType,
 
-        'deliveredTo':
-        <String>[
-          senderId,
-        ],
+      'deliveredTo': <String>[senderId],
 
-        'readBy':
-        <String>[
-          senderId,
-        ],
+      'readBy': <String>[senderId],
 
-        'seenBy':
-        <String>[
-          senderId,
-        ],
+      'seenBy': <String>[senderId],
 
-        'isRead':
-        false,
+      'isRead': false,
 
-//===============================
-// MESSAGE ACTION DATA
-//===============================
+      //===============================
+      // MESSAGE ACTION DATA
+      //===============================
+      'reactions': <String, String>{},
 
-        'reactions':
-        <String, String>{},
+      'hiddenFor': <String>[],
 
-        'hiddenFor':
-        <String>[],
+      'deletedForEveryone': false,
 
-        'deletedForEveryone':
-        false,
+      'isForwarded': isForwarded,
 
-        'isForwarded':
-        isForwarded,
+      'createdAt': now,
 
-        'createdAt':
-        now,
-
-        'timestamp':
-        now,
-      },
-    );
-
+      'timestamp': now,
+    });
 
     //===============================
     // CONVERSATION
     //===============================
 
-    batch.set(
-      conversation,
-      <String, dynamic>{
-        'conversationId':
-        conversationId,
+    batch.set(conversation, <String, dynamic>{
+      'conversationId': conversationId,
 
-        'type':
-        'direct',
+      'type': 'direct',
 
-        'participants':
-        participants,
+      'participants': participants,
 
-        'participantIds':
-        participants,
+      'participantIds': participants,
 
-        'members':
-        participants,
+      'members': participants,
 
-        'lastMessageId':
-        messageReference.id,
+      'lastMessageId': messageReference.id,
 
-        'lastMessage':
-        preview,
+      'lastMessage': preview,
 
-        'lastMessageType':
-        type,
+      'lastMessageType': type,
 
-        'lastMessageSenderId':
-        senderId,
+      'lastMessageSenderId': senderId,
 
-        'lastSenderId':
-        senderId,
+      'lastSenderId': senderId,
 
-        'lastMessageAt':
-        now,
+      'lastMessageAt': now,
 
-        'lastMessageDeliveredTo':
-        <String>[
-          senderId,
-        ],
+      'lastMessageDeliveredTo': <String>[senderId],
 
-        'lastMessageReadBy':
-        <String>[
-          senderId,
-        ],
-        //===============================
+      'lastMessageReadBy': <String>[senderId],
+      //===============================
       // UNREAD COUNTS
       //===============================
 
-        'unreadCounts':
-        <String, dynamic>{
-          senderId:
-          0,
+      'unreadCounts': <String, dynamic>{
+        senderId: 0,
 
-          receiverId:
-          FieldValue.increment(
-            1,
-          ),
-        },
-
-        'updatedAt':
-        now,
-
-        'createdAt':
-        FieldValue
-            .serverTimestamp(),
+        receiverId: FieldValue.increment(1),
       },
 
-      SetOptions(
-        merge:
-        true,
-      ),
-    );
+      'updatedAt': now,
+
+      'createdAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
 
     await batch.commit();
 
@@ -487,43 +314,32 @@ class ChatService {
     bool isForwarded = false,
     bool linkPreviewDisabled = false,
   }) async {
-    final String message =
-    text.trim();
+    final String message = text.trim();
 
     if (message.isEmpty) {
       return;
     }
 
     await _sendDirectMessage(
-      linkPreviewDisabled:
-      linkPreviewDisabled,
+      linkPreviewDisabled: linkPreviewDisabled,
 
-      receiverId:
-      receiverId,
+      receiverId: receiverId,
 
-      type:
-      'text',
+      type: 'text',
 
-      preview:
-      message,
+      preview: message,
 
-      text:
-      message,
+      text: message,
 
-      replyToMessageId:
-      replyToMessageId,
+      replyToMessageId: replyToMessageId,
 
-      replyToSenderId:
-      replyToSenderId,
+      replyToSenderId: replyToSenderId,
 
-      replyToSenderName:
-      replyToSenderName,
+      replyToSenderName: replyToSenderName,
 
-      replyToText:
-      replyToText,
+      replyToText: replyToText,
 
-      replyToType:
-      replyToType,
+      replyToType: replyToType,
     );
   }
 
@@ -531,8 +347,7 @@ class ChatService {
   // SEND MEDIA
   //===============================
 
-  Future<void>
-  sendMediaMessage({
+  Future<void> sendMediaMessage({
     required String receiverId,
     required String mediaUrl,
     required String mediaType,
@@ -550,65 +365,47 @@ class ChatService {
 
     switch (mediaType) {
       case 'image':
-        preview =
-        '📷 Photo';
+        preview = '📷 Photo';
         break;
 
       case 'video':
-        preview =
-        '🎥 Video';
+        preview = '🎥 Video';
         break;
 
       case 'voice':
-        preview =
-        '🎤 Voice message';
+        preview = '🎤 Voice message';
         break;
 
       case 'document':
-        preview =
-        fileName.isNotEmpty
-            ? '📄 $fileName'
-            : '📄 Document';
+        preview = fileName.isNotEmpty ? '📄 $fileName' : '📄 Document';
         break;
 
       default:
-        preview =
-        'Media';
+        preview = 'Media';
     }
 
     await _sendDirectMessage(
-      receiverId:
-      receiverId,
+      receiverId: receiverId,
 
-      type:
-      mediaType,
+      type: mediaType,
 
-      preview:
-      preview,
+      preview: preview,
 
-      mediaUrl:
-      mediaUrl,
+      mediaUrl: mediaUrl,
 
-      fileName:
-      fileName,
+      fileName: fileName,
 
-      durationMs:
-      durationMs,
+      durationMs: durationMs,
 
-      replyToMessageId:
-      replyToMessageId,
+      replyToMessageId: replyToMessageId,
 
-      replyToSenderId:
-      replyToSenderId,
+      replyToSenderId: replyToSenderId,
 
-      replyToSenderName:
-      replyToSenderName,
+      replyToSenderName: replyToSenderName,
 
-      replyToText:
-      replyToText,
+      replyToText: replyToText,
 
-      replyToType:
-      replyToType,
+      replyToType: replyToType,
     );
   }
 
@@ -620,24 +417,18 @@ class ChatService {
     required String receiverId,
     required String sticker,
   }) async {
-    if (sticker
-        .trim()
-        .isEmpty) {
+    if (sticker.trim().isEmpty) {
       return;
     }
 
     await _sendDirectMessage(
-      receiverId:
-      receiverId,
+      receiverId: receiverId,
 
-      type:
-      'sticker',
+      type: 'sticker',
 
-      preview:
-      'Sticker',
+      preview: 'Sticker',
 
-      text:
-      sticker,
+      text: sticker,
     );
   }
 
@@ -645,8 +436,7 @@ class ChatService {
   // STORY REPLY
   //===============================
 
-  Future<void>
-  sendStoryReply({
+  Future<void> sendStoryReply({
     required String receiverId,
     required String storyId,
     required String storyOwnerId,
@@ -656,40 +446,30 @@ class ChatService {
 
     String storyUsername = '',
   }) async {
-    final String message =
-    text.trim();
+    final String message = text.trim();
 
     if (message.isEmpty) {
       return;
     }
 
     await _sendDirectMessage(
-      receiverId:
-      receiverId,
+      receiverId: receiverId,
 
-      type:
-      'storyReply',
+      type: 'storyReply',
 
-      preview:
-      'Replied to your story: $message',
+      preview: 'Replied to your story: $message',
 
-      text:
-      message,
+      text: message,
 
-      storyId:
-      storyId,
+      storyId: storyId,
 
-      storyOwnerId:
-      storyOwnerId,
+      storyOwnerId: storyOwnerId,
 
-      storyUsername:
-      storyUsername,
+      storyUsername: storyUsername,
 
-      storyType:
-      storyType,
+      storyType: storyType,
 
-      storyPreviewUrl:
-      storyPreviewUrl,
+      storyPreviewUrl: storyPreviewUrl,
     );
   }
 
@@ -697,8 +477,7 @@ class ChatService {
   // SHARE STORY
   //===============================
 
-  Future<void>
-  sendStoryMessage({
+  Future<void> sendStoryMessage({
     required String receiverId,
     required String storyId,
     required String storyOwnerId,
@@ -707,29 +486,21 @@ class ChatService {
     required String storyType,
   }) async {
     await _sendDirectMessage(
-      receiverId:
-      receiverId,
+      receiverId: receiverId,
 
-      type:
-      'storyShare',
+      type: 'storyShare',
 
-      preview:
-      'Shared a story',
+      preview: 'Shared a story',
 
-      storyId:
-      storyId,
+      storyId: storyId,
 
-      storyOwnerId:
-      storyOwnerId,
+      storyOwnerId: storyOwnerId,
 
-      storyUsername:
-      storyUsername,
+      storyUsername: storyUsername,
 
-      storyType:
-      storyType,
+      storyType: storyType,
 
-      storyPreviewUrl:
-      storyPreviewUrl,
+      storyPreviewUrl: storyPreviewUrl,
     );
   }
 
@@ -737,8 +508,7 @@ class ChatService {
   // SHARE POST
   //===============================
 
-  Future<void>
-  sendPostMessage({
+  Future<void> sendPostMessage({
     required String receiverId,
     required String postId,
     required String postOwnerId,
@@ -748,32 +518,23 @@ class ChatService {
     required String postPreviewUrl,
   }) async {
     await _sendDirectMessage(
-      receiverId:
-      receiverId,
+      receiverId: receiverId,
 
-      type:
-      'post',
+      type: 'post',
 
-      preview:
-      'Shared a post',
+      preview: 'Shared a post',
 
-      postId:
-      postId,
+      postId: postId,
 
-      postOwnerId:
-      postOwnerId,
+      postOwnerId: postOwnerId,
 
-      postUsername:
-      postUsername,
+      postUsername: postUsername,
 
-      postFullName:
-      postFullName,
+      postFullName: postFullName,
 
-      postCaption:
-      postCaption,
+      postCaption: postCaption,
 
-      postPreviewUrl:
-      postPreviewUrl,
+      postPreviewUrl: postPreviewUrl,
     );
   }
 
@@ -781,8 +542,7 @@ class ChatService {
   // SHARE PRODUCT
   //===============================
 
-  Future<void>
-  sendProductMessage({
+  Future<void> sendProductMessage({
     required String receiverId,
     required String productId,
     required String productSellerId,
@@ -791,255 +551,151 @@ class ChatService {
     required String productPrice,
   }) async {
     await _sendDirectMessage(
-      receiverId:
-      receiverId,
+      receiverId: receiverId,
 
-      type:
-      'product',
+      type: 'product',
 
-      preview:
-      'Shared a Marketplace product',
+      preview: 'Shared a Marketplace product',
 
-      productId:
-      productId,
+      productId: productId,
 
-      productSellerId:
-      productSellerId,
+      productSellerId: productSellerId,
 
-      productName:
-      productName,
+      productName: productName,
 
-      productImageUrl:
-      productImageUrl,
+      productImageUrl: productImageUrl,
 
-      productPrice:
-      productPrice,
+      productPrice: productPrice,
     );
   }
   //===============================
-// TOGGLE REACTION
-//===============================
+  // TOGGLE REACTION
+  //===============================
 
   Future<void> toggleReaction({
     required String otherUserId,
     required String messageId,
     required String emoji,
   }) async {
-    final String? uid =
-        currentUserId;
+    final String? uid = currentUserId;
 
-    if (uid == null ||
-        uid.isEmpty) {
+    if (uid == null || uid.isEmpty) {
       return;
     }
 
-    final DocumentReference<
-        Map<String, dynamic>>
-    reference =
-    _conversationReference(
-      otherUserId,
-    )
-        .collection(
-      'messages',
-    )
-        .doc(
-      messageId,
-    );
+    final DocumentReference<Map<String, dynamic>> reference =
+        _conversationReference(
+          otherUserId,
+        ).collection('messages').doc(messageId);
 
-    final DocumentSnapshot<
-        Map<String, dynamic>>
-    snapshot =
-    await reference.get();
+    final DocumentSnapshot<Map<String, dynamic>> snapshot = await reference
+        .get();
 
-    final Map<String, dynamic>
-    reactions =
-    snapshot.data()?[
-    'reactions']
-    is Map
-        ? Map<String, dynamic>.from(
-      snapshot.data()?[
-      'reactions'] as Map,
-    )
+    final Map<String, dynamic> reactions = snapshot.data()?['reactions'] is Map
+        ? Map<String, dynamic>.from(snapshot.data()?['reactions'] as Map)
         : <String, dynamic>{};
 
-    if ((reactions[uid] ?? '')
-        .toString() ==
-        emoji) {
-      await reference.update(
-        <String, dynamic>{
-          'reactions.$uid':
-          FieldValue.delete(),
-        },
-      );
+    if ((reactions[uid] ?? '').toString() == emoji) {
+      await reference.update(<String, dynamic>{
+        'reactions.$uid': FieldValue.delete(),
+      });
 
       return;
     }
 
-    await reference.update(
-      <String, dynamic>{
-        'reactions.$uid':
-        emoji,
-      },
-    );
+    await reference.update(<String, dynamic>{'reactions.$uid': emoji});
   }
 
-//===============================
-// DELETE FOR ME
-//===============================
+  //===============================
+  // DELETE FOR ME
+  //===============================
 
   Future<void> deleteMessageForMe({
     required String otherUserId,
     required String messageId,
   }) async {
-    final String? uid =
-        currentUserId;
+    final String? uid = currentUserId;
 
-    if (uid == null ||
-        uid.isEmpty) {
+    if (uid == null || uid.isEmpty) {
       return;
     }
 
     await _conversationReference(
       otherUserId,
-    )
-        .collection(
-      'messages',
-    )
-        .doc(
-      messageId,
-    )
-        .update(
-      <String, dynamic>{
-        'hiddenFor':
-        FieldValue.arrayUnion(
-          <String>[
-            uid,
-          ],
-        ),
-      },
-    );
+    ).collection('messages').doc(messageId).update(<String, dynamic>{
+      'hiddenFor': FieldValue.arrayUnion(<String>[uid]),
+    });
   }
 
-//===============================
-// DELETE FOR EVERYONE
-//===============================
+  //===============================
+  // DELETE FOR EVERYONE
+  //===============================
 
-  Future<void>
-  deleteMessageForEveryone({
+  Future<void> deleteMessageForEveryone({
     required String otherUserId,
     required String messageId,
   }) async {
-    final String? uid =
-        currentUserId;
+    final String? uid = currentUserId;
 
-    if (uid == null ||
-        uid.isEmpty) {
+    if (uid == null || uid.isEmpty) {
       return;
     }
 
-    final DocumentReference<
-        Map<String, dynamic>>
-    conversation =
-    _conversationReference(
-      otherUserId,
-    );
+    final DocumentReference<Map<String, dynamic>> conversation =
+        _conversationReference(otherUserId);
 
-    final DocumentReference<
-        Map<String, dynamic>>
-    messageReference =
-    conversation
-        .collection(
-      'messages',
-    )
-        .doc(
-      messageId,
-    );
+    final DocumentReference<Map<String, dynamic>> messageReference =
+        conversation.collection('messages').doc(messageId);
 
-    final DocumentSnapshot<
-        Map<String, dynamic>>
-    messageSnapshot =
-    await messageReference
-        .get();
+    final DocumentSnapshot<Map<String, dynamic>> messageSnapshot =
+        await messageReference.get();
 
     if (!messageSnapshot.exists) {
       return;
     }
 
-    if ((messageSnapshot.data()?[
-    'senderId'] ??
-        '')
-        .toString() !=
-        uid) {
-      throw Exception(
-        'You can only delete your own message for everyone.',
-      );
+    if ((messageSnapshot.data()?['senderId'] ?? '').toString() != uid) {
+      throw Exception('You can only delete your own message for everyone.');
     }
 
-    final DocumentSnapshot<
-        Map<String, dynamic>>
-    conversationSnapshot =
-    await conversation.get();
+    final DocumentSnapshot<Map<String, dynamic>> conversationSnapshot =
+        await conversation.get();
 
-    final WriteBatch batch =
-    _firestore.batch();
+    final WriteBatch batch = _firestore.batch();
 
-    batch.update(
-      messageReference,
-      <String, dynamic>{
-        'deletedForEveryone':
-        true,
+    batch.update(messageReference, <String, dynamic>{
+      'deletedForEveryone': true,
 
-        'text':
-        '',
+      'text': '',
 
-        'mediaUrl':
-        '',
+      'mediaUrl': '',
 
-        'fileName':
-        '',
+      'fileName': '',
 
-        'storyId':
-        '',
+      'storyId': '',
 
-        'postId':
-        '',
+      'postId': '',
 
-        'productId':
-        '',
+      'productId': '',
 
-        'reactions':
-        <String, String>{},
-      },
-    );
+      'reactions': <String, String>{},
+    });
 
-    if ((conversationSnapshot
-        .data()?[
-    'lastMessageId'] ??
-        '')
-        .toString() ==
+    if ((conversationSnapshot.data()?['lastMessageId'] ?? '').toString() ==
         messageId) {
-      batch.set(
-        conversation,
-        <String, dynamic>{
-          'lastMessage':
-          'Message deleted',
+      batch.set(conversation, <String, dynamic>{
+        'lastMessage': 'Message deleted',
 
-          'lastMessageType':
-          'text',
-        },
-        SetOptions(
-          merge:
-          true,
-        ),
-      );
+        'lastMessageType': 'text',
+      }, SetOptions(merge: true));
     }
 
     await batch.commit();
   }
 
-//===============================
-// FORWARD MESSAGE
-//===============================
+  //===============================
+  // FORWARD MESSAGE
+  //===============================
 
   Future<void> forwardMessage({
     required String receiverId,
@@ -1050,255 +706,142 @@ class ChatService {
     }
 
     await _sendDirectMessage(
-      receiverId:
-      receiverId,
+      receiverId: receiverId,
 
-      type:
-      message.type,
+      type: message.type,
 
-      preview:
-      message.previewText,
+      preview: message.previewText,
 
-      text:
-      message.text,
+      text: message.text,
 
-      mediaUrl:
-      message.mediaUrl,
+      mediaUrl: message.mediaUrl,
 
-      fileName:
-      message.fileName,
+      fileName: message.fileName,
 
-      durationMs:
-      message.durationMs,
+      durationMs: message.durationMs,
 
-      storyId:
-      message.storyId,
+      storyId: message.storyId,
 
-      storyOwnerId:
-      message.storyOwnerId,
+      storyOwnerId: message.storyOwnerId,
 
-      storyUsername:
-      message.storyUsername,
+      storyUsername: message.storyUsername,
 
-      storyType:
-      message.storyType,
+      storyType: message.storyType,
 
-      storyPreviewUrl:
-      message.storyPreviewUrl,
+      storyPreviewUrl: message.storyPreviewUrl,
 
-      postId:
-      message.postId,
+      postId: message.postId,
 
-      postOwnerId:
-      message.postOwnerId,
+      postOwnerId: message.postOwnerId,
 
-      postUsername:
-      message.postUsername,
+      postUsername: message.postUsername,
 
-      postFullName:
-      message.postFullName,
+      postFullName: message.postFullName,
 
-      postCaption:
-      message.postCaption,
+      postCaption: message.postCaption,
 
-      postPreviewUrl:
-      message.postPreviewUrl,
+      postPreviewUrl: message.postPreviewUrl,
 
-      productId:
-      message.productId,
+      productId: message.productId,
 
-      productSellerId:
-      message.productSellerId,
+      productSellerId: message.productSellerId,
 
-      productName:
-      message.productName,
+      productName: message.productName,
 
-      productImageUrl:
-      message.productImageUrl,
+      productImageUrl: message.productImageUrl,
 
-      productPrice:
-      message.productPrice,
+      productPrice: message.productPrice,
 
-      isForwarded:
-      true,
+      isForwarded: true,
     );
   }
-//===============================
-// GET MESSAGES
-//===============================
+  //===============================
+  // GET MESSAGES
+  //===============================
 
-  Stream<QuerySnapshot<Map<String, dynamic>>> getMessages(
-      String otherUserId,
-      ) {
-    final String conversationId =
-    getConversationId(
-      otherUserId,
-    );
+  Stream<QuerySnapshot<Map<String, dynamic>>> getMessages(String otherUserId) {
+    final String conversationId = getConversationId(otherUserId);
 
     return _firestore
-        .collection(
-      'conversations',
-    )
-        .doc(
-      conversationId,
-    )
-        .collection(
-      'messages',
-    )
-        .orderBy(
-      'createdAt',
-      descending:
-      true,
-    )
+        .collection('conversations')
+        .doc(conversationId)
+        .collection('messages')
+        .orderBy('createdAt', descending: true)
+        .limit(150)
         .snapshots();
   }
   //===============================
   // DELIVER CONVERSATION
   //===============================
 
-  Future<void>
-  markConversationDelivered(
-      String otherUserId,
-      ) async {
-    final String? uid =
-        currentUserId;
+  Future<void> markConversationDelivered(String otherUserId) async {
+    final String? uid = currentUserId;
 
-    if (uid == null ||
-        uid.isEmpty) {
+    if (uid == null || uid.isEmpty) {
       return;
     }
 
-    final DocumentReference<
-        Map<String, dynamic>>
-    conversation =
-    _conversationReference(
-      otherUserId,
-    );
+    final DocumentReference<Map<String, dynamic>> conversation =
+        _conversationReference(otherUserId);
 
-    final QuerySnapshot<
-        Map<String, dynamic>>
-    snapshot =
-    await conversation
-        .collection(
-      'messages',
-    )
-        .orderBy(
-      'createdAt',
-      descending:
-      true,
-    )
-        .limit(
-      100,
-    )
+    final QuerySnapshot<Map<String, dynamic>> snapshot = await conversation
+        .collection('messages')
+        .orderBy('createdAt', descending: true)
+        .limit(100)
         .get();
 
-    final WriteBatch batch =
-    _firestore.batch();
+    final WriteBatch batch = _firestore.batch();
 
-    bool changed =
-    false;
+    bool changed = false;
 
-    for (final QueryDocumentSnapshot<
-        Map<String, dynamic>>
-    document
-    in snapshot.docs) {
-      final Map<String, dynamic>
-      data =
-      document.data();
+    for (final QueryDocumentSnapshot<Map<String, dynamic>> document
+        in snapshot.docs) {
+      final Map<String, dynamic> data = document.data();
 
-      final String senderId =
-      (
-          data['senderId'] ??
-              data['senderUid'] ??
-              ''
-      )
+      final String senderId = (data['senderId'] ?? data['senderUid'] ?? '')
           .toString();
 
-      if (senderId ==
-          uid) {
+      if (senderId == uid) {
         continue;
       }
 
-      final List<String>
-      deliveredTo =
-      data['deliveredTo']
-      is List
-          ? (data['deliveredTo']
-      as List)
-          .map(
-            (dynamic item) =>
-            item.toString(),
-      )
-          .toList()
+      final List<String> deliveredTo = data['deliveredTo'] is List
+          ? (data['deliveredTo'] as List)
+                .map((dynamic item) => item.toString())
+                .toList()
           : <String>[];
 
-      if (deliveredTo
-          .contains(
-        uid,
-      )) {
+      if (deliveredTo.contains(uid)) {
         continue;
       }
 
-      batch.update(
-        document.reference,
-        <String, dynamic>{
-          'deliveredTo':
-          FieldValue
-              .arrayUnion(
-            <String>[
-              uid,
-            ],
-          ),
-        },
-      );
+      batch.update(document.reference, <String, dynamic>{
+        'deliveredTo': FieldValue.arrayUnion(<String>[uid]),
+      });
 
-      changed =
-      true;
+      changed = true;
     }
 
     if (changed) {
       await batch.commit();
     }
 
-    final DocumentSnapshot<
-        Map<String, dynamic>>
-    conversationSnapshot =
-    await conversation.get();
+    final DocumentSnapshot<Map<String, dynamic>> conversationSnapshot =
+        await conversation.get();
 
-    final Map<String, dynamic>
-    conversationData =
-        conversationSnapshot
-            .data() ??
-            <String, dynamic>{};
+    final Map<String, dynamic> conversationData =
+        conversationSnapshot.data() ?? <String, dynamic>{};
 
     final String lastSender =
-    (
-        conversationData[
-        'lastMessageSenderId'] ??
-            conversationData[
-            'lastSenderId'] ??
-            ''
-    )
-        .toString();
+        (conversationData['lastMessageSenderId'] ??
+                conversationData['lastSenderId'] ??
+                '')
+            .toString();
 
-    if (lastSender.isNotEmpty &&
-        lastSender != uid) {
-      await conversation.set(
-        <String, dynamic>{
-          'lastMessageDeliveredTo':
-          FieldValue
-              .arrayUnion(
-            <String>[
-              uid,
-            ],
-          ),
-        },
-
-        SetOptions(
-          merge:
-          true,
-        ),
-      );
+    if (lastSender.isNotEmpty && lastSender != uid) {
+      await conversation.set(<String, dynamic>{
+        'lastMessageDeliveredTo': FieldValue.arrayUnion(<String>[uid]),
+      }, SetOptions(merge: true));
     }
   }
 
@@ -1306,196 +849,93 @@ class ChatService {
   // READ CONVERSATION
   //===============================
 
-  Future<void>
-  markConversationRead(
-      String otherUserId,
-      ) async {
-    final String? uid =
-        currentUserId;
+  Future<void> markConversationRead(String otherUserId) async {
+    final String? uid = currentUserId;
 
-    if (uid == null ||
-        uid.isEmpty) {
+    if (uid == null || uid.isEmpty) {
       return;
     }
 
-    final DocumentReference<
-        Map<String, dynamic>>
-    conversation =
-    _conversationReference(
-      otherUserId,
-    );
+    final DocumentReference<Map<String, dynamic>> conversation =
+        _conversationReference(otherUserId);
 
-    final QuerySnapshot<
-        Map<String, dynamic>>
-    snapshot =
-    await conversation
-        .collection(
-      'messages',
-    )
-        .orderBy(
-      'createdAt',
-      descending:
-      true,
-    )
-        .limit(
-      150,
-    )
+    final QuerySnapshot<Map<String, dynamic>> snapshot = await conversation
+        .collection('messages')
+        .orderBy('createdAt', descending: true)
+        .limit(150)
         .get();
 
-    final WriteBatch batch =
-    _firestore.batch();
+    final WriteBatch batch = _firestore.batch();
 
-    bool changed =
-    false;
+    bool changed = false;
 
-    for (final QueryDocumentSnapshot<
-        Map<String, dynamic>>
-    document
-    in snapshot.docs) {
-      final Map<String, dynamic>
-      data =
-      document.data();
+    for (final QueryDocumentSnapshot<Map<String, dynamic>> document
+        in snapshot.docs) {
+      final Map<String, dynamic> data = document.data();
 
-      final String senderId =
-      (
-          data['senderId'] ??
-              data['senderUid'] ??
-              ''
-      )
+      final String senderId = (data['senderId'] ?? data['senderUid'] ?? '')
           .toString();
 
-      if (senderId ==
-          uid) {
+      if (senderId == uid) {
         continue;
       }
 
-      final List<String>
-      readBy =
-      data['readBy']
-      is List
-          ? (data['readBy']
-      as List)
-          .map(
-            (dynamic item) =>
-            item.toString(),
-      )
-          .toList()
-          : data['seenBy']
-      is List
-          ? (data['seenBy']
-      as List)
-          .map(
-            (dynamic item) =>
-            item.toString(),
-      )
-          .toList()
+      final List<String> readBy = data['readBy'] is List
+          ? (data['readBy'] as List)
+                .map((dynamic item) => item.toString())
+                .toList()
+          : data['seenBy'] is List
+          ? (data['seenBy'] as List)
+                .map((dynamic item) => item.toString())
+                .toList()
           : <String>[];
 
-      if (readBy.contains(
-        uid,
-      )) {
+      if (readBy.contains(uid)) {
         continue;
       }
 
-      batch.update(
-        document.reference,
-        <String, dynamic>{
-          'isRead':
-          true,
+      batch.update(document.reference, <String, dynamic>{
+        'isRead': true,
 
-          'readBy':
-          FieldValue
-              .arrayUnion(
-            <String>[
-              uid,
-            ],
-          ),
+        'readBy': FieldValue.arrayUnion(<String>[uid]),
 
-          'seenBy':
-          FieldValue
-              .arrayUnion(
-            <String>[
-              uid,
-            ],
-          ),
+        'seenBy': FieldValue.arrayUnion(<String>[uid]),
 
-          'deliveredTo':
-          FieldValue
-              .arrayUnion(
-            <String>[
-              uid,
-            ],
-          ),
-        },
-      );
+        'deliveredTo': FieldValue.arrayUnion(<String>[uid]),
+      });
 
-      changed =
-      true;
+      changed = true;
     }
 
     if (changed) {
       await batch.commit();
     }
 
-    final DocumentSnapshot<
-        Map<String, dynamic>>
-    conversationSnapshot =
-    await conversation.get();
+    final DocumentSnapshot<Map<String, dynamic>> conversationSnapshot =
+        await conversation.get();
 
-    final Map<String, dynamic>
-    conversationData =
-        conversationSnapshot
-            .data() ??
-            <String, dynamic>{};
+    final Map<String, dynamic> conversationData =
+        conversationSnapshot.data() ?? <String, dynamic>{};
 
     final String lastSender =
-    (
-        conversationData[
-        'lastMessageSenderId'] ??
-            conversationData[
-            'lastSenderId'] ??
-            ''
-    )
-        .toString();
+        (conversationData['lastMessageSenderId'] ??
+                conversationData['lastSenderId'] ??
+                '')
+            .toString();
 
-    if (lastSender.isNotEmpty &&
-        lastSender != uid) {
-      await conversation.set(
-        <String, dynamic>{
-          'lastMessageDeliveredTo':
-          FieldValue
-              .arrayUnion(
-            <String>[
-              uid,
-            ],
-          ),
+    if (lastSender.isNotEmpty && lastSender != uid) {
+      await conversation.set(<String, dynamic>{
+        'lastMessageDeliveredTo': FieldValue.arrayUnion(<String>[uid]),
 
-          'lastMessageReadBy':
-          FieldValue
-              .arrayUnion(
-            <String>[
-              uid,
-            ],
-          ),
-        },
-
-        SetOptions(
-          merge:
-          true,
-        ),
-      );
+        'lastMessageReadBy': FieldValue.arrayUnion(<String>[uid]),
+      }, SetOptions(merge: true));
     }
     //===============================
-   // RESET UNREAD COUNT
-   //===============================
+    // RESET UNREAD COUNT
+    //===============================
 
     try {
-      await conversation.update(
-        <String, dynamic>{
-          'unreadCounts.$uid':
-          0,
-        },
-      );
+      await conversation.update(<String, dynamic>{'unreadCounts.$uid': 0});
     } catch (_) {}
   }
 
@@ -1503,201 +943,105 @@ class ChatService {
   // MARK ONE MESSAGE READ
   //===============================
 
-  Future<void>
-  markMessageAsRead({
+  Future<void> markMessageAsRead({
     required String otherUserId,
     required String messageId,
   }) async {
-    final String? uid =
-        currentUserId;
+    final String? uid = currentUserId;
 
-    if (uid == null ||
-        uid.isEmpty) {
+    if (uid == null || uid.isEmpty) {
       return;
     }
 
-    final String conversationId =
-    getConversationId(
-      otherUserId,
-    );
+    final String conversationId = getConversationId(otherUserId);
 
     await _firestore
-        .collection(
-      'conversations',
-    )
-        .doc(
-      conversationId,
-    )
-        .collection(
-      'messages',
-    )
-        .doc(
-      messageId,
-    )
-        .set(
-      <String, dynamic>{
-        'isRead':
-        true,
+        .collection('conversations')
+        .doc(conversationId)
+        .collection('messages')
+        .doc(messageId)
+        .set(<String, dynamic>{
+          'isRead': true,
 
-        'readBy':
-        FieldValue
-            .arrayUnion(
-          <String>[
-            uid,
-          ],
-        ),
+          'readBy': FieldValue.arrayUnion(<String>[uid]),
 
-        'seenBy':
-        FieldValue
-            .arrayUnion(
-          <String>[
-            uid,
-          ],
-        ),
+          'seenBy': FieldValue.arrayUnion(<String>[uid]),
 
-        'deliveredTo':
-        FieldValue
-            .arrayUnion(
-          <String>[
-            uid,
-          ],
-        ),
-      },
-
-      SetOptions(
-        merge:
-        true,
-      ),
-    );
+          'deliveredTo': FieldValue.arrayUnion(<String>[uid]),
+        }, SetOptions(merge: true));
   }
 
   //===============================
-// CONVERSATIONS
-//===============================
+  // CONVERSATIONS
+  //===============================
 
-  Stream<QuerySnapshot<
-      Map<String, dynamic>>>
-  getConversations() {
-    final String? uid =
-        currentUserId;
+  Stream<QuerySnapshot<Map<String, dynamic>>> getConversations() {
+    final String? uid = currentUserId;
 
-    if (uid == null ||
-        uid.isEmpty) {
-      return const Stream<
-          QuerySnapshot<
-              Map<String, dynamic>>>
-          .empty();
+    if (uid == null || uid.isEmpty) {
+      return const Stream<QuerySnapshot<Map<String, dynamic>>>.empty();
     }
 
     return _firestore
-        .collection(
-      'conversations',
-    )
-        .where(
-      'participants',
-      arrayContains:
-      uid,
-    )
+        .collection('conversations')
+        .where('participants', arrayContains: uid)
         .snapshots();
   }
   //===============================
   // UNREAD COUNT
   //===============================
 
-  Stream<int> unreadCountStream(
-      String otherUserId,
-      ) {
-    final String? uid =
-        currentUserId;
+  Stream<int> unreadCountStream(String otherUserId) {
+    final String? uid = currentUserId;
 
-    if (uid == null ||
-        uid.isEmpty) {
-      return Stream<int>.value(
-        0,
-      );
+    if (uid == null || uid.isEmpty) {
+      return Stream<int>.value(0);
     }
 
-    return getMessages(
-      otherUserId,
-    ).map(
-          (
-          QuerySnapshot<
-              Map<String, dynamic>>
-          snapshot,
-          ) {
-        int unread =
-        0;
+    return getMessages(otherUserId).map((
+      QuerySnapshot<Map<String, dynamic>> snapshot,
+    ) {
+      int unread = 0;
 
-        for (final QueryDocumentSnapshot<
-            Map<String, dynamic>>
-        document
-        in snapshot.docs) {
-          final Map<String, dynamic>
-          data =
-          document.data();
+      for (final QueryDocumentSnapshot<Map<String, dynamic>> document
+          in snapshot.docs) {
+        final Map<String, dynamic> data = document.data();
 
-          final String senderId =
-          (
-              data['senderId'] ??
-                  data['senderUid'] ??
-                  ''
-          )
-              .toString();
+        final String senderId = (data['senderId'] ?? data['senderUid'] ?? '')
+            .toString();
 
-          if (senderId ==
-              uid) {
-            continue;
-          }
-
-          final List<String> readBy =
-          data['readBy']
-          is List
-              ? (data['readBy']
-          as List)
-              .map(
-                (dynamic item) =>
-                item.toString(),
-          )
-              .toList()
-              : data['seenBy']
-          is List
-              ? (data['seenBy']
-          as List)
-              .map(
-                (dynamic item) =>
-                item.toString(),
-          )
-              .toList()
-              : <String>[];
-
-          final bool legacyRead =
-              data['isRead'] ==
-                  true;
-
-          if (!readBy.contains(
-            uid,
-          ) &&
-              !legacyRead) {
-            unread++;
-          }
+        if (senderId == uid) {
+          continue;
         }
 
-        return unread;
-      },
-    );
+        final List<String> readBy = data['readBy'] is List
+            ? (data['readBy'] as List)
+                  .map((dynamic item) => item.toString())
+                  .toList()
+            : data['seenBy'] is List
+            ? (data['seenBy'] as List)
+                  .map((dynamic item) => item.toString())
+                  .toList()
+            : <String>[];
+
+        final bool legacyRead = data['isRead'] == true;
+
+        if (!readBy.contains(uid) && !legacyRead) {
+          unread++;
+        }
+      }
+
+      return unread;
+    });
   }
 
   //===============================
   // CONVERSATION DOCUMENT
   //===============================
 
-  Stream<DocumentSnapshot<
-      Map<String, dynamic>>>
-  conversationStream(
-      String otherUserId,
-      ) {
-    return _conversationReference(
-      otherUserId,
-    ).snapshots();
+  Stream<DocumentSnapshot<Map<String, dynamic>>> conversationStream(
+    String otherUserId,
+  ) {
+    return _conversationReference(otherUserId).snapshots();
   }
 }

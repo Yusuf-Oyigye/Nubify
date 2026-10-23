@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -44,29 +45,23 @@ class GroupChatScreen extends StatefulWidget {
 class _GroupChatScreenState extends State<GroupChatScreen> {
   static const Color _blue = Color(0xFF29B6F6);
 
-
-  Stream<QuerySnapshot<Map<String, dynamic>>>?
-  _groupMessagesStream;
+  Stream<QuerySnapshot<Map<String, dynamic>>>? _groupMessagesStream;
 
   String _groupMessagesKey = '';
 
-//===================================================
-// GET GROUP MESSAGE STREAM
-//===================================================
+  //===================================================
+  // GET GROUP MESSAGE STREAM
+  //===================================================
 
-  Stream<QuerySnapshot<Map<String, dynamic>>> _messagesFor(
-      ChatGroup group,
-      ) {
+  Stream<QuerySnapshot<Map<String, dynamic>>> _messagesFor(ChatGroup group) {
     final String uid = _auth.currentUser?.uid ?? '';
 
-    final int joinedAt =
-        group.memberJoinedAt[uid]?.millisecondsSinceEpoch ?? 0;
+    final int joinedAt = group.memberJoinedAt[uid]?.millisecondsSinceEpoch ?? 0;
 
     final String key =
         '${group.groupId}|${group.permissions.newMembersCanSeeHistory}|$joinedAt';
 
-    if (_groupMessagesStream == null ||
-        _groupMessagesKey != key) {
+    if (_groupMessagesStream == null || _groupMessagesKey != key) {
       _groupMessagesKey = key;
 
       _groupMessagesStream = _groupService.getMessages(
@@ -106,23 +101,33 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
   // USER CACHE
   //===============================
 
-  final Map<String, Future<DocumentSnapshot<Map<String, dynamic>>>>
-  _userFutureCache = <String, Future<DocumentSnapshot<Map<String, dynamic>>>>{};
+  static final Map<String, Future<DocumentSnapshot<Map<String, dynamic>>>>
+  _sharedUserFutureCache =
+      <String, Future<DocumentSnapshot<Map<String, dynamic>>>>{};
 
   //===============================
   // CACHED USER
   //===============================
 
   Future<DocumentSnapshot<Map<String, dynamic>>> _cachedUser(String uid) {
-    return _userFutureCache.putIfAbsent(
-      uid,
-      () => _firestore.collection('users').doc(uid).get(),
-    );
+    return _sharedUserFutureCache.putIfAbsent(uid, () async {
+      final DocumentReference<Map<String, dynamic>> reference = _firestore
+          .collection('users')
+          .doc(uid);
+      try {
+        final DocumentSnapshot<Map<String, dynamic>> cached = await reference
+            .get(const GetOptions(source: Source.cache));
+        if (cached.exists) {
+          return cached;
+        }
+      } catch (_) {}
+      return reference.get(const GetOptions(source: Source.serverAndCache));
+    });
   }
 
   //===================================================
-// INITIALIZE GROUP CHAT
-//===================================================
+  // INITIALIZE GROUP CHAT
+  //===================================================
 
   @override
   void initState() {
@@ -1184,7 +1189,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                         radius: 19,
                         backgroundColor: const Color(0xFF17252E),
                         backgroundImage: group.photoUrl.trim().isNotEmpty
-                            ? NetworkImage(group.photoUrl)
+                            ? CachedNetworkImageProvider(group.photoUrl)
                             : null,
                         child: group.photoUrl.trim().isEmpty
                             ? const Icon(Icons.groups_rounded, color: _blue)

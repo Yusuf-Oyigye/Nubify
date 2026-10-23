@@ -2505,74 +2505,6 @@ class _PostCardState extends State<PostCard> {
   }
 
   //===================================================
-  // WINNER TEXT
-  //===================================================
-
-  Widget _buildWinnerText() {
-    if (!_pollClosed || _pollOptions.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    final PollResult result = _calculateWinner(_pollOptions);
-
-    if (result.winnerIndex == null) {
-      return const Padding(
-        padding: EdgeInsets.only(top: 8),
-        child: Text(
-          'Poll ended with no votes.',
-          style: TextStyle(fontWeight: FontWeight.w600),
-        ),
-      );
-    }
-
-    if (result.isTie) {
-      return const Padding(
-        padding: EdgeInsets.only(top: 8),
-        child: Row(
-          children: <Widget>[
-            Icon(Icons.emoji_events_outlined, size: 18),
-            SizedBox(width: 6),
-            Text(
-              'Poll ended in a tie',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
-      );
-    }
-
-    final int index = result.winnerIndex!;
-
-    if (index < 0 || index >= _pollOptions.length) {
-      return const SizedBox.shrink();
-    }
-
-    final String winner = (_pollOptions[index]['text'] ?? '').toString();
-
-    final int percentage = _getPollPercentageNumber(
-      _toInt(_pollOptions[index]['votes']),
-    );
-
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Row(
-        children: <Widget>[
-          const Icon(Icons.emoji_events, color: Colors.amber, size: 19),
-
-          const SizedBox(width: 6),
-
-          Expanded(
-            child: Text(
-              'Winner: $winner $percentage%',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  //===================================================
   // POLL UI
   //===================================================
 
@@ -2745,16 +2677,6 @@ class _PostCardState extends State<PostCard> {
                                 ),
                               ),
 
-                            if (winner)
-                              const Padding(
-                                padding: EdgeInsets.only(right: 7),
-                                child: Icon(
-                                  Icons.emoji_events,
-                                  color: Colors.amber,
-                                  size: 20,
-                                ),
-                              ),
-
                             Expanded(
                               child: Text(
                                 text,
@@ -2767,6 +2689,28 @@ class _PostCardState extends State<PostCard> {
                                 ),
                               ),
                             ),
+
+                            if (winner)
+                              Container(
+                                margin: const EdgeInsets.only(right: 9),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF29B6F6),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: const Text(
+                                  'WINS',
+                                  style: TextStyle(
+                                    color: Color(0xFF06141B),
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 0.7,
+                                  ),
+                                ),
+                              ),
 
                             if (showResults)
                               Text(
@@ -2819,7 +2763,6 @@ class _PostCardState extends State<PostCard> {
               ),
             ),
 
-          _buildWinnerText(),
         ],
       ),
     );
@@ -3969,15 +3912,6 @@ class _PostCardState extends State<PostCard> {
                         size: 17,
                       ),
                     ),
-                  if (winner)
-                    const Padding(
-                      padding: EdgeInsets.only(right: 6),
-                      child: Icon(
-                        Icons.emoji_events,
-                        color: Colors.amber,
-                        size: 17,
-                      ),
-                    ),
                   Expanded(
                     child: Text(
                       (option['text'] ?? '').toString(),
@@ -3989,6 +3923,27 @@ class _PostCardState extends State<PostCard> {
                       ),
                     ),
                   ),
+                  if (winner)
+                    Container(
+                      margin: const EdgeInsets.only(right: 7),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 7,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF29B6F6),
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      child: const Text(
+                        'WINS',
+                        style: TextStyle(
+                          color: Color(0xFF06141B),
+                          fontSize: 9,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.6,
+                        ),
+                      ),
+                    ),
                   if (pollClosed)
                     Text(
                       '${(percentage * 100).round()}%',

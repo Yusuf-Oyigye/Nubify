@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:audioplayers/audioplayers.dart';
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
-import 'package:flutter/foundation.dart'
-as foundation;
+import 'package:flutter/foundation.dart' as foundation;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
@@ -14,8 +14,7 @@ import 'universal_link_composer_preview.dart';
 // CHAT COMPOSER
 //===============================
 
-class ChatComposer
-    extends StatefulWidget {
+class ChatComposer extends StatefulWidget {
   const ChatComposer({
     super.key,
     required this.controller,
@@ -33,87 +32,81 @@ class ChatComposer
     this.onLinkPreviewSuppressedChanged,
   });
 
-  final ValueChanged<bool>?
-  onLinkPreviewSuppressedChanged;
-  final TextEditingController
-  controller;
+  final ValueChanged<bool>? onLinkPreviewSuppressedChanged;
+  final TextEditingController controller;
 
   final bool sending;
 
   final bool enabled;
 
-  final Future<void> Function()
-  onSend;
+  final Future<void> Function() onSend;
 
-  final Future<void> Function()
-  onCamera;
+  final Future<void> Function() onCamera;
 
-  final Future<void> Function()
-  onGallery;
+  final Future<void> Function() onGallery;
 
-  final Future<void> Function()
-  onVideo;
+  final Future<void> Function() onVideo;
 
-  final Future<void> Function()
-  onDocument;
+  final Future<void> Function() onDocument;
 
-  final Future<void> Function(
-      String path,
-      int durationMs,
-      ) onVoiceRecorded;
+  final Future<void> Function(String path, int durationMs) onVoiceRecorded;
 
-  final Future<void> Function(
-      String sticker,
-      ) onStickerSelected;
+  final Future<void> Function(String sticker) onStickerSelected;
 
-  final ValueChanged<String>?
-  onTextChanged;
+  final ValueChanged<String>? onTextChanged;
 
-  final ValueChanged<bool>?
-  onRecordingChanged;
+  final ValueChanged<bool>? onRecordingChanged;
 
   @override
-  State<ChatComposer>
-  createState() =>
-      _ChatComposerState();
+  State<ChatComposer> createState() => _ChatComposerState();
 }
 
 //===============================
 // CHAT COMPOSER STATE
 //===============================
 
-class _ChatComposerState
-    extends State<
-        ChatComposer> {
-  final AudioRecorder
-  _recorder =
-  AudioRecorder();
+class _ChatComposerState extends State<ChatComposer> {
+  final AudioRecorder _recorder = AudioRecorder();
+
+  final AudioPlayer _voicePreviewPlayer = AudioPlayer();
+
+  StreamSubscription<Amplitude>? _amplitudeSubscription;
+
+  StreamSubscription<Duration>? _previewPositionSubscription;
+
+  StreamSubscription<Duration>? _previewDurationSubscription;
+
+  StreamSubscription<void>? _previewCompleteSubscription;
+
+  StreamSubscription<PlayerState>? _previewStateSubscription;
   //===============================
- // STICKER EMOJI CONTROLLER
- //===============================
+  // STICKER EMOJI CONTROLLER
+  //===============================
 
-  final TextEditingController
-  _stickerEmojiController =
-  TextEditingController();
+  final TextEditingController _stickerEmojiController = TextEditingController();
 
-  bool _showEmoji =
-  false;
+  bool _showEmoji = false;
 
-  bool _showStickers =
-  false;
+  bool _showStickers = false;
 
-  bool _recording =
-  false;
+  bool _recording = false;
   bool _recordingPaused = false;
   bool _pauseActionBusy = false;
-  bool _processingVoice =
-  false;
+  bool _processingVoice = false;
 
-  int _recordSeconds =
-  0;
+  int _recordSeconds = 0;
 
-  String _recordPath =
-      '';
+  String _recordPath = '';
+
+  String _voicePreviewPath = '';
+
+  Duration _voicePreviewPosition = Duration.zero;
+
+  Duration _voicePreviewDuration = Duration.zero;
+
+  bool _voicePreviewPlaying = false;
+
+  final List<double> _liveWaveform = List<double>.filled(24, 0.12);
 
   Timer? _recordTimer;
 
@@ -125,9 +118,47 @@ class _ChatComposerState
   void initState() {
     super.initState();
 
-    widget.controller
-        .addListener(
-      _controllerChanged,
+    widget.controller.addListener(_controllerChanged);
+
+    _previewPositionSubscription = _voicePreviewPlayer.onPositionChanged.listen(
+      (Duration position) {
+        if (mounted) {
+          setState(() {
+            _voicePreviewPosition = position;
+          });
+        }
+      },
+    );
+
+    _previewDurationSubscription = _voicePreviewPlayer.onDurationChanged.listen(
+      (Duration duration) {
+        if (mounted && duration > Duration.zero) {
+          setState(() {
+            _voicePreviewDuration = duration;
+          });
+        }
+      },
+    );
+
+    _previewCompleteSubscription = _voicePreviewPlayer.onPlayerComplete.listen((
+      _,
+    ) {
+      if (mounted) {
+        setState(() {
+          _voicePreviewPlaying = false;
+          _voicePreviewPosition = Duration.zero;
+        });
+      }
+    });
+
+    _previewStateSubscription = _voicePreviewPlayer.onPlayerStateChanged.listen(
+      (PlayerState state) {
+        if (mounted) {
+          setState(() {
+            _voicePreviewPlaying = state == PlayerState.playing;
+          });
+        }
+      },
     );
   }
 
@@ -142,10 +173,7 @@ class _ChatComposerState
 
     setState(() {});
 
-    widget.onTextChanged
-        ?.call(
-      widget.controller.text,
-    );
+    widget.onTextChanged?.call(widget.controller.text);
   }
 
   //===============================
@@ -159,16 +187,12 @@ class _ChatComposerState
       return;
     }
 
-    FocusScope.of(
-      context,
-    ).unfocus();
+    FocusScope.of(context).unfocus();
 
     setState(() {
-      _showEmoji =
-      !_showEmoji;
+      _showEmoji = !_showEmoji;
 
-      _showStickers =
-      false;
+      _showStickers = false;
     });
   }
 
@@ -181,16 +205,12 @@ class _ChatComposerState
       return;
     }
 
-    FocusScope.of(
-      context,
-    ).unfocus();
+    FocusScope.of(context).unfocus();
 
     setState(() {
-      _showStickers =
-      !_showStickers;
+      _showStickers = !_showStickers;
 
-      _showEmoji =
-      false;
+      _showEmoji = false;
     });
   }
 
@@ -198,163 +218,88 @@ class _ChatComposerState
   // ATTACHMENT SHEET
   //===============================
 
-  Future<void>
-  _showAttachments() async {
+  Future<void> _showAttachments() async {
     if (!widget.enabled) {
       return;
     }
 
-    FocusScope.of(
-      context,
-    ).unfocus();
+    FocusScope.of(context).unfocus();
 
     setState(() {
-      _showEmoji =
-      false;
+      _showEmoji = false;
 
-      _showStickers =
-      false;
+      _showStickers = false;
     });
 
     await showModalBottomSheet<void>(
-      context:
-      context,
-      backgroundColor:
-      const Color(
-        0xFF141B21,
-      ),
-      showDragHandle:
-      true,
-      builder:
-          (
-          BuildContext context,
-          ) {
+      context: context,
+      backgroundColor: const Color(0xFF141B21),
+      showDragHandle: true,
+      builder: (BuildContext context) {
         return SafeArea(
-          child:
-          Padding(
-            padding:
-            const EdgeInsets.fromLTRB(
-              18,
-              0,
-              18,
-              20,
-            ),
-            child:
-            Column(
-              mainAxisSize:
-              MainAxisSize.min,
-              children:
-              <Widget>[
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(18, 0, 18, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
                 const Align(
-                  alignment:
-                  Alignment.centerLeft,
-                  child:
-                  Text(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
                     'Send attachment',
-                    style:
-                    TextStyle(
-                      color:
-                      Colors.white,
-                      fontSize:
-                      18,
-                      fontWeight:
-                      FontWeight.w700,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
 
-                const SizedBox(
-                  height:
-                  18,
-                ),
+                const SizedBox(height: 18),
 
                 Row(
-                  mainAxisAlignment:
-                  MainAxisAlignment
-                      .spaceAround,
-                  children:
-                  <Widget>[
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: <Widget>[
                     _AttachmentButton(
-                      icon:
-                      Icons
-                          .photo_camera_rounded,
-                      label:
-                      'Camera',
-                      color:
-                      const Color(
-                        0xFF29B6F6,
-                      ),
-                      onTap:
-                          () async {
-                        Navigator.pop(
-                          context,
-                        );
+                      icon: Icons.photo_camera_rounded,
+                      label: 'Camera',
+                      color: const Color(0xFF29B6F6),
+                      onTap: () async {
+                        Navigator.pop(context);
 
-                        await widget
-                            .onCamera();
+                        await widget.onCamera();
                       },
                     ),
 
                     _AttachmentButton(
-                      icon:
-                      Icons
-                          .photo_library_rounded,
-                      label:
-                      'Gallery',
-                      color:
-                      const Color(
-                        0xFF8E7CFF,
-                      ),
-                      onTap:
-                          () async {
-                        Navigator.pop(
-                          context,
-                        );
+                      icon: Icons.photo_library_rounded,
+                      label: 'Gallery',
+                      color: const Color(0xFF8E7CFF),
+                      onTap: () async {
+                        Navigator.pop(context);
 
-                        await widget
-                            .onGallery();
+                        await widget.onGallery();
                       },
                     ),
 
                     _AttachmentButton(
-                      icon:
-                      Icons
-                          .videocam_rounded,
-                      label:
-                      'Video',
-                      color:
-                      const Color(
-                        0xFFFF6B81,
-                      ),
-                      onTap:
-                          () async {
-                        Navigator.pop(
-                          context,
-                        );
+                      icon: Icons.videocam_rounded,
+                      label: 'Video',
+                      color: const Color(0xFFFF6B81),
+                      onTap: () async {
+                        Navigator.pop(context);
 
-                        await widget
-                            .onVideo();
+                        await widget.onVideo();
                       },
                     ),
 
                     _AttachmentButton(
-                      icon:
-                      Icons
-                          .description_rounded,
-                      label:
-                      'Document',
-                      color:
-                      const Color(
-                        0xFFFFB74D,
-                      ),
-                      onTap:
-                          () async {
-                        Navigator.pop(
-                          context,
-                        );
+                      icon: Icons.description_rounded,
+                      label: 'Document',
+                      color: const Color(0xFFFFB74D),
+                      onTap: () async {
+                        Navigator.pop(context);
 
-                        await widget
-                            .onDocument();
+                        await widget.onDocument();
                       },
                     ),
                   ],
@@ -371,30 +316,73 @@ class _ChatComposerState
   // START RECORDING
   //===============================
 
-  Future<void>
-  _startRecording() async {
-    if (!widget.enabled ||
-        _processingVoice ||
-        widget.sending) {
+  double _normalizedAmplitude(double decibels) {
+    return ((decibels + 55) / 55).clamp(0.08, 1.0).toDouble();
+  }
+
+  void _listenToLiveAmplitude() {
+    _amplitudeSubscription?.cancel();
+
+    _amplitudeSubscription = _recorder
+        .onAmplitudeChanged(const Duration(milliseconds: 80))
+        .listen((Amplitude amplitude) {
+          if (!mounted || !_recording || _recordingPaused) {
+            return;
+          }
+
+          final double decibels = amplitude.current > amplitude.max
+              ? amplitude.current
+              : amplitude.max;
+          final double level = _normalizedAmplitude(decibels);
+
+          setState(() {
+            _liveWaveform.removeAt(0);
+            _liveWaveform.add(level);
+          });
+        });
+  }
+
+  Future<void> _configureVoicePreviewPlayback() async {
+    await _voicePreviewPlayer.setPlayerMode(PlayerMode.mediaPlayer);
+    await _voicePreviewPlayer.setAudioContext(
+      AudioContext(
+        android: const AudioContextAndroid(
+          isSpeakerphoneOn: true,
+          audioMode: AndroidAudioMode.normal,
+          stayAwake: true,
+          contentType: AndroidContentType.speech,
+          usageType: AndroidUsageType.media,
+          audioFocus: AndroidAudioFocus.gain,
+        ),
+      ),
+    );
+    await _voicePreviewPlayer.setReleaseMode(ReleaseMode.stop);
+    await _voicePreviewPlayer.setVolume(1);
+  }
+
+  Future<void> _startRecording() async {
+    if (!widget.enabled || _processingVoice || widget.sending) {
       return;
     }
 
     try {
-      final bool permitted =
-      await _recorder
-          .hasPermission();
+      await _voicePreviewPlayer.stop();
+
+      _voicePreviewPath = '';
+      _voicePreviewPosition = Duration.zero;
+      _voicePreviewDuration = Duration.zero;
+      _voicePreviewPlaying = false;
+
+      final bool permitted = await _recorder.hasPermission();
 
       if (!permitted) {
         if (!mounted) {
           return;
         }
 
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content:
-            Text(
+            content: Text(
               'Microphone permission is required for voice messages.',
             ),
           ),
@@ -403,112 +391,81 @@ class _ChatComposerState
         return;
       }
 
-      final directory =
-      await getTemporaryDirectory();
+      final directory = await getTemporaryDirectory();
 
       final String path =
           '${directory.path}/nubify_voice_${DateTime.now().millisecondsSinceEpoch}.m4a';
 
       await _recorder.start(
         const RecordConfig(
-          encoder:
-          AudioEncoder.aacLc,
+          encoder: AudioEncoder.aacLc,
 
-          bitRate:
-          128000,
+          bitRate: 128000,
 
-          sampleRate:
-          44100,
+          sampleRate: 44100,
 
-          numChannels:
-          1,
+          numChannels: 1,
 
           //===============================
           // ANDROID AUDIO
           //===============================
-
-          androidConfig:
-          AndroidRecordConfig(
-            manageBluetooth:
-            true,
-          ),
+          androidConfig: AndroidRecordConfig(manageBluetooth: false),
         ),
 
-        path:
-        path,
+        path: path,
       );
 
-      _recordPath =
-          path;
+      _recordPath = path;
 
-      _recordSeconds =
-      0;
+      _recordSeconds = 0;
 
-      _recordTimer
-          ?.cancel();
+      _recordTimer?.cancel();
 
-      _recordTimer =
-          Timer.periodic(
-            const Duration(
-              seconds:
-              1,
-            ),
-                (_) {
-              if (!mounted) {
-                return;
-              }
+      _recordTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+        if (!mounted) {
+          return;
+        }
 
-              setState(() {
-                _recordSeconds++;
-              });
-            },
-          );
+        setState(() {
+          _recordSeconds++;
+        });
+      });
 
-      widget
-          .onRecordingChanged
-          ?.call(
-        true,
-      );
+      widget.onRecordingChanged?.call(true);
 
       if (!mounted) {
         return;
       }
 
       setState(() {
-        _recording =
-        true;
+        _recording = true;
 
-        _showEmoji =
-        false;
+        for (int index = 0; index < _liveWaveform.length; index++) {
+          _liveWaveform[index] = 0.12;
+        }
 
-        _showStickers =
-        false;
+        _showEmoji = false;
+
+        _showStickers = false;
       });
+
+      _listenToLiveAmplitude();
     } catch (error) {
       if (!mounted) {
         return;
       }
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(
-        SnackBar(
-          content:
-          Text(
-            'Could not start recording: $error',
-          ),
-        ),
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not start recording: $error')),
       );
     }
   }
-//===================================================
-// PAUSE AND RESUME VOICE RECORDING
-//===================================================
+  //===================================================
+  // PAUSE AND RESUME VOICE RECORDING
+  //===================================================
 
   Future<void> _toggleRecordingPause() async {
-    if (!_recording ||
-        _processingVoice ||
-        _pauseActionBusy) {
+    if (!_recording || _processingVoice || _pauseActionBusy) {
       return;
     }
 
@@ -540,9 +497,7 @@ class _ChatComposerState
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              'Unable to pause or resume recording: $error',
-            ),
+            content: Text('Unable to pause or resume recording: $error'),
           ),
         );
       }
@@ -558,43 +513,36 @@ class _ChatComposerState
   // CANCEL RECORDING
   //===============================
 
-  Future<void>
-  _cancelRecording() async {
+  Future<void> _cancelRecording() async {
     if (!_recording) {
       return;
     }
 
-    _recordTimer
-        ?.cancel();
+    _recordTimer?.cancel();
 
-    _recordTimer =
-    null;
+    _recordTimer = null;
+
+    await _amplitudeSubscription?.cancel();
+
+    _amplitudeSubscription = null;
 
     try {
-      await _recorder
-          .cancel();
+      await _recorder.cancel();
     } catch (_) {}
 
-    widget
-        .onRecordingChanged
-        ?.call(
-      false,
-    );
+    widget.onRecordingChanged?.call(false);
 
     if (!mounted) {
       return;
     }
 
     setState(() {
-      _recording =
-      false;
+      _recording = false;
       _recordingPaused = false;
 
-      _recordSeconds =
-      0;
+      _recordSeconds = 0;
 
-      _recordPath =
-      '';
+      _recordPath = '';
     });
   }
 
@@ -602,67 +550,43 @@ class _ChatComposerState
   // STOP AND SEND RECORDING
   //===============================
 
-  Future<void>
-  _stopAndSendRecording() async {
-    if (!_recording ||
-        _processingVoice) {
+  Future<void> _stopAndSendRecording() async {
+    if (!_recording || _processingVoice) {
       return;
     }
 
     setState(() {
-      _processingVoice =
-      true;
+      _processingVoice = true;
     });
 
-    _recordTimer
-        ?.cancel();
+    _recordTimer?.cancel();
 
-    _recordTimer =
-    null;
+    _recordTimer = null;
+
+    await _amplitudeSubscription?.cancel();
+
+    _amplitudeSubscription = null;
 
     try {
-      final String? path =
-      await _recorder
-          .stop();
+      final String? path = await _recorder.stop();
 
-      widget
-          .onRecordingChanged
-          ?.call(
-        false,
-      );
+      widget.onRecordingChanged?.call(false);
 
-      final int durationMs =
-          _recordSeconds *
-              1000;
+      final int durationMs = _recordSeconds * 1000;
 
-      final String finalPath =
-      (path ?? _recordPath)
-          .trim();
+      final String finalPath = (path ?? _recordPath).trim();
 
       if (finalPath.isNotEmpty) {
         // Allow M4A/AAC to finish writing.
-        await Future<void>.delayed(
-          const Duration(
-            milliseconds:
-            120,
-          ),
-        );
+        await Future<void>.delayed(const Duration(milliseconds: 120));
 
-        final File file =
-        File(
-          finalPath,
-        );
+        final File file = File(finalPath);
 
-        if (!await file.exists() ||
-            await file.length() <
-                100) {
+        if (!await file.exists() || await file.length() < 100) {
           if (mounted) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(
+            ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content:
-                Text(
+                content: Text(
                   'Voice recording could not be saved correctly. Please try again.',
                 ),
               ),
@@ -672,33 +596,121 @@ class _ChatComposerState
           return;
         }
 
-        final int safeDurationMs =
-        durationMs >
-            0
-            ? durationMs
-            : 1000;
+        final int safeDurationMs = durationMs > 0 ? durationMs : 1000;
 
-        await widget
-            .onVoiceRecorded(
-          finalPath,
+        await _configureVoicePreviewPlayback();
 
-          safeDurationMs,
-        );
+        if (mounted) {
+          setState(() {
+            _voicePreviewPath = finalPath;
+            _voicePreviewPosition = Duration.zero;
+            _voicePreviewDuration = Duration(milliseconds: safeDurationMs);
+            _voicePreviewPlaying = false;
+          });
+        }
       }
     } finally {
       if (mounted) {
         setState(() {
-          _recording =
-          false;
+          _recording = false;
           _recordingPaused = false;
-          _processingVoice =
-          false;
+          _processingVoice = false;
 
-          _recordSeconds =
-          0;
+          _recordSeconds = 0;
           _recordingPaused = false;
-          _recordPath =
-          '';
+          _recordPath = '';
+        });
+      }
+    }
+  }
+
+  Future<void> _toggleVoicePreview() async {
+    final String path = _voicePreviewPath.trim();
+
+    if (path.isEmpty || !await File(path).exists()) {
+      return;
+    }
+
+    try {
+      await _configureVoicePreviewPlayback();
+
+      if (_voicePreviewPlaying) {
+        await _voicePreviewPlayer.pause();
+        return;
+      }
+
+      if (_voicePreviewPosition > Duration.zero &&
+          _voicePreviewPosition < _voicePreviewDuration) {
+        await _voicePreviewPlayer.resume();
+        return;
+      }
+
+      await _voicePreviewPlayer.stop();
+      await _voicePreviewPlayer.play(DeviceFileSource(path));
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not play this voice note: $error')),
+        );
+      }
+    }
+  }
+
+  Future<void> _discardVoicePreview() async {
+    await _voicePreviewPlayer.stop();
+
+    final String path = _voicePreviewPath;
+
+    if (path.isNotEmpty) {
+      try {
+        final File file = File(path);
+        if (await file.exists()) {
+          await file.delete();
+        }
+      } catch (_) {}
+    }
+
+    if (mounted) {
+      setState(() {
+        _voicePreviewPath = '';
+        _voicePreviewPosition = Duration.zero;
+        _voicePreviewDuration = Duration.zero;
+        _voicePreviewPlaying = false;
+      });
+    }
+  }
+
+  Future<void> _sendVoicePreview() async {
+    final String path = _voicePreviewPath.trim();
+
+    if (path.isEmpty || _processingVoice) {
+      return;
+    }
+
+    setState(() {
+      _processingVoice = true;
+    });
+
+    try {
+      await _voicePreviewPlayer.stop();
+      final int durationMs = _voicePreviewDuration.inMilliseconds > 0
+          ? _voicePreviewDuration.inMilliseconds
+          : 1000;
+
+      await widget.onVoiceRecorded(path, durationMs);
+
+      if (mounted) {
+        setState(() {
+          _voicePreviewPath = '';
+          _voicePreviewPosition = Duration.zero;
+          _voicePreviewDuration = Duration.zero;
+          _voicePreviewPlaying = false;
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _processingVoice = false;
         });
       }
     }
@@ -709,13 +721,9 @@ class _ChatComposerState
   //===============================
 
   String _recordTime() {
-    final int minutes =
-        _recordSeconds ~/
-            60;
+    final int minutes = _recordSeconds ~/ 60;
 
-    final int seconds =
-        _recordSeconds %
-            60;
+    final int seconds = _recordSeconds % 60;
 
     return '$minutes:${seconds.toString().padLeft(2, '0')}';
   }
@@ -724,13 +732,10 @@ class _ChatComposerState
   // SEND TEXT
   //===============================
 
-  Future<void>
-  _sendText() async {
+  Future<void> _sendText() async {
     if (!widget.enabled ||
         widget.sending ||
-        widget.controller.text
-            .trim()
-            .isEmpty) {
+        widget.controller.text.trim().isEmpty) {
       return;
     }
 
@@ -738,94 +743,55 @@ class _ChatComposerState
   }
 
   //===============================
-// STICKER PANEL
-//===============================
+  // STICKER PANEL
+  //===============================
 
   Widget _buildStickerPanel() {
     return Container(
-      height:
-      330,
-      decoration:
-      const BoxDecoration(
-        color:
-        Color(
-          0xFF11181E,
-        ),
-        border:
-        Border(
-          top:
-          BorderSide(
-            color:
-            Colors.white10,
-          ),
-        ),
+      height: 330,
+      decoration: const BoxDecoration(
+        color: Color(0xFF11181E),
+        border: Border(top: BorderSide(color: Colors.white10)),
       ),
-      child:
-      EmojiPicker(
-        textEditingController:
-        _stickerEmojiController,
+      child: EmojiPicker(
+        textEditingController: _stickerEmojiController,
 
-        onEmojiSelected:
-            (
-            Category? category,
-            Emoji emoji,
-            ) async {
-          HapticFeedback
-              .selectionClick();
+        onEmojiSelected: (Category? category, Emoji emoji) async {
+          HapticFeedback.selectionClick();
 
-          await widget
-              .onStickerSelected(
-            emoji.emoji,
-          );
+          await widget.onStickerSelected(emoji.emoji);
 
-          _stickerEmojiController
-              .clear();
+          _stickerEmojiController.clear();
         },
 
-        config:
-        Config(
-          height:
-          330,
+        config: Config(
+          height: 330,
 
-          checkPlatformCompatibility:
-          true,
+          checkPlatformCompatibility: true,
 
-          emojiViewConfig:
-          EmojiViewConfig(
+          emojiViewConfig: EmojiViewConfig(
             emojiSizeMax:
-            34 *
-                (foundation.defaultTargetPlatform ==
-                    TargetPlatform.iOS
+                34 *
+                (foundation.defaultTargetPlatform == TargetPlatform.iOS
                     ? 1.20
                     : 1.0),
           ),
 
-          viewOrderConfig:
-          const ViewOrderConfig(
-            top:
-            EmojiPickerItem
-                .categoryBar,
+          viewOrderConfig: const ViewOrderConfig(
+            top: EmojiPickerItem.categoryBar,
 
-            middle:
-            EmojiPickerItem
-                .emojiView,
+            middle: EmojiPickerItem.emojiView,
 
-            bottom:
-            EmojiPickerItem
-                .searchBar,
+            bottom: EmojiPickerItem.searchBar,
           ),
 
-          skinToneConfig:
-          const SkinToneConfig(),
+          skinToneConfig: const SkinToneConfig(),
 
-          categoryViewConfig:
-          const CategoryViewConfig(),
+          categoryViewConfig: const CategoryViewConfig(),
 
-          bottomActionBarConfig:
-          const BottomActionBarConfig(),
+          bottomActionBarConfig: const BottomActionBarConfig(),
 
-          searchViewConfig:
-          const SearchViewConfig(),
+          searchViewConfig: const SearchViewConfig(),
         ),
       ),
     );
@@ -839,94 +805,49 @@ class _ChatComposerState
   // ignore: unused_element
   Widget _buildEmojiPanel() {
     return Container(
-      color:
-      const Color(
-        0xFF11181E,
-      ),
-      child:
-      Column(
-        mainAxisSize:
-        MainAxisSize.min,
-        children:
-        <Widget>[
+      color: const Color(0xFF11181E),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
           SizedBox(
-            height:
-            38,
-            child:
-            Row(
-              children:
-              <Widget>[
-                const SizedBox(
-                  width:
-                  10,
-                ),
+            height: 38,
+            child: Row(
+              children: <Widget>[
+                const SizedBox(width: 10),
 
                 TextButton.icon(
-                  onPressed:
-                  _toggleStickers,
-                  icon:
-                  const Icon(
-                    Icons
-                        .auto_awesome_rounded,
-                    size:
-                    18,
-                  ),
-                  label:
-                  const Text(
-                    'Stickers',
-                  ),
+                  onPressed: _toggleStickers,
+                  icon: const Icon(Icons.auto_awesome_rounded, size: 18),
+                  label: const Text('Stickers'),
                 ),
               ],
             ),
           ),
 
           EmojiPicker(
-            textEditingController:
-            widget.controller,
-            onEmojiSelected:
-                (
-                Category?
-                category,
-                Emoji emoji,
-                ) {
-              HapticFeedback
-                  .selectionClick();
+            textEditingController: widget.controller,
+            onEmojiSelected: (Category? category, Emoji emoji) {
+              HapticFeedback.selectionClick();
             },
-            config:
-            Config(
-              height:
-              275,
-              checkPlatformCompatibility:
-              true,
-              emojiViewConfig:
-              EmojiViewConfig(
+            config: Config(
+              height: 275,
+              checkPlatformCompatibility: true,
+              emojiViewConfig: EmojiViewConfig(
                 emojiSizeMax:
-                28 *
-                    (foundation.defaultTargetPlatform ==
-                        TargetPlatform.iOS
+                    28 *
+                    (foundation.defaultTargetPlatform == TargetPlatform.iOS
                         ? 1.20
                         : 1.0),
               ),
-              viewOrderConfig:
-              const ViewOrderConfig(
-                top:
-                EmojiPickerItem
-                    .categoryBar,
-                middle:
-                EmojiPickerItem
-                    .emojiView,
-                bottom:
-                EmojiPickerItem
-                    .searchBar,
+              viewOrderConfig: const ViewOrderConfig(
+                top: EmojiPickerItem.categoryBar,
+                middle: EmojiPickerItem.emojiView,
+                bottom: EmojiPickerItem.searchBar,
               ),
-              skinToneConfig:
-              const SkinToneConfig(),
-              categoryViewConfig:
-              const CategoryViewConfig(),
-              bottomActionBarConfig:
-              const BottomActionBarConfig(),
-              searchViewConfig:
-              const SearchViewConfig(),
+              skinToneConfig: const SkinToneConfig(),
+              categoryViewConfig: const CategoryViewConfig(),
+              bottomActionBarConfig: const BottomActionBarConfig(),
+              searchViewConfig: const SearchViewConfig(),
             ),
           ),
         ],
@@ -934,19 +855,129 @@ class _ChatComposerState
     );
   }
 
-
   //===================================================
   // VOICE RECORDING BAR WITH PAUSE AND RESUME
   //===================================================
+
+  Widget _voiceWaveform({required bool showPlaybackProgress}) {
+    final int durationMs = _voicePreviewDuration.inMilliseconds;
+    final double progress = durationMs <= 0
+        ? 0
+        : (_voicePreviewPosition.inMilliseconds / durationMs)
+              .clamp(0.0, 1.0)
+              .toDouble();
+
+    return SizedBox(
+      height: 34,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: List<Widget>.generate(_liveWaveform.length, (int index) {
+          final bool played =
+              showPlaybackProgress &&
+              ((index + 1) / _liveWaveform.length) <= progress;
+
+          return Expanded(
+            child: Align(
+              alignment: Alignment.center,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 70),
+                width: 2.5,
+                height: 7 + (_liveWaveform[index] * 25),
+                decoration: BoxDecoration(
+                  color: showPlaybackProgress
+                      ? (played ? const Color(0xFF29B6F6) : Colors.white30)
+                      : (_recordingPaused
+                            ? Colors.white24
+                            : const Color(0xFF29B6F6)),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            ),
+          );
+        }),
+      ),
+    );
+  }
+
+  Widget _buildVoicePreviewBar() {
+    final Duration shown = _voicePreviewPosition > Duration.zero
+        ? _voicePreviewPosition
+        : _voicePreviewDuration;
+
+    final int minutes = shown.inMinutes;
+    final int seconds = shown.inSeconds % 60;
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(8, 7, 8, 7),
+      decoration: const BoxDecoration(
+        color: Color(0xFF16232B),
+        border: Border(top: BorderSide(color: Colors.white10)),
+      ),
+      child: Row(
+        children: <Widget>[
+          IconButton(
+            tooltip: _voicePreviewPlaying ? 'Pause preview' : 'Play preview',
+            onPressed: _processingVoice ? null : _toggleVoicePreview,
+            icon: Icon(
+              _voicePreviewPlaying
+                  ? Icons.pause_circle_filled_rounded
+                  : Icons.play_circle_fill_rounded,
+              color: const Color(0xFF29B6F6),
+              size: 32,
+            ),
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                _voiceWaveform(showPlaybackProgress: true),
+                Text(
+                  '$minutes:${seconds.toString().padLeft(2, '0')} · Review before sending',
+                  style: const TextStyle(color: Colors.white60, fontSize: 10),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            tooltip: 'Delete recording',
+            onPressed: _processingVoice ? null : _discardVoicePreview,
+            icon: const Icon(
+              Icons.delete_outline_rounded,
+              color: Colors.redAccent,
+            ),
+          ),
+          Container(
+            decoration: const BoxDecoration(
+              color: Color(0xFF29B6F6),
+              shape: BoxShape.circle,
+            ),
+            child: IconButton(
+              tooltip: 'Send voice note',
+              onPressed: _processingVoice ? null : _sendVoicePreview,
+              icon: _processingVoice
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.send_rounded, color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildRecordingBar() {
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 7, 8, 7),
       decoration: const BoxDecoration(
         color: Color(0xFF16232B),
-        border: Border(
-          top: BorderSide(color: Colors.white10),
-        ),
+        border: Border(top: BorderSide(color: Colors.white10)),
       ),
       child: Row(
         children: <Widget>[
@@ -958,9 +989,7 @@ class _ChatComposerState
             width: 10,
             height: 10,
             decoration: BoxDecoration(
-              color: _recordingPaused
-                  ? Colors.white38
-                  : Colors.redAccent,
+              color: _recordingPaused ? Colors.white38 : Colors.redAccent,
               shape: BoxShape.circle,
             ),
           ),
@@ -970,7 +999,6 @@ class _ChatComposerState
           //===================================================
           // VOICE RECORDING DURATION
           //===================================================
-
           Text(
             _recordTime(),
             style: const TextStyle(
@@ -984,29 +1012,27 @@ class _ChatComposerState
           //===================================================
           // RECORDING STATUS
           //===================================================
-
           Expanded(
-            child: Text(
-              _recordingPaused
-                  ? 'Paused'
-                  : 'Recording voice note...',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Colors.white60,
-                fontSize: 12,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                _voiceWaveform(showPlaybackProgress: false),
+                Text(
+                  _recordingPaused ? 'Paused' : 'Wave follows your voice live',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: Colors.white60, fontSize: 10),
+                ),
+              ],
             ),
           ),
 
           //===================================================
           // PAUSE OR RESUME BUTTON
           //===================================================
-
           IconButton(
-            tooltip: _recordingPaused
-                ? 'Resume recording'
-                : 'Pause recording',
+            tooltip: _recordingPaused ? 'Resume recording' : 'Pause recording',
             onPressed: _processingVoice || _pauseActionBusy
                 ? null
                 : _toggleRecordingPause,
@@ -1022,7 +1048,6 @@ class _ChatComposerState
           //===================================================
           // DELETE RECORDING
           //===================================================
-
           IconButton(
             tooltip: 'Delete recording',
             onPressed: _processingVoice || _pauseActionBusy
@@ -1037,30 +1062,26 @@ class _ChatComposerState
           //===================================================
           // SEND RECORDING
           //===================================================
-
           Container(
             decoration: const BoxDecoration(
               color: Color(0xFF29B6F6),
               shape: BoxShape.circle,
             ),
             child: IconButton(
-              tooltip: 'Send voice note',
+              tooltip: 'Stop and review',
               onPressed: _processingVoice || _pauseActionBusy
                   ? null
                   : _stopAndSendRecording,
               icon: _processingVoice
                   ? const SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
-                ),
-              )
-                  : const Icon(
-                Icons.send_rounded,
-                color: Colors.white,
-              ),
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.stop_rounded, color: Colors.white),
             ),
           ),
         ],
@@ -1073,205 +1094,96 @@ class _ChatComposerState
   //===============================
 
   Widget _buildMainInput() {
-    final bool hasText =
-        widget.controller.text
-            .trim()
-            .isNotEmpty;
+    final bool hasText = widget.controller.text.trim().isNotEmpty;
 
     return Container(
-      padding:
-      const EdgeInsets.fromLTRB(
-        7,
-        6,
-        7,
-        7,
+      padding: const EdgeInsets.fromLTRB(7, 6, 7, 7),
+      decoration: const BoxDecoration(
+        color: Color(0xFF0E151A),
+        border: Border(top: BorderSide(color: Colors.white10)),
       ),
-      decoration:
-      const BoxDecoration(
-        color:
-        Color(
-          0xFF0E151A,
-        ),
-        border:
-        Border(
-          top:
-          BorderSide(
-            color:
-            Colors.white10,
-          ),
-        ),
-      ),
-      child:
-      Row(
-        crossAxisAlignment:
-        CrossAxisAlignment.end,
-        children:
-        <Widget>[
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: <Widget>[
           IconButton(
-            onPressed:
-            widget.enabled
-                ? _toggleStickers
-                : null,
-            icon:
-            Icon(
+            onPressed: widget.enabled ? _toggleStickers : null,
+            icon: Icon(
               _showStickers
                   ? Icons.keyboard_rounded
                   : Icons.emoji_emotions_outlined,
 
-              color:
-              _showStickers
-                  ? const Color(
-                0xFF29B6F6,
-              )
-                  : Colors.white70,
+              color: _showStickers ? const Color(0xFF29B6F6) : Colors.white70,
             ),
           ),
 
           IconButton(
-            onPressed:
-            widget.enabled
-                ? _showAttachments
-                : null,
-            icon:
-            const Icon(
-              Icons
-                  .photo_camera_outlined,
-              color:
-              Colors.white70,
+            onPressed: widget.enabled ? _showAttachments : null,
+            icon: const Icon(
+              Icons.photo_camera_outlined,
+              color: Colors.white70,
             ),
           ),
 
           Expanded(
-            child:
-            Container(
-              constraints:
-              const BoxConstraints(
-                minHeight:
-                44,
+            child: Container(
+              constraints: const BoxConstraints(minHeight: 44),
+              decoration: BoxDecoration(
+                color: const Color(0xFF20282E),
+                borderRadius: BorderRadius.circular(24),
               ),
-              decoration:
-              BoxDecoration(
-                color:
-                const Color(
-                  0xFF20282E,
-                ),
-                borderRadius:
-                BorderRadius.circular(
-                  24,
-                ),
-              ),
-              child:
-              TextField(
-                controller:
-                widget.controller,
-                enabled:
-                widget.enabled,
-                minLines:
-                1,
-                maxLines:
-                5,
-                keyboardType:
-                TextInputType
-                    .multiline,
-                textCapitalization:
-                TextCapitalization
-                    .sentences,
-                decoration:
-                const InputDecoration(
-                  hintText:
-                  'Message...',
-                  hintStyle:
-                  TextStyle(
-                    color:
-                    Colors.white38,
-                  ),
-                  border:
-                  InputBorder
-                      .none,
-                  contentPadding:
-                  EdgeInsets.symmetric(
-                    horizontal:
-                    15,
-                    vertical:
-                    11,
+              child: TextField(
+                controller: widget.controller,
+                enabled: widget.enabled,
+                minLines: 1,
+                maxLines: 5,
+                keyboardType: TextInputType.multiline,
+                textCapitalization: TextCapitalization.sentences,
+                decoration: const InputDecoration(
+                  hintText: 'Message...',
+                  hintStyle: TextStyle(color: Colors.white38),
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 15,
+                    vertical: 11,
                   ),
                 ),
               ),
             ),
           ),
 
-          const SizedBox(
-            width:
-            5,
-          ),
+          const SizedBox(width: 5),
 
           if (hasText)
             Container(
-              decoration:
-              const BoxDecoration(
-                color:
-                Color(
-                  0xFF29B6F6,
-                ),
-                shape:
-                BoxShape.circle,
+              decoration: const BoxDecoration(
+                color: Color(0xFF29B6F6),
+                shape: BoxShape.circle,
               ),
-              child:
-              IconButton(
-                onPressed:
-                widget.sending ||
-                    !widget
-                        .enabled
-                    ? null
-                    : _sendText,
-                icon:
-                widget.sending
+              child: IconButton(
+                onPressed: widget.sending || !widget.enabled ? null : _sendText,
+                icon: widget.sending
                     ? const SizedBox(
-                  width:
-                  18,
-                  height:
-                  18,
-                  child:
-                  CircularProgressIndicator(
-                    strokeWidth:
-                    2,
-                    color:
-                    Colors.white,
-                  ),
-                )
-                    : const Icon(
-                  Icons
-                      .send_rounded,
-                  color:
-                  Colors.white,
-                ),
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.send_rounded, color: Colors.white),
               ),
             )
           else
             Container(
-              decoration:
-              BoxDecoration(
-                color:
-                widget.enabled
-                    ? const Color(
-                  0xFF29B6F6,
-                )
+              decoration: BoxDecoration(
+                color: widget.enabled
+                    ? const Color(0xFF29B6F6)
                     : Colors.white12,
-                shape:
-                BoxShape.circle,
+                shape: BoxShape.circle,
               ),
-              child:
-              IconButton(
-                onPressed:
-                widget.enabled
-                    ? _startRecording
-                    : null,
-                icon:
-                const Icon(
-                  Icons.mic_rounded,
-                  color:
-                  Colors.white,
-                ),
+              child: IconButton(
+                onPressed: widget.enabled ? _startRecording : null,
+                icon: const Icon(Icons.mic_rounded, color: Colors.white),
               ),
             ),
         ],
@@ -1284,32 +1196,26 @@ class _ChatComposerState
   //===============================
 
   @override
-  Widget build(
-      BuildContext context,
-      ) {
+  Widget build(BuildContext context) {
     return Column(
-      mainAxisSize:
-      MainAxisSize.min,
+      mainAxisSize: MainAxisSize.min,
 
-      children:
-      <Widget>[
-        if (!_recording)
+      children: <Widget>[
+        if (!_recording && _voicePreviewPath.isEmpty)
           UniversalLinkComposerPreview(
-            controller:
-            widget.controller,
+            controller: widget.controller,
 
-            onSuppressedChanged:
-            widget
-                .onLinkPreviewSuppressedChanged,
+            onSuppressedChanged: widget.onLinkPreviewSuppressedChanged,
           ),
 
         if (_recording)
           _buildRecordingBar()
+        else if (_voicePreviewPath.isNotEmpty)
+          _buildVoicePreviewBar()
         else
           _buildMainInput(),
 
-        if (!_recording &&
-            _showStickers)
+        if (!_recording && _voicePreviewPath.isEmpty && _showStickers)
           _buildStickerPanel(),
       ],
     );
@@ -1321,18 +1227,25 @@ class _ChatComposerState
 
   @override
   void dispose() {
-    widget.controller
-        .removeListener(
-      _controllerChanged,
-    );
+    widget.controller.removeListener(_controllerChanged);
 
-    _recordTimer
-        ?.cancel();
+    _recordTimer?.cancel();
+
+    _amplitudeSubscription?.cancel();
+
+    _previewPositionSubscription?.cancel();
+
+    _previewDurationSubscription?.cancel();
+
+    _previewCompleteSubscription?.cancel();
+
+    _previewStateSubscription?.cancel();
 
     _recorder.dispose();
 
-    _stickerEmojiController
-        .dispose();
+    _voicePreviewPlayer.dispose();
+
+    _stickerEmojiController.dispose();
 
     super.dispose();
   }
@@ -1342,8 +1255,7 @@ class _ChatComposerState
 // ATTACHMENT BUTTON
 //===============================
 
-class _AttachmentButton
-    extends StatelessWidget {
+class _AttachmentButton extends StatelessWidget {
   const _AttachmentButton({
     required this.icon,
     required this.label,
@@ -1360,66 +1272,28 @@ class _AttachmentButton
   final VoidCallback onTap;
 
   @override
-  Widget build(
-      BuildContext context,
-      ) {
+  Widget build(BuildContext context) {
     return InkWell(
-      borderRadius:
-      BorderRadius.circular(
-        16,
-      ),
-      onTap:
-      onTap,
-      child:
-      Padding(
-        padding:
-        const EdgeInsets.all(
-          7,
-        ),
-        child:
-        Column(
-          mainAxisSize:
-          MainAxisSize.min,
-          children:
-          <Widget>[
+      borderRadius: BorderRadius.circular(16),
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.all(7),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
             Container(
-              width:
-              54,
-              height:
-              54,
-              decoration:
-              BoxDecoration(
-                color:
-                color.withValues(
-                  alpha: 0.16,
-                ),
-                borderRadius:
-                BorderRadius.circular(
-                  17,
-                ),
+              width: 54,
+              height: 54,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.16),
+                borderRadius: BorderRadius.circular(17),
               ),
-              child:
-              Icon(
-                icon,
-                color:
-                color,
-                size:
-                27,
-              ),
+              child: Icon(icon, color: color, size: 27),
             ),
-            const SizedBox(
-              height:
-              6,
-            ),
+            const SizedBox(height: 6),
             Text(
               label,
-              style:
-              const TextStyle(
-                color:
-                Colors.white70,
-                fontSize:
-                11,
-              ),
+              style: const TextStyle(color: Colors.white70, fontSize: 11),
             ),
           ],
         ),

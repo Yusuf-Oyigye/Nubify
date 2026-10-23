@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 
 import '../services/media_route_observer.dart';
 
@@ -33,22 +36,29 @@ class VideoPostPlayer extends StatefulWidget {
   State<VideoPostPlayer> createState() => _VideoPostPlayerState();
 }
 
-class _VideoPostPlayerState extends State<VideoPostPlayer> with RouteAware {
+class _VideoPostPlayerState extends State<VideoPostPlayer>
+    with RouteAware, WidgetsBindingObserver {
   late VideoPlayerController _controller;
 
   ModalRoute<dynamic>? _route;
 
   bool _routeIsCovered = false;
 
-  bool _resumeWhenRouteIsVisible = false;
-
-  bool _resumeWhenExternalPauseEnds = false;
-
   bool _isInitialized = false;
 
   bool _isMuted = false;
 
   bool _showPlayIcon = false;
+
+  // A feed video is allowed to play only when it is actually on screen, its
+  // tab/route is active, and the application is in the foreground.
+  bool _appIsActive = true;
+
+  bool _tickerIsActive = true;
+
+  double _visibleFraction = 0;
+
+  bool _userPaused = false;
 
   //============================
   // VIDEO COMPLETION
@@ -59,6 +69,7 @@ class _VideoPostPlayerState extends State<VideoPostPlayer> with RouteAware {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _initializeVideo();
   }
 
@@ -66,8 +77,13 @@ class _VideoPostPlayerState extends State<VideoPostPlayer> with RouteAware {
   void didUpdateWidget(covariant VideoPostPlayer oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    if (oldWidget.forcePaused != widget.forcePaused) {
-      _syncExternalPause();
+    if (oldWidget.forcePaused != widget.forcePaused ||
+        oldWidget.loop != widget.loop) {
+      if (_controller.value.isInitialized) {
+        unawaited(_controller.setLooping(widget.loop));
+      }
+
+      _syncPlayback();
     }
   }
 
@@ -79,9 +95,16 @@ class _VideoPostPlayerState extends State<VideoPostPlayer> with RouteAware {
   void didChangeDependencies() {
     super.didChangeDependencies();
 
+    _tickerIsActive = TickerMode.valuesOf(context).enabled;
+
     final ModalRoute<dynamic>? currentRoute = ModalRoute.of(context);
 
     if (currentRoute == _route) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _syncPlayback();
+        }
+      });
       return;
     }
 
@@ -94,106 +117,76 @@ class _VideoPostPlayerState extends State<VideoPostPlayer> with RouteAware {
     if (currentRoute != null) {
       nubifyMediaRouteObserver.subscribe(this, currentRoute);
     }
+
+    _routeIsCovered = currentRoute != null && !currentRoute.isCurrent;
   }
 
   @override
   void didPushNext() {
     _routeIsCovered = true;
 
-    _pauseForCoveredRoute();
+    _syncPlayback();
   }
 
   @override
   void didPopNext() {
     _routeIsCovered = false;
 
-    _resumeForVisibleRoute();
+    _syncPlayback();
   }
 
-  void _pauseForCoveredRoute() {
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    _appIsActive = state == AppLifecycleState.resumed;
+    _syncPlayback();
+  }
+
+  bool get _canPlay {
+    return _isInitialized &&
+        !_routeIsCovered &&
+        !widget.forcePaused &&
+        _appIsActive &&
+        _tickerIsActive &&
+        _visibleFraction >= 0.65 &&
+        !_userPaused;
+  }
+
+  Future<void> _syncPlayback() async {
     if (!_controller.value.isInitialized) {
-      // This video normally autoplays after initialization. Remember that
-      // intention, but do not allow initialization to start it while hidden.
-      _resumeWhenRouteIsVisible = true;
-
       return;
     }
 
-    _resumeWhenRouteIsVisible = _controller.value.isPlaying;
+    final bool shouldPlay = _canPlay;
 
-    if (!_resumeWhenRouteIsVisible) {
-      return;
+    if (shouldPlay && !_controller.value.isPlaying) {
+      await _controller.setVolume(_isMuted ? 0.0 : 1.0);
+      await _controller.play();
+    } else if (!shouldPlay && _controller.value.isPlaying) {
+      await _controller.pause();
     }
-
-    _controller.pause();
 
     if (!mounted) {
       return;
     }
 
-    setState(() {
-      _showPlayIcon = true;
-    });
+    final bool showPlay = !shouldPlay && _visibleFraction > 0.05;
+
+    if (_showPlayIcon != showPlay) {
+      setState(() {
+        _showPlayIcon = showPlay;
+      });
+    }
   }
 
-  void _resumeForVisibleRoute() {
-    _resumePlaybackIfAllowed();
-  }
+  void _visibilityChanged(VisibilityInfo info) {
+    final double nextFraction = info.visibleFraction.clamp(0.0, 1.0);
 
-  void _syncExternalPause() {
-    if (!_controller.value.isInitialized) {
-      if (widget.forcePaused) {
-        _resumeWhenExternalPauseEnds = true;
-      }
-
+    if ((_visibleFraction - nextFraction).abs() < 0.02) {
       return;
     }
 
-    if (widget.forcePaused) {
-      _resumeWhenExternalPauseEnds = _controller.value.isPlaying;
-
-      if (_resumeWhenExternalPauseEnds) {
-        _controller.pause();
-      }
-
-      if (mounted) {
-        setState(() {
-          _showPlayIcon = true;
-        });
-      }
-
-      return;
-    }
-
-    _resumePlaybackIfAllowed();
-  }
-
-  void _resumePlaybackIfAllowed() {
-    final bool shouldResume =
-        _resumeWhenRouteIsVisible || _resumeWhenExternalPauseEnds;
-
-    if (!shouldResume ||
-        _routeIsCovered ||
-        widget.forcePaused ||
-        !_controller.value.isInitialized) {
-      return;
-    }
-
-    _resumeWhenRouteIsVisible = false;
-
-    _resumeWhenExternalPauseEnds = false;
-
-    _controller.play();
-
-    _controller.setVolume(_isMuted ? 0.0 : 1.0);
-
-    if (!mounted) {
-      return;
-    }
-
-    setState(() {
-      _showPlayIcon = false;
-    });
+    _visibleFraction = nextFraction;
+    _syncPlayback();
   }
 
   // ============================================================
@@ -232,28 +225,6 @@ class _VideoPostPlayerState extends State<VideoPostPlayer> with RouteAware {
 
       _controller.addListener(_handleVideoProgress);
 
-      // Never start sound while this route is behind another screen.
-      // If initialization finishes while hidden, playback resumes only after
-      // the covering route closes.
-      if (_routeIsCovered || widget.forcePaused) {
-        if (_routeIsCovered) {
-          _resumeWhenRouteIsVisible = true;
-        }
-
-        if (widget.forcePaused) {
-          _resumeWhenExternalPauseEnds = true;
-        }
-      } else {
-        await _controller.play();
-
-        _resumeWhenRouteIsVisible = false;
-      }
-      //============================
-      // FORCE SOUND AFTER PLAY STARTS
-      //============================
-
-      await _controller.setVolume(_isMuted ? 0.0 : 1.0);
-
       //============================
       // VIDEO IS READY
       //============================
@@ -269,8 +240,10 @@ class _VideoPostPlayerState extends State<VideoPostPlayer> with RouteAware {
       setState(() {
         _isInitialized = true;
 
-        _showPlayIcon = _routeIsCovered || widget.forcePaused;
+        _showPlayIcon = true;
       });
+
+      await _syncPlayback();
     } catch (error) {
       debugPrint('Video player error: $error');
 
@@ -327,18 +300,25 @@ class _VideoPostPlayerState extends State<VideoPostPlayer> with RouteAware {
   void _togglePlayPause() {
     if (!_controller.value.isInitialized ||
         _routeIsCovered ||
-        widget.forcePaused) {
+        widget.forcePaused ||
+        !_appIsActive ||
+        !_tickerIsActive ||
+        _visibleFraction < 0.65) {
       return;
     }
 
     if (_controller.value.isPlaying) {
-      _controller.pause();
+      _userPaused = true;
+
+      unawaited(_controller.pause());
 
       setState(() {
         _showPlayIcon = true;
       });
     } else {
-      _controller.play();
+      _userPaused = false;
+
+      unawaited(_controller.play());
 
       setState(() {
         _showPlayIcon = false;
@@ -367,6 +347,8 @@ class _VideoPostPlayerState extends State<VideoPostPlayer> with RouteAware {
   // ============================================================
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+
     nubifyMediaRouteObserver.unsubscribe(this);
 
     _controller.removeListener(_handleVideoProgress);
@@ -382,79 +364,83 @@ class _VideoPostPlayerState extends State<VideoPostPlayer> with RouteAware {
 
   @override
   Widget build(BuildContext context) {
-    if (!_isInitialized) {
-      return Container(
-        width: double.infinity,
-        color: Colors.black,
-        child: const Center(
-          child: CircularProgressIndicator(color: Colors.white),
-        ),
-      );
-    }
-
-    return GestureDetector(
-      onTap: _togglePlayPause,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // ======================================================
-          // VIDEO
-          // ======================================================
-
-          SizedBox.expand(
-            child: FittedBox(
-              fit: BoxFit.cover,
-              child: SizedBox(
-                width: _controller.value.size.width,
-                height: _controller.value.size.height,
-                child: VideoPlayer(_controller),
-              ),
-            ),
-          ),
-
-          // ======================================================
-          // PLAY ICON WHEN PAUSED
-          // ======================================================
-          if (_showPlayIcon)
-            Container(
-              width: 65,
-              height: 65,
-              decoration: const BoxDecoration(
-                color: Colors.black54,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.play_arrow,
-                color: Colors.white,
-                size: 40,
-              ),
-            ),
-
-          // ======================================================
-          // MUTE BUTTON
-          // ======================================================
-          Positioned(
-            right: 12,
-            bottom: 12,
-            child: GestureDetector(
-              onTap: _toggleMute,
-              child: Container(
-                width: 38,
-                height: 38,
-                decoration: const BoxDecoration(
-                  color: Colors.black54,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  _isMuted ? Icons.volume_off : Icons.volume_up,
-                  color: Colors.white,
-                  size: 20,
-                ),
-              ),
-            ),
-          ),
-        ],
+    return VisibilityDetector(
+      key: ValueKey<String>(
+        'nubify-video-${widget.videoUrl}-${identityHashCode(this)}',
       ),
+      onVisibilityChanged: _visibilityChanged,
+      child: !_isInitialized
+          ? Container(
+              width: double.infinity,
+              color: Colors.black,
+              child: const Center(
+                child: CircularProgressIndicator(color: Colors.white),
+              ),
+            )
+          : GestureDetector(
+              onTap: _togglePlayPause,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  // ======================================================
+                  // VIDEO
+                  // ======================================================
+
+                  SizedBox.expand(
+                    child: FittedBox(
+                      fit: BoxFit.cover,
+                      child: SizedBox(
+                        width: _controller.value.size.width,
+                        height: _controller.value.size.height,
+                        child: VideoPlayer(_controller),
+                      ),
+                    ),
+                  ),
+
+                  // ======================================================
+                  // PLAY ICON WHEN PAUSED
+                  // ======================================================
+                  if (_showPlayIcon)
+                    Container(
+                      width: 65,
+                      height: 65,
+                      decoration: const BoxDecoration(
+                        color: Colors.black54,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.play_arrow,
+                        color: Colors.white,
+                        size: 40,
+                      ),
+                    ),
+
+                  // ======================================================
+                  // MUTE BUTTON
+                  // ======================================================
+                  Positioned(
+                    right: 12,
+                    bottom: 12,
+                    child: GestureDetector(
+                      onTap: _toggleMute,
+                      child: Container(
+                        width: 38,
+                        height: 38,
+                        decoration: const BoxDecoration(
+                          color: Colors.black54,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          _isMuted ? Icons.volume_off : Icons.volume_up,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
     );
   }
 }

@@ -3881,6 +3881,29 @@ class _StoryPollViewState extends State<_StoryPollView> {
 
     final bool voted = poll.votedUserIds.contains(uid);
 
+    final int? selectedIndex = poll.userVotes[uid];
+
+    final bool closed = widget.story.isExpired;
+
+    int highestVotes = 0;
+    final List<int> leaders = <int>[];
+
+    for (int index = 0; index < poll.options.length; index++) {
+      final int votes = poll.options[index].votes;
+      if (votes > highestVotes) {
+        highestVotes = votes;
+        leaders
+          ..clear()
+          ..add(index);
+      } else if (votes == highestVotes && votes > 0) {
+        leaders.add(index);
+      }
+    }
+
+    final int? winnerIndex = closed && leaders.length == 1
+        ? leaders.first
+        : null;
+
     return Container(
       color: Color(widget.story.backgroundColor),
       alignment: Alignment.center,
@@ -3889,9 +3912,20 @@ class _StoryPollViewState extends State<_StoryPollView> {
         width: double.infinity,
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: Colors.black45,
-          borderRadius: BorderRadius.circular(20),
+          gradient: const LinearGradient(
+            colors: <Color>[Color(0xE6192630), Color(0xE60C1218)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(24),
           border: Border.all(color: Colors.white24),
+          boxShadow: const <BoxShadow>[
+            BoxShadow(
+              color: Colors.black38,
+              blurRadius: 24,
+              offset: Offset(0, 12),
+            ),
+          ],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -3911,14 +3945,21 @@ class _StoryPollViewState extends State<_StoryPollView> {
             for (int index = 0; index < poll.options.length; index++)
               Padding(
                 padding: const EdgeInsets.only(bottom: 9),
-                child: _buildPollOption(poll: poll, index: index, voted: voted),
+                child: _buildPollOption(
+                  poll: poll,
+                  index: index,
+                  voted: voted,
+                  closed: closed,
+                  selected: selectedIndex == index,
+                  winner: winnerIndex == index,
+                ),
               ),
 
             if (voted)
-              const Text(
-                'You have already voted. Your vote cannot be changed.',
+              Text(
+                closed ? 'Final result' : 'Vote locked · cannot be changed',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white54, fontSize: 11),
+                style: const TextStyle(color: Colors.white54, fontSize: 11),
               ),
           ],
         ),
@@ -3930,6 +3971,9 @@ class _StoryPollViewState extends State<_StoryPollView> {
     required StoryPoll poll,
     required int index,
     required bool voted,
+    required bool closed,
+    required bool selected,
+    required bool winner,
   }) {
     final StoryPollOption option = poll.options[index];
 
@@ -3938,7 +3982,7 @@ class _StoryPollViewState extends State<_StoryPollView> {
         : option.votes / poll.totalVotes;
 
     return GestureDetector(
-      onTap: voted || _voting
+      onTap: voted || closed || _voting
           ? null
           : () async {
               setState(() {
@@ -3964,18 +4008,25 @@ class _StoryPollViewState extends State<_StoryPollView> {
         height: 52,
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
-          color: Colors.white10,
+          color: const Color(0xFF171F27),
           borderRadius: BorderRadius.circular(13),
-          border: Border.all(color: Colors.white24),
+          border: Border.all(
+            color: winner || (!closed && selected)
+                ? const Color(0xFF29B6F6)
+                : Colors.white24,
+            width: winner || (!closed && selected) ? 1.6 : 1,
+          ),
         ),
         child: Stack(
           children: <Widget>[
-            if (voted)
+            if (closed)
               FractionallySizedBox(
                 alignment: Alignment.centerLeft,
                 widthFactor: percentage.clamp(0.0, 1.0).toDouble(),
                 child: Container(
-                  color: const Color(0xFF29B6F6).withValues(alpha: 0.28),
+                  color: winner
+                      ? const Color(0xFF29B6F6).withValues(alpha: 0.34)
+                      : Colors.white.withValues(alpha: 0.08),
                 ),
               ),
 
@@ -3983,6 +4034,15 @@ class _StoryPollViewState extends State<_StoryPollView> {
               padding: const EdgeInsets.symmetric(horizontal: 14),
               child: Row(
                 children: <Widget>[
+                  if (!closed && selected)
+                    const Padding(
+                      padding: EdgeInsets.only(right: 8),
+                      child: Icon(
+                        Icons.check_circle_rounded,
+                        color: Color(0xFF29B6F6),
+                        size: 19,
+                      ),
+                    ),
                   Expanded(
                     child: Text(
                       option.text,
@@ -3993,7 +4053,29 @@ class _StoryPollViewState extends State<_StoryPollView> {
                     ),
                   ),
 
-                  if (voted)
+                  if (winner)
+                    Container(
+                      margin: const EdgeInsets.only(right: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF29B6F6),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Text(
+                        'WINS',
+                        style: TextStyle(
+                          color: Color(0xFF06141B),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.7,
+                        ),
+                      ),
+                    ),
+
+                  if (closed)
                     Text(
                       '${(percentage * 100).round()}%',
                       style: const TextStyle(

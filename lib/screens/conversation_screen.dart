@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -36,8 +37,7 @@ import '../widgets/chat_call_event_bubble.dart';
 // CONVERSATION SCREEN
 //===============================
 
-class ConversationScreen
-    extends StatefulWidget {
+class ConversationScreen extends StatefulWidget {
   const ConversationScreen({
     super.key,
     required this.otherUserId,
@@ -58,114 +58,72 @@ class ConversationScreen
   final bool startCallOnOpen;
 
   @override
-  State<ConversationScreen>
-  createState() =>
-      _ConversationScreenState();
+  State<ConversationScreen> createState() => _ConversationScreenState();
 }
 
 //===============================
 // CONVERSATION STATE
 //===============================
 
-class _ConversationScreenState
-    extends State<
-        ConversationScreen> {
-  static const Color
-  _blue =
-  Color(
-    0xFF29B6F6,
-  );
+class _ConversationScreenState extends State<ConversationScreen> {
+  static const Color _blue = Color(0xFF29B6F6);
 
-  final FirebaseAuth
-  _auth =
-      FirebaseAuth.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  final FirebaseFirestore
-  _firestore =
-      FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   late final Stream<QuerySnapshot<Map<String, dynamic>>>
   _outgoingCallHistoryStream;
 
   late final Stream<QuerySnapshot<Map<String, dynamic>>>
   _incomingCallHistoryStream;
 
-  final ChatService
-  _chatService =
-  ChatService();
-  late final Stream<QuerySnapshot<Map<String, dynamic>>>
-  _messagesStream;
+  final ChatService _chatService = ChatService();
+  late final Stream<QuerySnapshot<Map<String, dynamic>>> _messagesStream;
 
   late final Stream<bool> _activityStream;
 
-  final ChatMediaService
-  _mediaService =
-  ChatMediaService();
+  final ChatMediaService _mediaService = ChatMediaService();
 
-  final ChatPrivacyService
-  _privacyService =
-  ChatPrivacyService();
+  final ChatPrivacyService _privacyService = ChatPrivacyService();
 
-  final ChatPresenceService
-  _presenceService =
-  ChatPresenceService();
+  final ChatPresenceService _presenceService = ChatPresenceService();
 
-  final ProfileService
-  _profileService =
-  ProfileService();
+  final ProfileService _profileService = ProfileService();
 
-  final StoryService
-  _storyService =
-  StoryService();
+  final StoryService _storyService = StoryService();
 
-  final ImagePicker
-  _imagePicker =
-  ImagePicker();
+  final ImagePicker _imagePicker = ImagePicker();
 
-  final TextEditingController
-  _messageController =
-  TextEditingController();
+  final TextEditingController _messageController = TextEditingController();
 
-  final TextEditingController
-  _searchController =
-  TextEditingController();
+  final TextEditingController _searchController = TextEditingController();
 
   Timer? _typingTimer;
 
-  final bool _sending =
-  false;
+  final bool _sending = false;
 
-  bool _blocked =
-  false;
+  bool _blocked = false;
 
-  bool _searching =
-  false;
-  bool _linkPreviewDisabled =
-  false;
+  bool _searching = false;
+  bool _linkPreviewDisabled = false;
 
-  String _search =
-      '';
+  String _search = '';
 
   ChatMessage? _replyingTo;
   //===============================
-// PENDING DIRECT UPLOADS
-//===============================
+  // PENDING DIRECT UPLOADS
+  //===============================
 
-  final List<_PendingDirectUpload>
-  _pendingUploads =
-  <_PendingDirectUpload>[];
+  final List<_PendingDirectUpload> _pendingUploads = <_PendingDirectUpload>[];
 
-  int _pendingUploadCounter =
-  0;
+  int _pendingUploadCounter = 0;
 
   //===============================
   // CONVERSATION ID
   //===============================
 
   String get _conversationId =>
-      _chatService
-          .getConversationId(
-        widget.otherUserId,
-      );
+      _chatService.getConversationId(widget.otherUserId);
 
   //===============================
   // INIT
@@ -174,13 +132,9 @@ class _ConversationScreenState
   @override
   void initState() {
     super.initState();
-    _messagesStream =
-        _chatService.getMessages(widget.otherUserId);
+    _messagesStream = _chatService.getMessages(widget.otherUserId);
 
-    _activityStream =
-        _privacyService.mutualActivityStream(
-          widget.otherUserId,
-        );
+    _activityStream = _privacyService.mutualActivityStream(widget.otherUserId);
     final String uid = _auth.currentUser?.uid ?? '';
 
     _outgoingCallHistoryStream = _firestore
@@ -202,162 +156,106 @@ class _ConversationScreenState
 
     _initialize();
 
-    _searchController
-        .addListener(
-          () {
-        if (!mounted) {
-          return;
-        }
+    _searchController.addListener(() {
+      if (!mounted) {
+        return;
+      }
 
-        setState(() {
-          _search =
-              _searchController
-                  .text
-                  .trim()
-                  .toLowerCase();
-        });
-      },
-    );
+      setState(() {
+        _search = _searchController.text.trim().toLowerCase();
+      });
+    });
   }
 
   //===============================
-// INITIALIZE
-//===============================
+  // INITIALIZE
+  //===============================
 
   Future<void> _initialize() async {
     // Run privacy setup in background.
-    unawaited(
-      _privacyService
-          .ensureSettingsExist()
-          .catchError(
-            (_) {},
-      ),
-    );
+    unawaited(_privacyService.ensureSettingsExist().catchError((_) {}));
     //===============================
-  // ENSURE CONVERSATION
-  //===============================
+    // ENSURE CONVERSATION
+    //===============================
 
     unawaited(
       _chatService
-          .ensureConversationExists(
-        widget.otherUserId,
-      )
-          .catchError(
-            (_) {},
-      ),
+          .ensureConversationExists(widget.otherUserId)
+          .catchError((_) {}),
     );
 
     // Run presence update in background.
-    unawaited(
-      _presenceService
-          .setOnline()
-          .catchError(
-            (_) {},
-      ),
-    );
+    unawaited(_presenceService.setOnline().catchError((_) {}));
 
     // Check blocked status without delaying the UI.
-    unawaited(
-      _checkBlocked(),
-    );
+    unawaited(_checkBlocked());
 
     // Delivery/read updates also run in background.
-    unawaited(
-      _markInitialMessageStatus(),
-    );
+    unawaited(_markInitialMessageStatus());
   }
   //===============================
-// INITIAL MESSAGE STATUS
-//===============================
+  // INITIAL MESSAGE STATUS
+  //===============================
 
   Future<void> _markInitialMessageStatus() async {
     try {
-      await Future.wait(
-        <Future<void>>[
-          _chatService
-              .markConversationDelivered(
-            widget.otherUserId,
-          ),
+      await Future.wait(<Future<void>>[
+        _chatService.markConversationDelivered(widget.otherUserId),
 
-          _chatService
-              .markConversationRead(
-            widget.otherUserId,
-          ),
-        ],
-      );
+        _chatService.markConversationRead(widget.otherUserId),
+      ]);
     } catch (_) {}
   }
-//===============================
-// CHECK BLOCKED
-//===============================
+  //===============================
+  // CHECK BLOCKED
+  //===============================
 
   Future<void> _checkBlocked() async {
     bool blocked = false;
 
     try {
-      blocked =
-      await _profileService
-          .isBlocked(
-        widget.otherUserId,
-      );
+      blocked = await _profileService.isBlocked(widget.otherUserId);
     } catch (_) {
-      blocked =
-      false;
+      blocked = false;
     }
 
     if (!mounted) {
       return;
     }
 
-    if (_blocked ==
-        blocked) {
+    if (_blocked == blocked) {
       return;
     }
 
     setState(() {
-      _blocked =
-          blocked;
+      _blocked = blocked;
     });
   }
   //===============================
-// SEND TEXT
-//===============================
+  // SEND TEXT
+  //===============================
 
   Future<void> _sendMessage() async {
-    final String text =
-    _messageController.text
-        .trim();
+    final String text = _messageController.text.trim();
 
-    if (text.isEmpty ||
-        _blocked) {
+    if (text.isEmpty || _blocked) {
       return;
     }
-    final bool linkPreviewDisabled =
-        _linkPreviewDisabled;
+    final bool linkPreviewDisabled = _linkPreviewDisabled;
 
-    final String replyToMessageId =
-        _replyingTo?.messageId ??
-            '';
+    final String replyToMessageId = _replyingTo?.messageId ?? '';
 
-    final String replyToSenderId =
-        _replyingTo?.senderId ??
-            '';
+    final String replyToSenderId = _replyingTo?.senderId ?? '';
 
-    final String replyToSenderName =
-    _replyingTo == null
+    final String replyToSenderName = _replyingTo == null
         ? ''
-        : _replyingTo!.senderId ==
-        _auth.currentUser?.uid
+        : _replyingTo!.senderId == _auth.currentUser?.uid
         ? 'You'
         : widget.otherName;
 
-    final String replyToText =
-        _replyingTo?.previewText ??
-            '';
+    final String replyToText = _replyingTo?.previewText ?? '';
 
-    final String replyToType =
-        _replyingTo?.type ??
-            '';
+    final String replyToType = _replyingTo?.type ?? '';
 
     //===============================
     // CLEAR UI IMMEDIATELY
@@ -365,8 +263,7 @@ class _ConversationScreenState
 
     _messageController.clear();
     setState(() {
-      _linkPreviewDisabled =
-      false;
+      _linkPreviewDisabled = false;
     });
 
     _clearReply();
@@ -377,16 +274,8 @@ class _ConversationScreenState
 
     unawaited(
       _presenceService
-          .setTyping(
-        conversationId:
-        _conversationId,
-
-        typing:
-        false,
-      )
-          .catchError(
-            (_) {},
-      ),
+          .setTyping(conversationId: _conversationId, typing: false)
+          .catchError((_) {}),
     );
 
     //===============================
@@ -395,32 +284,25 @@ class _ConversationScreenState
 
     unawaited(
       _sendDirectTextInBackground(
-        linkPreviewDisabled:
-        linkPreviewDisabled,
+        linkPreviewDisabled: linkPreviewDisabled,
 
-        text:
-        text,
+        text: text,
 
-        replyToMessageId:
-        replyToMessageId,
+        replyToMessageId: replyToMessageId,
 
-        replyToSenderId:
-        replyToSenderId,
+        replyToSenderId: replyToSenderId,
 
-        replyToSenderName:
-        replyToSenderName,
+        replyToSenderName: replyToSenderName,
 
-        replyToText:
-        replyToText,
+        replyToText: replyToText,
 
-        replyToType:
-        replyToType,
+        replyToType: replyToType,
       ),
     );
   }
   //===============================
-// SEND DIRECT TEXT IN BACKGROUND
-//===============================
+  // SEND DIRECT TEXT IN BACKGROUND
+  //===============================
 
   Future<void> _sendDirectTextInBackground({
     required String text,
@@ -432,53 +314,36 @@ class _ConversationScreenState
     required bool linkPreviewDisabled,
   }) async {
     try {
-      await _chatService
-          .sendMessage(
-        receiverId:
-        widget.otherUserId,
-        linkPreviewDisabled:
-        linkPreviewDisabled,
+      await _chatService.sendMessage(
+        receiverId: widget.otherUserId,
+        linkPreviewDisabled: linkPreviewDisabled,
 
-        text:
-        text,
+        text: text,
 
-        replyToMessageId:
-        replyToMessageId,
+        replyToMessageId: replyToMessageId,
 
-        replyToSenderId:
-        replyToSenderId,
+        replyToSenderId: replyToSenderId,
 
-        replyToSenderName:
-        replyToSenderName,
+        replyToSenderName: replyToSenderName,
 
-        replyToText:
-        replyToText,
+        replyToText: replyToText,
 
-        replyToType:
-        replyToType,
+        replyToType: replyToType,
       );
     } catch (error) {
       if (!mounted) {
         return;
       }
 
-      if (_messageController.text
-          .trim()
-          .isEmpty) {
-        _messageController.text =
-            text;
+      if (_messageController.text.trim().isEmpty) {
+        _messageController.text = text;
 
-        _messageController.selection =
-            TextSelection.collapsed(
-              offset:
-              _messageController
-                  .text.length,
-            );
+        _messageController.selection = TextSelection.collapsed(
+          offset: _messageController.text.length,
+        );
       }
 
-      _showError(
-        error,
-      );
+      _showError(error);
     }
   }
 
@@ -486,26 +351,18 @@ class _ConversationScreenState
   // SEND STICKER
   //===============================
 
-  Future<void>
-  _sendSticker(
-      String sticker,
-      ) async {
+  Future<void> _sendSticker(String sticker) async {
     if (_blocked) {
       return;
     }
 
     try {
-      await _chatService
-          .sendSticker(
-        receiverId:
-        widget.otherUserId,
-        sticker:
-        sticker,
+      await _chatService.sendSticker(
+        receiverId: widget.otherUserId,
+        sticker: sticker,
       );
     } catch (error) {
-      _showError(
-        error,
-      );
+      _showError(error);
     }
   }
 
@@ -513,151 +370,98 @@ class _ConversationScreenState
   // CAMERA
   //===============================
 
-  Future<void>
-  _pickCamera() async {
+  Future<void> _pickCamera() async {
     if (_blocked) {
       return;
     }
 
-    final XFile? file =
-    await _imagePicker
-        .pickImage(
-      source:
-      ImageSource.camera,
-      imageQuality:
-      90,
+    final XFile? file = await _imagePicker.pickImage(
+      source: ImageSource.camera,
+      imageQuality: 90,
     );
 
     if (file == null) {
       return;
     }
 
-    await _uploadAndSend(
-      path:
-      file.path,
-      type:
-      'image',
-    );
+    await _uploadAndSend(path: file.path, type: 'image');
   }
 
   //===============================
   // GALLERY
   //===============================
 
-  Future<void>
-  _pickGallery() async {
+  Future<void> _pickGallery() async {
     if (_blocked) {
       return;
     }
 
-    final XFile? file =
-    await _imagePicker
-        .pickImage(
-      source:
-      ImageSource.gallery,
-      imageQuality:
-      92,
+    final XFile? file = await _imagePicker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 92,
     );
 
     if (file == null) {
       return;
     }
 
-    await _uploadAndSend(
-      path:
-      file.path,
-      type:
-      'image',
-    );
+    await _uploadAndSend(path: file.path, type: 'image');
   }
 
   //===============================
   // VIDEO
   //===============================
 
-  Future<void>
-  _pickVideo() async {
+  Future<void> _pickVideo() async {
     if (_blocked) {
       return;
     }
 
-    final XFile? file =
-    await _imagePicker
-        .pickVideo(
-      source:
-      ImageSource.gallery,
+    final XFile? file = await _imagePicker.pickVideo(
+      source: ImageSource.gallery,
     );
 
     if (file == null) {
       return;
     }
 
-    await _uploadAndSend(
-      path:
-      file.path,
-      type:
-      'video',
-    );
+    await _uploadAndSend(path: file.path, type: 'video');
   }
 
   //===============================
-// DOCUMENT
-//===============================
+  // DOCUMENT
+  //===============================
 
   Future<void> _pickDocument() async {
     if (_blocked) {
       return;
     }
 
-    final PlatformFile? file =
-    await FilePicker.pickFile(
-      type:
-      FileType.any,
-    );
+    final PlatformFile? file = await FilePicker.pickFile(type: FileType.any);
 
     if (file == null) {
       return;
     }
 
-    final String? path =
-        file.path;
+    final String? path = file.path;
 
-    if (path == null ||
-        path.trim().isEmpty) {
+    if (path == null || path.trim().isEmpty) {
       return;
     }
 
-    await _uploadAndSend(
-      path:
-      path,
-      type:
-      'document',
-      fileName:
-      file.name,
-    );
+    await _uploadAndSend(path: path, type: 'document', fileName: file.name);
   }
   //===============================
   // VOICE
   //===============================
 
-  Future<void>
-  _sendVoice(
-      String path,
-      int durationMs,
-      ) async {
-    await _uploadAndSend(
-      path:
-      path,
-      type:
-      'voice',
-      durationMs:
-      durationMs,
-    );
+  Future<void> _sendVoice(String path, int durationMs) async {
+    await _uploadAndSend(path: path, type: 'voice', durationMs: durationMs);
   }
 
   //===============================
-// UPLOAD AND SEND
-//===============================
+  // UPLOAD AND SEND
+  //===============================
 
   Future<void> _uploadAndSend({
     required String path,
@@ -669,40 +473,27 @@ class _ConversationScreenState
       return;
     }
 
-    final ChatMessage?
-    reply =
-        _replyingTo;
+    final ChatMessage? reply = _replyingTo;
 
     final String pendingId =
         '${DateTime.now().microsecondsSinceEpoch}_${_pendingUploadCounter++}';
 
-    final _PendingDirectUpload
-    pending =
-    _PendingDirectUpload(
-      id:
-      pendingId,
+    final _PendingDirectUpload pending = _PendingDirectUpload(
+      id: pendingId,
 
-      path:
-      path,
+      path: path,
 
-      type:
-      type,
+      type: type,
 
-      fileName:
-      fileName,
+      fileName: fileName,
 
-      durationMs:
-      durationMs,
+      durationMs: durationMs,
 
-      replyText:
-      reply?.previewText ??
-          '',
+      replyText: reply?.previewText ?? '',
 
-      replySenderName:
-      reply == null
+      replySenderName: reply == null
           ? ''
-          : reply.senderId ==
-          _auth.currentUser?.uid
+          : reply.senderId == _auth.currentUser?.uid
           ? 'You'
           : widget.otherName,
     );
@@ -713,10 +504,7 @@ class _ConversationScreenState
 
     if (mounted) {
       setState(() {
-        _pendingUploads.insert(
-          0,
-          pending,
-        );
+        _pendingUploads.insert(0, pending);
       });
     }
 
@@ -727,75 +515,47 @@ class _ConversationScreenState
     // UPLOAD IN BACKGROUND
     //===============================
 
-    unawaited(
-      _performDirectUpload(
-        pending:
-        pending,
-
-        reply:
-        reply,
-      ),
-    );
+    unawaited(_performDirectUpload(pending: pending, reply: reply));
   }
   //===============================
-// PERFORM DIRECT UPLOAD
-//===============================
+  // PERFORM DIRECT UPLOAD
+  //===============================
 
   Future<void> _performDirectUpload({
     required _PendingDirectUpload pending,
     required ChatMessage? reply,
   }) async {
     try {
-      final String url =
-      await _mediaService
-          .uploadDirectChatFile(
-        otherUid:
-        widget.otherUserId,
+      final String url = await _mediaService.uploadDirectChatFile(
+        otherUid: widget.otherUserId,
 
-        filePath:
-        pending.path,
+        filePath: pending.path,
       );
 
-      await _chatService
-          .sendMediaMessage(
-        receiverId:
-        widget.otherUserId,
+      await _chatService.sendMediaMessage(
+        receiverId: widget.otherUserId,
 
-        mediaUrl:
-        url,
+        mediaUrl: url,
 
-        mediaType:
-        pending.type,
+        mediaType: pending.type,
 
-        fileName:
-        pending.fileName,
+        fileName: pending.fileName,
 
-        durationMs:
-        pending.durationMs,
+        durationMs: pending.durationMs,
 
-        replyToMessageId:
-        reply?.messageId ??
-            '',
+        replyToMessageId: reply?.messageId ?? '',
 
-        replyToSenderId:
-        reply?.senderId ??
-            '',
+        replyToSenderId: reply?.senderId ?? '',
 
-        replyToSenderName:
-        reply == null
+        replyToSenderName: reply == null
             ? ''
-            : reply.senderId ==
-            _auth.currentUser?.uid
+            : reply.senderId == _auth.currentUser?.uid
             ? 'You'
             : widget.otherName,
 
-        replyToText:
-        reply?.previewText ??
-            '',
+        replyToText: reply?.previewText ?? '',
 
-        replyToType:
-        reply?.type ??
-            '',
+        replyToType: reply?.type ?? '',
       );
 
       if (!mounted) {
@@ -807,14 +567,8 @@ class _ConversationScreenState
       //===============================
 
       setState(() {
-        _pendingUploads
-            .removeWhere(
-              (
-              _PendingDirectUpload
-              item,
-              ) =>
-          item.id ==
-              pending.id,
+        _pendingUploads.removeWhere(
+          (_PendingDirectUpload item) => item.id == pending.id,
         );
       });
     } catch (error) {
@@ -823,129 +577,78 @@ class _ConversationScreenState
       }
 
       setState(() {
-        _pendingUploads
-            .removeWhere(
-              (
-              _PendingDirectUpload
-              item,
-              ) =>
-          item.id ==
-              pending.id,
+        _pendingUploads.removeWhere(
+          (_PendingDirectUpload item) => item.id == pending.id,
         );
       });
 
-      _showError(
-        error,
-      );
+      _showError(error);
     }
   }
   //===============================
   // TYPING
   //===============================
 
-  void _typingChanged(
-      String value,
-      ) {
-    _typingTimer
-        ?.cancel();
+  void _typingChanged(String value) {
+    _typingTimer?.cancel();
 
-    if (value
-        .trim()
-        .isEmpty) {
-      _presenceService
-          .setTyping(
-        conversationId:
-        _conversationId,
-        typing:
-        false,
+    if (value.trim().isEmpty) {
+      _presenceService.setTyping(
+        conversationId: _conversationId,
+        typing: false,
       );
 
       return;
     }
 
-    _presenceService
-        .setTyping(
-      conversationId:
-      _conversationId,
-      typing:
-      true,
-    );
+    _presenceService.setTyping(conversationId: _conversationId, typing: true);
 
-    _typingTimer =
-        Timer(
-          const Duration(
-            seconds:
-            3,
-          ),
-              () {
-            _presenceService
-                .setTyping(
-              conversationId:
-              _conversationId,
-              typing:
-              false,
-            );
-          },
-        );
+    _typingTimer = Timer(const Duration(seconds: 3), () {
+      _presenceService.setTyping(
+        conversationId: _conversationId,
+        typing: false,
+      );
+    });
   }
 
   //===============================
   // RECORDING STATUS
   //===============================
 
-  void _recordingChanged(
-      bool recording,
-      ) {
-    _presenceService
-        .setRecording(
-      conversationId:
-      _conversationId,
-      recording:
-      recording,
+  void _recordingChanged(bool recording) {
+    _presenceService.setRecording(
+      conversationId: _conversationId,
+      recording: recording,
     );
   }
   //===============================
-// MESSAGE ACTIONS
-//===============================
+  // MESSAGE ACTIONS
+  //===============================
 
-  Future<void> _messageActions(
-      ChatMessage message,
-      bool mine,
-      ) async {
-    final ChatMessageActionResult?
-    result =
-    await showChatMessageActions(
-      context:
-      context,
+  Future<void> _messageActions(ChatMessage message, bool mine) async {
+    final ChatMessageActionResult? result = await showChatMessageActions(
+      context: context,
 
-      mine:
-      mine,
+      mine: mine,
     );
 
-    if (result == null ||
-        !mounted) {
+    if (result == null || !mounted) {
       return;
     }
 
     switch (result.action) {
       case 'react':
-        await _chatService
-            .toggleReaction(
-          otherUserId:
-          widget.otherUserId,
+        await _chatService.toggleReaction(
+          otherUserId: widget.otherUserId,
 
-          messageId:
-          message.messageId,
+          messageId: message.messageId,
 
-          emoji:
-          result.emoji,
+          emoji: result.emoji,
         );
         break;
 
       case 'reply':
-        _replyTo(
-          message,
-        );
+        _replyTo(message);
         break;
 
       case 'forward':
@@ -953,45 +656,29 @@ class _ConversationScreenState
           context,
 
           MaterialPageRoute<void>(
-            builder:
-                (_) =>
-                ChatForwardScreen(
-                  message:
-                  message,
-                ),
+            builder: (_) => ChatForwardScreen(message: message),
           ),
         );
         break;
 
       case 'delete':
-        final String? mode =
-        await showDeleteMessageDialog(
-          context:
-          context,
+        final String? mode = await showDeleteMessageDialog(
+          context: context,
 
-          mine:
-          mine,
+          mine: mine,
         );
 
-        if (mode ==
-            'me') {
-          await _chatService
-              .deleteMessageForMe(
-            otherUserId:
-            widget.otherUserId,
+        if (mode == 'me') {
+          await _chatService.deleteMessageForMe(
+            otherUserId: widget.otherUserId,
 
-            messageId:
-            message.messageId,
+            messageId: message.messageId,
           );
-        } else if (mode ==
-            'everyone') {
-          await _chatService
-              .deleteMessageForEveryone(
-            otherUserId:
-            widget.otherUserId,
+        } else if (mode == 'everyone') {
+          await _chatService.deleteMessageForEveryone(
+            otherUserId: widget.otherUserId,
 
-            messageId:
-            message.messageId,
+            messageId: message.messageId,
           );
         }
 
@@ -1003,12 +690,9 @@ class _ConversationScreenState
   // REPLY
   //===============================
 
-  void _replyTo(
-      ChatMessage message,
-      ) {
+  void _replyTo(ChatMessage message) {
     setState(() {
-      _replyingTo =
-          message;
+      _replyingTo = message;
     });
   }
 
@@ -1022,8 +706,7 @@ class _ConversationScreenState
     }
 
     setState(() {
-      _replyingTo =
-      null;
+      _replyingTo = null;
     });
   }
 
@@ -1031,35 +714,20 @@ class _ConversationScreenState
   // OPEN STORY
   //===============================
 
-  Future<void> _openStory(
-      String storyId,
-      ) async {
-    if (storyId
-        .trim()
-        .isEmpty) {
+  Future<void> _openStory(String storyId) async {
+    if (storyId.trim().isEmpty) {
       return;
     }
 
-    final NubifyStory? story =
-    await _storyService
-        .getStory(
-      storyId,
-    );
+    final NubifyStory? story = await _storyService.getStory(storyId);
 
     if (!mounted) {
       return;
     }
 
     if (story == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(
-        const SnackBar(
-          content:
-          Text(
-            'This story has expired or was removed.',
-          ),
-        ),
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('This story has expired or was removed.')),
       );
 
       return;
@@ -1068,14 +736,7 @@ class _ConversationScreenState
     await Navigator.push(
       context,
       MaterialPageRoute(
-        builder:
-            (_) =>
-            StoryViewerScreen(
-              stories:
-              <NubifyStory>[
-                story,
-              ],
-            ),
+        builder: (_) => StoryViewerScreen(stories: <NubifyStory>[story]),
       ),
     );
   }
@@ -1087,14 +748,7 @@ class _ConversationScreenState
   void _openProfile() {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder:
-            (_) =>
-            ProfileScreen(
-              uid:
-              widget.otherUserId,
-            ),
-      ),
+      MaterialPageRoute(builder: (_) => ProfileScreen(uid: widget.otherUserId)),
     );
   }
 
@@ -1102,17 +756,11 @@ class _ConversationScreenState
   // COPY PROFILE LINK
   //===============================
 
-  Future<void>
-  _copyProfileLink() async {
+  Future<void> _copyProfileLink() async {
     final String link =
         'https://nubify.app/user/${widget.otherUsername.trim().isNotEmpty ? widget.otherUsername : widget.otherUserId}';
 
-    await Clipboard.setData(
-      ClipboardData(
-        text:
-        link,
-      ),
-    );
+    await Clipboard.setData(ClipboardData(text: link));
 
     if (!mounted) {
       return;
@@ -1120,140 +768,86 @@ class _ConversationScreenState
 
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(
-      const SnackBar(
-        content:
-        Text(
-          'Profile link copied.',
-        ),
-      ),
-    );
+    ).showSnackBar(const SnackBar(content: Text('Profile link copied.')));
   }
 
   //===============================
-// REPORT USER
-//===============================
+  // REPORT USER
+  //===============================
 
-  Future<void>
-  _reportUser() async {
+  Future<void> _reportUser() async {
     try {
       await showReportUserDialog(
-        context:
-        context,
+        context: context,
 
-        targetUid:
-        widget.otherUserId,
+        targetUid: widget.otherUserId,
       );
     } catch (error) {
-      _showError(
-        error,
-      );
+      _showError(error);
     }
   }
   //===============================
   // BLOCK USER
   //===============================
 
-  Future<void>
-  _blockOrUnblock() async {
+  Future<void> _blockOrUnblock() async {
     if (_blocked) {
       try {
-        await _profileService
-            .unblockUser(
-          widget.otherUserId,
-        );
+        await _profileService.unblockUser(widget.otherUserId);
 
         if (mounted) {
           setState(() {
-            _blocked =
-            false;
+            _blocked = false;
           });
         }
       } catch (error) {
-        _showError(
-          error,
-        );
+        _showError(error);
       }
 
       return;
     }
 
-    final bool? confirmed =
-    await showDialog<bool>(
-      context:
-      context,
-      builder:
-          (
-          BuildContext context,
-          ) {
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
         return AlertDialog(
-          title:
-          Text(
-            'Block ${widget.otherName}?',
-          ),
-          content:
-          const Text(
+          title: Text('Block ${widget.otherName}?'),
+          content: const Text(
             'They will no longer be able to interact with you normally through direct messaging.',
           ),
-          actions:
-          <Widget>[
+          actions: <Widget>[
             TextButton(
-              onPressed:
-                  () {
-                Navigator.pop(
-                  context,
-                  false,
-                );
+              onPressed: () {
+                Navigator.pop(context, false);
               },
-              child:
-              const Text(
-                'Cancel',
-              ),
+              child: const Text('Cancel'),
             ),
             FilledButton(
-              style:
-              FilledButton.styleFrom(
-                backgroundColor:
-                Colors.redAccent,
-              ),
-              onPressed:
-                  () {
-                Navigator.pop(
-                  context,
-                  true,
-                );
+              style: FilledButton.styleFrom(backgroundColor: Colors.redAccent),
+              onPressed: () {
+                Navigator.pop(context, true);
               },
-              child:
-              const Text(
-                'Block',
-              ),
+              child: const Text('Block'),
             ),
           ],
         );
       },
     );
 
-    if (confirmed !=
-        true) {
+    if (confirmed != true) {
       return;
     }
 
     try {
-      await _profileService
-          .blockUser(
-        widget.otherUserId,
-      );
+      await _profileService.blockUser(widget.otherUserId);
 
       if (mounted) {
         setState(() {
-          _blocked =
-          true;
+          _blocked = true;
         });
       }
     } catch (error) {
-      _showError(
-        error,
-      );
+      _showError(error);
     }
   }
 
@@ -1265,74 +859,38 @@ class _ConversationScreenState
   // Kept for the conversation-menu mute action when it is re-enabled.
   // ignore: unused_element
   _toggleMute() async {
-    final String? uid =
-        _auth.currentUser
-            ?.uid;
+    final String? uid = _auth.currentUser?.uid;
 
     if (uid == null) {
       return;
     }
 
-    final DocumentReference<
-        Map<String, dynamic>>
-    reference =
-    _firestore
-        .collection(
-      'users',
-    )
-        .doc(
-      uid,
-    )
-        .collection(
-      'mutedConversations',
-    )
-        .doc(
-      _conversationId,
-    );
+    final DocumentReference<Map<String, dynamic>> reference = _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('mutedConversations')
+        .doc(_conversationId);
 
-    final snapshot =
-    await reference
-        .get();
+    final snapshot = await reference.get();
 
     if (snapshot.exists) {
-      await reference
-          .delete();
+      await reference.delete();
 
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(
-          const SnackBar(
-            content:
-            Text(
-              'Conversation unmuted.',
-            ),
-          ),
-        );
+        ).showSnackBar(const SnackBar(content: Text('Conversation unmuted.')));
       }
     } else {
-      await reference
-          .set(
-        <String, dynamic>{
-          'conversationId':
-          _conversationId,
-          'mutedAt':
-          FieldValue
-              .serverTimestamp(),
-        },
-      );
+      await reference.set(<String, dynamic>{
+        'conversationId': _conversationId,
+        'mutedAt': FieldValue.serverTimestamp(),
+      });
 
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(
-          const SnackBar(
-            content:
-            Text(
-              'Conversation muted.',
-            ),
-          ),
-        );
+        ).showSnackBar(const SnackBar(content: Text('Conversation muted.')));
       }
     }
   }
@@ -1341,10 +899,7 @@ class _ConversationScreenState
   // MENU
   //===============================
 
-  Future<void>
-  _handleMenu(
-      String value,
-      ) async {
+  Future<void> _handleMenu(String value) async {
     switch (value) {
       case 'profile':
         _openProfile();
@@ -1354,24 +909,17 @@ class _ConversationScreenState
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder:
-                (_) =>
-                ChatMediaScreen(
-                  otherUserId:
-                  widget
-                      .otherUserId,
-                  otherName:
-                  widget
-                      .otherName,
-                ),
+            builder: (_) => ChatMediaScreen(
+              otherUserId: widget.otherUserId,
+              otherName: widget.otherName,
+            ),
           ),
         );
         break;
 
       case 'search':
         setState(() {
-          _searching =
-          true;
+          _searching = true;
         });
         break;
 
@@ -1390,24 +938,20 @@ class _ConversationScreenState
   }
 
   //===============================
-// CALL
-//===============================
+  // CALL
+  //===============================
 
   void _startCall() {
     Navigator.push(
       context,
       MaterialPageRoute<void>(
-        builder: (_) =>
-            AudioCallScreen(
-              otherUserId:
-              widget.otherUserId,
+        builder: (_) => AudioCallScreen(
+          otherUserId: widget.otherUserId,
 
-              otherName:
-              widget.otherName,
+          otherName: widget.otherName,
 
-              otherPhotoUrl:
-              widget.otherPhotoUrl,
-            ),
+          otherPhotoUrl: widget.otherPhotoUrl,
+        ),
       ),
     );
   }
@@ -1420,18 +964,12 @@ class _ConversationScreenState
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder:
-            (_) =>
-            ChatCatalogueScreen(
-              sellerId:
-              widget.otherUserId,
-              sellerName:
-              widget.otherName,
-              sellerUsername:
-              widget.otherUsername,
-              sellerPhotoUrl:
-              widget.otherPhotoUrl,
-            ),
+        builder: (_) => ChatCatalogueScreen(
+          sellerId: widget.otherUserId,
+          sellerName: widget.otherName,
+          sellerUsername: widget.otherUsername,
+          sellerPhotoUrl: widget.otherPhotoUrl,
+        ),
       ),
     );
   }
@@ -1440,27 +978,13 @@ class _ConversationScreenState
   // ERROR
   //===============================
 
-  void _showError(
-      Object error,
-      ) {
+  void _showError(Object error) {
     if (!mounted) {
       return;
     }
 
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(
-      SnackBar(
-        content:
-        Text(
-          error
-              .toString()
-              .replaceFirst(
-            'Exception: ',
-            '',
-          ),
-        ),
-      ),
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(error.toString().replaceFirst('Exception: ', ''))),
     );
   }
 
@@ -1470,244 +994,138 @@ class _ConversationScreenState
 
   Widget _buildPresence() {
     return StreamBuilder<bool>(
-      stream:
-      _privacyService
-          .mutualActivityStream(
-        widget.otherUserId,
-      ),
-      builder:
-          (
-          BuildContext context,
-          AsyncSnapshot<bool>
-          privacySnapshot,
-          ) {
-        final bool allowed =
-            privacySnapshot.data ==
-                true;
+      stream: _privacyService.mutualActivityStream(widget.otherUserId),
+      builder: (BuildContext context, AsyncSnapshot<bool> privacySnapshot) {
+        final bool allowed = privacySnapshot.data == true;
 
         if (!allowed) {
           return Text(
-            widget.otherUsername
-                .trim()
-                .isNotEmpty
+            widget.otherUsername.trim().isNotEmpty
                 ? '@${widget.otherUsername}'
                 : 'Nubify',
-            maxLines:
-            1,
-            overflow:
-            TextOverflow
-                .ellipsis,
-            style:
-            const TextStyle(
-              color:
-              Colors.white54,
-              fontSize:
-              11,
-            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(color: Colors.white54, fontSize: 11),
           );
         }
 
         return StreamBuilder<bool>(
-          stream:
-          _presenceService
-              .recordingStream(
-            conversationId:
-            _conversationId,
-            otherUid:
-            widget.otherUserId,
+          stream: _presenceService.recordingStream(
+            conversationId: _conversationId,
+            otherUid: widget.otherUserId,
           ),
           builder:
-              (
-              BuildContext context,
-              AsyncSnapshot<bool>
-              recordingSnapshot,
-              ) {
-            if (recordingSnapshot
-                .data ==
-                true) {
-              return const Text(
-                'recording audio...',
-                style:
-                TextStyle(
-                  color:
-                  _blue,
-                  fontSize:
-                  11,
-                ),
-              );
-            }
-
-            return StreamBuilder<bool>(
-              stream:
-              _presenceService
-                  .typingStream(
-                conversationId:
-                _conversationId,
-                otherUid:
-                widget
-                    .otherUserId,
-              ),
-              builder:
-                  (
-                  BuildContext context,
-                  AsyncSnapshot<bool>
-                  typingSnapshot,
-                  ) {
-                if (typingSnapshot
-                    .data ==
-                    true) {
+              (BuildContext context, AsyncSnapshot<bool> recordingSnapshot) {
+                if (recordingSnapshot.data == true) {
                   return const Text(
-                    'typing...',
-                    style:
-                    TextStyle(
-                      color:
-                      _blue,
-                      fontSize:
-                      11,
-                    ),
+                    'recording audio...',
+                    style: TextStyle(color: _blue, fontSize: 11),
                   );
                 }
 
-                return StreamBuilder<
-                    DocumentSnapshot<
-                        Map<String,
-                            dynamic>>>(
-                  stream:
-                  _presenceService
-                      .presenceStream(
-                    widget
-                        .otherUserId,
+                return StreamBuilder<bool>(
+                  stream: _presenceService.typingStream(
+                    conversationId: _conversationId,
+                    otherUid: widget.otherUserId,
                   ),
                   builder:
                       (
-                      BuildContext context,
-                      AsyncSnapshot<
-                          DocumentSnapshot<
-                              Map<String,
-                                  dynamic>>>
-                      presenceSnapshot,
+                        BuildContext context,
+                        AsyncSnapshot<bool> typingSnapshot,
                       ) {
-                    final Map<String,
-                        dynamic>
-                    presence =
-                        presenceSnapshot
-                            .data
-                            ?.data() ??
-                            <String,
-                                dynamic>{};
+                        if (typingSnapshot.data == true) {
+                          return const Text(
+                            'typing...',
+                            style: TextStyle(color: _blue, fontSize: 11),
+                          );
+                        }
 
-                    final bool
-                    rawOnline =
-                        presence[
-                        'online'] ==
-                            true;
+                        return StreamBuilder<
+                          DocumentSnapshot<Map<String, dynamic>>
+                        >(
+                          stream: _presenceService.presenceStream(
+                            widget.otherUserId,
+                          ),
+                          builder:
+                              (
+                                BuildContext context,
+                                AsyncSnapshot<
+                                  DocumentSnapshot<Map<String, dynamic>>
+                                >
+                                presenceSnapshot,
+                              ) {
+                                final Map<String, dynamic> presence =
+                                    presenceSnapshot.data?.data() ??
+                                    <String, dynamic>{};
 
-                    final Timestamp?
-                    updatedAt =
-                    presence[
-                    'updatedAt']
-                    is Timestamp
-                        ? presence[
-                    'updatedAt']
-                    as Timestamp
-                        : null;
+                                final bool rawOnline =
+                                    presence['online'] == true;
 
-                    bool online =
-                        rawOnline;
+                                final Timestamp? updatedAt =
+                                    presence['updatedAt'] is Timestamp
+                                    ? presence['updatedAt'] as Timestamp
+                                    : null;
 
-                    if (updatedAt !=
-                        null) {
-                      final int
-                      seconds =
-                          DateTime.now()
-                              .difference(
-                            updatedAt
-                                .toDate()
-                                .toLocal(),
-                          )
-                              .inSeconds;
+                                bool online = rawOnline;
 
-                      if (seconds >
-                          100) {
-                        online =
-                        false;
-                      }
-                    }
+                                if (updatedAt != null) {
+                                  final int seconds = DateTime.now()
+                                      .difference(updatedAt.toDate().toLocal())
+                                      .inSeconds;
 
-                    if (online) {
-                      return const Text(
-                        'online',
-                        style:
-                        TextStyle(
-                          color:
-                          _blue,
-                          fontSize:
-                          11,
-                        ),
-                      );
-                    }
+                                  if (seconds > 100) {
+                                    online = false;
+                                  }
+                                }
 
-                    final Timestamp?
-                    lastSeen =
-                    presence[
-                    'lastSeenAt']
-                    is Timestamp
-                        ? presence[
-                    'lastSeenAt']
-                    as Timestamp
-                        : null;
+                                if (online) {
+                                  return const Text(
+                                    'online',
+                                    style: TextStyle(
+                                      color: _blue,
+                                      fontSize: 11,
+                                    ),
+                                  );
+                                }
 
-                    if (lastSeen !=
-                        null) {
-                      final DateTime
-                      time =
-                      lastSeen
-                          .toDate()
-                          .toLocal();
+                                final Timestamp? lastSeen =
+                                    presence['lastSeenAt'] is Timestamp
+                                    ? presence['lastSeenAt'] as Timestamp
+                                    : null;
 
-                      final TimeOfDay
-                      dayTime =
-                      TimeOfDay
-                          .fromDateTime(
-                        time,
-                      );
+                                if (lastSeen != null) {
+                                  final DateTime time = lastSeen
+                                      .toDate()
+                                      .toLocal();
 
-                      return Text(
-                        'last seen ${dayTime.format(context)}',
-                        maxLines:
-                        1,
-                        overflow:
-                        TextOverflow
-                            .ellipsis,
-                        style:
-                        const TextStyle(
-                          color:
-                          Colors.white54,
-                          fontSize:
-                          10,
-                        ),
-                      );
-                    }
+                                  final TimeOfDay dayTime =
+                                      TimeOfDay.fromDateTime(time);
 
-                    return Text(
-                      widget.otherUsername
-                          .trim()
-                          .isNotEmpty
-                          ? '@${widget.otherUsername}'
-                          : 'offline',
-                      style:
-                      const TextStyle(
-                        color:
-                        Colors.white54,
-                        fontSize:
-                        11,
-                      ),
-                    );
-                  },
+                                  return Text(
+                                    'last seen ${dayTime.format(context)}',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      color: Colors.white54,
+                                      fontSize: 10,
+                                    ),
+                                  );
+                                }
+
+                                return Text(
+                                  widget.otherUsername.trim().isNotEmpty
+                                      ? '@${widget.otherUsername}'
+                                      : 'offline',
+                                  style: const TextStyle(
+                                    color: Colors.white54,
+                                    fontSize: 11,
+                                  ),
+                                );
+                              },
+                        );
+                      },
                 );
               },
-            );
-          },
         );
       },
     );
@@ -1718,60 +1136,32 @@ class _ConversationScreenState
   //===============================
 
   Widget _catalogueButton() {
-    return StreamBuilder<
-        QuerySnapshot<
-            Map<String,
-                dynamic>>>(
-      stream:
-      _firestore
-          .collection(
-        'marketplaceProducts',
-      )
-          .where(
-        'sellerId',
-        isEqualTo:
-        widget
-            .otherUserId,
-      )
-          .limit(
-        1,
-      )
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: _firestore
+          .collection('marketplaceProducts')
+          .where('sellerId', isEqualTo: widget.otherUserId)
+          .limit(1)
           .snapshots(),
       builder:
           (
-          BuildContext context,
-          AsyncSnapshot<
-              QuerySnapshot<
-                  Map<String,
-                      dynamic>>>
-          snapshot,
+            BuildContext context,
+            AsyncSnapshot<QuerySnapshot<Map<String, dynamic>>> snapshot,
           ) {
-        if ((snapshot.data
-            ?.docs
-            .isNotEmpty ??
-            false) ==
-            false) {
-          return const SizedBox
-              .shrink();
-        }
+            if ((snapshot.data?.docs.isNotEmpty ?? false) == false) {
+              return const SizedBox.shrink();
+            }
 
-        return IconButton(
-          tooltip:
-          'Catalogue',
-          onPressed:
-          _openCatalogue,
-          icon:
-          const Icon(
-            Icons
-                .storefront_outlined,
-          ),
-        );
-      },
+            return IconButton(
+              tooltip: 'Catalogue',
+              onPressed: _openCatalogue,
+              icon: const Icon(Icons.storefront_outlined),
+            );
+          },
     );
   }
-//===============================
-// OPEN PROFILE PHOTO
-//===============================
+  //===============================
+  // OPEN PROFILE PHOTO
+  //===============================
 
   // Kept for the full-size avatar action when it is re-enabled.
   // ignore: unused_element
@@ -1780,15 +1170,11 @@ class _ConversationScreenState
       context,
 
       MaterialPageRoute<void>(
-        builder:
-            (_) =>
-            FullPhotoViewer(
-              title:
-              widget.otherName,
+        builder: (_) => FullPhotoViewer(
+          title: widget.otherName,
 
-              photoUrl:
-              widget.otherPhotoUrl,
-            ),
+          photoUrl: widget.otherPhotoUrl,
+        ),
       ),
     );
   }
@@ -1796,100 +1182,50 @@ class _ConversationScreenState
   // NORMAL APP BAR
   //===============================
 
-  PreferredSizeWidget
-  _normalAppBar() {
+  PreferredSizeWidget _normalAppBar() {
     return AppBar(
-      backgroundColor:
-      const Color(
-        0xFF0B1116,
-      ),
-      surfaceTintColor:
-      Colors.transparent,
-      titleSpacing:
-      0,
-      title:
-      InkWell(
-        onTap:
-        _openProfile,
-        borderRadius:
-        BorderRadius.circular(
-          12,
-        ),
-        child:
-        Padding(
-          padding:
-          const EdgeInsets.symmetric(
-            vertical:
-            3,
-            horizontal:
-            2,
-          ),
-          child:
-          Row(
-            children:
-            <Widget>[
+      backgroundColor: const Color(0xFF0B1116),
+      surfaceTintColor: Colors.transparent,
+      titleSpacing: 0,
+      title: InkWell(
+        onTap: _openProfile,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 2),
+          child: Row(
+            children: <Widget>[
               GestureDetector(
                 onTap: _openProfile,
 
-                child:
-                CircleAvatar(
-                  radius:
-                  19,
+                child: CircleAvatar(
+                  radius: 19,
 
-                  backgroundColor:
-                  Colors.white10,
+                  backgroundColor: Colors.white10,
 
-                  backgroundImage:
-                  widget.otherPhotoUrl
-                      .trim()
-                      .isNotEmpty
-                      ? NetworkImage(
-                    widget.otherPhotoUrl,
-                  )
+                  backgroundImage: widget.otherPhotoUrl.trim().isNotEmpty
+                      ? CachedNetworkImageProvider(widget.otherPhotoUrl)
                       : null,
 
-                  child:
-                  widget.otherPhotoUrl
-                      .trim()
-                      .isEmpty
-                      ? const Icon(
-                    Icons.person_rounded,
-                    size:
-                    21,
-                  )
+                  child: widget.otherPhotoUrl.trim().isEmpty
+                      ? const Icon(Icons.person_rounded, size: 21)
                       : null,
                 ),
               ),
 
-              const SizedBox(
-                width:
-                9,
-              ),
+              const SizedBox(width: 9),
 
               Expanded(
-                child:
-                Column(
-                  mainAxisSize:
-                  MainAxisSize.min,
-                  crossAxisAlignment:
-                  CrossAxisAlignment
-                      .start,
-                  children:
-                  <Widget>[
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
                     Text(
-                      widget
-                          .otherName,
-                      maxLines:
-                      1,
-                      overflow:
-                      TextOverflow
-                          .ellipsis,
-                      style:
-                      const TextStyle(
-                        fontSize:
-                        15,
-                        fontWeight:
-                        FontWeight.w800,
+                      widget.otherName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
                     _buildPresence(),
@@ -1900,152 +1236,74 @@ class _ConversationScreenState
           ),
         ),
       ),
-      actions:
-      <Widget>[
+      actions: <Widget>[
         _catalogueButton(),
 
         IconButton(
-          tooltip:
-          'Audio call',
-          onPressed:
-          _startCall,
-          icon:
-          const Icon(
-            Icons.call_outlined,
-          ),
+          tooltip: 'Audio call',
+          onPressed: _startCall,
+          icon: const Icon(Icons.call_outlined),
         ),
 
         PopupMenuButton<String>(
-          onSelected:
-          _handleMenu,
-          itemBuilder:
-              (
-              BuildContext context,
-              ) =>
-          <PopupMenuEntry<
-              String>>[
+          onSelected: _handleMenu,
+          itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
             const PopupMenuItem<String>(
-              value:
-              'profile',
-              child:
-              ListTile(
-                contentPadding:
-                EdgeInsets.zero,
-                leading:
-                Icon(
-                  Icons
-                      .person_outline_rounded,
-                ),
-                title:
-                Text(
-                  'View profile',
-                ),
+              value: 'profile',
+              child: ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(Icons.person_outline_rounded),
+                title: Text('View profile'),
               ),
             ),
 
             const PopupMenuItem<String>(
-              value:
-              'media',
-              child:
-              ListTile(
-                contentPadding:
-                EdgeInsets.zero,
-                leading:
-                Icon(
-                  Icons
-                      .perm_media_outlined,
-                ),
-                title:
-                Text(
-                  'Media, links & docs',
-                ),
+              value: 'media',
+              child: ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(Icons.perm_media_outlined),
+                title: Text('Media, links & docs'),
               ),
             ),
 
             const PopupMenuItem<String>(
-              value:
-              'search',
-              child:
-              ListTile(
-                contentPadding:
-                EdgeInsets.zero,
-                leading:
-                Icon(
-                  Icons
-                      .search_rounded,
-                ),
-                title:
-                Text(
-                  'Search conversation',
-                ),
+              value: 'search',
+              child: ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(Icons.search_rounded),
+                title: Text('Search conversation'),
               ),
             ),
 
             const PopupMenuItem<String>(
-              value:
-              'copy',
-              child:
-              ListTile(
-                contentPadding:
-                EdgeInsets.zero,
-                leading:
-                Icon(
-                  Icons
-                      .link_rounded,
-                ),
-                title:
-                Text(
-                  'Copy profile link',
-                ),
+              value: 'copy',
+              child: ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(Icons.link_rounded),
+                title: Text('Copy profile link'),
               ),
             ),
 
             const PopupMenuDivider(),
 
             const PopupMenuItem<String>(
-              value:
-              'report',
-              child:
-              ListTile(
-                contentPadding:
-                EdgeInsets.zero,
-                leading:
-                Icon(
-                  Icons
-                      .flag_outlined,
-                  color:
-                  Colors.orange,
-                ),
-                title:
-                Text(
-                  'Report user',
-                ),
+              value: 'report',
+              child: ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(Icons.flag_outlined, color: Colors.orange),
+                title: Text('Report user'),
               ),
             ),
 
             PopupMenuItem<String>(
-              value:
-              'block',
-              child:
-              ListTile(
-                contentPadding:
-                EdgeInsets.zero,
-                leading:
-                Icon(
-                  _blocked
-                      ? Icons
-                      .lock_open_rounded
-                      : Icons
-                      .block_rounded,
-                  color:
-                  Colors.redAccent,
+              value: 'block',
+              child: ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(
+                  _blocked ? Icons.lock_open_rounded : Icons.block_rounded,
+                  color: Colors.redAccent,
                 ),
-                title:
-                Text(
-                  _blocked
-                      ? 'Unblock user'
-                      : 'Block user',
-                ),
+                title: Text(_blocked ? 'Unblock user' : 'Block user'),
               ),
             ),
           ],
@@ -2058,43 +1316,25 @@ class _ConversationScreenState
   // SEARCH APP BAR
   //===============================
 
-  PreferredSizeWidget
-  _searchAppBar() {
+  PreferredSizeWidget _searchAppBar() {
     return AppBar(
-      backgroundColor:
-      const Color(
-        0xFF0B1116,
-      ),
-      leading:
-      IconButton(
-        onPressed:
-            () {
+      backgroundColor: const Color(0xFF0B1116),
+      leading: IconButton(
+        onPressed: () {
           setState(() {
-            _searching =
-            false;
+            _searching = false;
 
-            _searchController
-                .clear();
+            _searchController.clear();
           });
         },
-        icon:
-        const Icon(
-          Icons
-              .arrow_back_rounded,
-        ),
+        icon: const Icon(Icons.arrow_back_rounded),
       ),
-      title:
-      TextField(
-        controller:
-        _searchController,
-        autofocus:
-        true,
-        decoration:
-        const InputDecoration(
-          hintText:
-          'Search messages...',
-          border:
-          InputBorder.none,
+      title: TextField(
+        controller: _searchController,
+        autofocus: true,
+        decoration: const InputDecoration(
+          hintText: 'Search messages...',
+          border: InputBorder.none,
         ),
       ),
     );
@@ -2105,120 +1345,60 @@ class _ConversationScreenState
   //===============================
 
   Widget _replyBar() {
-    final ChatMessage?
-    message =
-        _replyingTo;
+    final ChatMessage? message = _replyingTo;
 
     if (message == null) {
-      return const SizedBox
-          .shrink();
+      return const SizedBox.shrink();
     }
 
-    final String sender =
-    message.senderId ==
-        _auth.currentUser
-            ?.uid
+    final String sender = message.senderId == _auth.currentUser?.uid
         ? 'You'
-        : widget
-        .otherName;
+        : widget.otherName;
 
     return Container(
-      padding:
-      const EdgeInsets.fromLTRB(
-        12,
-        8,
-        7,
-        8,
+      padding: const EdgeInsets.fromLTRB(12, 8, 7, 8),
+      decoration: const BoxDecoration(
+        color: Color(0xFF151E24),
+        border: Border(top: BorderSide(color: Colors.white10)),
       ),
-      decoration:
-      const BoxDecoration(
-        color:
-        Color(
-          0xFF151E24,
-        ),
-        border:
-        Border(
-          top:
-          BorderSide(
-            color:
-            Colors.white10,
-          ),
-        ),
-      ),
-      child:
-      Row(
-        children:
-        <Widget>[
+      child: Row(
+        children: <Widget>[
           Container(
-            width:
-            3,
-            height:
-            38,
-            decoration:
-            BoxDecoration(
-              color:
-              _blue,
-              borderRadius:
-              BorderRadius.circular(
-                4,
-              ),
+            width: 3,
+            height: 38,
+            decoration: BoxDecoration(
+              color: _blue,
+              borderRadius: BorderRadius.circular(4),
             ),
           ),
 
-          const SizedBox(
-            width:
-            9,
-          ),
+          const SizedBox(width: 9),
 
           Expanded(
-            child:
-            Column(
-              crossAxisAlignment:
-              CrossAxisAlignment
-                  .start,
-              children:
-              <Widget>[
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
                 Text(
                   sender,
-                  style:
-                  const TextStyle(
-                    color:
-                    _blue,
-                    fontSize:
-                    12,
-                    fontWeight:
-                    FontWeight.w700,
+                  style: const TextStyle(
+                    color: _blue,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 Text(
                   message.previewText,
-                  maxLines:
-                  1,
-                  overflow:
-                  TextOverflow
-                      .ellipsis,
-                  style:
-                  const TextStyle(
-                    color:
-                    Colors.white60,
-                    fontSize:
-                    11,
-                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: Colors.white60, fontSize: 11),
                 ),
               ],
             ),
           ),
 
           IconButton(
-            onPressed:
-            _clearReply,
-            icon:
-            const Icon(
-              Icons
-                  .close_rounded,
-              color:
-              Colors.white54,
-            ),
+            onPressed: _clearReply,
+            icon: const Icon(Icons.close_rounded, color: Colors.white54),
           ),
         ],
       ),
@@ -2231,172 +1411,209 @@ class _ConversationScreenState
 
   Widget _blockedBar() {
     return Container(
-      width:
-      double.infinity,
-      padding:
-      const EdgeInsets.all(
-        14,
-      ),
-      color:
-      const Color(
-        0xFF151D23,
-      ),
-      child:
-      Row(
-        children:
-        <Widget>[
-          const Icon(
-            Icons
-                .block_rounded,
-            color:
-            Colors.redAccent,
-          ),
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      color: const Color(0xFF151D23),
+      child: Row(
+        children: <Widget>[
+          const Icon(Icons.block_rounded, color: Colors.redAccent),
 
-          const SizedBox(
-            width:
-            10,
-          ),
+          const SizedBox(width: 10),
 
           Expanded(
-            child:
-            Text(
+            child: Text(
               '${widget.otherName} is blocked.',
-              style:
-              const TextStyle(
-                color:
-                Colors.white70,
-              ),
+              style: const TextStyle(color: Colors.white70),
             ),
           ),
 
-          TextButton(
-            onPressed:
-            _blockOrUnblock,
-            child:
-            const Text(
-              'Unblock',
-            ),
-          ),
+          TextButton(onPressed: _blockOrUnblock, child: const Text('Unblock')),
         ],
       ),
     );
   }
   //===============================
-// PENDING DIRECT UPLOAD TILE
-//===============================
+  // PENDING DIRECT UPLOAD TILE
+  //===============================
 
-  Widget _pendingUploadTile(
-      _PendingDirectUpload pending,
-      ) {
+  Widget _pendingUploadTile(_PendingDirectUpload pending) {
     Widget content;
 
     //===============================
     // IMAGE
     //===============================
 
-    if (pending.type ==
-        'image') {
-      content =
-          ClipRRect(
-            borderRadius:
-            BorderRadius.circular(
-              12,
-            ),
+    if (pending.type == 'image') {
+      content = ClipRRect(
+        borderRadius: BorderRadius.circular(12),
 
-            child:
-            Image.file(
-              File(
-                pending.path,
-              ),
+        child: Image.file(
+          File(pending.path),
 
-              width:
-              220,
+          width: 220,
 
-              height:
-              220,
+          height: 220,
 
-              fit:
-              BoxFit.cover,
+          fit: BoxFit.cover,
 
-              errorBuilder:
-                  (
-                  _,
-                  _,
-                  _,
-                  ) =>
-              const SizedBox(
-                width:
-                220,
+          errorBuilder: (_, _, _) => const SizedBox(
+            width: 220,
 
-                height:
-                130,
+            height: 130,
 
-                child:
-                Center(
-                  child:
-                  Icon(
-                    Icons
-                        .image_outlined,
+            child: Center(
+              child: Icon(
+                Icons.image_outlined,
 
-                    size:
-                    40,
+                size: 40,
 
-                    color:
-                    Colors.white70,
-                  ),
-                ),
+                color: Colors.white70,
               ),
             ),
-          );
+          ),
+        ),
+      );
     }
-
     //===============================
     // VIDEO
     //===============================
+    else if (pending.type == 'video') {
+      content = const SizedBox(
+        width: 220,
 
-    else if (pending.type ==
-        'video') {
-      content =
-      const SizedBox(
-        width:
-        220,
+        height: 125,
 
-        height:
-        125,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
 
-        child:
-        Column(
-          mainAxisAlignment:
-          MainAxisAlignment.center,
+          children: <Widget>[
+            Icon(Icons.play_circle_fill_rounded, size: 47, color: Colors.white),
 
-          children:
-          <Widget>[
-            Icon(
-              Icons
-                  .play_circle_fill_rounded,
-
-              size:
-              47,
-
-              color:
-              Colors.white,
-            ),
-
-            SizedBox(
-              height:
-              7,
-            ),
+            SizedBox(height: 7),
 
             Text(
               'Sending video...',
 
-              style:
-              TextStyle(
-                color:
-                Colors.white70,
+              style: TextStyle(color: Colors.white70, fontSize: 12),
+            ),
+          ],
+        ),
+      );
+    }
+    //===============================
+    // VOICE
+    //===============================
+    else if (pending.type == 'voice') {
+      final int totalSeconds = (pending.durationMs / 1000).round();
 
-                fontSize:
-                12,
+      final int minutes = totalSeconds ~/ 60;
+
+      final int seconds = totalSeconds % 60;
+
+      final String duration = '$minutes:${seconds.toString().padLeft(2, '0')}';
+
+      content = SizedBox(
+        width: 220,
+
+        child: Row(
+          children: <Widget>[
+            const CircleAvatar(
+              radius: 20,
+
+              backgroundColor: Colors.white24,
+
+              child: Icon(
+                Icons.play_arrow_rounded,
+
+                color: Colors.white,
+
+                size: 25,
+              ),
+            ),
+
+            const SizedBox(width: 10),
+
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+
+                children: <Widget>[
+                  const Text(
+                    'Sending voice message...',
+
+                    style: TextStyle(
+                      color: Colors.white,
+
+                      fontSize: 12,
+
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+
+                  const SizedBox(height: 4),
+
+                  Text(
+                    duration,
+
+                    style: const TextStyle(color: Colors.white60, fontSize: 10),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    //===============================
+    // DOCUMENT
+    //===============================
+    else {
+      content = SizedBox(
+        width: 220,
+
+        child: Row(
+          children: <Widget>[
+            const Icon(
+              Icons.description_rounded,
+
+              color: Colors.white,
+
+              size: 34,
+            ),
+
+            const SizedBox(width: 10),
+
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+
+                children: <Widget>[
+                  Text(
+                    pending.fileName.trim().isNotEmpty
+                        ? pending.fileName
+                        : 'Document',
+
+                    maxLines: 2,
+
+                    overflow: TextOverflow.ellipsis,
+
+                    style: const TextStyle(
+                      color: Colors.white,
+
+                      fontSize: 12,
+
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+
+                  const SizedBox(height: 3),
+
+                  const Text(
+                    'Sending...',
+
+                    style: TextStyle(color: Colors.white60, fontSize: 10),
+                  ),
+                ],
               ),
             ),
           ],
@@ -2404,349 +1621,84 @@ class _ConversationScreenState
       );
     }
 
-    //===============================
-    // VOICE
-    //===============================
-
-    else if (pending.type ==
-        'voice') {
-      final int totalSeconds =
-      (pending.durationMs /
-          1000)
-          .round();
-
-      final int minutes =
-          totalSeconds ~/ 60;
-
-      final int seconds =
-          totalSeconds % 60;
-
-      final String duration =
-          '$minutes:${seconds.toString().padLeft(2, '0')}';
-
-      content =
-          SizedBox(
-            width:
-            220,
-
-            child:
-            Row(
-              children:
-              <Widget>[
-                const CircleAvatar(
-                  radius:
-                  20,
-
-                  backgroundColor:
-                  Colors.white24,
-
-                  child:
-                  Icon(
-                    Icons
-                        .play_arrow_rounded,
-
-                    color:
-                    Colors.white,
-
-                    size:
-                    25,
-                  ),
-                ),
-
-                const SizedBox(
-                  width:
-                  10,
-                ),
-
-                Expanded(
-                  child:
-                  Column(
-                    crossAxisAlignment:
-                    CrossAxisAlignment.start,
-
-                    children:
-                    <Widget>[
-                      const Text(
-                        'Sending voice message...',
-
-                        style:
-                        TextStyle(
-                          color:
-                          Colors.white,
-
-                          fontSize:
-                          12,
-
-                          fontWeight:
-                          FontWeight.w600,
-                        ),
-                      ),
-
-                      const SizedBox(
-                        height:
-                        4,
-                      ),
-
-                      Text(
-                        duration,
-
-                        style:
-                        const TextStyle(
-                          color:
-                          Colors.white60,
-
-                          fontSize:
-                          10,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          );
-    }
-
-    //===============================
-    // DOCUMENT
-    //===============================
-
-    else {
-      content =
-          SizedBox(
-            width:
-            220,
-
-            child:
-            Row(
-              children:
-              <Widget>[
-                const Icon(
-                  Icons
-                      .description_rounded,
-
-                  color:
-                  Colors.white,
-
-                  size:
-                  34,
-                ),
-
-                const SizedBox(
-                  width:
-                  10,
-                ),
-
-                Expanded(
-                  child:
-                  Column(
-                    crossAxisAlignment:
-                    CrossAxisAlignment.start,
-
-                    children:
-                    <Widget>[
-                      Text(
-                        pending.fileName
-                            .trim()
-                            .isNotEmpty
-                            ? pending.fileName
-                            : 'Document',
-
-                        maxLines:
-                        2,
-
-                        overflow:
-                        TextOverflow.ellipsis,
-
-                        style:
-                        const TextStyle(
-                          color:
-                          Colors.white,
-
-                          fontSize:
-                          12,
-
-                          fontWeight:
-                          FontWeight.w600,
-                        ),
-                      ),
-
-                      const SizedBox(
-                        height:
-                        3,
-                      ),
-
-                      const Text(
-                        'Sending...',
-
-                        style:
-                        TextStyle(
-                          color:
-                          Colors.white60,
-
-                          fontSize:
-                          10,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          );
-    }
-
     return Padding(
-      padding:
-      const EdgeInsets.only(
-        left:
-        65,
+      padding: const EdgeInsets.only(left: 65, right: 9, bottom: 5),
 
-        right:
-        9,
+      child: Align(
+        alignment: Alignment.centerRight,
 
-        bottom:
-        5,
-      ),
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 275),
 
-      child:
-      Align(
-        alignment:
-        Alignment.centerRight,
+          padding: const EdgeInsets.all(8),
 
-        child:
-        Container(
-          constraints:
-          const BoxConstraints(
-            maxWidth:
-            275,
-          ),
+          decoration: const BoxDecoration(
+            color: _blue,
 
-          padding:
-          const EdgeInsets.all(
-            8,
-          ),
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(17),
 
-          decoration:
-          const BoxDecoration(
-            color:
-            _blue,
+              topRight: Radius.circular(17),
 
-            borderRadius:
-            BorderRadius.only(
-              topLeft:
-              Radius.circular(
-                17,
-              ),
+              bottomLeft: Radius.circular(17),
 
-              topRight:
-              Radius.circular(
-                17,
-              ),
-
-              bottomLeft:
-              Radius.circular(
-                17,
-              ),
-
-              bottomRight:
-              Radius.circular(
-                5,
-              ),
+              bottomRight: Radius.circular(5),
             ),
           ),
 
-          child:
-          Column(
-            crossAxisAlignment:
-            CrossAxisAlignment.end,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
 
-            mainAxisSize:
-            MainAxisSize.min,
+            mainAxisSize: MainAxisSize.min,
 
-            children:
-            <Widget>[
+            children: <Widget>[
               //===============================
               // REPLY PREVIEW
               //===============================
 
-              if (pending.replyText
-                  .trim()
-                  .isNotEmpty)
+              if (pending.replyText.trim().isNotEmpty)
                 Container(
-                  width:
-                  double.infinity,
+                  width: double.infinity,
 
-                  margin:
-                  const EdgeInsets.only(
-                    bottom:
-                    7,
+                  margin: const EdgeInsets.only(bottom: 7),
+
+                  padding: const EdgeInsets.all(7),
+
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.15),
+
+                    borderRadius: BorderRadius.circular(8),
                   ),
 
-                  padding:
-                  const EdgeInsets.all(
-                    7,
-                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
 
-                  decoration:
-                  BoxDecoration(
-                    color:
-                    Colors.black
-                        .withValues(
-                      alpha: 0.15,
-                    ),
-
-                    borderRadius:
-                    BorderRadius.circular(
-                      8,
-                    ),
-                  ),
-
-                  child:
-                  Column(
-                    crossAxisAlignment:
-                    CrossAxisAlignment.start,
-
-                    children:
-                    <Widget>[
+                    children: <Widget>[
                       Text(
-                        pending
-                            .replySenderName
-                            .trim()
-                            .isNotEmpty
-                            ? pending
-                            .replySenderName
+                        pending.replySenderName.trim().isNotEmpty
+                            ? pending.replySenderName
                             : 'Reply',
 
-                        style:
-                        const TextStyle(
-                          color:
-                          Colors.white,
+                        style: const TextStyle(
+                          color: Colors.white,
 
-                          fontWeight:
-                          FontWeight.w700,
+                          fontWeight: FontWeight.w700,
 
-                          fontSize:
-                          10,
+                          fontSize: 10,
                         ),
                       ),
 
                       Text(
                         pending.replyText,
 
-                        maxLines:
-                        1,
+                        maxLines: 1,
 
-                        overflow:
-                        TextOverflow.ellipsis,
+                        overflow: TextOverflow.ellipsis,
 
-                        style:
-                        const TextStyle(
-                          color:
-                          Colors.white70,
+                        style: const TextStyle(
+                          color: Colors.white70,
 
-                          fontSize:
-                          10,
+                          fontSize: 10,
                         ),
                       ),
                     ],
@@ -2755,44 +1707,26 @@ class _ConversationScreenState
 
               content,
 
-              const SizedBox(
-                height:
-                6,
-              ),
+              const SizedBox(height: 6),
 
               const Row(
-                mainAxisSize:
-                MainAxisSize.min,
+                mainAxisSize: MainAxisSize.min,
 
-                children:
-                <Widget>[
+                children: <Widget>[
                   Icon(
-                    Icons
-                        .cloud_upload_outlined,
+                    Icons.cloud_upload_outlined,
 
-                    size:
-                    13,
+                    size: 13,
 
-                    color:
-                    Colors.white70,
+                    color: Colors.white70,
                   ),
 
-                  SizedBox(
-                    width:
-                    4,
-                  ),
+                  SizedBox(width: 4),
 
                   Text(
                     'Sending',
 
-                    style:
-                    TextStyle(
-                      color:
-                      Colors.white70,
-
-                      fontSize:
-                      9,
-                    ),
+                    style: TextStyle(color: Colors.white70, fontSize: 9),
                   ),
                 ],
               ),
@@ -2807,18 +1741,9 @@ class _ConversationScreenState
   // SAME DATE
   //===============================
 
-  bool _sameDay(
-      DateTime a,
-      DateTime b,
-      ) {
-    return a.year ==
-        b.year &&
-        a.month ==
-            b.month &&
-        a.day ==
-            b.day;
+  bool _sameDay(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
   }
-
 
   //===================================================
   // MESSAGES AND CALL HISTORY
@@ -2845,39 +1770,36 @@ class _ConversationScreenState
               stream: _incomingCallHistoryStream,
               builder: (context, incomingSnapshot) {
                 final List<_DirectTimelineItem> allItems =
-                <_DirectTimelineItem>[];
+                    <_DirectTimelineItem>[];
 
                 //===================================================
                 // EXISTING CHAT MESSAGES
                 //===================================================
 
-                final messageDocs = messageSnapshot.data?.docs ??
+                final messageDocs =
+                    messageSnapshot.data?.docs ??
                     <QueryDocumentSnapshot<Map<String, dynamic>>>[];
 
                 for (final document in messageDocs) {
-                  final ChatMessage message =
-                  ChatMessage.fromDocument(document);
+                  final ChatMessage message = ChatMessage.fromDocument(
+                    document,
+                  );
 
                   if (message.hiddenFor.contains(currentUid)) {
                     continue;
                   }
 
-                  allItems.add(
-                    _DirectTimelineItem.fromMessage(message),
-                  );
+                  allItems.add(_DirectTimelineItem.fromMessage(message));
                 }
 
                 //===================================================
                 // COMBINE CALL RECORDS WITHOUT DUPLICATES
                 //===================================================
 
-                final Map<
-                    String,
-                    QueryDocumentSnapshot<Map<String, dynamic>>>
+                final Map<String, QueryDocumentSnapshot<Map<String, dynamic>>>
                 uniqueCalls = {};
 
-                final callDocs =
-                <QueryDocumentSnapshot<Map<String, dynamic>>>[
+                final callDocs = <QueryDocumentSnapshot<Map<String, dynamic>>>[
                   ...?outgoingSnapshot.data?.docs,
                   ...?incomingSnapshot.data?.docs,
                 ];
@@ -2891,20 +1813,17 @@ class _ConversationScreenState
                 //===================================================
 
                 for (final document in uniqueCalls.values) {
-                  final Map<String, dynamic> call =
-                  document.data();
+                  final Map<String, dynamic> call = document.data();
 
-                  final String callerId =
-                  (call['callerId'] ?? '').toString();
+                  final String callerId = (call['callerId'] ?? '').toString();
 
-                  final String calleeId =
-                  (call['calleeId'] ?? '').toString();
+                  final String calleeId = (call['calleeId'] ?? '').toString();
 
                   final bool belongsToConversation =
                       (callerId == currentUid &&
                           calleeId == widget.otherUserId) ||
-                          (calleeId == currentUid &&
-                              callerId == widget.otherUserId);
+                      (calleeId == currentUid &&
+                          callerId == widget.otherUserId);
 
                   if (!belongsToConversation) {
                     continue;
@@ -2926,60 +1845,50 @@ class _ConversationScreenState
                 // SORT THE COMBINED TIMELINE
                 //===================================================
 
-                allItems.sort(
-                      (a, b) => b.date.compareTo(a.date),
-                );
+                allItems.sort((a, b) => b.date.compareTo(a.date));
 
                 //===================================================
                 // SEARCH MESSAGES AND CALLS
                 //===================================================
 
-                final List<_DirectTimelineItem> items =
-                _search.isEmpty
+                final List<_DirectTimelineItem> items = _search.isEmpty
                     ? allItems
                     : allItems.where((item) {
-                  final ChatMessage? message =
-                      item.message;
+                        final ChatMessage? message = item.message;
 
-                  if (message != null) {
-                    return message.text
-                        .toLowerCase()
-                        .contains(_search) ||
-                        message.fileName
-                            .toLowerCase()
-                            .contains(_search) ||
-                        message.postCaption
-                            .toLowerCase()
-                            .contains(_search) ||
-                        message.productName
-                            .toLowerCase()
-                            .contains(_search);
-                  }
+                        if (message != null) {
+                          return message.text.toLowerCase().contains(_search) ||
+                              message.fileName.toLowerCase().contains(
+                                _search,
+                              ) ||
+                              message.postCaption.toLowerCase().contains(
+                                _search,
+                              ) ||
+                              message.productName.toLowerCase().contains(
+                                _search,
+                              );
+                        }
 
-                  final Map<String, dynamic>? call =
-                      item.call;
+                        final Map<String, dynamic>? call = item.call;
 
-                  if (call == null) {
-                    return false;
-                  }
+                        if (call == null) {
+                          return false;
+                        }
 
-                  final String label =
-                  NubifyCallDisplay.label(
-                    call,
-                    currentUid,
-                  );
+                        final String label = NubifyCallDisplay.label(
+                          call,
+                          currentUid,
+                        );
 
-                  return label
-                      .toLowerCase()
-                      .contains(_search);
-                }).toList();
+                        return label.toLowerCase().contains(_search);
+                      }).toList();
 
                 //===================================================
                 // PRESERVE PENDING MEDIA UPLOADS
                 //===================================================
 
                 final List<_PendingDirectUpload> visiblePending =
-                _search.isEmpty
+                    _search.isEmpty
                     ? _pendingUploads
                     : const <_PendingDirectUpload>[];
 
@@ -2989,9 +1898,7 @@ class _ConversationScreenState
                       _search.isNotEmpty
                           ? 'No matching messages.'
                           : 'Start the conversation.',
-                      style: const TextStyle(
-                        color: Colors.white54,
-                      ),
+                      style: const TextStyle(color: Colors.white54),
                     ),
                   );
                 }
@@ -3002,30 +1909,20 @@ class _ConversationScreenState
 
                 return ListView.builder(
                   reverse: true,
-                  padding: const EdgeInsets.fromLTRB(
-                    9,
-                    12,
-                    9,
-                    14,
-                  ),
-                  itemCount:
-                  visiblePending.length + items.length,
+                  padding: const EdgeInsets.fromLTRB(9, 12, 9, 14),
+                  itemCount: visiblePending.length + items.length,
                   itemBuilder: (context, index) {
                     //===================================================
                     // PENDING MEDIA UPLOADS
                     //===================================================
 
                     if (index < visiblePending.length) {
-                      return _pendingUploadTile(
-                        visiblePending[index],
-                      );
+                      return _pendingUploadTile(visiblePending[index]);
                     }
 
-                    final int itemIndex =
-                        index - visiblePending.length;
+                    final int itemIndex = index - visiblePending.length;
 
-                    final _DirectTimelineItem item =
-                    items[itemIndex];
+                    final _DirectTimelineItem item = items[itemIndex];
 
                     final DateTime date = item.date;
 
@@ -3035,10 +1932,7 @@ class _ConversationScreenState
 
                     final bool showDate =
                         itemIndex == items.length - 1 ||
-                            !_sameDay(
-                              date,
-                              items[itemIndex + 1].date,
-                            );
+                        !_sameDay(date, items[itemIndex + 1].date);
 
                     //===================================================
                     // CALL BUBBLE
@@ -3048,8 +1942,7 @@ class _ConversationScreenState
                       return Column(
                         mainAxisSize: MainAxisSize.min,
                         children: <Widget>[
-                          if (showDate)
-                            ChatDateSeparator(date: date),
+                          if (showDate) ChatDateSeparator(date: date),
 
                           ChatCallEventBubble(
                             call: item.call!,
@@ -3064,46 +1957,39 @@ class _ConversationScreenState
                     // EXISTING MESSAGE BUBBLE
                     //===================================================
 
-                    final ChatMessage message =
-                    item.message!;
+                    final ChatMessage message = item.message!;
 
-                    final bool mine =
-                        message.senderId == currentUid;
+                    final bool mine = message.senderId == currentUid;
 
                     return Column(
                       mainAxisSize: MainAxisSize.min,
                       children: <Widget>[
-                        if (showDate)
-                          ChatDateSeparator(date: date),
+                        if (showDate) ChatDateSeparator(date: date),
 
                         ChatMessageBubble(
                           message: message,
                           mine: mine,
                           otherUserId: widget.otherUserId,
-                          canShowReadReceipt:
-                          canShowReadReceipt,
+                          canShowReadReceipt: canShowReadReceipt,
 
-                          onOpenStory:
-                          message.storyId.trim().isNotEmpty
+                          onOpenStory: message.storyId.trim().isNotEmpty
                               ? () {
-                            _openStory(message.storyId);
-                          }
+                                  _openStory(message.storyId);
+                                }
                               : null,
 
-                          onOpenPost:
-                          message.postId.trim().isEmpty
+                          onOpenPost: message.postId.trim().isEmpty
                               ? null
                               : () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute<void>(
-                                builder: (_) =>
-                                    CommentsScreen(
-                                      postId: message.postId,
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute<void>(
+                                      builder: (_) => CommentsScreen(
+                                        postId: message.postId,
+                                      ),
                                     ),
-                              ),
-                            );
-                          },
+                                  );
+                                },
 
                           onOpenProduct: () {
                             _openCatalogue();
@@ -3130,43 +2016,22 @@ class _ConversationScreenState
   //===============================
 
   @override
-  Widget build(
-      BuildContext context,
-      ) {
+  Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor:
-      const Color(
-        0xFF0B1116,
-      ),
-      appBar:
-      _searching
-          ? _searchAppBar()
-          : _normalAppBar(),
-      body:
-      SafeArea(
-        child:
-        Column(
-          children:
-          <Widget>[
+      backgroundColor: const Color(0xFF0B1116),
+      appBar: _searching ? _searchAppBar() : _normalAppBar(),
+      body: SafeArea(
+        child: Column(
+          children: <Widget>[
             //===============================
             // MESSAGES
             //===============================
 
             Expanded(
-              child:
-              StreamBuilder<bool>(
+              child: StreamBuilder<bool>(
                 stream: _activityStream,
-                builder:
-                    (
-                    BuildContext
-                    context,
-                    AsyncSnapshot<bool>
-                    snapshot,
-                    ) {
-                  return _messageList(
-                    snapshot.data ==
-                        true,
-                  );
+                builder: (BuildContext context, AsyncSnapshot<bool> snapshot) {
+                  return _messageList(snapshot.data == true);
                 },
               ),
             ),
@@ -3174,50 +2039,32 @@ class _ConversationScreenState
             //===============================
             // REPLY
             //===============================
-
             _replyBar(),
 
             //===============================
             // BLOCKED / COMPOSER
             //===============================
-
             if (_blocked)
               _blockedBar()
             else
               ChatComposer(
-                onLinkPreviewSuppressedChanged:
-                    (
-                    bool value,
-                    ) {
+                onLinkPreviewSuppressedChanged: (bool value) {
                   setState(() {
-                    _linkPreviewDisabled =
-                        value;
+                    _linkPreviewDisabled = value;
                   });
                 },
-                controller:
-                _messageController,
-                sending:
-                _sending,
-                enabled:
-                !_blocked,
-                onSend:
-                _sendMessage,
-                onCamera:
-                _pickCamera,
-                onGallery:
-                _pickGallery,
-                onVideo:
-                _pickVideo,
-                onDocument:
-                _pickDocument,
-                onVoiceRecorded:
-                _sendVoice,
-                onStickerSelected:
-                _sendSticker,
-                onTextChanged:
-                _typingChanged,
-                onRecordingChanged:
-                _recordingChanged,
+                controller: _messageController,
+                sending: _sending,
+                enabled: !_blocked,
+                onSend: _sendMessage,
+                onCamera: _pickCamera,
+                onGallery: _pickGallery,
+                onVideo: _pickVideo,
+                onDocument: _pickDocument,
+                onVoiceRecorded: _sendVoice,
+                onStickerSelected: _sendSticker,
+                onTextChanged: _typingChanged,
+                onRecordingChanged: _recordingChanged,
               ),
           ],
         ),
@@ -3231,30 +2078,18 @@ class _ConversationScreenState
 
   @override
   void dispose() {
-    _typingTimer
-        ?.cancel();
+    _typingTimer?.cancel();
 
-    _presenceService
-        .setTyping(
-      conversationId:
-      _conversationId,
-      typing:
-      false,
+    _presenceService.setTyping(conversationId: _conversationId, typing: false);
+
+    _presenceService.setRecording(
+      conversationId: _conversationId,
+      recording: false,
     );
 
-    _presenceService
-        .setRecording(
-      conversationId:
-      _conversationId,
-      recording:
-      false,
-    );
+    _messageController.dispose();
 
-    _messageController
-        .dispose();
-
-    _searchController
-        .dispose();
+    _searchController.dispose();
 
     super.dispose();
   }
@@ -3294,18 +2129,17 @@ class _PendingDirectUpload {
 
 class _DirectTimelineItem {
   _DirectTimelineItem.fromMessage(ChatMessage value)
-      : message = value,
-        call = null,
-        callId = '',
-        date = value.createdAt?.toDate().toLocal() ??
-            DateTime.now();
+    : message = value,
+      call = null,
+      callId = '',
+      date = value.createdAt?.toDate().toLocal() ?? DateTime.now();
 
   _DirectTimelineItem.fromCall({
     required this.callId,
     required Map<String, dynamic> call,
-  })  : message = null,
-        call = call,
-        date = NubifyCallDisplay.time(call);
+  }) : message = null,
+       call = call,
+       date = NubifyCallDisplay.time(call);
 
   final ChatMessage? message;
   final Map<String, dynamic>? call;
