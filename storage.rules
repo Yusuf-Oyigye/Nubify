@@ -1,7 +1,13 @@
+
 rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
+
+    //===================================================
+    // HELPER FUNCTIONS
+    //===================================================
+
     function signedIn() {
       return request.auth != null;
     }
@@ -18,49 +24,124 @@ service firebase.storage {
     //===================================================
 
     match /marketplace/{uid}/{listingId}/{fileName} {
+
       allow read: if signedIn();
+
       allow create, update: if signedIn() &&
         request.auth.uid == uid &&
         request.resource.size <= 30 * 1024 * 1024 &&
         isMarketplaceMedia();
-      allow delete: if signedIn() && request.auth.uid == uid;
+
+      allow delete: if signedIn() &&
+        request.auth.uid == uid;
     }
 
     //===================================================
-    // EXISTING NUBIFY MEDIA PATHS
-    // These retain the access pattern used by the current app.
+    // NUBIFY PROFILE PICTURES
     //===================================================
 
     match /profilePics/{uid} {
+
       allow read: if signedIn();
-      allow write: if signedIn() && request.auth.uid == uid;
+
+      allow write: if signedIn() &&
+        request.auth.uid == uid;
     }
+
+    //===================================================
+    // NUBIFY POSTS
+    //===================================================
 
     match /posts/{uid}/{allPaths=**} {
+
       allow read: if signedIn();
-      allow write: if signedIn() && request.auth.uid == uid;
+
+      allow write: if signedIn() &&
+        request.auth.uid == uid;
     }
+
+    //===================================================
+    // NUBIFY STORIES
+    //===================================================
 
     match /stories/{uid}/{allPaths=**} {
+
       allow read: if signedIn();
-      allow write: if signedIn() && request.auth.uid == uid;
+
+      allow write: if signedIn() &&
+        request.auth.uid == uid;
     }
+
+    //===================================================
+    // NUBIFY CHAT MEDIA
+    //===================================================
 
     match /chatMedia/{uid}/{allPaths=**} {
+
       allow read: if signedIn();
-      allow write: if signedIn() && request.auth.uid == uid;
+
+      allow write: if signedIn() &&
+        request.auth.uid == uid;
     }
+
+    //===================================================
+    // GROUP PROFILE PHOTOS
+    //===================================================
 
     match /groupPhotos/{groupId}/{allPaths=**} {
+
       allow read, write: if signedIn();
     }
+
+    //===================================================
+    // COMMENT ATTACHMENTS
+    //===================================================
 
     match /comments/{postId}/{allPaths=**} {
+
       allow read, write: if signedIn();
     }
 
+    //===================================================
+    // NUBIFY EGYPTIAN ARABIC
+    // SHARED PRONUNCIATION AUDIO
+    //===================================================
+
+    match /egyptianArabicShared/{uid}/audio/{fileName} {
+
+      // Every signed-in Nubify student
+      // can listen to shared pronunciation.
+
+      allow read: if signedIn();
+
+      // All signed-in students can upload
+      // audio to their own uploader folder.
+
+      allow create: if signedIn() &&
+        request.auth.uid == uid &&
+        request.resource.size <= 12 * 1024 * 1024 &&
+        request.resource.contentType.matches('audio/.*');
+
+      // Only the original uploader can
+      // replace or delete the recording.
+
+      allow update: if signedIn() &&
+        request.auth.uid == uid &&
+        request.resource.size <= 12 * 1024 * 1024 &&
+        request.resource.contentType.matches('audio/.*');
+
+      allow delete: if signedIn() &&
+        request.auth.uid == uid;
+    }
+
+    //===================================================
+    // DENY ALL OTHER STORAGE PATHS
+    //===================================================
+
     match /{allPaths=**} {
+
       allow read, write: if false;
     }
+
   }
 }

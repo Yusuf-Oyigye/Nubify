@@ -88,6 +88,10 @@ dependencies:
   crypto: ^3.0.7
   video_thumbnail: ^0.5.6
 
+  #Egyptian arabic Fsrs
+  fsrs: ^2.0.1
+
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -256,14 +256,14 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
                     'Nubify',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      fontSize: 22,
+                      fontSize: 26,
                       color: Color(0xFF29B6F6),
                     ),
                   ),
                   Text(
                     'Campus Social',
                     style: TextStyle(
-                      fontSize: 11,
+                      fontSize: 13,
                       color: Color(0xFF29B6F6),
                       fontWeight: FontWeight.w500,
                     ),
