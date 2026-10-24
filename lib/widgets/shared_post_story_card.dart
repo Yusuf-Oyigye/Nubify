@@ -27,6 +27,7 @@ class SharedPostStoryCard extends StatelessWidget {
     this.storyVideoPlayback = false,
     this.forcePaused = false,
     this.onVideoProgress,
+    this.onVideoBufferingChanged,
     this.onVideoCompleted,
     this.onContentReady,
   });
@@ -57,6 +58,8 @@ class SharedPostStoryCard extends StatelessWidget {
   final bool forcePaused;
 
   final ValueChanged<double>? onVideoProgress;
+
+  final ValueChanged<bool>? onVideoBufferingChanged;
 
   final VoidCallback? onVideoCompleted;
   //============================
@@ -415,6 +418,8 @@ class SharedPostStoryCard extends StatelessWidget {
 
                     onVideoProgress: onVideoProgress,
 
+                    onVideoBufferingChanged: onVideoBufferingChanged,
+
                     onVideoCompleted: onVideoCompleted,
 
                     onContentReady: onContentReady,
@@ -450,6 +455,8 @@ class SharedPostStoryCard extends StatelessWidget {
                     onContentReady: onContentReady,
 
                     onVideoProgress: onVideoProgress,
+
+                    onVideoBufferingChanged: onVideoBufferingChanged,
 
                     onVideoCompleted: onVideoCompleted,
                     postId: current.sourcePostId.trim(),
@@ -840,6 +847,7 @@ class _ReferencedStoryPost extends StatelessWidget {
     required this.forcePaused,
     required this.onContentReady,
     required this.onVideoProgress,
+    required this.onVideoBufferingChanged,
     required this.onVideoCompleted,
     required this.postId,
     required this.depth,
@@ -853,6 +861,8 @@ class _ReferencedStoryPost extends StatelessWidget {
   final VoidCallback? onContentReady;
 
   final ValueChanged<double>? onVideoProgress;
+
+  final ValueChanged<bool>? onVideoBufferingChanged;
 
   final VoidCallback? onVideoCompleted;
 
@@ -936,6 +946,8 @@ class _ReferencedStoryPost extends StatelessWidget {
                 onContentReady: onContentReady,
 
                 onVideoProgress: onVideoProgress,
+
+                onVideoBufferingChanged: onVideoBufferingChanged,
 
                 onVideoCompleted: onVideoCompleted,
                 post: post,

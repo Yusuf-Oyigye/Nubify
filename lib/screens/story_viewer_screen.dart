@@ -86,6 +86,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
   double _progress = 0;
 
   bool _progressPaused = false;
+  bool _mediaBuffering = false;
   bool _pausedBeforeOverlay = false;
 
   bool _centerHoldActive = false;
@@ -296,6 +297,8 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
     _progress = 0;
 
     _progressPaused = false;
+
+    _mediaBuffering = false;
 
     _centerHoldActive = false;
 
@@ -509,7 +512,8 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
         story == null ||
         story.storyId != storyId ||
         _videoCompletionHandled ||
-        _progressPaused) {
+        _progressPaused ||
+        _mediaBuffering) {
       return;
     }
 
@@ -539,6 +543,8 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
 
     _videoCompletionHandled = true;
 
+    _mediaBuffering = false;
+
     _progressTimer?.cancel();
 
     setState(() {
@@ -546,6 +552,27 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
     });
 
     _scheduleNextStory(const Duration(milliseconds: 100));
+  }
+
+  //============================
+  // REAL VIDEO BUFFERING
+  //
+  // This is deliberately separate from _progressPaused. Buffering must freeze
+  // the bar without force-pausing the player, otherwise the player would not
+  // be allowed to resume after the network recovers.
+  //============================
+
+  void _onVideoBuffering(String storyId, bool buffering) {
+    if (!mounted ||
+        _currentStory?.storyId != storyId ||
+        _videoCompletionHandled ||
+        _mediaBuffering == buffering) {
+      return;
+    }
+
+    setState(() {
+      _mediaBuffering = buffering;
+    });
   }
   //===================================================
   // VOICE PROGRESS
@@ -1566,6 +1593,10 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                 _onVideoProgress(story.storyId, progress);
               },
 
+              onVideoBufferingChanged: (bool buffering) {
+                _onVideoBuffering(story.storyId, buffering);
+              },
+
               onVideoCompleted: () {
                 _onVideoCompleted(story.storyId);
               },
@@ -1644,6 +1675,8 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                   _buildHeader(story),
 
                   const Spacer(),
+
+                  _buildStoryCaption(story),
 
                   if (_isOwner)
                     _buildOwnerBottomBar()
@@ -1816,6 +1849,48 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
   //===================================================
   // VIEWER BOTTOM BAR
   //===================================================
+
+  Widget _buildStoryCaption(NubifyStory story) {
+    final String caption = story.caption.trim();
+
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 220),
+      switchInCurve: Curves.easeOutCubic,
+      switchOutCurve: Curves.easeInCubic,
+      child: caption.isEmpty
+          ? const SizedBox.shrink()
+          : Container(
+              key: ValueKey<String>('story-caption-${story.storyId}'),
+              width: double.infinity,
+              margin: const EdgeInsets.fromLTRB(18, 6, 18, 2),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+              decoration: BoxDecoration(
+                color: const Color(0xD91A1D24),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: Colors.white24),
+                boxShadow: const <BoxShadow>[
+                  BoxShadow(
+                    color: Color(0x66000000),
+                    blurRadius: 18,
+                    offset: Offset(0, 7),
+                  ),
+                ],
+              ),
+              child: Text(
+                caption,
+                maxLines: 4,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 15,
+                  height: 1.3,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+    );
+  }
 
   Widget _buildViewerBottomBar() {
     return Padding(
@@ -2329,6 +2404,7 @@ class _StoryContent extends StatelessWidget {
     required this.onContentReady,
 
     required this.onVideoProgress,
+    required this.onVideoBufferingChanged,
     required this.onVideoCompleted,
 
     required this.onVoiceProgress,
@@ -2350,6 +2426,8 @@ class _StoryContent extends StatelessWidget {
   //============================
 
   final ValueChanged<double> onVideoProgress;
+
+  final ValueChanged<bool> onVideoBufferingChanged;
 
   final VoidCallback onVideoCompleted;
 
@@ -2381,6 +2459,8 @@ class _StoryContent extends StatelessWidget {
           onPauseChanged: onPauseChanged,
 
           onProgressChanged: onVideoProgress,
+
+          onBufferingChanged: onVideoBufferingChanged,
 
           onCompleted: onVideoCompleted,
         );
@@ -2434,6 +2514,8 @@ class _StoryContent extends StatelessWidget {
 
           onVideoProgress: onVideoProgress,
 
+          onVideoBufferingChanged: onVideoBufferingChanged,
+
           onVideoCompleted: onVideoCompleted,
 
           onTaggedPersonTap: onTaggedPersonTap,
@@ -2451,7 +2533,8 @@ class _StoryContent extends StatelessWidget {
     // backwards-compatible sticker rendering.
     //===================================================
 
-    final bool showTextOverlay = story.type != 'text' &&
+    final bool showTextOverlay =
+        story.type != 'text' &&
         story.type != 'postShare' &&
         story.type != 'post_share' &&
         story.type != 'videoShare' &&
@@ -2470,9 +2553,7 @@ class _StoryContent extends StatelessWidget {
         content,
 
         if (story.drawings.isNotEmpty)
-          Positioned.fill(
-            child: StoryDrawingCanvas(strokes: story.drawings),
-          ),
+          Positioned.fill(child: StoryDrawingCanvas(strokes: story.drawings)),
 
         if (showTextOverlay)
           IgnorePointer(child: _StoryTextOverlay(story: story)),
@@ -2815,6 +2896,7 @@ class _StoryVideo extends StatefulWidget {
     required this.forcePaused,
     required this.onPauseChanged,
     required this.onProgressChanged,
+    required this.onBufferingChanged,
     required this.onCompleted,
   });
 
@@ -2824,6 +2906,8 @@ class _StoryVideo extends StatefulWidget {
   final ValueChanged<bool> onPauseChanged;
 
   final ValueChanged<double> onProgressChanged;
+
+  final ValueChanged<bool> onBufferingChanged;
 
   final VoidCallback onCompleted;
 
@@ -2839,6 +2923,8 @@ class _StoryVideoState extends State<_StoryVideo> {
   bool _error = false;
 
   bool _completionHandled = false;
+
+  bool _isBuffering = false;
   //===================================================
   // FORCED ACTIVITY PAUSE
   //===================================================
@@ -2962,6 +3048,17 @@ class _StoryVideoState extends State<_StoryVideo> {
       return;
     }
 
+    final bool nextBuffering = controller.value.isBuffering;
+
+    if (_isBuffering != nextBuffering) {
+      _isBuffering = nextBuffering;
+      widget.onBufferingChanged(nextBuffering);
+
+      if (mounted) {
+        setState(() {});
+      }
+    }
+
     final Duration duration = controller.value.duration;
 
     final Duration position = controller.value.position;
@@ -2974,7 +3071,9 @@ class _StoryVideoState extends State<_StoryVideo> {
 
     final double progress = position.inMilliseconds / durationMs;
 
-    widget.onProgressChanged(progress.clamp(0.0, 1.0).toDouble());
+    if (!_isBuffering) {
+      widget.onProgressChanged(progress.clamp(0.0, 1.0).toDouble());
+    }
 
     //===================================================
     // VIDEO FINISHED
@@ -3061,7 +3160,7 @@ class _StoryVideoState extends State<_StoryVideo> {
               ),
             ),
 
-            if (!controller.value.isPlaying)
+            if (!controller.value.isPlaying && !_isBuffering)
               Container(
                 width: 70,
 
@@ -3079,6 +3178,21 @@ class _StoryVideoState extends State<_StoryVideo> {
                   color: Colors.white,
 
                   size: 44,
+                ),
+              ),
+
+            if (_isBuffering)
+              Container(
+                width: 58,
+                height: 58,
+                padding: const EdgeInsets.all(14),
+                decoration: const BoxDecoration(
+                  color: Colors.black54,
+                  shape: BoxShape.circle,
+                ),
+                child: const CircularProgressIndicator(
+                  strokeWidth: 3,
+                  color: Colors.white,
                 ),
               ),
           ],
@@ -4267,6 +4381,7 @@ class _SharedPostStory extends StatelessWidget {
     required this.forcePaused,
     required this.onContentReady,
     required this.onVideoProgress,
+    required this.onVideoBufferingChanged,
     required this.onVideoCompleted,
     required this.onTaggedPersonTap,
   });
@@ -4275,6 +4390,8 @@ class _SharedPostStory extends StatelessWidget {
   final VoidCallback onContentReady;
 
   final ValueChanged<double> onVideoProgress;
+
+  final ValueChanged<bool> onVideoBufferingChanged;
 
   final VoidCallback onVideoCompleted;
   final ValueChanged<StoryPerson> onTaggedPersonTap;
@@ -4470,35 +4587,6 @@ class _SharedPostStory extends StatelessWidget {
                 onPersonTap: onTaggedPersonTap,
               ),
             ),
-          //===================================================
-          // STORY CAPTION
-          //===================================================
-
-          if (story.caption.trim().isNotEmpty)
-            Positioned(
-              left: 22,
-              right: 22,
-              bottom: MediaQuery.of(context).padding.bottom + 96,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 10,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.45),
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: Text(
-                  story.caption.trim(),
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
         ],
       ),
     );
@@ -4526,6 +4614,8 @@ class _SharedPostStory extends StatelessWidget {
       storyVideoPlayback: true,
 
       onVideoProgress: onVideoProgress,
+
+      onVideoBufferingChanged: onVideoBufferingChanged,
 
       onVideoCompleted: onVideoCompleted,
 

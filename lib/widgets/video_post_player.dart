@@ -19,6 +19,8 @@ class VideoPostPlayer extends StatefulWidget {
 
   final ValueChanged<double>? onProgressChanged;
 
+  final ValueChanged<bool>? onBufferingChanged;
+
   final VoidCallback? onCompleted;
   final VoidCallback? onReady;
 
@@ -28,6 +30,7 @@ class VideoPostPlayer extends StatefulWidget {
     this.loop = true,
     this.forcePaused = false,
     this.onProgressChanged,
+    this.onBufferingChanged,
     this.onCompleted,
     this.onReady,
   });
@@ -68,6 +71,8 @@ class _VideoPostPlayerState extends State<VideoPostPlayer>
   bool _isDisposed = false;
 
   bool _progressListenerAttached = false;
+
+  bool _lastBuffering = false;
 
   //============================
   // VIDEO COMPLETION
@@ -174,9 +179,7 @@ class _VideoPostPlayerState extends State<VideoPostPlayer>
       if (shouldPlay) {
         await _controller.setVolume(_isMuted ? 0.0 : 1.0);
 
-        if (_isDisposed ||
-            decision != _playbackDecision ||
-            !_canPlay) {
+        if (_isDisposed || decision != _playbackDecision || !_canPlay) {
           await _silenceAndPause();
           return;
         }
@@ -187,9 +190,7 @@ class _VideoPostPlayerState extends State<VideoPostPlayer>
 
         // The page can become inactive while the native play call is being
         // processed. Check once more after it returns.
-        if (_isDisposed ||
-            decision != _playbackDecision ||
-            !_canPlay) {
+        if (_isDisposed || decision != _playbackDecision || !_canPlay) {
           await _silenceAndPause();
           return;
         }
@@ -335,6 +336,17 @@ class _VideoPostPlayerState extends State<VideoPostPlayer>
       return;
     }
 
+    final bool buffering = _controller.value.isBuffering;
+
+    if (_lastBuffering != buffering) {
+      _lastBuffering = buffering;
+      widget.onBufferingChanged?.call(buffering);
+
+      if (mounted) {
+        setState(() {});
+      }
+    }
+
     final Duration duration = _controller.value.duration;
 
     final Duration position = _controller.value.position;
@@ -347,7 +359,9 @@ class _VideoPostPlayerState extends State<VideoPostPlayer>
 
     final double progress = position.inMilliseconds / durationMs;
 
-    widget.onProgressChanged?.call(progress.clamp(0.0, 1.0).toDouble());
+    if (!buffering) {
+      widget.onProgressChanged?.call(progress.clamp(0.0, 1.0).toDouble());
+    }
 
     //============================
     // VIDEO FINISHED
@@ -475,7 +489,7 @@ class _VideoPostPlayerState extends State<VideoPostPlayer>
                   // ======================================================
                   // PLAY ICON WHEN PAUSED
                   // ======================================================
-                  if (_showPlayIcon)
+                  if (_showPlayIcon && !_lastBuffering)
                     Container(
                       width: 65,
                       height: 65,
@@ -487,6 +501,16 @@ class _VideoPostPlayerState extends State<VideoPostPlayer>
                         Icons.play_arrow,
                         color: Colors.white,
                         size: 40,
+                      ),
+                    ),
+
+                  if (_lastBuffering)
+                    const SizedBox(
+                      width: 38,
+                      height: 38,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 3,
+                        color: Colors.white,
                       ),
                     ),
 

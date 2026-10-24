@@ -16,6 +16,8 @@ class PostMediaCarousel extends StatefulWidget {
 
   final ValueChanged<double>? onVideoProgress;
 
+  final ValueChanged<bool>? onVideoBufferingChanged;
+
   final VoidCallback? onVideoCompleted;
   //============================
   // MEDIA READY
@@ -29,6 +31,7 @@ class PostMediaCarousel extends StatefulWidget {
     this.storyPlayback = false,
     this.forcePaused = false,
     this.onVideoProgress,
+    this.onVideoBufferingChanged,
     this.onVideoCompleted,
     this.onContentReady,
   });
@@ -100,6 +103,8 @@ class _PostMediaCarouselState extends State<PostMediaCarousel> {
               controller: _pageController,
               itemCount: widget.media.length,
               onPageChanged: (int index) {
+                widget.onVideoBufferingChanged?.call(false);
+
                 setState(() {
                   _currentPage = index;
 
@@ -203,6 +208,10 @@ class _PostMediaCarouselState extends State<PostMediaCarousel> {
         //============================
         onProgressChanged: index == _currentPage
             ? widget.onVideoProgress
+            : null,
+
+        onBufferingChanged: index == _currentPage
+            ? widget.onVideoBufferingChanged
             : null,
 
         onCompleted: index == _currentPage ? widget.onVideoCompleted : null,
