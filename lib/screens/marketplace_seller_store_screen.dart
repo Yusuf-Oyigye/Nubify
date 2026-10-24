@@ -105,27 +105,14 @@ class _MarketplaceSellerStoreScreenState
     }
 
     final int generation = _generation;
-    final bool privateSoldView = _selectedStatus == 'sold' && !_isOwner;
-    if (privateSoldView) {
-      if (!mounted || generation != _generation) {
-        return;
-      }
-      setState(() {
-        _listings = const <MarketplaceListing>[];
-        _loading = false;
-        _loadingMore = false;
-        _hasMore = false;
-      });
-      return;
-    }
-
     try {
       final MarketplaceListingPage page = _selectedStatus == 'available'
           ? await _service.fetchAvailablePage(
               sellerId: widget.sellerId,
               after: reset ? null : _lastPage?.lastDocument,
             )
-          : await _service.fetchMinePage(
+          : await _service.fetchSellerStorePage(
+              sellerId: widget.sellerId,
               status: 'sold',
               after: reset ? null : _lastPage?.lastDocument,
             );
@@ -167,35 +154,30 @@ class _MarketplaceSellerStoreScreenState
       return;
     }
     setState(() => _openingChat = true);
-    try {
-      await _chat.ensureConversationExists(widget.sellerId);
-      if (!mounted) {
-        return;
-      }
-      await Navigator.push<void>(
-        context,
-        MaterialPageRoute<void>(
-          builder: (_) => ConversationScreen(
-            otherUserId: widget.sellerId,
-            otherName:
-                (profile['fullName'] ?? profile['username'] ?? 'Student Seller')
-                    .toString(),
-            otherUsername: (profile['username'] ?? '').toString(),
-            otherPhotoUrl: (profile['photoUrl'] ?? '').toString(),
-          ),
-        ),
-      );
-    } catch (error) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(error.toString())));
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _openingChat = false);
-      }
+    unawaited(
+      _chat.ensureConversationExists(widget.sellerId).catchError((
+        Object error,
+      ) {
+        debugPrint('Seller-store conversation preparation failed: $error');
+      }),
+    );
+    if (!mounted) {
+      return;
     }
+    setState(() => _openingChat = false);
+    await Navigator.push<void>(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) => ConversationScreen(
+          otherUserId: widget.sellerId,
+          otherName:
+              (profile['fullName'] ?? profile['username'] ?? 'Student Seller')
+                  .toString(),
+          otherUsername: (profile['username'] ?? '').toString(),
+          otherPhotoUrl: (profile['photoUrl'] ?? '').toString(),
+        ),
+      ),
+    );
   }
 
   void _openProfile() {
@@ -336,19 +318,6 @@ class _MarketplaceSellerStoreScreenState
       ];
     }
 
-    if (_selectedStatus == 'sold' && !_isOwner) {
-      return const <Widget>[
-        SliverFillRemaining(
-          hasScrollBody: false,
-          child: _StoreState(
-            icon: Icons.lock_outline_rounded,
-            title: 'Sold listings are private',
-            message: 'Only the seller can review their sold-listing history.',
-          ),
-        ),
-      ];
-    }
-
     if (_listings.isEmpty) {
       return <Widget>[
         SliverFillRemaining(
@@ -359,11 +328,11 @@ class _MarketplaceSellerStoreScreenState
                 : Icons.cloud_off_rounded,
             title: _selectedStatus == 'available'
                 ? 'No available listings'
-                : 'No sold listings',
+                : 'No sold listing yet',
             message: _loadError == null
                 ? _selectedStatus == 'available'
                       ? 'This seller does not have a public item or service right now.'
-                      : 'You have not marked any Marketplace listing as sold.'
+                      : 'Items this seller marks as sold will appear here.'
                 : 'The listings could not load right now. Pull down or try again.',
             actionLabel: _loadError == null ? null : 'Try Again',
             onAction: _loadError == null

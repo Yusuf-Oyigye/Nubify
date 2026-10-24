@@ -2655,11 +2655,13 @@ class _PostCardState extends State<PostCard> {
                           alignment: Alignment.centerLeft,
                           widthFactor: percentage,
                           child: Container(
-                            color: winner
-                                ? const Color(
-                                    0xFF29B6F6,
-                                  ).withValues(alpha: 0.35)
-                                : Colors.white.withValues(alpha: 0.08),
+                            // The filled width is the actual vote percentage.
+                            // Use a strong solid Nubify blue instead of only a
+                            // blue outline so 100% visibly fills the option and
+                            // 50% visibly fills exactly half.
+                            color: const Color(
+                              0xFF29B6F6,
+                            ).withValues(alpha: winner ? 0.88 : 0.58),
                           ),
                         ),
 
@@ -2762,7 +2764,6 @@ class _PostCardState extends State<PostCard> {
                 style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
               ),
             ),
-
         ],
       ),
     );
@@ -2916,33 +2917,31 @@ class _PostCardState extends State<PostCard> {
                 ),
               ),
 
-              ...widget.post.taggedUsers
-                  .map(
-                    (TaggedUser user) => ListTile(
-                      leading: CircleAvatar(
-                        backgroundImage: user.photoUrl.trim().isNotEmpty
-                            ? NetworkImage(user.photoUrl)
-                            : null,
+              ...widget.post.taggedUsers.map(
+                (TaggedUser user) => ListTile(
+                  leading: CircleAvatar(
+                    backgroundImage: user.photoUrl.trim().isNotEmpty
+                        ? NetworkImage(user.photoUrl)
+                        : null,
 
-                        child: user.photoUrl.trim().isEmpty
-                            ? const Icon(Icons.person)
-                            : null,
-                      ),
+                    child: user.photoUrl.trim().isEmpty
+                        ? const Icon(Icons.person)
+                        : null,
+                  ),
 
-                      title: Text('@${user.username}'),
+                  title: Text('@${user.username}'),
 
-                      onTap: () {
-                        Navigator.pop(sheetContext);
+                  onTap: () {
+                    Navigator.pop(sheetContext);
 
-                        if (user.uid.trim().isNotEmpty) {
-                          Navigator.of(
-                            context,
-                          ).pushNamed('/profile', arguments: user.uid);
-                        }
-                      },
-                    ),
-                  )
-                  ,
+                    if (user.uid.trim().isNotEmpty) {
+                      Navigator.of(
+                        context,
+                      ).pushNamed('/profile', arguments: user.uid);
+                    }
+                  },
+                ),
+              ),
 
               const SizedBox(height: 8),
             ],
@@ -3311,7 +3310,9 @@ class _PostCardState extends State<PostCard> {
                     margin: const EdgeInsets.fromLTRB(12, 0, 12, 10),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.grey.withValues(alpha: 0.30)),
+                      border: Border.all(
+                        color: Colors.grey.withValues(alpha: 0.30),
+                      ),
                     ),
                     child: const Center(
                       child: CircularProgressIndicator(strokeWidth: 2),
@@ -3680,7 +3681,9 @@ class _PostCardState extends State<PostCard> {
                   height: 80,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(13),
-                    border: Border.all(color: Colors.grey.withValues(alpha: 0.25)),
+                    border: Border.all(
+                      color: Colors.grey.withValues(alpha: 0.25),
+                    ),
                   ),
                   child: const Center(
                     child: CircularProgressIndicator(strokeWidth: 2),
@@ -3894,9 +3897,9 @@ class _PostCardState extends State<PostCard> {
                 alignment: Alignment.centerLeft,
                 widthFactor: percentage,
                 child: ColoredBox(
-                  color: winner
-                      ? const Color(0xFF29B6F6).withValues(alpha: 0.35)
-                      : Colors.white.withValues(alpha: 0.08),
+                  color: const Color(
+                    0xFF29B6F6,
+                  ).withValues(alpha: winner ? 0.88 : 0.58),
                 ),
               ),
             Padding(

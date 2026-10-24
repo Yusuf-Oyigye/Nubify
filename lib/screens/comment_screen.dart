@@ -19,8 +19,15 @@ import '../widgets/universal_link_text.dart';
 
 class CommentsScreen extends StatefulWidget {
   final String postId;
+  final String highlightCommentId;
+  final String highlightReplyId;
 
-  const CommentsScreen({super.key, required this.postId});
+  const CommentsScreen({
+    super.key,
+    required this.postId,
+    this.highlightCommentId = '',
+    this.highlightReplyId = '',
+  });
 
   @override
   State<CommentsScreen> createState() => _CommentsScreenState();
@@ -79,6 +86,11 @@ class _CommentsScreenState extends State<CommentsScreen> {
 
   bool _isPostMediaPaused = false;
 
+  final GlobalKey _highlightedCommentKey = GlobalKey();
+  Timer? _highlightTimer;
+  bool _highlightActive = false;
+  bool _highlightRevealScheduled = false;
+
   //===================================================
   // INIT
   //===================================================
@@ -87,7 +99,35 @@ class _CommentsScreenState extends State<CommentsScreen> {
   void initState() {
     super.initState();
 
+    _highlightActive = widget.highlightCommentId.trim().isNotEmpty;
+
     _repairOldComments();
+  }
+
+  void _scheduleHighlightedCommentReveal() {
+    if (_highlightRevealScheduled) {
+      return;
+    }
+    _highlightRevealScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final BuildContext? targetContext = _highlightedCommentKey.currentContext;
+      if (!mounted || targetContext == null) {
+        _highlightRevealScheduled = false;
+        return;
+      }
+      await Scrollable.ensureVisible(
+        targetContext,
+        alignment: 0.28,
+        duration: const Duration(milliseconds: 420),
+        curve: Curves.easeOutCubic,
+      );
+      _highlightTimer?.cancel();
+      _highlightTimer = Timer(const Duration(seconds: 3), () {
+        if (mounted) {
+          setState(() => _highlightActive = false);
+        }
+      });
+    });
   }
 
   //===================================================
@@ -863,8 +903,27 @@ class _CommentsScreenState extends State<CommentsScreen> {
         uid.isNotEmpty &&
         _auth.currentUser!.uid == uid;
 
-    return Padding(
-      padding: const EdgeInsets.only(left: 12, right: 12, top: 12),
+    final bool isNotificationTarget =
+        widget.highlightCommentId.trim().isNotEmpty &&
+        widget.highlightCommentId.trim() == commentId;
+    if (isNotificationTarget) {
+      _scheduleHighlightedCommentReveal();
+    }
+
+    return AnimatedContainer(
+      key: isNotificationTarget ? _highlightedCommentKey : null,
+      duration: const Duration(milliseconds: 420),
+      margin: const EdgeInsets.fromLTRB(6, 5, 6, 0),
+      padding: const EdgeInsets.only(left: 6, right: 6, top: 7, bottom: 7),
+      decoration: BoxDecoration(
+        color: isNotificationTarget && _highlightActive
+            ? const Color(0xFF29B6F6).withValues(alpha: 0.16)
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(18),
+        border: isNotificationTarget && _highlightActive
+            ? Border.all(color: const Color(0xFF29B6F6), width: 1.4)
+            : null,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
@@ -1044,6 +1103,9 @@ class _CommentsScreenState extends State<CommentsScreen> {
             _RepliesSection(
               postId: widget.postId,
               commentId: commentId,
+              highlightReplyId: isNotificationTarget
+                  ? widget.highlightReplyId
+                  : '',
               replyCount: replyCount,
               commentService: _commentService,
               onReply: (String parentReplyId, String username) {
@@ -1441,6 +1503,8 @@ class _CommentsScreenState extends State<CommentsScreen> {
 
   @override
   void dispose() {
+    _highlightTimer?.cancel();
+
     _commentController.dispose();
 
     _commentFocusNode.dispose();
@@ -1783,6 +1847,8 @@ class _RepliesSection extends StatefulWidget {
 
   final CommentService commentService;
 
+  final String highlightReplyId;
+
   final Function(String parentReplyId, String username) onReply;
 
   const _RepliesSection({
@@ -1791,6 +1857,7 @@ class _RepliesSection extends StatefulWidget {
     required this.replyCount,
     required this.commentService,
     required this.onReply,
+    this.highlightReplyId = '',
   });
 
   @override
@@ -1946,6 +2013,28 @@ class _RepliesSectionState extends State<_RepliesSection> {
 
   int _visibleReplies = 3;
   final Set<String> _expandedReplyIds = <String>{};
+  final GlobalKey _highlightedReplyKey = GlobalKey();
+  bool _replyRevealScheduled = false;
+
+  void _scheduleHighlightedReplyReveal() {
+    if (_replyRevealScheduled) {
+      return;
+    }
+    _replyRevealScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final BuildContext? targetContext = _highlightedReplyKey.currentContext;
+      if (!mounted || targetContext == null) {
+        _replyRevealScheduled = false;
+        return;
+      }
+      Scrollable.ensureVisible(
+        targetContext,
+        alignment: 0.35,
+        duration: const Duration(milliseconds: 360),
+        curve: Curves.easeOutCubic,
+      );
+    });
+  }
 
   //===================================================
   // INT HELPER
@@ -2491,6 +2580,31 @@ class _RepliesSectionState extends State<_RepliesSection> {
               return const SizedBox.shrink();
             }
 
+            final String targetReplyId = widget.highlightReplyId.trim();
+            if (targetReplyId.isNotEmpty &&
+                replies.any((document) => document.id == targetReplyId)) {
+              // Make the notified reply visible even when it is beyond the
+              // initial three replies or nested below collapsed parents.
+              _visibleReplies = replies.length;
+              final Map<String, QueryDocumentSnapshot<Map<String, dynamic>>>
+              byId = <String, QueryDocumentSnapshot<Map<String, dynamic>>>{
+                for (final document in replies) document.id: document,
+              };
+              String currentId = targetReplyId;
+              final Set<String> visited = <String>{};
+              while (currentId.isNotEmpty && visited.add(currentId)) {
+                final String parentId =
+                    (byId[currentId]?.data()['parentReplyId'] ?? '')
+                        .toString()
+                        .trim();
+                if (parentId.isEmpty || !byId.containsKey(parentId)) {
+                  break;
+                }
+                _expandedReplyIds.add(parentId);
+                currentId = parentId;
+              }
+            }
+
             //===================================================
             // BUILD DIRECT-PARENT TREE
             //===================================================
@@ -2608,309 +2722,328 @@ class _RepliesSectionState extends State<_RepliesSection> {
         uid.isNotEmpty &&
         _auth.currentUser!.uid == uid;
 
-    return CustomPaint(
-      painter: _ReplyThreadPainter(
-        depth: depth,
+    final bool isNotificationTarget =
+        widget.highlightReplyId.trim().isNotEmpty &&
+        widget.highlightReplyId.trim() == replyId;
+    if (isNotificationTarget) {
+      _scheduleHighlightedReplyReveal();
+    }
 
-        ancestorHasFollowingSibling: item.ancestorHasFollowingSibling,
-
-        isLastSibling: item.isLastSibling,
-
-        showsChildren: item.showsChildren,
-
-        color: Colors.grey.shade600,
+    return Container(
+      key: isNotificationTarget ? _highlightedReplyKey : null,
+      decoration: BoxDecoration(
+        color: isNotificationTarget
+            ? const Color(0xFF29B6F6).withValues(alpha: 0.16)
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(15),
+        border: isNotificationTarget
+            ? Border.all(color: const Color(0xFF29B6F6), width: 1.3)
+            : null,
       ),
+      child: CustomPaint(
+        painter: _ReplyThreadPainter(
+          depth: depth,
 
-      child: Padding(
-        padding: EdgeInsets.only(
-          left:
-              _ReplyThreadPainter.rootContentIndent +
-              depth * _ReplyThreadPainter.indent,
+          ancestorHasFollowingSibling: item.ancestorHasFollowingSibling,
+
+          isLastSibling: item.isLastSibling,
+
+          showsChildren: item.showsChildren,
+
+          color: Colors.grey.shade600,
         ),
 
-        child: IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+        child: Padding(
+          padding: EdgeInsets.only(
+            left:
+                _ReplyThreadPainter.rootContentIndent +
+                depth * _ReplyThreadPainter.indent,
+          ),
 
-            children: <Widget>[
-              //===================================================
-              // REPLY PROFILE PICTURE
-              //===================================================
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
 
-              Align(
-                alignment: Alignment.topCenter,
+              children: <Widget>[
+                //===================================================
+                // REPLY PROFILE PICTURE
+                //===================================================
 
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
+                Align(
+                  alignment: Alignment.topCenter,
 
-                  onTap: uid.isEmpty
-                      ? null
-                      : () {
-                          _openUserProfile(uid);
-                        },
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
 
-                  child: CircleAvatar(
-                    radius: 16,
+                    onTap: uid.isEmpty
+                        ? null
+                        : () {
+                            _openUserProfile(uid);
+                          },
 
-                    backgroundColor: const Color(0xFF29B6F6),
+                    child: CircleAvatar(
+                      radius: 16,
 
-                    backgroundImage: photoUrl.isNotEmpty
-                        ? NetworkImage(photoUrl)
-                        : null,
+                      backgroundColor: const Color(0xFF29B6F6),
 
-                    child: photoUrl.isEmpty
-                        ? const Icon(
-                            Icons.person,
+                      backgroundImage: photoUrl.isNotEmpty
+                          ? NetworkImage(photoUrl)
+                          : null,
 
-                            size: 16,
+                      child: photoUrl.isEmpty
+                          ? const Icon(
+                              Icons.person,
 
-                            color: Colors.white,
-                          )
-                        : null,
+                              size: 16,
+
+                              color: Colors.white,
+                            )
+                          : null,
+                    ),
                   ),
                 ),
-              ),
 
-              const SizedBox(width: 8),
+                const SizedBox(width: 8),
 
-              //===================================================
-              // REPLY CONTENT
-              //===================================================
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
+                //===================================================
+                // REPLY CONTENT
+                //===================================================
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
 
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
 
-                    children: <Widget>[
-                      //===================================================
-                      // NAME + USERNAME
-                      //===================================================
+                      children: <Widget>[
+                        //===================================================
+                        // NAME + USERNAME
+                        //===================================================
 
-                      GestureDetector(
-                        behavior: HitTestBehavior.opaque,
+                        GestureDetector(
+                          behavior: HitTestBehavior.opaque,
 
-                        onTap: uid.isEmpty
-                            ? null
-                            : () {
-                                _openUserProfile(uid);
-                              },
+                          onTap: uid.isEmpty
+                              ? null
+                              : () {
+                                  _openUserProfile(uid);
+                                },
 
-                        child: Wrap(
-                          crossAxisAlignment: WrapCrossAlignment.center,
+                          child: Wrap(
+                            crossAxisAlignment: WrapCrossAlignment.center,
 
-                          spacing: 5,
+                            spacing: 5,
 
-                          runSpacing: 2,
+                            runSpacing: 2,
 
-                          children: <Widget>[
-                            Text(
-                              displayName,
-
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-
-                                fontSize: 13,
-                              ),
-                            ),
-
-                            if (username.isNotEmpty)
+                            children: <Widget>[
                               Text(
-                                '@$username',
+                                displayName,
 
-                                style: TextStyle(
-                                  color: Colors.grey.shade600,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
 
-                                  fontSize: 11,
+                                  fontSize: 13,
                                 ),
                               ),
-                          ],
-                        ),
-                      ),
 
-                      const SizedBox(height: 2),
+                              if (username.isNotEmpty)
+                                Text(
+                                  '@$username',
 
-                      if (replyToUsername.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 2),
+                                  style: TextStyle(
+                                    color: Colors.grey.shade600,
 
-                          child: Text(
-                            'Replying to @$replyToUsername',
-
-                            style: const TextStyle(
-                              color: Color(0xFF29B6F6),
-
-                              fontSize: 11,
-
-                              fontWeight: FontWeight.w600,
-                            ),
+                                    fontSize: 11,
+                                  ),
+                                ),
+                            ],
                           ),
                         ),
 
-                      //===================================================
-                      // REPLY TEXT
-                      // ===================================================
-                      if (text.trim().isNotEmpty)
-                        UniversalLinkText(
-                          text: text,
+                        const SizedBox(height: 2),
 
-                          compactPreview: true,
-
-                          style: const TextStyle(fontSize: 14),
-                        ),
-                      //===================================================
-                      // REPLY IMAGE
-                      //===================================================
-
-                      if (imageUrl.isNotEmpty)
-                        Padding(
-                          padding: EdgeInsets.only(
-                            top: text.trim().isNotEmpty ? 7 : 2,
-                          ),
-
-                          child: _CommentNetworkImage(
-                            imageUrl: imageUrl,
-
-                            maxHeight: 220,
-                          ),
-                        ),
-
-                      const SizedBox(height: 4),
-
-                      //===================================================
-                      // TIME + EDITED + REPLY + LIKE
-                      //===================================================
-                      Wrap(
-                        crossAxisAlignment: WrapCrossAlignment.center,
-
-                        spacing: 11,
-
-                        runSpacing: 4,
-
-                        children: <Widget>[
-                          NubifyTimeText.fromTimestamp(
-                            timestamp: createdAt,
-
-                            showWeeksForOlderDates: true,
-
-                            style: TextStyle(
-                              color: Colors.grey.shade600,
-
-                              fontSize: 11,
-                            ),
-                          ),
-
-                          if (edited)
-                            Text(
-                              'edited',
-
-                              style: TextStyle(
-                                color: Colors.grey.shade500,
-
-                                fontSize: 10,
-
-                                fontStyle: FontStyle.italic,
-                              ),
-                            ),
-
-                          //===================================================
-                          // REPLY TO EXACT PARENT
-                          //===================================================
-                          GestureDetector(
-                            onTap: () {
-                              widget.onReply(replyId, username);
-                            },
+                        if (replyToUsername.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 2),
 
                             child: Text(
-                              'Reply',
-
-                              style: TextStyle(
-                                color: Colors.grey.shade700,
-
-                                fontWeight: FontWeight.bold,
-
-                                fontSize: 11,
-                              ),
-                            ),
-                          ),
-
-                          _ReplyLikeButton(
-                            postId: widget.postId,
-
-                            commentId: widget.commentId,
-
-                            replyId: replyId,
-
-                            likeCount: likeCount,
-
-                            commentService: widget.commentService,
-                          ),
-                        ],
-                      ),
-
-                      //===================================================
-                      // CHILD REPLY COUNT
-                      //===================================================
-                      if (childCount > 0)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 6),
-
-                          child: GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                if (_expandedReplyIds.contains(replyId)) {
-                                  _expandedReplyIds.remove(replyId);
-                                } else {
-                                  _expandedReplyIds.add(replyId);
-                                }
-                              });
-                            },
-
-                            child: Text(
-                              _expandedReplyIds.contains(replyId)
-                                  ? 'Hide replies'
-                                  : 'View $childCount ${childCount == 1 ? 'reply' : 'replies'}',
+                              'Replying to @$replyToUsername',
 
                               style: const TextStyle(
                                 color: Color(0xFF29B6F6),
 
-                                fontWeight: FontWeight.w700,
+                                fontSize: 11,
+
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+
+                        //===================================================
+                        // REPLY TEXT
+                        // ===================================================
+                        if (text.trim().isNotEmpty)
+                          UniversalLinkText(
+                            text: text,
+
+                            compactPreview: true,
+
+                            style: const TextStyle(fontSize: 14),
+                          ),
+                        //===================================================
+                        // REPLY IMAGE
+                        //===================================================
+
+                        if (imageUrl.isNotEmpty)
+                          Padding(
+                            padding: EdgeInsets.only(
+                              top: text.trim().isNotEmpty ? 7 : 2,
+                            ),
+
+                            child: _CommentNetworkImage(
+                              imageUrl: imageUrl,
+
+                              maxHeight: 220,
+                            ),
+                          ),
+
+                        const SizedBox(height: 4),
+
+                        //===================================================
+                        // TIME + EDITED + REPLY + LIKE
+                        //===================================================
+                        Wrap(
+                          crossAxisAlignment: WrapCrossAlignment.center,
+
+                          spacing: 11,
+
+                          runSpacing: 4,
+
+                          children: <Widget>[
+                            NubifyTimeText.fromTimestamp(
+                              timestamp: createdAt,
+
+                              showWeeksForOlderDates: true,
+
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
 
                                 fontSize: 11,
                               ),
                             ),
-                          ),
+
+                            if (edited)
+                              Text(
+                                'edited',
+
+                                style: TextStyle(
+                                  color: Colors.grey.shade500,
+
+                                  fontSize: 10,
+
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+
+                            //===================================================
+                            // REPLY TO EXACT PARENT
+                            //===================================================
+                            GestureDetector(
+                              onTap: () {
+                                widget.onReply(replyId, username);
+                              },
+
+                              child: Text(
+                                'Reply',
+
+                                style: TextStyle(
+                                  color: Colors.grey.shade700,
+
+                                  fontWeight: FontWeight.bold,
+
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ),
+
+                            _ReplyLikeButton(
+                              postId: widget.postId,
+
+                              commentId: widget.commentId,
+
+                              replyId: replyId,
+
+                              likeCount: likeCount,
+
+                              commentService: widget.commentService,
+                            ),
+                          ],
                         ),
-                    ],
+
+                        //===================================================
+                        // CHILD REPLY COUNT
+                        //===================================================
+                        if (childCount > 0)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 6),
+
+                            child: GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  if (_expandedReplyIds.contains(replyId)) {
+                                    _expandedReplyIds.remove(replyId);
+                                  } else {
+                                    _expandedReplyIds.add(replyId);
+                                  }
+                                });
+                              },
+
+                              child: Text(
+                                _expandedReplyIds.contains(replyId)
+                                    ? 'Hide replies'
+                                    : 'View $childCount ${childCount == 1 ? 'reply' : 'replies'}',
+
+                                style: const TextStyle(
+                                  color: Color(0xFF29B6F6),
+
+                                  fontWeight: FontWeight.w700,
+
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
 
-              //===================================================
-              // OWNER MENU
-              //===================================================
-              if (isOwner)
-                Align(
-                  alignment: Alignment.topCenter,
+                //===================================================
+                // OWNER MENU
+                //===================================================
+                if (isOwner)
+                  Align(
+                    alignment: Alignment.topCenter,
 
-                  child: IconButton(
-                    visualDensity: VisualDensity.compact,
+                    child: IconButton(
+                      visualDensity: VisualDensity.compact,
 
-                    onPressed: () {
-                      _showReplyMenu(
-                        replyId: replyId,
+                      onPressed: () {
+                        _showReplyMenu(
+                          replyId: replyId,
 
-                        text: text,
+                          text: text,
 
-                        ownerUid: uid,
-                      );
-                    },
+                          ownerUid: uid,
+                        );
+                      },
 
-                    icon: const Icon(Icons.more_vert, size: 18),
+                      icon: const Icon(Icons.more_vert, size: 18),
+                    ),
                   ),
-                ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

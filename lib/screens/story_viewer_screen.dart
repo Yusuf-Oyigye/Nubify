@@ -344,9 +344,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
     // READY IMMEDIATELY.
     //===================================================
 
-    if (story.type == 'text' ||
-        story.type == 'poll' ||
-        story.type == 'reshare') {
+    if (story.type == 'text' || story.type == 'poll') {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _onStoryContentReady(story.storyId);
       });
@@ -2499,7 +2497,7 @@ class _StoryContent extends StatelessWidget {
         break;
 
       case 'reshare':
-        content = _StoryReshare(story: story);
+        content = _StoryReshare(story: story, onReady: onContentReady);
         break;
       case 'postShare':
       case 'post_share':
@@ -4237,9 +4235,9 @@ class _StoryPollViewState extends State<_StoryPollView> {
                 alignment: Alignment.centerLeft,
                 widthFactor: percentage.clamp(0.0, 1.0).toDouble(),
                 child: Container(
-                  color: winner
-                      ? const Color(0xFF29B6F6).withValues(alpha: 0.34)
-                      : Colors.white.withValues(alpha: 0.08),
+                  color: const Color(
+                    0xFF29B6F6,
+                  ).withValues(alpha: winner ? 0.88 : 0.58),
                 ),
               ),
 
@@ -4310,13 +4308,37 @@ class _StoryPollViewState extends State<_StoryPollView> {
 // RESHARED STORY
 //===================================================
 
-class _StoryReshare extends StatelessWidget {
-  const _StoryReshare({required this.story});
+class _StoryReshare extends StatefulWidget {
+  const _StoryReshare({required this.story, required this.onReady});
 
   final NubifyStory story;
+  final VoidCallback onReady;
+
+  @override
+  State<_StoryReshare> createState() => _StoryReshareState();
+}
+
+class _StoryReshareState extends State<_StoryReshare> {
+  bool _readyReported = false;
+
+  void _reportReady() {
+    if (_readyReported) {
+      return;
+    }
+    _readyReported = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        widget.onReady();
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    final NubifyStory story = widget.story;
+    if (story.sourceMediaUrl.trim().isEmpty) {
+      _reportReady();
+    }
     return Container(
       color: Color(story.backgroundColor),
       alignment: Alignment.center,
@@ -4352,6 +4374,31 @@ class _StoryReshare extends StatelessWidget {
                     height: 300,
                     width: double.infinity,
                     fit: BoxFit.cover,
+                    frameBuilder:
+                        (
+                          BuildContext context,
+                          Widget child,
+                          int? frame,
+                          bool wasSynchronouslyLoaded,
+                        ) {
+                          if (wasSynchronouslyLoaded || frame != null) {
+                            _reportReady();
+                          }
+                          return child;
+                        },
+                    errorBuilder: (_, _, _) {
+                      _reportReady();
+                      return const SizedBox(
+                        height: 180,
+                        child: Center(
+                          child: Icon(
+                            Icons.broken_image_outlined,
+                            color: Colors.white54,
+                            size: 42,
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
               ),

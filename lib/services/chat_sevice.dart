@@ -987,6 +987,39 @@ class ChatService {
         .where('participants', arrayContains: uid)
         .snapshots();
   }
+
+  Stream<int> totalUnreadCountStream() {
+    final String? uid = currentUserId;
+    if (uid == null || uid.isEmpty) {
+      return Stream<int>.value(0);
+    }
+    return getConversations().map((snapshot) {
+      int total = 0;
+      for (final document in snapshot.docs) {
+        final Map<String, dynamic> data = document.data();
+        final dynamic raw = data['unreadCounts'];
+        if (raw is Map) {
+          final dynamic value = raw[uid];
+          total += value is num
+              ? value.toInt()
+              : int.tryParse(value?.toString() ?? '') ?? 0;
+          continue;
+        }
+        final String lastSender =
+            (data['lastMessageSenderId'] ?? data['lastSenderId'] ?? '')
+                .toString();
+        final List<dynamic> readBy = data['lastMessageReadBy'] is List
+            ? data['lastMessageReadBy'] as List<dynamic>
+            : const <dynamic>[];
+        if (lastSender.isNotEmpty &&
+            lastSender != uid &&
+            !readBy.map((item) => item.toString()).contains(uid)) {
+          total++;
+        }
+      }
+      return total;
+    });
+  }
   //===============================
   // UNREAD COUNT
   //===============================

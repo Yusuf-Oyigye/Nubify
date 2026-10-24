@@ -170,16 +170,18 @@ class _ChatScreenState extends State<ChatScreen>
 
                       SwitchListTile(
                         value: current,
-                        activeThumbColor: _blue,
+                        activeThumbColor: const Color(0xFFFFC107),
                         secondary: Icon(
                           Icons.done_all_rounded,
-                          color: current ? _blue : Colors.grey,
+                          color: current
+                              ? const Color(0xFFFFC107)
+                              : Colors.grey,
                         ),
                         title: const Text('Read receipts'),
                         subtitle: Text(
                           current
-                              ? 'Online status and blue read ticks are available when both users have this on.'
-                              : 'Your online status and blue read ticks are hidden, and you cannot see them for others.',
+                              ? 'Read receipts are on. The yellow privacy control shows this setting is active.'
+                              : 'Read receipts and online visibility are hidden for both sides.',
                         ),
                         onChanged: (bool value) async {
                           setSheetState(() {
@@ -278,7 +280,9 @@ class _ChatScreenState extends State<ChatScreen>
             });
             if (docs.isEmpty) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const SizedBox.shrink();
+                // Never present an unexplained blank page while Firestore
+                // restores the locally cached conversations.
+                return _emptyMessages();
               }
 
               //===============================

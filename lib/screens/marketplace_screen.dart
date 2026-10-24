@@ -1,11 +1,12 @@
-
 import 'dart:async';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../models/marketplace_listing.dart';
+import '../services/chat_sevice.dart';
 import '../services/marketplace_service.dart';
+import '../services/notification_service.dart';
 import '../utils/marketplace_constants.dart';
 import '../utils/marketplace_motion.dart';
 import '../utils/marketplace_theme.dart';
@@ -42,6 +43,12 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
   late final Stream<Set<String>> _savedIdsStream;
   MarketplaceHomeDiscovery? _discovery;
   bool _loadingDiscovery = true;
+  StreamSubscription<int>? _chatUnreadSubscription;
+  StreamSubscription<int>? _notificationUnreadSubscription;
+  int _chatUnreadCount = 0;
+  int _notificationUnreadCount = 0;
+  bool _chatBadgeAcknowledged = false;
+  bool _notificationBadgeAcknowledged = false;
 
   @override
   void initState() {
@@ -57,6 +64,26 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     _discovery = _service.cachedHomeDiscovery;
     _loadingDiscovery = _discovery == null;
     _scrollController.addListener(_handleScroll);
+    _chatUnreadSubscription = ChatService().totalUnreadCountStream().listen((
+      int count,
+    ) {
+      if (!mounted) return;
+      setState(() {
+        if (count > _chatUnreadCount) _chatBadgeAcknowledged = false;
+        _chatUnreadCount = count;
+      });
+    });
+    _notificationUnreadSubscription = NotificationService()
+        .unreadCountStream()
+        .listen((int count) {
+          if (!mounted) return;
+          setState(() {
+            if (count > _notificationUnreadCount) {
+              _notificationBadgeAcknowledged = false;
+            }
+            _notificationUnreadCount = count;
+          });
+        });
     unawaited(_loadFreshListings(reset: true));
     unawaited(_loadDiscovery());
     WidgetsBinding.instance.addPostFrameCallback((_) => _openInitialListing());
@@ -66,6 +93,29 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     if (_scrollController.position.extentAfter < 700) {
       unawaited(_loadFreshListings());
     }
+  }
+
+  Widget _unreadDot({required Widget child, required bool visible}) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: <Widget>[
+        child,
+        if (visible)
+          Positioned(
+            right: -4,
+            top: -4,
+            child: Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE53935),
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 1.4),
+              ),
+            ),
+          ),
+      ],
+    );
   }
 
   Future<void> _loadFreshListings({bool reset = false}) async {
@@ -104,11 +154,11 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
         _freshListings = reset
             ? page.listings
             : <MarketplaceListing>[
-          ..._freshListings,
-          ...page.listings.where(
-                (MarketplaceListing item) => existingIds.add(item.listingId),
-          ),
-        ];
+                ..._freshListings,
+                ...page.listings.where(
+                  (MarketplaceListing item) => existingIds.add(item.listingId),
+                ),
+              ];
         _freshLastPage = page;
         _hasMoreFresh = page.hasMore;
         _loadingFresh = false;
@@ -159,13 +209,13 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     final List<MarketplaceSellerSummary> authoritative =
         _discovery?.campusSellers ?? const <MarketplaceSellerSummary>[];
     final Map<String, MarketplaceSellerSummary> summaries =
-    <String, MarketplaceSellerSummary>{};
+        <String, MarketplaceSellerSummary>{};
 
     for (final MarketplaceListing listing in _freshListings) {
       if (!listing.isAvailable || listing.sellerId.isEmpty) continue;
       summaries.putIfAbsent(
         listing.sellerId,
-            () => MarketplaceSellerSummary(
+        () => MarketplaceSellerSummary(
           sellerId: listing.sellerId,
           sellerName: listing.sellerName,
           sellerPhotoUrl: listing.sellerPhotoUrl,
@@ -251,32 +301,46 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
             title: 'Chats',
             label: 'Chat',
             color: MarketplaceTheme.sky,
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute<void>(builder: (_) => const ChatScreen()),
+            onPressed: () {
+              setState(() => _chatBadgeAcknowledged = true);
+              Navigator.push(
+                context,
+                MaterialPageRoute<void>(builder: (_) => const ChatScreen()),
+              );
+            },
+            child: _unreadDot(
+              visible: _chatUnreadCount > 0 && !_chatBadgeAcknowledged,
+              child: const Icon(Icons.chat_bubble_rounded, size: 19),
             ),
-            child: const Icon(Icons.chat_bubble_rounded, size: 19),
           ),
           _MarketplaceHeaderAction(
             title: 'Notifications',
             label: 'Alerts',
             color: MarketplaceTheme.gold,
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute<void>(
-                builder: (_) => const NotificationsScreen(),
-              ),
-            ),
-            child: CachedNetworkImage(
-              imageUrl:
-              'https://img.icons8.com/?size=100&id=F5WMYjiT3vpJ&format=png&color=000000',
-              width: 21,
-              height: 21,
-              fit: BoxFit.contain,
-              errorWidget: (_, _, _) => const Icon(
-                Icons.notifications_rounded,
-                size: 20,
-                color: Colors.black,
+            onPressed: () {
+              setState(() => _notificationBadgeAcknowledged = true);
+              Navigator.push(
+                context,
+                MaterialPageRoute<void>(
+                  builder: (_) => const NotificationsScreen(),
+                ),
+              );
+            },
+            child: _unreadDot(
+              visible:
+                  _notificationUnreadCount > 0 &&
+                  !_notificationBadgeAcknowledged,
+              child: CachedNetworkImage(
+                imageUrl:
+                    'https://img.icons8.com/?size=100&id=F5WMYjiT3vpJ&format=png&color=000000',
+                width: 21,
+                height: 21,
+                fit: BoxFit.contain,
+                errorWidget: (_, _, _) => const Icon(
+                  Icons.notifications_rounded,
+                  size: 20,
+                  color: Colors.black,
+                ),
               ),
             ),
           ),
@@ -398,39 +462,39 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                 stream: _savedIdsStream,
                 builder:
                     (BuildContext context, AsyncSnapshot<Set<String>> saved) {
-                  return SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
-                    sliver: SliverGrid.builder(
-                      itemCount: _freshListings.length,
-                      gridDelegate:
-                      const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        mainAxisSpacing: 12,
-                        crossAxisSpacing: 12,
-                        childAspectRatio: 0.69,
-                      ),
-                      itemBuilder: (BuildContext context, int index) {
-                        final MarketplaceListing listing =
-                        _freshListings[index];
-                        return MarketplaceListingCard(
-                          listing: listing,
-                          saved:
-                          saved.data?.contains(listing.listingId) ??
-                              false,
-                          onOpen: () => Navigator.push(
-                            context,
-                            MaterialPageRoute<void>(
-                              builder: (_) =>
-                                  MarketplaceListingDetailsScreen(
-                                    listingId: listing.listingId,
-                                  ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  );
-                },
+                      return SliverPadding(
+                        padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
+                        sliver: SliverGrid.builder(
+                          itemCount: _freshListings.length,
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                mainAxisSpacing: 12,
+                                crossAxisSpacing: 12,
+                                childAspectRatio: 0.69,
+                              ),
+                          itemBuilder: (BuildContext context, int index) {
+                            final MarketplaceListing listing =
+                                _freshListings[index];
+                            return MarketplaceListingCard(
+                              listing: listing,
+                              saved:
+                                  saved.data?.contains(listing.listingId) ??
+                                  false,
+                              onOpen: () => Navigator.push(
+                                context,
+                                MaterialPageRoute<void>(
+                                  builder: (_) =>
+                                      MarketplaceListingDetailsScreen(
+                                        listingId: listing.listingId,
+                                      ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      );
+                    },
               ),
             if (_freshListings.isNotEmpty)
               SliverToBoxAdapter(
@@ -441,10 +505,10 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                         ? const CircularProgressIndicator(strokeWidth: 2)
                         : _freshError != null
                         ? TextButton.icon(
-                      onPressed: () => unawaited(_loadFreshListings()),
-                      icon: const Icon(Icons.refresh_rounded),
-                      label: const Text('Could not load more — retry'),
-                    )
+                            onPressed: () => unawaited(_loadFreshListings()),
+                            icon: const Icon(Icons.refresh_rounded),
+                            label: const Text('Could not load more — retry'),
+                          )
                         : !_hasMoreFresh
                         ? const Text('You have reached the latest listings.')
                         : const SizedBox(height: 24),
@@ -469,6 +533,8 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
 
   @override
   void dispose() {
+    _chatUnreadSubscription?.cancel();
+    _notificationUnreadSubscription?.cancel();
     _scrollController.dispose();
     super.dispose();
   }
@@ -572,7 +638,7 @@ class _CategoriesStrip extends StatelessWidget {
         separatorBuilder: (_, _) => const SizedBox(width: 10),
         itemBuilder: (BuildContext context, int index) {
           final MarketplaceCategory category =
-          MarketplaceConstants.categories[index];
+              MarketplaceConstants.categories[index];
           return InkWell(
             borderRadius: BorderRadius.circular(18),
             onTap: () => Navigator.push(
@@ -637,78 +703,78 @@ class _CampusSellerStrip extends StatelessWidget {
           ? const Center(child: CircularProgressIndicator(strokeWidth: 2))
           : sellers.isEmpty
           ? Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 18),
-        child: Align(
-          alignment: Alignment.centerLeft,
-          child: const Text('No campus sellers yet.'),
-        ),
-      )
-          : ListView.separated(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        scrollDirection: Axis.horizontal,
-        itemCount: sellers.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 10),
-        itemBuilder: (BuildContext context, int index) {
-          final MarketplaceSellerSummary seller = sellers[index];
-          return InkWell(
-            borderRadius: BorderRadius.circular(18),
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute<void>(
-                builder: (_) => MarketplaceSellerStoreScreen(
-                  sellerId: seller.sellerId,
-                ),
+              padding: const EdgeInsets.symmetric(horizontal: 18),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: const Text('No campus sellers yet.'),
               ),
-            ),
-            child: Ink(
-              width: 126,
-              padding: const EdgeInsets.all(12),
-              decoration: MarketplaceTheme.premiumCard(context),
-              child: Column(
-                children: <Widget>[
-                  CircleAvatar(
-                    radius: 30,
-                    backgroundImage: seller.sellerPhotoUrl.isEmpty
-                        ? null
-                        : CachedNetworkImageProvider(
-                      seller.sellerPhotoUrl,
+            )
+          : ListView.separated(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              scrollDirection: Axis.horizontal,
+              itemCount: sellers.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 10),
+              itemBuilder: (BuildContext context, int index) {
+                final MarketplaceSellerSummary seller = sellers[index];
+                return InkWell(
+                  borderRadius: BorderRadius.circular(18),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute<void>(
+                      builder: (_) => MarketplaceSellerStoreScreen(
+                        sellerId: seller.sellerId,
+                      ),
                     ),
-                    child: seller.sellerPhotoUrl.isEmpty
-                        ? const Icon(Icons.person_rounded)
-                        : null,
                   ),
-                  const SizedBox(height: 7),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      Flexible(
-                        child: Text(
-                          seller.sellerName,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
+                  child: Ink(
+                    width: 126,
+                    padding: const EdgeInsets.all(12),
+                    decoration: MarketplaceTheme.premiumCard(context),
+                    child: Column(
+                      children: <Widget>[
+                        CircleAvatar(
+                          radius: 30,
+                          backgroundImage: seller.sellerPhotoUrl.isEmpty
+                              ? null
+                              : CachedNetworkImageProvider(
+                                  seller.sellerPhotoUrl,
+                                ),
+                          child: seller.sellerPhotoUrl.isEmpty
+                              ? const Icon(Icons.person_rounded)
+                              : null,
+                        ),
+                        const SizedBox(height: 7),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: <Widget>[
+                            Flexible(
+                              child: Text(
+                                seller.sellerName,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        Text(
+                          seller.countVerified
+                              ? '${seller.availableListingCount} listings'
+                              : 'New seller',
+                          style: TextStyle(
+                            fontSize: 9,
+                            color: MarketplaceTheme.mutedText(context),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                  Text(
-                    seller.countVerified
-                        ? '${seller.availableListingCount} listings'
-                        : 'New seller',
-                    style: TextStyle(
-                      fontSize: 9,
-                      color: MarketplaceTheme.mutedText(context),
+                      ],
                     ),
                   ),
-                ],
-              ),
+                );
+              },
             ),
-          );
-        },
-      ),
     );
   }
 }

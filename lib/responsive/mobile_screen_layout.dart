@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -11,6 +13,8 @@ import '../screens/notifications_screen.dart';
 import '../screens/nub_ai_tutor_screen.dart';
 import '../screens/nubuzz_screen.dart';
 import '../screens/profile_screen.dart';
+import '../services/chat_sevice.dart';
+import '../services/notification_service.dart';
 
 //===================================================
 // MOBILE SCREEN LAYOUT
@@ -30,6 +34,13 @@ class MobileScreenLayout extends StatefulWidget {
 class _MobileScreenLayoutState extends State<MobileScreenLayout> {
   int _page = 0;
 
+  StreamSubscription<int>? _chatUnreadSubscription;
+  StreamSubscription<int>? _notificationUnreadSubscription;
+  int _chatUnreadCount = 0;
+  int _notificationUnreadCount = 0;
+  bool _chatBadgeAcknowledged = false;
+  bool _notificationBadgeAcknowledged = false;
+
   final String _aiTutorIcon =
       'https://img.icons8.com/?size=100&id=9inONWn9EvfI&format=png&color=000000';
 
@@ -43,7 +54,7 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
       'https://img.icons8.com/?size=100&id=F5WMYjiT3vpJ&format=png&color=000000';
 
   final String _marketplaceIcon =
-  'https://img.icons8.com/?size=100&id=fhk2K3BpkLYx&format=png&color=000000';
+      'https://img.icons8.com/?size=100&id=fhk2K3BpkLYx&format=png&color=000000';
   //===================================================
   // HOME KEY
   //===================================================
@@ -67,15 +78,69 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
   //===================================================
 
   late final List<Widget> _pages = <Widget>[
-    HomeScreen(
-      key: _homeKey,
-      playbackEnabled: _homePlaybackEnabled,
-    ),
+    HomeScreen(key: _homeKey, playbackEnabled: _homePlaybackEnabled),
     const NUBAiTutorScreen(),
     NubuzzScreen(key: _nubuzzKey, onBackToHome: _goHomeFromNubuzz),
     const EgyptianArabicScreen(),
     const MenuScreen(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _chatUnreadSubscription = ChatService().totalUnreadCountStream().listen((
+      int count,
+    ) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        if (count > _chatUnreadCount) {
+          _chatBadgeAcknowledged = false;
+        }
+        _chatUnreadCount = count;
+      });
+    });
+    _notificationUnreadSubscription = NotificationService()
+        .unreadCountStream()
+        .listen((int count) {
+          if (!mounted) {
+            return;
+          }
+          setState(() {
+            if (count > _notificationUnreadCount) {
+              _notificationBadgeAcknowledged = false;
+            }
+            _notificationUnreadCount = count;
+          });
+        });
+  }
+
+  Widget _withUnreadDot({required Widget child, required bool visible}) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: <Widget>[
+        child,
+        if (visible)
+          Positioned(
+            right: -3,
+            top: -3,
+            child: Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE53935),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Theme.of(context).scaffoldBackgroundColor,
+                  width: 1.5,
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
 
   //===================================================
   // NUBUZZ BACK TO HOME
@@ -145,6 +210,8 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
 
   @override
   void dispose() {
+    _chatUnreadSubscription?.cancel();
+    _notificationUnreadSubscription?.cancel();
     _homePlaybackEnabled.value = false;
     _homePlaybackEnabled.dispose();
     super.dispose();
@@ -298,6 +365,7 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
 
                 GestureDetector(
                   onTap: () {
+                    setState(() => _chatBadgeAcknowledged = true);
                     Navigator.push(
                       context,
                       MaterialPageRoute<void>(
@@ -341,13 +409,20 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
                       ),
                     );
                   },
-                  child: const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 6),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: <Widget>[
-                        Icon(Icons.chat_bubble_outline_rounded, size: 24),
-                        Text('Chat', style: TextStyle(fontSize: 9)),
+                        _withUnreadDot(
+                          visible:
+                              _chatUnreadCount > 0 && !_chatBadgeAcknowledged,
+                          child: const Icon(
+                            Icons.chat_bubble_outline_rounded,
+                            size: 24,
+                          ),
+                        ),
+                        const Text('Chat', style: TextStyle(fontSize: 9)),
                       ],
                     ),
                   ),
@@ -358,6 +433,7 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
                 //===================================================
                 GestureDetector(
                   onTap: () {
+                    setState(() => _notificationBadgeAcknowledged = true);
                     Navigator.push(
                       context,
                       MaterialPageRoute<void>(
@@ -370,16 +446,21 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: <Widget>[
-                        Image.network(
-                          _notificationsIcon,
-                          width: 24,
-                          height: 24,
-                          errorBuilder: (_, _, _) {
-                            return const Icon(
-                              Icons.notifications_none,
-                              size: 20,
-                            );
-                          },
+                        _withUnreadDot(
+                          visible:
+                              _notificationUnreadCount > 0 &&
+                              !_notificationBadgeAcknowledged,
+                          child: Image.network(
+                            _notificationsIcon,
+                            width: 24,
+                            height: 24,
+                            errorBuilder: (_, _, _) {
+                              return const Icon(
+                                Icons.notifications_none,
+                                size: 20,
+                              );
+                            },
+                          ),
                         ),
                         const Text(
                           'Notifications',

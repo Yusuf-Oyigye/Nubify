@@ -1140,6 +1140,8 @@ class _ConversationScreenState extends State<ConversationScreen> {
       stream: _firestore
           .collection('marketplaceProducts')
           .where('sellerId', isEqualTo: widget.otherUserId)
+          .where('status', isEqualTo: 'available')
+          .where('publicVisible', isEqualTo: true)
           .limit(1)
           .snapshots(),
       builder:
@@ -1152,9 +1154,17 @@ class _ConversationScreenState extends State<ConversationScreen> {
             }
 
             return IconButton(
-              tooltip: 'Catalogue',
+              tooltip: 'Seller Marketplace listings',
               onPressed: _openCatalogue,
-              icon: const Icon(Icons.storefront_outlined),
+              icon: CachedNetworkImage(
+                imageUrl:
+                    'https://img.icons8.com/?size=100&id=fhk2K3BpkLYx&format=png&color=000000',
+                width: 25,
+                height: 25,
+                fit: BoxFit.contain,
+                errorWidget: (_, _, _) =>
+                    const Icon(Icons.storefront_outlined, size: 23),
+              ),
             );
           },
     );

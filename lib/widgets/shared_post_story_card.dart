@@ -594,9 +594,9 @@ class SharedPostStoryCard extends StatelessWidget {
                           alignment: Alignment.centerLeft,
                           widthFactor: progress,
                           child: ColoredBox(
-                            color: winner
-                                ? _blue.withValues(alpha: 0.35)
-                                : Colors.white.withValues(alpha: 0.08),
+                            color: _blue.withValues(
+                              alpha: winner ? 0.88 : 0.58,
+                            ),
                           ),
                         ),
                       Padding(

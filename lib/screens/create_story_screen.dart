@@ -255,7 +255,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
 
   final List<int> _textColors = <int>[
     0xFFFFFFFF,
-    0xFF62D8CF,
+    0xFF29B6F6,
     0xFFE0C27A,
     0xFFE88978,
     0xFF9ED0B2,
@@ -265,7 +265,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
 
   final List<int> _drawingColors = <int>[
     0xFFFFFFFF,
-    0xFF62D8CF,
+    0xFF29B6F6,
     0xFFE0C27A,
     0xFFE88978,
     0xFFB89AD8,
@@ -2823,15 +2823,16 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
     );
     double size = _textSize;
 
-    final Map<String, dynamic>? result =
-        await showModalBottomSheet<Map<String, dynamic>>(
-          context: context,
-          isScrollControlled: true,
-          backgroundColor: const Color(0xFF121720),
-          showDragHandle: true,
-          builder: (BuildContext sheetContext) {
-            return StatefulBuilder(
-              builder: (
+    final Map<String, dynamic>?
+    result = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF121720),
+      showDragHandle: true,
+      builder: (BuildContext sheetContext) {
+        return StatefulBuilder(
+          builder:
+              (
                 BuildContext context,
                 void Function(void Function()) setSheetState,
               ) {
@@ -2849,10 +2850,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
                       children: <Widget>[
                         const Row(
                           children: <Widget>[
-                            Icon(
-                              Icons.title_rounded,
-                              color: Color(0xFF62D8CF),
-                            ),
+                            Icon(Icons.title_rounded, color: Color(0xFF29B6F6)),
                             SizedBox(width: 10),
                             Text(
                               'Add text to your story',
@@ -2905,7 +2903,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
                                 max: 72,
                                 divisions: 18,
                                 value: size.clamp(18.0, 72.0),
-                                activeColor: const Color(0xFF62D8CF),
+                                activeColor: const Color(0xFF29B6F6),
                                 inactiveColor: Colors.white24,
                                 onChanged: (double value) {
                                   setSheetState(() {
@@ -2946,7 +2944,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
                             const Spacer(),
                             FilledButton.icon(
                               style: FilledButton.styleFrom(
-                                backgroundColor: const Color(0xFF62D8CF),
+                                backgroundColor: const Color(0xFF29B6F6),
                                 foregroundColor: const Color(0xFF071310),
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 20,
@@ -2972,9 +2970,9 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
                   ),
                 );
               },
-            );
-          },
         );
+      },
+    );
 
     controller.dispose();
 
@@ -3065,6 +3063,8 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
 
       return;
     }
+
+    bool storyPublished = false;
 
     try {
       await _audioPlayer.stop();
@@ -3236,11 +3236,19 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
         return;
       }
 
-      Navigator.pop(context, true);
+      // Stop listening to the keyboard before the route is removed. More
+      // importantly, do not call setState from finally after Navigator.pop:
+      // the inherited widgets are already deactivating at that point and that
+      // caused the red `_dependents.isEmpty` framework assertion for text
+      // stories.
+      storyPublished = true;
+      FocusManager.instance.primaryFocus?.unfocus();
+      _isPosting = false;
+      Navigator.of(context).pop(true);
     } catch (error) {
       _showMessage('Unable to post story: $error');
     } finally {
-      if (mounted) {
+      if (!storyPublished && mounted) {
         setState(() {
           _isPosting = false;
         });
@@ -3281,7 +3289,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
             padding: const EdgeInsets.fromLTRB(4, 7, 10, 7),
             child: FilledButton.icon(
               style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFF62D8CF),
+                backgroundColor: const Color(0xFF29B6F6),
                 foregroundColor: const Color(0xFF071310),
                 padding: const EdgeInsets.symmetric(horizontal: 14),
               ),
@@ -3502,29 +3510,29 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
             ),
             if (!_isDrawing)
               Padding(
-              padding: const EdgeInsets.fromLTRB(12, 5, 12, 10),
-              child: TextField(
-                controller: _captionController,
-                maxLength: 160,
-                maxLines: 1,
-                style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  counterText: '',
-                  hintText: 'Add a caption for your viewers...',
-                  hintStyle: const TextStyle(color: Colors.white54),
-                  filled: true,
-                  fillColor: const Color(0xFF151A24),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(20),
-                    borderSide: BorderSide.none,
-                  ),
-                  prefixIcon: const Icon(
-                    Icons.short_text_rounded,
-                    color: Color(0xFF62D8CF),
+                padding: const EdgeInsets.fromLTRB(12, 5, 12, 10),
+                child: TextField(
+                  controller: _captionController,
+                  maxLength: 160,
+                  maxLines: 1,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    counterText: '',
+                    hintText: 'Add a caption for your viewers...',
+                    hintStyle: const TextStyle(color: Colors.white54),
+                    filled: true,
+                    fillColor: const Color(0xFF151A24),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      borderSide: BorderSide.none,
+                    ),
+                    prefixIcon: const Icon(
+                      Icons.short_text_rounded,
+                      color: Color(0xFF29B6F6),
+                    ),
                   ),
                 ),
               ),
-            ),
           ],
         ),
       ),
@@ -3596,19 +3604,17 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
                 margin: const EdgeInsets.symmetric(horizontal: 3),
                 decoration: BoxDecoration(
                   color: selected
-                      ? const Color(0xFF62D8CF).withValues(alpha: 0.16)
+                      ? const Color(0xFF29B6F6).withValues(alpha: 0.16)
                       : const Color(0xFF151A24),
                   borderRadius: BorderRadius.circular(18),
                   border: Border.all(
-                    color: selected
-                        ? const Color(0xFF62D8CF)
-                        : Colors.white12,
+                    color: selected ? const Color(0xFF29B6F6) : Colors.white12,
                   ),
                   boxShadow: selected
                       ? <BoxShadow>[
                           BoxShadow(
                             color: const Color(
-                              0xFF62D8CF,
+                              0xFF29B6F6,
                             ).withValues(alpha: 0.12),
                             blurRadius: 12,
                           ),
@@ -3621,14 +3627,14 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
                     Icon(
                       modes[index]['icon'] as IconData,
                       color: selected
-                          ? const Color(0xFF62D8CF)
+                          ? const Color(0xFF29B6F6)
                           : Colors.white70,
                     ),
                     Text(
                       modes[index]['label'] as String,
                       style: TextStyle(
                         color: selected
-                            ? const Color(0xFF62D8CF)
+                            ? const Color(0xFF29B6F6)
                             : Colors.white70,
                         fontSize: 11,
                       ),
@@ -4419,19 +4425,21 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
                       onScaleUpdate: (ScaleUpdateDetails details) {
                         setState(() {
                           if (constraints.maxWidth > 0) {
-                            _textX = (_textX +
-                                    details.focalPointDelta.dx /
-                                        constraints.maxWidth)
-                                .clamp(0.10, 0.90)
-                                .toDouble();
+                            _textX =
+                                (_textX +
+                                        details.focalPointDelta.dx /
+                                            constraints.maxWidth)
+                                    .clamp(0.10, 0.90)
+                                    .toDouble();
                           }
 
                           if (constraints.maxHeight > 0) {
-                            _textY = (_textY +
-                                    details.focalPointDelta.dy /
-                                        constraints.maxHeight)
-                                .clamp(0.12, 0.88)
-                                .toDouble();
+                            _textY =
+                                (_textY +
+                                        details.focalPointDelta.dy /
+                                            constraints.maxHeight)
+                                    .clamp(0.12, 0.88)
+                                    .toDouble();
                           }
 
                           _textSize = (_textStartSize * details.scale)
@@ -4495,7 +4503,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
         children: <Widget>[
           IconButton.filled(
             style: IconButton.styleFrom(
-              backgroundColor: const Color(0xFF62D8CF),
+              backgroundColor: const Color(0xFF29B6F6),
               foregroundColor: const Color(0xFF071310),
             ),
             tooltip: 'Finish drawing',
@@ -4542,7 +4550,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
                       shape: BoxShape.circle,
                       border: Border.all(
                         color: selected
-                            ? const Color(0xFF62D8CF)
+                            ? const Color(0xFF29B6F6)
                             : Colors.white30,
                         width: selected ? 3 : 1,
                       ),
@@ -4688,7 +4696,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            Icon(icon, color: const Color(0xFF62D8CF), size: 21),
+            Icon(icon, color: const Color(0xFF29B6F6), size: 21),
             const SizedBox(height: 2),
             Text(
               label,

@@ -721,6 +721,10 @@ class _RecoveringPostImageState extends State<_RecoveringPostImage> {
     return CachedNetworkImage(
       imageUrl: widget.imageUrl.trim(),
       fit: BoxFit.cover,
+      fadeInDuration: Duration.zero,
+      fadeOutDuration: Duration.zero,
+      useOldImageOnUrlChange: true,
+      memCacheWidth: 420,
       placeholder: (_, _) => widget.fallback,
       errorWidget: (_, _, error) {
         debugPrint(
@@ -744,6 +748,10 @@ class _RecoveringPostImageState extends State<_RecoveringPostImage> {
             return CachedNetworkImage(
               imageUrl: freshUrl,
               fit: BoxFit.cover,
+              fadeInDuration: Duration.zero,
+              fadeOutDuration: Duration.zero,
+              useOldImageOnUrlChange: true,
+              memCacheWidth: 420,
               placeholder: (_, _) => widget.fallback,
               errorWidget: (_, _, _) => _mediaFallback(),
             );

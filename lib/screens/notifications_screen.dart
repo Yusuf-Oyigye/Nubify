@@ -133,54 +133,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   //===================================================
-  // CLEAR ALL
-  //===================================================
-
-  Future<void> _clearAll() async {
-    final bool? confirmed = await showDialog<bool>(
-      context: context,
-
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: const Text('Clear Notifications?'),
-
-          content: const Text('All your notifications will be removed.'),
-
-          actions: <Widget>[
-            TextButton(
-              onPressed: () {
-                Navigator.pop(dialogContext, false);
-              },
-              child: const Text('Cancel'),
-            ),
-
-            FilledButton(
-              onPressed: () {
-                Navigator.pop(dialogContext, true);
-              },
-              child: const Text('Clear'),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (confirmed != true || !mounted) {
-      return;
-    }
-
-    try {
-      await _notificationService.deleteAllNotifications();
-
-      if (mounted) {
-        _showMessage('Notifications cleared.');
-      }
-    } catch (_) {
-      _showMessage('Unable to clear notifications.');
-    }
-  }
-
-  //===================================================
   // OPEN SENDER PROFILE
   //===================================================
 
@@ -225,6 +177,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final String repostPostId = (data['repostPostId'] ?? '').toString().trim();
 
     final String storyId = (data['storyId'] ?? '').toString().trim();
+
+    final String commentId = (data['commentId'] ?? '').toString().trim();
+
+    final String replyId = (data['replyId'] ?? '').toString().trim();
 
     if (type.startsWith('marketplaceReport')) {
       final String listingId = (data['marketplaceListingId'] ?? '')
@@ -291,11 +247,18 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     // at the top, followed by comments.
     //===================================================
 
-    if (type == 'like' ||
-        type == 'comment' ||
-        type == 'reply' ||
-        type == 'tag') {
+    if (type == 'like' || type == 'tag') {
       await _openPost(postId);
+
+      return;
+    }
+
+    if (type == 'comment' || type == 'reply') {
+      await _openPost(
+        postId,
+        highlightCommentId: commentId,
+        highlightReplyId: replyId,
+      );
 
       return;
     }
@@ -325,7 +288,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   // OPEN POST / REPOST
   //===================================================
 
-  Future<void> _openPost(String postId) async {
+  Future<void> _openPost(
+    String postId, {
+    String highlightCommentId = '',
+    String highlightReplyId = '',
+  }) async {
     final String cleanPostId = postId.trim();
 
     if (cleanPostId.isEmpty) {
@@ -365,7 +332,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       await Navigator.push(
         context,
         MaterialPageRoute<void>(
-          builder: (_) => CommentsScreen(postId: cleanPostId),
+          builder: (_) => CommentsScreen(
+            postId: cleanPostId,
+            highlightCommentId: highlightCommentId,
+            highlightReplyId: highlightReplyId,
+          ),
         ),
       );
     } catch (_) {
@@ -436,46 +407,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         ),
 
         actions: <Widget>[
-          PopupMenuButton<String>(
-            onSelected: (String value) async {
-              if (value == 'read') {
-                await _markAllAsRead();
-              }
-
-              if (value == 'clear') {
-                await _clearAll();
-              }
-            },
-
-            itemBuilder: (BuildContext context) {
-              return const <PopupMenuEntry<String>>[
-                PopupMenuItem<String>(
-                  value: 'read',
-                  child: Row(
-                    children: <Widget>[
-                      Icon(Icons.done_all_rounded),
-                      SizedBox(width: 10),
-                      Text('Mark all as read'),
-                    ],
-                  ),
-                ),
-
-                PopupMenuItem<String>(
-                  value: 'clear',
-                  child: Row(
-                    children: <Widget>[
-                      Icon(
-                        Icons.delete_sweep_outlined,
-                        color: Colors.redAccent,
-                      ),
-                      SizedBox(width: 10),
-                      Text('Clear notifications'),
-                    ],
-                  ),
-                ),
-              ];
-            },
+          TextButton.icon(
+            onPressed: _markAllAsRead,
+            icon: const Icon(Icons.done_all_rounded, size: 19),
+            label: const Text('Mark all read'),
           ),
+          const SizedBox(width: 4),
         ],
       ),
 

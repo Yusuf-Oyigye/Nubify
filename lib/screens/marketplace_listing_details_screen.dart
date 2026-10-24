@@ -1,4 +1,5 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -42,13 +43,32 @@ class _MarketplaceListingDetailsScreenState
       return;
     }
     setState(() => _working = true);
+    // Open the DM from the denormalized listing data immediately. Conversation
+    // creation and the rich listing card are safe background writes; waiting
+    // for both network calls here made the button look permanently busy.
+    final Future<void> preparation = _prepareListingConversation(listing);
+    if (!mounted) {
+      return;
+    }
+    setState(() => _working = false);
+    unawaited(preparation);
+    await Navigator.push<void>(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) => ConversationScreen(
+          otherUserId: listing.sellerId,
+          otherName: listing.sellerName.trim().isEmpty
+              ? 'Student Seller'
+              : listing.sellerName,
+          otherUsername: '',
+          otherPhotoUrl: listing.sellerPhotoUrl,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _prepareListingConversation(MarketplaceListing listing) async {
     try {
-      final DocumentSnapshot<Map<String, dynamic>> user =
-          await FirebaseFirestore.instance
-              .collection('users')
-              .doc(listing.sellerId)
-              .get();
-      final Map<String, dynamic> profile = user.data() ?? <String, dynamic>{};
       await _chat.ensureConversationExists(listing.sellerId);
       await _chat.sendProductMessage(
         receiverId: listing.sellerId,
@@ -58,29 +78,8 @@ class _MarketplaceListingDetailsScreenState
         productImageUrl: listing.coverUrl,
         productPrice: listing.priceLabel,
       );
-      if (!mounted) {
-        return;
-      }
-      Navigator.push(
-        context,
-        MaterialPageRoute<void>(
-          builder: (_) => ConversationScreen(
-            otherUserId: listing.sellerId,
-            otherName: (profile['fullName'] ?? listing.sellerName).toString(),
-            otherUsername: (profile['username'] ?? '').toString(),
-            otherPhotoUrl: (profile['photoUrl'] ?? listing.sellerPhotoUrl)
-                .toString(),
-          ),
-        ),
-      );
     } catch (error) {
-      if (mounted) {
-        _message(error.toString());
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _working = false);
-      }
+      debugPrint('Marketplace chat preparation failed: $error');
     }
   }
 

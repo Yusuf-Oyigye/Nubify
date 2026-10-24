@@ -422,7 +422,7 @@ class _ChatComposerState extends State<ChatComposer> {
       _recordTimer?.cancel();
 
       _recordTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-        if (!mounted) {
+        if (!mounted || _recordingPaused) {
           return;
         }
 
@@ -547,7 +547,7 @@ class _ChatComposerState extends State<ChatComposer> {
   }
 
   //===============================
-  // STOP AND SEND RECORDING
+  // FINISH AND SEND RECORDING
   //===============================
 
   Future<void> _stopAndSendRecording() async {
@@ -598,16 +598,10 @@ class _ChatComposerState extends State<ChatComposer> {
 
         final int safeDurationMs = durationMs > 0 ? durationMs : 1000;
 
-        await _configureVoicePreviewPlayback();
-
-        if (mounted) {
-          setState(() {
-            _voicePreviewPath = finalPath;
-            _voicePreviewPosition = Duration.zero;
-            _voicePreviewDuration = Duration(milliseconds: safeDurationMs);
-            _voicePreviewPlaying = false;
-          });
-        }
+        // The blue arrow is an actual send button. Stopping first lets the
+        // encoder flush a valid M4A file, then the existing chat upload path
+        // sends it immediately without an extra square/stop step.
+        await widget.onVoiceRecorded(finalPath, safeDurationMs);
       }
     } finally {
       if (mounted) {
@@ -1068,7 +1062,7 @@ class _ChatComposerState extends State<ChatComposer> {
               shape: BoxShape.circle,
             ),
             child: IconButton(
-              tooltip: 'Stop and review',
+              tooltip: 'Finish and send voice note',
               onPressed: _processingVoice || _pauseActionBusy
                   ? null
                   : _stopAndSendRecording,
@@ -1081,7 +1075,7 @@ class _ChatComposerState extends State<ChatComposer> {
                         color: Colors.white,
                       ),
                     )
-                  : const Icon(Icons.stop_rounded, color: Colors.white),
+                  : const Icon(Icons.send_rounded, color: Colors.white),
             ),
           ),
         ],

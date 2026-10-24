@@ -849,6 +849,13 @@ match /calls/{callId} {
           data.publicVisible == true;
     }
 
+    // Sold store history is authenticated-read-only. It never includes drafts,
+    // archived or temporarily unavailable items.
+    function marketplaceIsSoldStoreListing(data) {
+      return isAuthenticated() &&
+          data.status == 'sold';
+    }
+
     // Read-only compatibility for an individual old share/deep-link document.
     // Legacy collection queries remain disallowed because they did not filter
     // availability and could reveal sold/unavailable items.
@@ -1817,6 +1824,7 @@ match /calls/{callId} {
       allow get: if isAuthenticated() &&
           (
             marketplaceIsPublicListing(resource.data) ||
+            marketplaceIsSoldStoreListing(resource.data) ||
             marketplaceListingOwner(resource.data) ||
             isMarketplaceReviewer() ||
             marketplaceIsSavedUnavailableListing(
@@ -1836,6 +1844,7 @@ match /calls/{callId} {
               isAuthenticated() &&
               (
                 marketplaceIsPublicListing(resource.data) ||
+                marketplaceIsSoldStoreListing(resource.data) ||
                 marketplaceListingOwner(resource.data)
               )
             )
