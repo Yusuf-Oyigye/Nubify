@@ -940,59 +940,62 @@ class _DirectConversationTile extends StatelessWidget {
                 ],
               ),
 
-              trailing: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-
-                crossAxisAlignment: CrossAxisAlignment.end,
-
-                children: <Widget>[
-                  Text(
-                    NubifyTime.formatTimestamp(lastMessageAt),
-
-                    style: TextStyle(
-                      color: unread > 0 ? _blue : Colors.white38,
-
-                      fontSize: 10,
-
-                      fontWeight: unread > 0
-                          ? FontWeight.w700
-                          : FontWeight.normal,
+              // ListTile gives trailing children a loose width constraint.
+              // An old absolute date (for example "25/10/2026 • 8:20 PM")
+              // could therefore claim the whole row and make Flutter reject
+              // every conversation tile. Keep this area deliberately compact.
+              trailing: SizedBox(
+                width: 72,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: <Widget>[
+                    Text(
+                      NubifyTime.formatTimestamp(lastMessageAt),
+                      maxLines: 1,
+                      softWrap: false,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.end,
+                      style: TextStyle(
+                        color: unread > 0 ? _blue : Colors.white38,
+                        fontSize: 10,
+                        fontWeight: unread > 0
+                            ? FontWeight.w700
+                            : FontWeight.normal,
+                      ),
                     ),
-                  ),
-
-                  if (unread > 0) ...<Widget>[
-                    const SizedBox(height: 5),
-
-                    Container(
-                      constraints: const BoxConstraints(
-                        minWidth: 20,
-                        minHeight: 20,
-                      ),
-
-                      padding: const EdgeInsets.symmetric(horizontal: 6),
-
-                      alignment: Alignment.center,
-
-                      decoration: const BoxDecoration(
-                        color: _blue,
-
-                        shape: BoxShape.circle,
-                      ),
-
-                      child: Text(
-                        unread > 99 ? '99+' : '$unread',
-
-                        style: const TextStyle(
-                          color: Colors.white,
-
-                          fontSize: 9,
-
-                          fontWeight: FontWeight.w800,
+                    if (unread > 0) ...<Widget>[
+                      const SizedBox(height: 5),
+                      Container(
+                        constraints: const BoxConstraints(
+                          minWidth: 20,
+                          maxWidth: 34,
+                          minHeight: 20,
+                          maxHeight: 20,
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 5),
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: _blue,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            unread > 99 ? '99+' : '$unread',
+                            maxLines: 1,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
+                    ],
                   ],
-                ],
+                ),
               ),
 
               onTap: () {
