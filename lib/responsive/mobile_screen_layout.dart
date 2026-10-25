@@ -88,32 +88,58 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
   @override
   void initState() {
     super.initState();
-    _chatUnreadSubscription = ChatService().totalUnreadCountStream().listen((
-      int count,
-    ) {
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        if (count > _chatUnreadCount) {
-          _chatBadgeAcknowledged = false;
-        }
-        _chatUnreadCount = count;
-      });
-    });
+    _chatUnreadSubscription = ChatService().totalUnreadCountStream().listen(
+      _handleChatUnreadCount,
+      onError: _handleChatUnreadError,
+    );
     _notificationUnreadSubscription = NotificationService()
         .unreadCountStream()
-        .listen((int count) {
-          if (!mounted) {
-            return;
-          }
-          setState(() {
-            if (count > _notificationUnreadCount) {
-              _notificationBadgeAcknowledged = false;
-            }
-            _notificationUnreadCount = count;
-          });
-        });
+        .listen(
+          _handleNotificationUnreadCount,
+          onError: _handleNotificationUnreadError,
+        );
+  }
+
+  void _handleChatUnreadCount(int count) {
+    if (!mounted || count == _chatUnreadCount) {
+      return;
+    }
+    setState(() {
+      if (count > _chatUnreadCount) {
+        _chatBadgeAcknowledged = false;
+      }
+      _chatUnreadCount = count;
+    });
+  }
+
+  void _handleNotificationUnreadCount(int count) {
+    if (!mounted || count == _notificationUnreadCount) {
+      return;
+    }
+    setState(() {
+      if (count > _notificationUnreadCount) {
+        _notificationBadgeAcknowledged = false;
+      }
+      _notificationUnreadCount = count;
+    });
+  }
+
+  void _handleChatUnreadError(Object error, StackTrace stackTrace) {
+    // A badge is optional UI. A temporary Firestore/network failure must never
+    // take down the complete mobile shell or show Flutter's red error screen.
+    debugPrint('Chat unread badge unavailable: $error');
+    if (!mounted || _chatUnreadCount == 0) {
+      return;
+    }
+    setState(() => _chatUnreadCount = 0);
+  }
+
+  void _handleNotificationUnreadError(Object error, StackTrace stackTrace) {
+    debugPrint('Notification unread badge unavailable: $error');
+    if (!mounted || _notificationUnreadCount == 0) {
+      return;
+    }
+    setState(() => _notificationUnreadCount = 0);
   }
 
   Widget _withUnreadDot({required Widget child, required bool visible}) {
@@ -163,7 +189,7 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
   //===================================================
 
   void onPageChanged(int page) {
-    if (!mounted) {
+    if (!mounted || page < 0 || page >= _pages.length) {
       return;
     }
 
@@ -365,7 +391,6 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
 
                 GestureDetector(
                   onTap: () {
-                    setState(() => _chatBadgeAcknowledged = true);
                     Navigator.push(
                       context,
                       MaterialPageRoute<void>(
@@ -402,6 +427,9 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
                 //===================================================
                 GestureDetector(
                   onTap: () {
+                    if (!_chatBadgeAcknowledged) {
+                      setState(() => _chatBadgeAcknowledged = true);
+                    }
                     Navigator.push(
                       context,
                       MaterialPageRoute<void>(
