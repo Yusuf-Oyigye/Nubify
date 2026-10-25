@@ -1,4 +1,3 @@
-
 import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
@@ -30,6 +29,39 @@ class _EAStyle {
   static const coral = Color(0xFFD57B7B);
 }
 
+class _EAPalette {
+  const _EAPalette({
+    required this.canvas,
+    required this.surface,
+    required this.field,
+    required this.text,
+    required this.muted,
+    required this.border,
+  });
+
+  final Color canvas;
+  final Color surface;
+  final Color field;
+  final Color text;
+  final Color muted;
+  final Color border;
+
+  factory _EAPalette.of(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme scheme = theme.colorScheme;
+    final bool dark = theme.brightness == Brightness.dark;
+
+    return _EAPalette(
+      canvas: dark ? _EAStyle.navy : theme.scaffoldBackgroundColor,
+      surface: dark ? _EAStyle.panel : scheme.surface,
+      field: dark ? _EAStyle.slate : scheme.surfaceContainerHighest,
+      text: dark ? _EAStyle.ivory : scheme.onSurface,
+      muted: dark ? _EAStyle.muted : scheme.onSurfaceVariant,
+      border: dark ? const Color(0xFF334154) : scheme.outlineVariant,
+    );
+  }
+}
+
 //===================================================
 // MAIN DASHBOARD AND SHARED DECKS
 //===================================================
@@ -38,12 +70,10 @@ class EgyptianArabicScreen extends StatefulWidget {
   const EgyptianArabicScreen({super.key});
 
   @override
-  State<EgyptianArabicScreen> createState() =>
-      _EgyptianArabicScreenState();
+  State<EgyptianArabicScreen> createState() => _EgyptianArabicScreenState();
 }
 
-class _EgyptianArabicScreenState
-    extends State<EgyptianArabicScreen> {
+class _EgyptianArabicScreenState extends State<EgyptianArabicScreen> {
   final EaLearningService _service = EaLearningService();
 
   late final Stream<List<EaDeck>> _decksStream;
@@ -61,39 +91,32 @@ class _EgyptianArabicScreenState
 
   Future<void> _addDeck() async {
     final controller = TextEditingController();
+    final _EAPalette palette = _EAPalette.of(context);
 
     try {
       final name = await showDialog<String>(
         context: context,
         builder: (dialogContext) => AlertDialog(
-          backgroundColor: _EAStyle.panel,
-          title: const Text(
+          backgroundColor: palette.surface,
+          title: Text(
             'Create Shared Deck',
-            style: TextStyle(color: _EAStyle.ivory),
+            style: TextStyle(color: palette.text),
           ),
           content: TextField(
             controller: controller,
             autofocus: true,
             maxLength: 80,
-            style: const TextStyle(color: _EAStyle.ivory),
-            decoration: _eaInput(
-              'Deck name',
-              Icons.layers_outlined,
-            ),
-            onSubmitted: (value) =>
-                Navigator.pop(dialogContext, value),
+            style: TextStyle(color: palette.text),
+            decoration: _eaInput(context, 'Deck name', Icons.layers_outlined),
+            onSubmitted: (value) => Navigator.pop(dialogContext, value),
           ),
           actions: [
             TextButton(
-              onPressed: () =>
-                  Navigator.pop(dialogContext),
+              onPressed: () => Navigator.pop(dialogContext),
               child: const Text('Cancel'),
             ),
             FilledButton(
-              onPressed: () => Navigator.pop(
-                dialogContext,
-                controller.text,
-              ),
+              onPressed: () => Navigator.pop(dialogContext, controller.text),
               child: const Text('Create'),
             ),
           ],
@@ -118,18 +141,12 @@ class _EgyptianArabicScreenState
     }
   }
 
-  void _openReview({
-    String? deckId,
-    String title = 'Daily Review',
-  }) {
+  void _openReview({String? deckId, String title = 'Daily Review'}) {
     Navigator.push(
       context,
       MaterialPageRoute<void>(
-        builder: (_) => _EAReviewScreen(
-          service: _service,
-          deckId: deckId,
-          title: title,
-        ),
+        builder: (_) =>
+            _EAReviewScreen(service: _service, deckId: deckId, title: title),
       ),
     );
   }
@@ -138,31 +155,30 @@ class _EgyptianArabicScreenState
     Navigator.push(
       context,
       MaterialPageRoute<void>(
-        builder: (_) => _EACreateCardScreen(
-          service: _service,
-        ),
+        builder: (_) => _EACreateCardScreen(service: _service),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final _EAPalette palette = _EAPalette.of(context);
+
     if (FirebaseAuth.instance.currentUser == null) {
-      return const Scaffold(
-        backgroundColor: _EAStyle.navy,
+      return Scaffold(
+        backgroundColor: palette.canvas,
         body: Center(
           child: Text(
             'Sign in to learn Egyptian Arabic.',
-            style: TextStyle(color: _EAStyle.ivory),
+            style: TextStyle(color: palette.text),
           ),
         ),
       );
     }
 
     return Scaffold(
-      backgroundColor: _EAStyle.navy,
-      floatingActionButton:
-      FloatingActionButton.extended(
+      backgroundColor: palette.canvas,
+      floatingActionButton: FloatingActionButton.extended(
         backgroundColor: _EAStyle.sky,
         foregroundColor: _EAStyle.navy,
         onPressed: _openCreateCard,
@@ -174,26 +190,19 @@ class _EgyptianArabicScreenState
           stream: _decksStream,
           builder: (context, deckSnapshot) {
             if (deckSnapshot.hasError) {
-              return _EAError(
-                deckSnapshot.error.toString(),
-              );
+              return _EAError(deckSnapshot.error.toString());
             }
 
             return StreamBuilder<List<EaCard>>(
               stream: _cardsStream,
               builder: (context, cardSnapshot) {
                 if (cardSnapshot.hasError) {
-                  return _EAError(
-                    cardSnapshot.error.toString(),
-                  );
+                  return _EAError(cardSnapshot.error.toString());
                 }
 
-                if (!deckSnapshot.hasData ||
-                    !cardSnapshot.hasData) {
+                if (!deckSnapshot.hasData || !cardSnapshot.hasData) {
                   return const Center(
-                    child: CircularProgressIndicator(
-                      color: _EAStyle.sky,
-                    ),
+                    child: CircularProgressIndicator(color: _EAStyle.sky),
                   );
                 }
 
@@ -207,30 +216,19 @@ class _EgyptianArabicScreenState
                     .where((card) => !card.suspended)
                     .toList();
 
-                final due = available
-                    .where((card) => card.isDue)
-                    .length;
+                final due = available.where((card) => card.isDue).length;
 
-                final fresh = available
-                    .where((card) => card.isNew)
-                    .length;
+                final fresh = available.where((card) => card.isNew).length;
 
                 final learning = available.where((card) {
                   if (card.isNew) return false;
 
-                  return fsrs.Card.fromMap(
-                    card.schedule,
-                  ).state !=
+                  return fsrs.Card.fromMap(card.schedule).state !=
                       fsrs.State.review;
                 }).length;
 
                 return ListView(
-                  padding: const EdgeInsets.fromLTRB(
-                    18,
-                    18,
-                    18,
-                    120,
-                  ),
+                  padding: const EdgeInsets.fromLTRB(18, 18, 18, 120),
                   children: [
                     // Welcome header
 
@@ -247,20 +245,18 @@ class _EgyptianArabicScreenState
                                 Color(0xFF6C4D72),
                               ],
                             ),
-                            borderRadius:
-                            BorderRadius.circular(19),
+                            borderRadius: BorderRadius.circular(19),
                           ),
                           child: ShaderMask(
                             blendMode: BlendMode.srcIn,
-                            shaderCallback: (bounds) =>
-                                const LinearGradient(
-                                  colors: [
-                                    _EAStyle.sky,
-                                    _EAStyle.teal,
-                                    _EAStyle.amber,
-                                    _EAStyle.coral,
-                                  ],
-                                ).createShader(bounds),
+                            shaderCallback: (bounds) => const LinearGradient(
+                              colors: [
+                                _EAStyle.sky,
+                                _EAStyle.teal,
+                                _EAStyle.amber,
+                                _EAStyle.coral,
+                              ],
+                            ).createShader(bounds),
                             child: const Icon(
                               Icons.public_rounded,
                               color: Colors.white,
@@ -269,12 +265,11 @@ class _EgyptianArabicScreenState
                           ),
                         ),
                         const SizedBox(width: 12),
-                        const Expanded(
+                        Expanded(
                           child: Column(
-                            crossAxisAlignment:
-                            CrossAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
+                              const Text(
                                 'AHLAN!  •  WELCOME',
                                 style: TextStyle(
                                   color: _EAStyle.teal,
@@ -283,21 +278,21 @@ class _EgyptianArabicScreenState
                                   fontSize: 11,
                                 ),
                               ),
-                              SizedBox(height: 5),
+                              const SizedBox(height: 5),
                               Text(
                                 'Speak Egyptian with confidence',
                                 style: TextStyle(
-                                  color: _EAStyle.ivory,
+                                  color: palette.text,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 19,
                                   height: 1.15,
                                 ),
                               ),
-                              SizedBox(height: 4),
+                              const SizedBox(height: 4),
                               Text(
                                 'Learn a little Masri every day.',
                                 style: TextStyle(
-                                  color: _EAStyle.muted,
+                                  color: palette.muted,
                                   fontSize: 12,
                                 ),
                               ),
@@ -307,9 +302,9 @@ class _EgyptianArabicScreenState
                         IconButton(
                           tooltip: 'Create deck',
                           onPressed: _addDeck,
-                          icon: const Icon(
+                          icon: Icon(
                             Icons.create_new_folder_outlined,
-                            color: _EAStyle.ivory,
+                            color: palette.text,
                           ),
                         ),
                       ],
@@ -318,27 +313,19 @@ class _EgyptianArabicScreenState
                     const SizedBox(height: 24),
 
                     // Daily review overview
-
                     Container(
                       padding: const EdgeInsets.all(22),
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
-                          colors: [
-                            Color(0xFF244B67),
-                            _EAStyle.panel,
-                          ],
+                          colors: [Color(0xFF244B67), _EAStyle.panel],
                         ),
-                        borderRadius:
-                        BorderRadius.circular(23),
+                        borderRadius: BorderRadius.circular(23),
                         border: Border.all(
-                          color: _EAStyle.sky.withValues(
-                            alpha: 0.25,
-                          ),
+                          color: _EAStyle.sky.withValues(alpha: 0.25),
                         ),
                       ),
                       child: Column(
-                        crossAxisAlignment:
-                        CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text(
                             'READY FOR TODAY?',
@@ -360,9 +347,7 @@ class _EgyptianArabicScreenState
                           ),
                           const Text(
                             'Flashcards due for review',
-                            style: TextStyle(
-                              color: _EAStyle.ivory,
-                            ),
+                            style: TextStyle(color: _EAStyle.ivory),
                           ),
                           const SizedBox(height: 19),
                           SizedBox(
@@ -375,9 +360,7 @@ class _EgyptianArabicScreenState
                                 backgroundColor: _EAStyle.sky,
                                 foregroundColor: _EAStyle.navy,
                               ),
-                              icon: const Icon(
-                                Icons.play_arrow_rounded,
-                              ),
+                              icon: const Icon(Icons.play_arrow_rounded),
                               label: Text(
                                 available.isEmpty
                                     ? 'No Flashcards Yet'
@@ -395,13 +378,7 @@ class _EgyptianArabicScreenState
 
                     Row(
                       children: [
-                        Expanded(
-                          child: _EAMetric(
-                            'New',
-                            fresh,
-                            _EAStyle.sky,
-                          ),
-                        ),
+                        Expanded(child: _EAMetric('New', fresh, _EAStyle.sky)),
                         const SizedBox(width: 9),
                         Expanded(
                           child: _EAMetric(
@@ -425,11 +402,11 @@ class _EgyptianArabicScreenState
 
                     Row(
                       children: [
-                        const Expanded(
+                        Expanded(
                           child: Text(
                             'Community decks',
                             style: TextStyle(
-                              color: _EAStyle.ivory,
+                              color: palette.text,
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
                             ),
@@ -455,18 +432,14 @@ class _EgyptianArabicScreenState
                               size: 40,
                             ),
                             const SizedBox(height: 10),
-                            const Text(
+                            Text(
                               'No shared decks yet',
-                              style: TextStyle(
-                                color: _EAStyle.ivory,
-                              ),
+                              style: TextStyle(color: palette.text),
                             ),
                             const SizedBox(height: 12),
                             FilledButton(
                               onPressed: _addDeck,
-                              child: const Text(
-                                'Create First Deck',
-                              ),
+                              child: const Text('Create First Deck'),
                             ),
                           ],
                         ),
@@ -474,15 +447,11 @@ class _EgyptianArabicScreenState
 
                     for (final deck in decks)
                       Padding(
-                        padding: const EdgeInsets.only(
-                          bottom: 11,
-                        ),
+                        padding: const EdgeInsets.only(bottom: 11),
                         child: _EAPanel(
                           child: InkWell(
-                            onTap: () => _openReview(
-                              deckId: deck.id,
-                              title: deck.name,
-                            ),
+                            onTap: () =>
+                                _openReview(deckId: deck.id, title: deck.name),
                             child: Row(
                               children: [
                                 const Icon(
@@ -494,24 +463,21 @@ class _EgyptianArabicScreenState
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment:
-                                    CrossAxisAlignment.start,
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         deck.name,
-                                        style: const TextStyle(
-                                          color: _EAStyle.ivory,
-                                          fontWeight:
-                                          FontWeight.bold,
+                                        style: TextStyle(
+                                          color: palette.text,
+                                          fontWeight: FontWeight.bold,
                                           fontSize: 16,
                                         ),
                                       ),
                                       const SizedBox(height: 5),
                                       Text(
                                         '${cards.where((c) => c.deckId == deck.id).length} cards  •  '
-                                            '${cards.where((c) => c.deckId == deck.id && c.isDue).length} due',
-                                        style: const TextStyle(
-                                          color: _EAStyle.muted,
-                                        ),
+                                        '${cards.where((c) => c.deckId == deck.id && c.isDue).length} due',
+                                        style: TextStyle(color: palette.muted),
                                       ),
                                     ],
                                   ),
@@ -552,16 +518,13 @@ class _EAReviewScreen extends StatefulWidget {
   final String title;
 
   @override
-  State<_EAReviewScreen> createState() =>
-      _EAReviewScreenState();
+  State<_EAReviewScreen> createState() => _EAReviewScreenState();
 }
 
-class _EAReviewScreenState
-    extends State<_EAReviewScreen> {
+class _EAReviewScreenState extends State<_EAReviewScreen> {
   final AudioPlayer _player = AudioPlayer();
 
-  final Set<String> _reviewedThisRound =
-  <String>{};
+  final Set<String> _reviewedThisRound = <String>{};
 
   late final Stream<List<EaCard>> _cardsStream;
 
@@ -592,8 +555,7 @@ class _EAReviewScreenState
   }
 
   Future<void> _reveal(EaCard card) async {
-    if (_submitting ||
-        _revealedCardId == card.id) {
+    if (_submitting || _revealedCardId == card.id) {
       return;
     }
 
@@ -603,13 +565,9 @@ class _EAReviewScreenState
 
     HapticFeedback.selectionClick();
 
-    await Future<void>.delayed(
-      const Duration(milliseconds: 150),
-    );
+    await Future<void>.delayed(const Duration(milliseconds: 150));
 
-    if (mounted &&
-        !_submitting &&
-        _revealedCardId == card.id) {
+    if (mounted && !_submitting && _revealedCardId == card.id) {
       await _play(card.audioUrl);
     }
   }
@@ -618,10 +576,7 @@ class _EAReviewScreenState
   // FSRS GRADING AND UNDO
   //===================================================
 
-  Future<void> _grade(
-      EaCard card,
-      fsrs.Rating rating,
-      ) async {
+  Future<void> _grade(EaCard card, fsrs.Rating rating) async {
     if (_submitting) return;
 
     setState(() {
@@ -631,10 +586,7 @@ class _EAReviewScreenState
     try {
       await _player.stop();
 
-      await widget.service.grade(
-        card,
-        rating,
-      );
+      await widget.service.grade(card, rating);
 
       if (!mounted) return;
 
@@ -649,8 +601,7 @@ class _EAReviewScreenState
         // Restart automatically after every card
         // has appeared once during this round.
         if (_roundCardCount > 0 &&
-            _reviewedThisRound.length >=
-                _roundCardCount) {
+            _reviewedThisRound.length >= _roundCardCount) {
           _reviewedThisRound.clear();
         }
       });
@@ -682,10 +633,7 @@ class _EAReviewScreenState
 
       setState(() {
         _reviewedThisRound.remove(card.id);
-        _completed = math.max(
-          0,
-          _completed - 1,
-        );
+        _completed = math.max(0, _completed - 1);
         _lastCard = null;
         _revealedCardId = null;
       });
@@ -696,10 +644,7 @@ class _EAReviewScreenState
     }
   }
 
-  Future<void> _action(
-      String action,
-      EaCard card,
-      ) async {
+  Future<void> _action(String action, EaCard card) async {
     if (action == 'undo') {
       await _undo();
       return;
@@ -707,33 +652,20 @@ class _EAReviewScreenState
 
     try {
       if (action == 'suspend') {
-        await widget.service.setSuspended(
-          card,
-          true,
-        );
+        await widget.service.setSuspended(card, true);
       } else if (action == 'delete') {
         final confirmed = await showDialog<bool>(
           context: context,
           builder: (dialogContext) => AlertDialog(
-            title: const Text(
-              'Delete shared flashcard?',
-            ),
-            content: const Text(
-              'This removes the flashcard for all students.',
-            ),
+            title: const Text('Delete shared flashcard?'),
+            content: const Text('This removes the flashcard for all students.'),
             actions: [
               TextButton(
-                onPressed: () => Navigator.pop(
-                  dialogContext,
-                  false,
-                ),
+                onPressed: () => Navigator.pop(dialogContext, false),
                 child: const Text('Cancel'),
               ),
               FilledButton(
-                onPressed: () => Navigator.pop(
-                  dialogContext,
-                  true,
-                ),
+                onPressed: () => Navigator.pop(dialogContext, true),
                 child: const Text('Delete'),
               ),
             ],
@@ -763,22 +695,19 @@ class _EAReviewScreenState
 
   @override
   Widget build(BuildContext context) {
+    final _EAPalette palette = _EAPalette.of(context);
+
     return Scaffold(
-      backgroundColor: _EAStyle.navy,
+      backgroundColor: palette.canvas,
       appBar: AppBar(
-        backgroundColor: _EAStyle.navy,
-        foregroundColor: _EAStyle.ivory,
+        backgroundColor: palette.canvas,
+        foregroundColor: palette.text,
         title: Text(widget.title),
         actions: [
           IconButton(
             tooltip: 'Undo review',
-            onPressed:
-            _lastCard == null || _submitting
-                ? null
-                : _undo,
-            icon: const Icon(
-              Icons.undo_rounded,
-            ),
+            onPressed: _lastCard == null || _submitting ? null : _undo,
+            icon: const Icon(Icons.undo_rounded),
           ),
         ],
       ),
@@ -789,50 +718,37 @@ class _EAReviewScreenState
           stream: _cardsStream,
           builder: (context, snapshot) {
             if (snapshot.hasError) {
-              return _EAError(
-                snapshot.error.toString(),
-              );
+              return _EAError(snapshot.error.toString());
             }
 
             if (!snapshot.hasData) {
               return const Center(
-                child: CircularProgressIndicator(
-                  color: _EAStyle.sky,
-                ),
+                child: CircularProgressIndicator(color: _EAStyle.sky),
               );
             }
 
             final availableCards = snapshot.data!
                 .where(
                   (card) =>
-              !card.reversed &&
-                  !card.suspended &&
-                  (widget.deckId == null ||
-                      card.deckId ==
-                          widget.deckId),
-            )
+                      !card.reversed &&
+                      !card.suspended &&
+                      (widget.deckId == null || card.deckId == widget.deckId),
+                )
                 .toList();
 
             _roundCardCount = availableCards.length;
 
             if (availableCards.isEmpty) {
-              return const Center(
+              return Center(
                 child: Text(
                   'No flashcards available in this deck.',
-                  style: TextStyle(
-                    color: _EAStyle.ivory,
-                  ),
+                  style: TextStyle(color: palette.text),
                 ),
               );
             }
 
             final unstudied = availableCards
-                .where(
-                  (card) =>
-              !_reviewedThisRound.contains(
-                card.id,
-              ),
-            )
+                .where((card) => !_reviewedThisRound.contains(card.id))
                 .toList();
 
             if (unstudied.isEmpty) {
@@ -844,9 +760,7 @@ class _EAReviewScreenState
                       _revealedCardId = null;
                     });
                   },
-                  icon: const Icon(
-                    Icons.replay_rounded,
-                  ),
+                  icon: const Icon(Icons.replay_rounded),
                   label: const Text('Study Again'),
                 ),
               );
@@ -862,22 +776,15 @@ class _EAReviewScreenState
                 return a.isNew ? 1 : -1;
               }
 
-              return a.dueAt.compareTo(
-                b.dueAt,
-              );
+              return a.dueAt.compareTo(b.dueAt);
             });
 
             final card = unstudied.first;
-            final revealed =
-                _revealedCardId == card.id;
+            final revealed = _revealedCardId == card.id;
 
-            final intervals = revealed
-                ? widget.service.preview(card)
-                : null;
+            final intervals = revealed ? widget.service.preview(card) : null;
 
-            final dueInQueue = unstudied
-                .where((c) => c.isDue)
-                .length;
+            final dueInQueue = unstudied.where((c) => c.isDue).length;
 
             // ListView keeps controls scrollable above
             // system navigation, even on small displays.
@@ -886,46 +793,34 @@ class _EAReviewScreenState
                 16,
                 8,
                 16,
-                MediaQuery.viewPaddingOf(context).bottom +
-                    110,
+                MediaQuery.viewPaddingOf(context).bottom + 110,
               ),
-              keyboardDismissBehavior:
-              ScrollViewKeyboardDismissBehavior
-                  .onDrag,
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               children: [
                 Row(
                   children: [
                     Text(
                       '$_completed studied',
-                      style: const TextStyle(
-                        color: _EAStyle.muted,
-                      ),
+                      style: TextStyle(color: palette.muted),
                     ),
                     const Spacer(),
                     Text(
                       dueInQueue > 0
                           ? '$dueInQueue due'
                           : 'Practice • ${unstudied.length}',
-                      style: const TextStyle(
-                        color: _EAStyle.sky,
-                      ),
+                      style: const TextStyle(color: _EAStyle.sky),
                     ),
                     PopupMenuButton<String>(
-                      color: _EAStyle.slate,
-                      icon: const Icon(
-                        Icons.more_vert_rounded,
-                        color: _EAStyle.ivory,
-                      ),
-                      onSelected: (action) =>
-                          _action(action, card),
+                      color: palette.field,
+                      icon: Icon(Icons.more_vert_rounded, color: palette.text),
+                      onSelected: (action) => _action(action, card),
                       itemBuilder: (_) => [
                         const PopupMenuItem(
                           value: 'suspend',
                           child: Text('Suspend card'),
                         ),
                         if (card.createdBy ==
-                            FirebaseAuth.instance
-                                .currentUser?.uid)
+                            FirebaseAuth.instance.currentUser?.uid)
                           const PopupMenuItem(
                             value: 'delete',
                             child: Text('Delete note'),
@@ -942,11 +837,9 @@ class _EAReviewScreenState
 
                 const SizedBox(height: 12),
 
-
                 //===================================================
                 // FLASHCARD — BALANCED SIZE, NO FLIPPING
                 //===================================================
-
                 GestureDetector(
                   onTap: revealed ? null : () => _reveal(card),
                   child: _EAPanel(
@@ -980,8 +873,8 @@ class _EAReviewScreenState
                               Text(
                                 card.front,
                                 textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  color: _EAStyle.ivory,
+                                style: TextStyle(
+                                  color: palette.text,
                                   fontSize: 28,
                                   fontWeight: FontWeight.bold,
                                   height: 1.25,
@@ -991,10 +884,7 @@ class _EAReviewScreenState
                               if (revealed) ...[
                                 const SizedBox(height: 22),
 
-                                const Divider(
-                                  color: Color(0xFF435365),
-                                  thickness: 1,
-                                ),
+                                Divider(color: palette.border, thickness: 1),
 
                                 const SizedBox(height: 18),
 
@@ -1014,8 +904,8 @@ class _EAReviewScreenState
                                 Text(
                                   card.transliteration,
                                   textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    color: _EAStyle.ivory,
+                                  style: TextStyle(
+                                    color: palette.text,
                                     fontSize: 28,
                                     fontWeight: FontWeight.bold,
                                     height: 1.25,
@@ -1026,9 +916,7 @@ class _EAReviewScreenState
                                   const SizedBox(height: 16),
 
                                   OutlinedButton.icon(
-                                    onPressed: () => _play(
-                                      card.audioUrl,
-                                    ),
+                                    onPressed: () => _play(card.audioUrl),
                                     icon: const Icon(
                                       Icons.replay_rounded,
                                       size: 19,
@@ -1050,8 +938,7 @@ class _EAReviewScreenState
                                         color: _EAStyle.sky,
                                       ),
                                       shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                        BorderRadius.circular(24),
+                                        borderRadius: BorderRadius.circular(24),
                                       ),
                                     ),
                                   ),
@@ -1065,62 +952,44 @@ class _EAReviewScreenState
                   ),
                 ),
 
-               //distance between card and show answer/again,hard,good,easy
+                //distance between card and show answer/again,hard,good,easy
                 const SizedBox(height: 270),
                 if (!revealed)
                   SizedBox(
                     height: 52,
                     child: FilledButton(
-                      onPressed: () =>
-                          _reveal(card),
+                      onPressed: () => _reveal(card),
                       style: FilledButton.styleFrom(
-                        backgroundColor:
-                        _EAStyle.sky,
-                        foregroundColor:
-                        _EAStyle.navy,
+                        backgroundColor: _EAStyle.sky,
+                        foregroundColor: _EAStyle.navy,
                       ),
                       child: const Text(
                         'Show Answer',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
                   )
                 else
                   Row(
                     children: [
-                      for (final rating
-                      in fsrs.Rating.values)
+                      for (final rating in fsrs.Rating.values)
                         Expanded(
                           child: Padding(
-                            padding:
-                            const EdgeInsets.symmetric(
-                              horizontal: 2,
-                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 2),
                             child: _EAGradeButton(
-                              label: rating.name[0]
-                                  .toUpperCase() +
+                              label:
+                                  rating.name[0].toUpperCase() +
                                   rating.name.substring(1),
-                              interval: _eaInterval(
-                                intervals![rating]!,
-                              ),
+                              interval: _eaInterval(intervals![rating]!),
                               color: switch (rating) {
-                                fsrs.Rating.again =>
-                                _EAStyle.coral,
-                                fsrs.Rating.hard =>
-                                _EAStyle.amber,
-                                fsrs.Rating.good =>
-                                _EAStyle.teal,
-                                fsrs.Rating.easy =>
-                                _EAStyle.sky,
+                                fsrs.Rating.again => _EAStyle.coral,
+                                fsrs.Rating.hard => _EAStyle.amber,
+                                fsrs.Rating.good => _EAStyle.teal,
+                                fsrs.Rating.easy => _EAStyle.sky,
                               },
                               onPressed: _submitting
                                   ? null
-                                  : () => _grade(
-                                card,
-                                rating,
-                              ),
+                                  : () => _grade(card, rating),
                             ),
                           ),
                         ),
@@ -1150,39 +1019,28 @@ class _EAGradeButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final _EAPalette palette = _EAPalette.of(context);
+
     return FilledButton(
       onPressed: onPressed,
       style: FilledButton.styleFrom(
-        backgroundColor: color.withValues(
-          alpha: 0.16,
-        ),
+        backgroundColor: color.withValues(alpha: 0.16),
         foregroundColor: color,
-        disabledBackgroundColor: _EAStyle.panel,
-        padding: const EdgeInsets.symmetric(
-          vertical: 12,
-          horizontal: 1,
-        ),
+        disabledBackgroundColor: palette.surface,
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 1),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
-          side: BorderSide(
-            color: color.withValues(alpha: 0.35),
-          ),
+          side: BorderSide(color: color.withValues(alpha: 0.35)),
         ),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            interval,
-            style: const TextStyle(fontSize: 11),
-          ),
+          Text(interval, style: const TextStyle(fontSize: 11)),
           const SizedBox(height: 5),
           Text(
             label,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w900,
-            ),
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900),
           ),
         ],
       ),
@@ -1191,9 +1049,7 @@ class _EAGradeButton extends StatelessWidget {
 }
 
 String _eaInterval(DateTime due) {
-  final duration = due.difference(
-    DateTime.now().toUtc(),
-  );
+  final duration = due.difference(DateTime.now().toUtc());
 
   if (duration.inSeconds < 60) return '<1m';
   if (duration.inMinutes < 60) {
@@ -1217,40 +1073,30 @@ String _eaInterval(DateTime due) {
 //===================================================
 
 class _EACreateCardScreen extends StatefulWidget {
-  const _EACreateCardScreen({
-    required this.service,
-  });
+  const _EACreateCardScreen({required this.service});
 
   final EaLearningService service;
 
   @override
-  State<_EACreateCardScreen> createState() =>
-      _EACreateCardScreenState();
+  State<_EACreateCardScreen> createState() => _EACreateCardScreenState();
 }
 
-class _EACreateCardScreenState
-    extends State<_EACreateCardScreen> {
-  final TextEditingController _english =
-  TextEditingController();
+class _EACreateCardScreenState extends State<_EACreateCardScreen> {
+  final TextEditingController _english = TextEditingController();
 
-  final TextEditingController _latin =
-  TextEditingController();
+  final TextEditingController _latin = TextEditingController();
 
   final AudioPlayer _player = AudioPlayer();
 
   late final Stream<List<EaDeck>> _decksStream;
 
-  StreamSubscription<PlayerState>?
-  _stateSubscription;
+  StreamSubscription<PlayerState>? _stateSubscription;
 
-  StreamSubscription<Duration>?
-  _positionSubscription;
+  StreamSubscription<Duration>? _positionSubscription;
 
-  StreamSubscription<Duration>?
-  _durationSubscription;
+  StreamSubscription<Duration>? _durationSubscription;
 
-  StreamSubscription<void>?
-  _completeSubscription;
+  StreamSubscription<void>? _completeSubscription;
 
   String? _deckId;
   String? _audioPath;
@@ -1269,42 +1115,38 @@ class _EACreateCardScreenState
 
     _decksStream = widget.service.watchDecks();
 
-    _stateSubscription =
-        _player.onPlayerStateChanged.listen((state) {
-          if (mounted) {
-            setState(() {
-              _playing = state == PlayerState.playing;
-            });
-          }
+    _stateSubscription = _player.onPlayerStateChanged.listen((state) {
+      if (mounted) {
+        setState(() {
+          _playing = state == PlayerState.playing;
         });
+      }
+    });
 
-    _positionSubscription =
-        _player.onPositionChanged.listen((value) {
-          if (mounted) {
-            setState(() {
-              _position = value;
-            });
-          }
+    _positionSubscription = _player.onPositionChanged.listen((value) {
+      if (mounted) {
+        setState(() {
+          _position = value;
         });
+      }
+    });
 
-    _durationSubscription =
-        _player.onDurationChanged.listen((value) {
-          if (mounted) {
-            setState(() {
-              _duration = value;
-            });
-          }
+    _durationSubscription = _player.onDurationChanged.listen((value) {
+      if (mounted) {
+        setState(() {
+          _duration = value;
         });
+      }
+    });
 
-    _completeSubscription =
-        _player.onPlayerComplete.listen((_) {
-          if (mounted) {
-            setState(() {
-              _position = Duration.zero;
-              _playing = false;
-            });
-          }
+    _completeSubscription = _player.onPlayerComplete.listen((_) {
+      if (mounted) {
+        setState(() {
+          _position = Duration.zero;
+          _playing = false;
         });
+      }
+    });
   }
 
   //===================================================
@@ -1319,68 +1161,46 @@ class _EACreateCardScreenState
     });
 
     try {
-      final PlatformFile? selected =
-      await FilePicker.pickFile(
+      final PlatformFile? selected = await FilePicker.pickFile(
         type: FileType.audio,
       );
 
       if (selected == null) return;
 
-      final extension =
-      (selected.extension ??
-          selected.name.split('.').last)
+      final extension = (selected.extension ?? selected.name.split('.').last)
           .toLowerCase();
 
-      const allowed = <String>{
-        'mp3',
-        'm4a',
-        'aac',
-        'wav',
-        'ogg',
-        'flac',
-      };
+      const allowed = <String>{'mp3', 'm4a', 'aac', 'wav', 'ogg', 'flac'};
 
       if (!allowed.contains(extension)) {
-        throw StateError(
-          'Choose MP3, M4A, AAC, WAV, OGG or FLAC.',
-        );
+        throw StateError('Choose MP3, M4A, AAC, WAV, OGG or FLAC.');
       }
 
       const maxBytes = 12 * 1024 * 1024;
 
-      final size = selected.lengthSync() ??
-          await selected.length();
+      final size = selected.lengthSync() ?? await selected.length();
 
       if (size != null && size > maxBytes) {
-        throw StateError(
-          'Audio must be 12 MB or smaller.',
-        );
+        throw StateError('Audio must be 12 MB or smaller.');
       }
 
       String? path = selected.path;
 
-      if (path == null ||
-          !await File(path).exists()) {
+      if (path == null || !await File(path).exists()) {
         final bytes = await selected.readAsBytes();
 
         if (bytes.length > maxBytes) {
-          throw StateError(
-            'Audio must be 12 MB or smaller.',
-          );
+          throw StateError('Audio must be 12 MB or smaller.');
         }
 
-        final temp =
-        await getTemporaryDirectory();
+        final temp = await getTemporaryDirectory();
 
         path =
-        '${temp.path}/nubify_egyptian_'
+            '${temp.path}/nubify_egyptian_'
             '${DateTime.now().microsecondsSinceEpoch}'
             '.$extension';
 
-        await File(path).writeAsBytes(
-          bytes,
-          flush: true,
-        );
+        await File(path).writeAsBytes(bytes, flush: true);
       }
 
       await _player.stop();
@@ -1421,9 +1241,7 @@ class _EACreateCardScreenState
       } else {
         await _player.stop();
 
-        await _player.play(
-          DeviceFileSource(path),
-        );
+        await _player.play(DeviceFileSource(path));
 
         if (mounted) {
           setState(() {
@@ -1460,26 +1278,17 @@ class _EACreateCardScreenState
     if (_saving || _selectingAudio) return;
 
     if (_deckId == null) {
-      _eaMessage(
-        context,
-        'Select a deck first.',
-      );
+      _eaMessage(context, 'Select a deck first.');
       return;
     }
 
     if (_english.text.trim().isEmpty) {
-      _eaMessage(
-        context,
-        'Enter the English word or phrase.',
-      );
+      _eaMessage(context, 'Enter the English word or phrase.');
       return;
     }
 
     if (_latin.text.trim().isEmpty) {
-      _eaMessage(
-        context,
-        'Enter the Latin pronunciation.',
-      );
+      _eaMessage(context, 'Enter the Latin pronunciation.');
       return;
     }
 
@@ -1493,10 +1302,7 @@ class _EACreateCardScreenState
       String audioUrl = '';
 
       if (_audioPath != null) {
-        audioUrl =
-        await widget.service.uploadAudio(
-          _audioPath!,
-        );
+        audioUrl = await widget.service.uploadAudio(_audioPath!);
       }
 
       await widget.service.addNote(
@@ -1510,17 +1316,12 @@ class _EACreateCardScreenState
 
       if (!mounted) return;
 
-      final messenger =
-      ScaffoldMessenger.of(context);
+      final messenger = ScaffoldMessenger.of(context);
 
       Navigator.pop(context);
 
       messenger.showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Flashcard shared successfully!',
-          ),
-        ),
+        const SnackBar(content: Text('Flashcard shared successfully!')),
       );
     } catch (error) {
       if (mounted) {
@@ -1556,23 +1357,19 @@ class _EACreateCardScreenState
 
   @override
   Widget build(BuildContext context) {
+    final _EAPalette palette = _EAPalette.of(context);
+
     return Scaffold(
-      backgroundColor: _EAStyle.navy,
+      backgroundColor: palette.canvas,
       appBar: AppBar(
-        backgroundColor: _EAStyle.navy,
-        foregroundColor: _EAStyle.ivory,
+        backgroundColor: palette.canvas,
+        foregroundColor: palette.text,
         title: const Text('Create Flashcard'),
         actions: [
           IconButton(
             tooltip: 'Save flashcard',
-            onPressed:
-            _saving || _selectingAudio
-                ? null
-                : _save,
-            icon: const Icon(
-              Icons.check_rounded,
-              color: _EAStyle.sky,
-            ),
+            onPressed: _saving || _selectingAudio ? null : _save,
+            icon: const Icon(Icons.check_rounded, color: _EAStyle.sky),
           ),
         ],
       ),
@@ -1583,25 +1380,18 @@ class _EACreateCardScreenState
           stream: _decksStream,
           builder: (context, snapshot) {
             if (snapshot.hasError) {
-              return _EAError(
-                snapshot.error.toString(),
-              );
+              return _EAError(snapshot.error.toString());
             }
 
             if (!snapshot.hasData) {
               return const Center(
-                child: CircularProgressIndicator(
-                  color: _EAStyle.sky,
-                ),
+                child: CircularProgressIndicator(color: _EAStyle.sky),
               );
             }
 
             final decks = snapshot.data!;
 
-            if (decks.isNotEmpty &&
-                !decks.any(
-                      (deck) => deck.id == _deckId,
-                )) {
+            if (decks.isNotEmpty && !decks.any((deck) => deck.id == _deckId)) {
               _deckId = decks.first.id;
             }
 
@@ -1612,17 +1402,13 @@ class _EACreateCardScreenState
                 18,
                 16,
                 18,
-                MediaQuery.viewPaddingOf(context).bottom +
-                    110,
+                MediaQuery.viewPaddingOf(context).bottom + 110,
               ),
-              keyboardDismissBehavior:
-              ScrollViewKeyboardDismissBehavior
-                  .onDrag,
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               children: [
                 _EAPanel(
                   child: Column(
-                    crossAxisAlignment:
-                    CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
                         'DECK',
@@ -1634,19 +1420,14 @@ class _EACreateCardScreenState
                       const SizedBox(height: 12),
                       DropdownButtonFormField<String>(
                         key: ValueKey(_deckId),
-                        initialValue: decks.any(
-                              (deck) =>
-                          deck.id == _deckId,
-                        )
+                        initialValue: decks.any((deck) => deck.id == _deckId)
                             ? _deckId
                             : null,
                         isExpanded: true,
-                        dropdownColor:
-                        _EAStyle.slate,
-                        style: const TextStyle(
-                          color: _EAStyle.ivory,
-                        ),
+                        dropdownColor: palette.field,
+                        style: TextStyle(color: palette.text),
                         decoration: _eaInput(
+                          context,
                           'Choose deck',
                           Icons.layers_outlined,
                         ),
@@ -1659,21 +1440,17 @@ class _EACreateCardScreenState
                         onChanged: _saving
                             ? null
                             : (value) {
-                          setState(() {
-                            _deckId = value;
-                          });
-                        },
+                                setState(() {
+                                  _deckId = value;
+                                });
+                              },
                       ),
                       if (decks.isEmpty)
                         const Padding(
-                          padding: EdgeInsets.only(
-                            top: 10,
-                          ),
+                          padding: EdgeInsets.only(top: 10),
                           child: Text(
                             'Create a deck from the dashboard first.',
-                            style: TextStyle(
-                              color: _EAStyle.amber,
-                            ),
+                            style: TextStyle(color: _EAStyle.amber),
                           ),
                         ),
                     ],
@@ -1684,8 +1461,7 @@ class _EACreateCardScreenState
 
                 _EAPanel(
                   child: Column(
-                    crossAxisAlignment:
-                    CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
                         'FRONT — ENGLISH',
@@ -1698,10 +1474,9 @@ class _EACreateCardScreenState
                       TextField(
                         controller: _english,
                         maxLength: 200,
-                        style: const TextStyle(
-                          color: _EAStyle.ivory,
-                        ),
+                        style: TextStyle(color: palette.text),
                         decoration: _eaInput(
+                          context,
                           'English word or phrase',
                           Icons.translate_rounded,
                         ),
@@ -1718,11 +1493,9 @@ class _EACreateCardScreenState
                       TextField(
                         controller: _latin,
                         maxLength: 200,
-                        style: const TextStyle(
-                          color: _EAStyle.ivory,
-                          fontSize: 20,
-                        ),
+                        style: TextStyle(color: palette.text, fontSize: 20),
                         decoration: _eaInput(
+                          context,
                           'e.g. shukran',
                           Icons.record_voice_over_outlined,
                         ),
@@ -1735,8 +1508,7 @@ class _EACreateCardScreenState
 
                 _EAPanel(
                   child: Column(
-                    crossAxisAlignment:
-                    CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
                         'PRONUNCIATION AUDIO',
@@ -1746,23 +1518,18 @@ class _EACreateCardScreenState
                         ),
                       ),
                       const SizedBox(height: 7),
-                      const Text(
+                      Text(
                         'Choose audio from your phone and listen before saving.',
-                        style: TextStyle(
-                          color: _EAStyle.muted,
-                        ),
+                        style: TextStyle(color: palette.muted),
                       ),
                       const SizedBox(height: 12),
                       SizedBox(
                         width: double.infinity,
                         child: OutlinedButton.icon(
-                          onPressed:
-                          _saving || _selectingAudio
+                          onPressed: _saving || _selectingAudio
                               ? null
                               : _pickAudio,
-                          icon: const Icon(
-                            Icons.audio_file_outlined,
-                          ),
+                          icon: const Icon(Icons.audio_file_outlined),
                           label: Text(
                             _selectingAudio
                                 ? 'Selecting Audio…'
@@ -1784,25 +1551,15 @@ class _EACreateCardScreenState
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                _audioPath!
-                                    .split(
-                                  Platform.pathSeparator,
-                                )
-                                    .last,
+                                _audioPath!.split(Platform.pathSeparator).last,
                                 maxLines: 1,
-                                overflow:
-                                TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: _EAStyle.ivory,
-                                ),
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(color: palette.text),
                               ),
                             ),
                             IconButton(
                               tooltip: 'Remove audio',
-                              onPressed:
-                              _saving
-                                  ? null
-                                  : _removeAudio,
+                              onPressed: _saving ? null : _removeAudio,
                               icon: const Icon(
                                 Icons.close_rounded,
                                 color: _EAStyle.coral,
@@ -1816,10 +1573,7 @@ class _EACreateCardScreenState
                         SizedBox(
                           width: double.infinity,
                           child: OutlinedButton.icon(
-                            onPressed:
-                            _saving
-                                ? null
-                                : _previewAudio,
+                            onPressed: _saving ? null : _previewAudio,
                             icon: Icon(
                               _playing
                                   ? Icons.pause_circle_rounded
@@ -1839,15 +1593,12 @@ class _EACreateCardScreenState
 
                         LinearProgressIndicator(
                           minHeight: 5,
-                          value:
-                          _duration.inMilliseconds <= 0
+                          value: _duration.inMilliseconds <= 0
                               ? 0
                               : (_position.inMilliseconds /
-                              _duration
-                                  .inMilliseconds)
-                              .clamp(0.0, 1.0),
-                          backgroundColor:
-                          _EAStyle.slate,
+                                        _duration.inMilliseconds)
+                                    .clamp(0.0, 1.0),
+                          backgroundColor: palette.field,
                           color: _EAStyle.teal,
                         ),
 
@@ -1855,10 +1606,7 @@ class _EACreateCardScreenState
 
                         Text(
                           '${_eaAudioTime(_position)} / ${_eaAudioTime(_duration)}',
-                          style: const TextStyle(
-                            color: _EAStyle.muted,
-                            fontSize: 11,
-                          ),
+                          style: TextStyle(color: palette.muted, fontSize: 11),
                         ),
                       ],
                     ],
@@ -1870,28 +1618,14 @@ class _EACreateCardScreenState
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton.icon(
-                    onPressed:
-                    _saving || _selectingAudio
-                        ? null
-                        : _save,
+                    onPressed: _saving || _selectingAudio ? null : _save,
                     style: FilledButton.styleFrom(
-                      backgroundColor:
-                      _EAStyle.sky,
-                      foregroundColor:
-                      _EAStyle.navy,
-                      padding:
-                      const EdgeInsets.symmetric(
-                        vertical: 17,
-                      ),
+                      backgroundColor: _EAStyle.sky,
+                      foregroundColor: _EAStyle.navy,
+                      padding: const EdgeInsets.symmetric(vertical: 17),
                     ),
-                    icon: const Icon(
-                      Icons.check_circle_outline,
-                    ),
-                    label: Text(
-                      _saving
-                          ? 'Saving…'
-                          : 'Save Flashcard',
-                    ),
+                    icon: const Icon(Icons.check_circle_outline),
+                    label: Text(_saving ? 'Saving…' : 'Save Flashcard'),
                   ),
                 ),
               ],
@@ -1909,30 +1643,27 @@ class _EACreateCardScreenState
 
 String _eaAudioTime(Duration duration) {
   final minutes = duration.inMinutes;
-  final seconds =
-  duration.inSeconds.remainder(60);
+  final seconds = duration.inSeconds.remainder(60);
 
   return '$minutes:${seconds.toString().padLeft(2, '0')}';
 }
 
 class _EAPanel extends StatelessWidget {
-  const _EAPanel({
-    required this.child,
-  });
+  const _EAPanel({required this.child});
 
   final Widget child;
 
   @override
   Widget build(BuildContext context) {
+    final _EAPalette palette = _EAPalette.of(context);
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: _EAStyle.panel,
+        color: palette.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: const Color(0xFF334154),
-        ),
+        border: Border.all(color: palette.border),
       ),
       child: child,
     );
@@ -1940,11 +1671,7 @@ class _EAPanel extends StatelessWidget {
 }
 
 class _EAMetric extends StatelessWidget {
-  const _EAMetric(
-      this.label,
-      this.value,
-      this.tint,
-      );
+  const _EAMetric(this.label, this.value, this.tint);
 
   final String label;
   final int value;
@@ -1952,68 +1679,46 @@ class _EAMetric extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final _EAPalette palette = _EAPalette.of(context);
+
     return _EAPanel(
       child: Column(
-        crossAxisAlignment:
-        CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            Icons.style_rounded,
-            color: tint,
-            size: 22,
-          ),
+          Icon(Icons.style_rounded, color: tint, size: 22),
           const SizedBox(height: 8),
           Text(
             '$value',
-            style: const TextStyle(
-              color: _EAStyle.ivory,
+            style: TextStyle(
+              color: palette.text,
               fontSize: 23,
               fontWeight: FontWeight.bold,
             ),
           ),
-          Text(
-            label,
-            style: const TextStyle(
-              color: _EAStyle.muted,
-              fontSize: 12,
-            ),
-          ),
+          Text(label, style: TextStyle(color: palette.muted, fontSize: 12)),
         ],
       ),
     );
   }
 }
 
-InputDecoration _eaInput(
-    String label,
-    IconData icon,
-    ) {
+InputDecoration _eaInput(BuildContext context, String label, IconData icon) {
+  final _EAPalette palette = _EAPalette.of(context);
+
   return InputDecoration(
     labelText: label,
-    labelStyle: const TextStyle(
-      color: _EAStyle.muted,
-    ),
-    prefixIcon: Icon(
-      icon,
-      color: _EAStyle.sky,
-    ),
+    labelStyle: TextStyle(color: palette.muted),
+    prefixIcon: Icon(icon, color: _EAStyle.sky),
     filled: true,
-    fillColor: _EAStyle.slate,
-    border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(14),
-    ),
+    fillColor: palette.field,
+    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
     enabledBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(14),
-      borderSide: const BorderSide(
-        color: Color(0xFF425063),
-      ),
+      borderSide: BorderSide(color: palette.border),
     ),
     focusedBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(14),
-      borderSide: const BorderSide(
-        color: _EAStyle.sky,
-        width: 1.5,
-      ),
+      borderSide: const BorderSide(color: _EAStyle.sky, width: 1.5),
     ),
   );
 }
@@ -2025,6 +1730,8 @@ class _EAError extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final _EAPalette palette = _EAPalette.of(context);
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -2037,10 +1744,10 @@ class _EAError extends StatelessWidget {
               size: 45,
             ),
             const SizedBox(height: 10),
-            const Text(
+            Text(
               'Could not load learning data',
               style: TextStyle(
-                color: _EAStyle.ivory,
+                color: palette.text,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -2048,9 +1755,7 @@ class _EAError extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: _EAStyle.muted,
-              ),
+              style: TextStyle(color: palette.muted),
             ),
           ],
         ),
@@ -2059,15 +1764,8 @@ class _EAError extends StatelessWidget {
   }
 }
 
-void _eaMessage(
-    BuildContext context,
-    String message,
-    ) {
+void _eaMessage(BuildContext context, String message) {
   ScaffoldMessenger.of(context)
     ..hideCurrentSnackBar()
-    ..showSnackBar(
-      SnackBar(
-        content: Text(message),
-      ),
-    );
+    ..showSnackBar(SnackBar(content: Text(message)));
 }
