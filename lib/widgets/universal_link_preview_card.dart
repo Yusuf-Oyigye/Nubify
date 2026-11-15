@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 
 import '../models/link_preview.dart';
 import '../services/nubify_link_router.dart';
+import 'marketplace_brand_icon.dart';
 
 //===================================================
 // UNIVERSAL LINK PREVIEW CARD
@@ -17,6 +18,8 @@ class UniversalLinkPreviewCard extends StatelessWidget {
     this.interactive = true,
     this.onTap,
     this.onRemove,
+    this.heroAspectRatio,
+    this.showOriginalUrl = true,
   });
 
   final LinkPreview preview;
@@ -24,6 +27,8 @@ class UniversalLinkPreviewCard extends StatelessWidget {
   final bool interactive;
   final VoidCallback? onTap;
   final VoidCallback? onRemove;
+  final double? heroAspectRatio;
+  final bool showOriginalUrl;
 
   static const Color _blue = Color(0xFF29B6F6);
 
@@ -67,10 +72,6 @@ class UniversalLinkPreviewCard extends StatelessWidget {
       return Icons.groups_rounded;
     }
 
-    if (type == 'product' || type == 'marketplace') {
-      return Icons.storefront_rounded;
-    }
-
     if (type == 'profile') {
       return Icons.person_rounded;
     }
@@ -85,6 +86,14 @@ class UniversalLinkPreviewCard extends StatelessWidget {
   bool get _isVideo {
     return preview.contentType.toLowerCase() == 'video' ||
         preview.internalType.toLowerCase() == 'nubuzz';
+  }
+
+  bool get _isMarketplace {
+    final String type = preview.contentType.toLowerCase();
+    final String internal = preview.internalType.toLowerCase();
+    return type == 'product' ||
+        type == 'marketplace' ||
+        internal == 'marketplace';
   }
 
   //===================================================
@@ -136,7 +145,7 @@ class UniversalLinkPreviewCard extends StatelessWidget {
         ? preview.statusText.trim()
         : 'Content unavailable';
     return AspectRatio(
-      aspectRatio: compact ? 1.65 : 16 / 9,
+      aspectRatio: heroAspectRatio ?? (compact ? 1.65 : 16 / 9),
       child: Stack(
         fit: StackFit.expand,
         alignment: Alignment.center,
@@ -207,14 +216,14 @@ class UniversalLinkPreviewCard extends StatelessWidget {
   }
 
   //===================================================
-// RICH CONTENT FALLBACK
-//===================================================
+  // RICH CONTENT FALLBACK
+  //===================================================
 
   Widget _heroFallback() {
     final bool expiredStory =
         preview.internalType.toLowerCase() == 'story' &&
-            !preview.isAvailable &&
-            preview.title.toLowerCase().contains('expired');
+        !preview.isAvailable &&
+        preview.title.toLowerCase().contains('expired');
 
     return Container(
       padding: const EdgeInsets.all(18),
@@ -232,56 +241,56 @@ class UniversalLinkPreviewCard extends StatelessWidget {
       child: Center(
         child: expiredStory
             ? const Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Icon(
-              Icons.auto_stories_rounded,
-              color: Colors.white70,
-              size: 43,
-            ),
-            SizedBox(height: 10),
-            Text(
-              'Story expired',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
-          ],
-        )
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Icon(
+                    Icons.auto_stories_rounded,
+                    color: Colors.white70,
+                    size: 43,
+                  ),
+                  SizedBox(height: 10),
+                  Text(
+                    'Story expired',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                ],
+              )
             : Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Text(
-              preview.title.trim().isNotEmpty
-                  ? preview.title.trim()
-                  : _sourceName,
-              textAlign: TextAlign.center,
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 17,
-                fontWeight: FontWeight.w800,
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Text(
+                    preview.title.trim().isNotEmpty
+                        ? preview.title.trim()
+                        : _sourceName,
+                    textAlign: TextAlign.center,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  if (preview.description.trim().isNotEmpty) ...[
+                    const SizedBox(height: 9),
+                    Text(
+                      preview.description.trim(),
+                      textAlign: TextAlign.center,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ],
               ),
-            ),
-            if (preview.description.trim().isNotEmpty) ...[
-              const SizedBox(height: 9),
-              Text(
-                preview.description.trim(),
-                textAlign: TextAlign.center,
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Colors.white70,
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ],
-        ),
       ),
     );
   }
@@ -352,7 +361,14 @@ class UniversalLinkPreviewCard extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Icon(_contentIcon, color: _blue, size: 17),
+                        if (_isMarketplace)
+                          const MarketplaceBrandIcon(
+                            size: 17,
+                            tintColor: _blue,
+                            fallbackColor: _blue,
+                          )
+                        else
+                          Icon(_contentIcon, color: _blue, size: 17),
                         const SizedBox(width: 6),
                         Expanded(
                           child: Text(
@@ -445,7 +461,7 @@ class UniversalLinkPreviewCard extends StatelessWidget {
               //===================================================
               // CLICKABLE ORIGINAL URL
               //===================================================
-              if (_originalUrl.isNotEmpty)
+              if (showOriginalUrl && _originalUrl.isNotEmpty)
                 Container(
                   padding: const EdgeInsets.fromLTRB(11, 8, 7, 8),
                   decoration: BoxDecoration(

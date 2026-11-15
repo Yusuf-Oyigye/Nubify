@@ -8,6 +8,7 @@ import 'chat_message_status.dart';
 import 'chat_voice_message.dart';
 import 'chat_link_text.dart';
 import 'nubify_shared_chat_card.dart';
+import 'marketplace_brand_icon.dart';
 
 //===============================
 // CHAT MESSAGE BUBBLE
@@ -413,10 +414,10 @@ class ChatMessageBubble extends StatelessWidget {
                 width: double.infinity,
                 height: 100,
                 color: Colors.white10,
-                child: const Icon(
-                  Icons.storefront_rounded,
+                child: const MarketplaceBrandIcon(
                   size: 40,
-                  color: _blue,
+                  tintColor: _blue,
+                  fallbackColor: _blue,
                 ),
               ),
 
@@ -452,10 +453,10 @@ class ChatMessageBubble extends StatelessWidget {
 
                   const Row(
                     children: <Widget>[
-                      Icon(
-                        Icons.storefront_rounded,
-                        color: Colors.white60,
+                      MarketplaceBrandIcon(
                         size: 15,
+                        tintColor: Colors.white60,
+                        fallbackColor: Colors.white60,
                       ),
                       SizedBox(width: 5),
                       Text(
@@ -503,14 +504,14 @@ class ChatMessageBubble extends StatelessWidget {
           _openImage(context);
         },
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(13),
+          borderRadius: BorderRadius.circular(15),
           child: Image.network(
             message.mediaUrl,
-            width: 230,
+            width: double.infinity,
             height: 230,
             fit: BoxFit.cover,
             errorBuilder: (_, _, _) => Container(
-              width: 230,
+              width: double.infinity,
               height: 150,
               alignment: Alignment.center,
               color: Colors.white10,
@@ -667,6 +668,11 @@ class ChatMessageBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool sticker = message.isSticker;
+    final bool compactVisualMedia =
+        (message.isImage || message.isVideo) &&
+        !message.isForwarded &&
+        message.replyToMessageId.trim().isEmpty &&
+        message.reactions.isEmpty;
 
     return Align(
       alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
@@ -683,6 +689,8 @@ class ChatMessageBubble extends StatelessWidget {
           ),
           padding: sticker
               ? const EdgeInsets.fromLTRB(5, 2, 5, 3)
+              : compactVisualMedia
+              ? const EdgeInsets.fromLTRB(3, 3, 3, 4)
               : const EdgeInsets.fromLTRB(9, 8, 9, 5),
           decoration: sticker
               ? null
@@ -726,7 +734,7 @@ class ChatMessageBubble extends StatelessWidget {
                 ),
               ],
 
-              const SizedBox(height: 4),
+              SizedBox(height: compactVisualMedia ? 2 : 4),
 
               Align(
                 alignment: Alignment.centerRight,
@@ -864,7 +872,7 @@ class _InlineChatVideoState extends State<_InlineChatVideo> {
 
     if (!_ready || controller == null) {
       return Container(
-        width: 230,
+        width: double.infinity,
         height: 160,
         alignment: Alignment.center,
         decoration: BoxDecoration(
@@ -885,9 +893,9 @@ class _InlineChatVideoState extends State<_InlineChatVideo> {
     return GestureDetector(
       onTap: _toggle,
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(13),
+        borderRadius: BorderRadius.circular(15),
         child: SizedBox(
-          width: 230,
+          width: double.infinity,
           child: AspectRatio(
             aspectRatio: ratio,
             child: Stack(

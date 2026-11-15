@@ -2526,10 +2526,10 @@ class _PostCardState extends State<PostCard> {
       return const SizedBox.shrink();
     }
 
-    // Results stay private while the 24-hour voting window is open. After a
-    // vote, only the option chosen by this user is highlighted. Percentages
-    // are revealed for everybody only when the poll closes.
-    final bool showResults = _pollClosed;
+    // Match modern social polls: choices stay neutral before voting, then the
+    // voter immediately sees the real proportional results. Everybody sees
+    // the final result once the poll closes.
+    final bool showResults = _pollClosed || _hasVoted;
 
     final PollResult closedResult = _pollClosed
         ? _calculateWinner(_pollOptions)
@@ -2539,12 +2539,16 @@ class _PostCardState extends State<PostCard> {
         ? null
         : (_winnerOptionIndex ?? closedResult.winnerIndex);
 
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme scheme = theme.colorScheme;
+
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(top: 8, bottom: 12),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade700),
+        color: scheme.surface,
+        border: Border.all(color: scheme.outlineVariant),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -2582,7 +2586,7 @@ class _PostCardState extends State<PostCard> {
                 Text(
                   _pollTimeText(),
                   style: TextStyle(
-                    color: Colors.grey.shade600,
+                    color: scheme.onSurfaceVariant,
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
@@ -2639,29 +2643,30 @@ class _PostCardState extends State<PostCard> {
                   height: 56,
                   clipBehavior: Clip.antiAlias,
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade900,
+                    color: scheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: highlighted
                           ? const Color(0xFF29B6F6)
-                          : Colors.grey.shade700,
+                          : scheme.outlineVariant,
                       width: highlighted ? 1.5 : 1,
                     ),
                   ),
                   child: Stack(
                     children: <Widget>[
                       if (showResults)
-                        FractionallySizedBox(
-                          alignment: Alignment.centerLeft,
-                          widthFactor: percentage,
-                          child: Container(
-                            // The filled width is the actual vote percentage.
-                            // Use a strong solid Nubify blue instead of only a
-                            // blue outline so 100% visibly fills the option and
-                            // 50% visibly fills exactly half.
-                            color: const Color(
-                              0xFF29B6F6,
-                            ).withValues(alpha: winner ? 0.88 : 0.58),
+                        Positioned.fill(
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: FractionallySizedBox(
+                              widthFactor: percentage,
+                              heightFactor: 1,
+                              child: ColoredBox(
+                                color: const Color(
+                                  0xFF29B6F6,
+                                ).withValues(alpha: winner ? 0.92 : 0.64),
+                              ),
+                            ),
                           ),
                         ),
 
@@ -2684,8 +2689,8 @@ class _PostCardState extends State<PostCard> {
                                 text,
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Colors.white,
+                                style: TextStyle(
+                                  color: scheme.onSurface,
                                   fontSize: 15,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -2717,8 +2722,8 @@ class _PostCardState extends State<PostCard> {
                             if (showResults)
                               Text(
                                 '$percentageNumber%',
-                                style: const TextStyle(
-                                  color: Colors.white,
+                                style: TextStyle(
+                                  color: scheme.onSurface,
                                   fontSize: 14,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -2738,7 +2743,7 @@ class _PostCardState extends State<PostCard> {
           //===================================================
           Text(
             '$_pollTotalVotes ${_pollTotalVotes == 1 ? 'vote' : 'votes'}',
-            style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
+            style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 13),
           ),
 
           //===================================================
@@ -2749,7 +2754,7 @@ class _PostCardState extends State<PostCard> {
               padding: const EdgeInsets.only(top: 5),
               child: Text(
                 'Tap an option to vote',
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
               ),
             ),
 
@@ -2761,7 +2766,7 @@ class _PostCardState extends State<PostCard> {
               padding: const EdgeInsets.only(top: 5),
               child: Text(
                 'You have already voted. Your vote cannot be changed.',
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
               ),
             ),
         ],
@@ -2832,7 +2837,8 @@ class _PostCardState extends State<PostCard> {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: Colors.grey.shade600,
-                          fontSize: 13,
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
@@ -3487,7 +3493,8 @@ class _PostCardState extends State<PostCard> {
                                         overflow: TextOverflow.ellipsis,
                                         style: TextStyle(
                                           color: Colors.grey.shade600,
-                                          fontSize: 12.5,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
                                         ),
                                       ),
                                     ),
@@ -3764,6 +3771,8 @@ class _PostCardState extends State<PostCard> {
     required String postId,
     required Map<String, dynamic> poll,
   }) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme scheme = theme.colorScheme;
     final String question = (poll['question'] ?? '').toString().trim();
 
     final List<dynamic> rawOptions = poll['options'] is List
@@ -3811,8 +3820,9 @@ class _PostCardState extends State<PostCard> {
         width: double.infinity,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
+          color: scheme.surface,
           borderRadius: BorderRadius.circular(13),
-          border: Border.all(color: Colors.grey.withValues(alpha: 0.30)),
+          border: Border.all(color: scheme.outlineVariant),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -3846,7 +3856,7 @@ class _PostCardState extends State<PostCard> {
 
             Text(
               '$totalVotes ${totalVotes == 1 ? 'vote' : 'votes'}',
-              style: TextStyle(color: Colors.grey.shade600, fontSize: 11),
+              style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 11),
             ),
           ],
         ),
@@ -3864,6 +3874,8 @@ class _PostCardState extends State<PostCard> {
     required bool selected,
     required bool winner,
   }) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme scheme = theme.colorScheme;
     final int votes = _toInt(option['votes']);
 
     final double percentage = totalVotes <= 0
@@ -3871,6 +3883,7 @@ class _PostCardState extends State<PostCard> {
         : (votes / totalVotes).clamp(0.0, 1.0).toDouble();
 
     final bool highlighted = pollClosed ? winner : selected;
+    final bool showResults = pollClosed || hasVoted;
 
     return InkWell(
       onTap: pollClosed || hasVoted || _isVoting
@@ -3883,23 +3896,30 @@ class _PostCardState extends State<PostCard> {
         height: 46,
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
-          color: Colors.grey.shade900,
+          color: scheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: highlighted ? const Color(0xFF29B6F6) : Colors.grey.shade700,
+            color: highlighted
+                ? const Color(0xFF29B6F6)
+                : scheme.outlineVariant,
             width: highlighted ? 1.5 : 1,
           ),
         ),
         child: Stack(
           children: <Widget>[
-            if (pollClosed)
-              FractionallySizedBox(
-                alignment: Alignment.centerLeft,
-                widthFactor: percentage,
-                child: ColoredBox(
-                  color: const Color(
-                    0xFF29B6F6,
-                  ).withValues(alpha: winner ? 0.88 : 0.58),
+            if (showResults)
+              Positioned.fill(
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: FractionallySizedBox(
+                    widthFactor: percentage,
+                    heightFactor: 1,
+                    child: ColoredBox(
+                      color: const Color(
+                        0xFF29B6F6,
+                      ).withValues(alpha: winner ? 0.92 : 0.64),
+                    ),
+                  ),
                 ),
               ),
             Padding(
@@ -3920,7 +3940,8 @@ class _PostCardState extends State<PostCard> {
                       (option['text'] ?? '').toString(),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
+                        color: scheme.onSurface,
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                       ),
@@ -3947,10 +3968,11 @@ class _PostCardState extends State<PostCard> {
                         ),
                       ),
                     ),
-                  if (pollClosed)
+                  if (showResults)
                     Text(
                       '${(percentage * 100).round()}%',
-                      style: const TextStyle(
+                      style: TextStyle(
+                        color: scheme.onSurface,
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
                       ),

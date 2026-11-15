@@ -289,7 +289,8 @@ class SharedPostStoryCard extends StatelessWidget {
                                       overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
                                         color: Colors.grey.shade500,
-                                        fontSize: compact ? 11 : 12,
+                                        fontSize: compact ? 11.5 : 12.5,
+                                        fontWeight: FontWeight.w600,
                                       ),
                                     ),
                                   ),
@@ -494,6 +495,8 @@ class SharedPostStoryCard extends StatelessWidget {
     Map<String, dynamic> poll, {
     required bool compact,
   }) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme scheme = theme.colorScheme;
     final String question = (poll['question'] ?? '').toString().trim();
 
     final List<dynamic> rawOptions = poll['options'] is List
@@ -523,6 +526,8 @@ class SharedPostStoryCard extends StatelessWidget {
         ? _winnerOptionIndex(poll, options)
         : null;
 
+    final bool showResults = pollClosed || selectedIndex != null;
+
     if (question.isEmpty && rawOptions.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -533,8 +538,9 @@ class SharedPostStoryCard extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
+          color: scheme.surface,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.grey.withValues(alpha: 0.30)),
+          border: Border.all(color: scheme.outlineVariant),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -543,6 +549,7 @@ class SharedPostStoryCard extends StatelessWidget {
               Text(
                 question,
                 style: TextStyle(
+                  color: scheme.onSurface,
                   fontWeight: FontWeight.w700,
                   fontSize: compact ? 13.5 : 14.5,
                 ),
@@ -578,24 +585,27 @@ class SharedPostStoryCard extends StatelessWidget {
                   height: compact ? 40 : 44,
                   clipBehavior: Clip.antiAlias,
                   decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.16),
+                    color: scheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                      color: highlighted
-                          ? _blue
-                          : Colors.grey.withValues(alpha: 0.30),
+                      color: highlighted ? _blue : scheme.outlineVariant,
                       width: highlighted ? 1.5 : 1,
                     ),
                   ),
                   child: Stack(
                     children: <Widget>[
-                      if (pollClosed)
-                        FractionallySizedBox(
-                          alignment: Alignment.centerLeft,
-                          widthFactor: progress,
-                          child: ColoredBox(
-                            color: _blue.withValues(
-                              alpha: winner ? 0.88 : 0.58,
+                      if (showResults)
+                        Positioned.fill(
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: FractionallySizedBox(
+                              widthFactor: progress,
+                              heightFactor: 1,
+                              child: ColoredBox(
+                                color: _blue.withValues(
+                                  alpha: winner ? 0.92 : 0.64,
+                                ),
+                              ),
                             ),
                           ),
                         ),
@@ -627,15 +637,17 @@ class SharedPostStoryCard extends StatelessWidget {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
+                                  color: scheme.onSurface,
                                   fontSize: compact ? 12.5 : 13.5,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ),
-                            if (pollClosed)
+                            if (showResults)
                               Text(
                                 '${(progress * 100).round()}%',
-                                style: const TextStyle(
+                                style: TextStyle(
+                                  color: scheme.onSurface,
                                   fontSize: 11.5,
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -651,7 +663,7 @@ class SharedPostStoryCard extends StatelessWidget {
 
             Text(
               '$totalVotes ${totalVotes == 1 ? 'vote' : 'votes'}',
-              style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
+              style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 11),
             ),
           ],
         ),

@@ -1008,9 +1008,11 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
       return const SizedBox.shrink();
     }
 
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 7, 7, 7),
-      color: const Color(0xFF151E24),
+      color: scheme.surface,
       child: Row(
         children: <Widget>[
           Container(width: 3, height: 39, color: _blue),
@@ -1031,7 +1033,10 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                   message.previewText,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: Colors.white60, fontSize: 11),
+                  style: TextStyle(
+                    color: scheme.onSurfaceVariant,
+                    fontSize: 11,
+                  ),
                 ),
               ],
             ),
@@ -1135,9 +1140,9 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
             AsyncSnapshot<DocumentSnapshot<Map<String, dynamic>>> groupSnapshot,
           ) {
             if (groupSnapshot.hasData && !groupSnapshot.data!.exists) {
-              return const Scaffold(
-                backgroundColor: Color(0xFF0B1116),
-                body: Center(child: Text('Group not found.')),
+              return Scaffold(
+                backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+                body: const Center(child: Text('Group not found.')),
               );
             }
 
@@ -1147,11 +1152,14 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                 : widget.initialGroup;
 
             if (group == null) {
-              return const Scaffold(
-                backgroundColor: Color(0xFF0B1116),
-                body: SizedBox.shrink(),
+              return Scaffold(
+                backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+                body: const SizedBox.shrink(),
               );
             }
+
+            final ThemeData theme = Theme.of(context);
+            final ColorScheme scheme = theme.colorScheme;
 
             final String uid = _auth.currentUser?.uid ?? '';
 
@@ -1166,13 +1174,14 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                 admin || group.permissions.membersCanEditGroupSettings;
 
             return Scaffold(
-              backgroundColor: const Color(0xFF0B1116),
+              backgroundColor: theme.scaffoldBackgroundColor,
 
               //===============================
               // APP BAR
               //===============================
               appBar: AppBar(
-                backgroundColor: const Color(0xFF0B1116),
+                backgroundColor: scheme.surface,
+                foregroundColor: scheme.onSurface,
                 titleSpacing: 0,
                 title: InkWell(
                   onTap: () {
@@ -1187,7 +1196,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                     children: <Widget>[
                       CircleAvatar(
                         radius: 19,
-                        backgroundColor: const Color(0xFF17252E),
+                        backgroundColor: scheme.surfaceContainerHighest,
                         backgroundImage: group.photoUrl.trim().isNotEmpty
                             ? CachedNetworkImageProvider(group.photoUrl)
                             : null,
@@ -1221,8 +1230,8 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                                           '${group.memberIds.length} members',
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                        color: Colors.white54,
+                                      style: TextStyle(
+                                        color: scheme.onSurfaceVariant,
                                         fontSize: 10,
                                       ),
                                     );
@@ -1326,10 +1335,12 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                                   .toList();
 
                               if (messages.isEmpty) {
-                                return const Center(
+                                return Center(
                                   child: Text(
                                     'Start the group conversation.',
-                                    style: TextStyle(color: Colors.white54),
+                                    style: TextStyle(
+                                      color: scheme.onSurfaceVariant,
+                                    ),
                                   ),
                                 );
                               }
@@ -1404,11 +1415,11 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                       Container(
                         width: double.infinity,
                         padding: const EdgeInsets.all(14),
-                        color: const Color(0xFF172027),
-                        child: const Text(
+                        color: scheme.surface,
+                        child: Text(
                           'Only admins can send messages in this group.',
                           textAlign: TextAlign.center,
-                          style: TextStyle(color: Colors.white60),
+                          style: TextStyle(color: scheme.onSurfaceVariant),
                         ),
                       )
                     else

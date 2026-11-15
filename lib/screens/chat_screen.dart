@@ -15,7 +15,44 @@ import 'create_group_screen.dart';
 import 'group_chat_screen.dart';
 import '../widgets/search_highlight_text.dart';
 import 'call_history_tab.dart';
+import 'new_call_screen.dart';
 import '../widgets/full_photo_viewer.dart';
+
+class _ChatPalette {
+  const _ChatPalette({
+    required this.canvas,
+    required this.surface,
+    required this.field,
+    required this.text,
+    required this.muted,
+    required this.subtle,
+    required this.divider,
+  });
+
+  final Color canvas;
+  final Color surface;
+  final Color field;
+  final Color text;
+  final Color muted;
+  final Color subtle;
+  final Color divider;
+
+  factory _ChatPalette.of(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme scheme = theme.colorScheme;
+    final bool dark = theme.brightness == Brightness.dark;
+
+    return _ChatPalette(
+      canvas: theme.scaffoldBackgroundColor,
+      surface: scheme.surface,
+      field: dark ? const Color(0xFF1A2228) : scheme.surfaceContainerHighest,
+      text: scheme.onSurface,
+      muted: scheme.onSurfaceVariant,
+      subtle: scheme.onSurfaceVariant.withValues(alpha: 0.72),
+      divider: scheme.outlineVariant,
+    );
+  }
+}
 
 //===============================
 // CHAT SCREEN
@@ -140,9 +177,11 @@ class _ChatScreenState extends State<ChatScreen>
       return;
     }
 
+    final _ChatPalette palette = _ChatPalette.of(context);
+
     await showModalBottomSheet<void>(
       context: context,
-      backgroundColor: const Color(0xFF151D23),
+      backgroundColor: palette.surface,
       showDragHandle: true,
       builder: (BuildContext context) {
         return StatefulBuilder(
@@ -175,7 +214,7 @@ class _ChatScreenState extends State<ChatScreen>
                           Icons.done_all_rounded,
                           color: current
                               ? const Color(0xFFFFC107)
-                              : Colors.grey,
+                              : palette.subtle,
                         ),
                         title: const Text('Read receipts'),
                         subtitle: Text(
@@ -225,6 +264,13 @@ class _ChatScreenState extends State<ChatScreen>
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const NewChatScreen()),
+    );
+  }
+
+  void _openNewCall() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const NewCallScreen()),
     );
   }
 
@@ -290,7 +336,11 @@ class _ChatScreenState extends State<ChatScreen>
               //===============================
 
               if (_search.isNotEmpty) {
-                return const SizedBox.shrink();
+                return _emptyMessages(
+                  title: 'No matching conversations',
+                  message: 'Try another name or message.',
+                  showAction: false,
+                );
               }
 
               return _emptyMessages();
@@ -354,6 +404,8 @@ class _ChatScreenState extends State<ChatScreen>
   //===============================
 
   Widget _buildGroups() {
+    final _ChatPalette palette = _ChatPalette.of(context);
+
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
       stream: _groupsStream,
       builder:
@@ -392,24 +444,28 @@ class _ChatScreenState extends State<ChatScreen>
 
             if (groups.isEmpty) {
               if (_search.isNotEmpty) {
-                return const SizedBox.shrink();
+                return _emptyMessages(
+                  title: 'No matching groups',
+                  message: 'Try another group name or message.',
+                  showAction: false,
+                );
               }
               return Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
-                    const Icon(
+                    Icon(
                       Icons.groups_2_outlined,
-                      color: Colors.white30,
+                      color: palette.subtle,
                       size: 54,
                     ),
 
                     const SizedBox(height: 11),
 
-                    const Text(
+                    Text(
                       'No groups yet.',
                       style: TextStyle(
-                        color: Colors.white70,
+                        color: palette.text,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -437,82 +493,111 @@ class _ChatScreenState extends State<ChatScreen>
               padding: const EdgeInsets.only(bottom: 100),
               itemCount: groups.length,
               separatorBuilder: (_, _) =>
-                  const Divider(height: 1, indent: 82, color: Colors.white10),
+                  Divider(height: 1, indent: 82, color: palette.divider),
               itemBuilder: (BuildContext context, int index) {
                 final ChatGroup group = groups[index];
 
-                return ListTile(
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 5,
+                return StreamBuilder<int>(
+                  stream: _groupService.unreadCountStream(
+                    group.groupId,
+                    knownGroup: group,
                   ),
-                  leading: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: () {
-                      Navigator.push<void>(
-                        context,
-                        MaterialPageRoute<void>(
-                          builder: (_) => FullPhotoViewer(
-                            title: group.name,
-                            photoUrl: group.photoUrl,
-                            group: true,
-                          ),
-                        ),
-                      );
-                    },
-                    child: CircleAvatar(
-                      radius: 27,
-                      backgroundColor: const Color(0xFF1B2830),
-                      backgroundImage: group.photoUrl.trim().isNotEmpty
-                          ? CachedNetworkImageProvider(group.photoUrl)
-                          : null,
-                      child: group.photoUrl.trim().isEmpty
-                          ? const Icon(
-                              Icons.groups_rounded,
-                              color: Color(0xFF29B6F6),
-                            )
-                          : null,
-                    ),
-                  ),
-                  title: SearchHighlightText(
-                    text: group.name,
+                  builder: (context, unreadSnapshot) {
+                    final int unread = unreadSnapshot.data ?? 0;
 
-                    query: _search,
-
-                    style: const TextStyle(
-                      color: Colors.white,
-
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  subtitle: SearchHighlightText(
-                    text: group.lastMessage.trim().isNotEmpty
-                        ? group.lastMessage
-                        : '${group.memberIds.length} members',
-
-                    query: _search,
-
-                    style: const TextStyle(color: Colors.white54),
-                  ),
-                  trailing: group.lastMessageAt != null
-                      ? Text(
-                          NubifyTime.formatTimestamp(group.lastMessageAt),
-                          style: const TextStyle(
-                            color: Colors.white38,
-                            fontSize: 11,
-                          ),
-                        )
-                      : null,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => GroupChatScreen(
-                          groupId: group.groupId,
-
-                          initialGroup: group,
+                    return ListTile(
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 5,
+                      ),
+                      leading: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () {
+                          Navigator.push<void>(
+                            context,
+                            MaterialPageRoute<void>(
+                              builder: (_) => FullPhotoViewer(
+                                title: group.name,
+                                photoUrl: group.photoUrl,
+                                group: true,
+                              ),
+                            ),
+                          );
+                        },
+                        child: CircleAvatar(
+                          radius: 27,
+                          backgroundColor: palette.field,
+                          backgroundImage: group.photoUrl.trim().isNotEmpty
+                              ? CachedNetworkImageProvider(group.photoUrl)
+                              : null,
+                          child: group.photoUrl.trim().isEmpty
+                              ? const Icon(
+                                  Icons.groups_rounded,
+                                  color: Color(0xFF29B6F6),
+                                )
+                              : null,
                         ),
                       ),
+                      title: SearchHighlightText(
+                        text: group.name,
+                        query: _search,
+                        style: TextStyle(
+                          color: palette.text,
+                          fontWeight: unread > 0
+                              ? FontWeight.w800
+                              : FontWeight.w700,
+                        ),
+                      ),
+                      subtitle: SearchHighlightText(
+                        text: group.lastMessage.trim().isNotEmpty
+                            ? group.lastMessage
+                            : '${group.memberIds.length} members',
+                        query: _search,
+                        style: TextStyle(
+                          color: unread > 0 ? palette.text : palette.muted,
+                          fontWeight: unread > 0
+                              ? FontWeight.w600
+                              : FontWeight.normal,
+                        ),
+                      ),
+                      trailing: SizedBox(
+                        width: 72,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: <Widget>[
+                            if (group.lastMessageAt != null)
+                              Text(
+                                NubifyTime.formatTimestamp(group.lastMessageAt),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: unread > 0 ? _blue : palette.subtle,
+                                  fontSize: 10,
+                                  fontWeight: unread > 0
+                                      ? FontWeight.w700
+                                      : FontWeight.normal,
+                                ),
+                              ),
+                            if (unread > 0) ...<Widget>[
+                              const SizedBox(height: 5),
+                              _UnreadCountBadge(count: unread),
+                            ],
+                          ],
+                        ),
+                      ),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => GroupChatScreen(
+                              groupId: group.groupId,
+                              initialGroup: group,
+                            ),
+                          ),
+                        );
+                      },
                     );
                   },
                 );
@@ -526,7 +611,13 @@ class _ChatScreenState extends State<ChatScreen>
   // EMPTY MESSAGES
   //===============================
 
-  Widget _emptyMessages() {
+  Widget _emptyMessages({
+    String title = 'No conversations yet',
+    String message = 'Start chatting with another Nubify user.',
+    bool showAction = true,
+  }) {
+    final _ChatPalette palette = _ChatPalette.of(context);
+
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -541,25 +632,28 @@ class _ChatScreenState extends State<ChatScreen>
             child: const Icon(Icons.forum_outlined, color: _blue, size: 39),
           ),
           const SizedBox(height: 14),
-          const Text(
-            'No conversations yet',
+          Text(
+            title,
             style: TextStyle(
-              color: Colors.white,
+              color: palette.text,
               fontWeight: FontWeight.w800,
               fontSize: 17,
             ),
           ),
           const SizedBox(height: 5),
-          const Text(
-            'Start chatting with another Nubify user.',
-            style: TextStyle(color: Colors.white54),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: TextStyle(color: palette.muted),
           ),
-          const SizedBox(height: 12),
-          FilledButton.icon(
-            onPressed: _openNewMessage,
-            icon: const Icon(Icons.add_comment_rounded),
-            label: const Text('New message'),
-          ),
+          if (showAction) ...<Widget>[
+            const SizedBox(height: 12),
+            FilledButton.icon(
+              onPressed: _openNewMessage,
+              icon: const Icon(Icons.add_comment_rounded),
+              label: const Text('New message'),
+            ),
+          ],
         ],
       ),
     );
@@ -571,14 +665,16 @@ class _ChatScreenState extends State<ChatScreen>
 
   @override
   Widget build(BuildContext context) {
+    final _ChatPalette palette = _ChatPalette.of(context);
+
     return Scaffold(
-      backgroundColor: const Color(0xFF0B1116),
+      backgroundColor: palette.canvas,
 
       //===============================
       // APP BAR
       //===============================
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0B1116),
+        backgroundColor: palette.canvas,
         surfaceTintColor: Colors.transparent,
         titleSpacing: 3,
         title: const Text(
@@ -620,7 +716,7 @@ class _ChatScreenState extends State<ChatScreen>
                           )
                         : null,
                     filled: true,
-                    fillColor: const Color(0xFF1A2228),
+                    fillColor: palette.field,
                     contentPadding: EdgeInsets.zero,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(24),
@@ -642,9 +738,9 @@ class _ChatScreenState extends State<ChatScreen>
 
                 labelColor: _blue,
 
-                unselectedLabelColor: Colors.white54,
+                unselectedLabelColor: palette.muted,
 
-                dividerColor: Colors.white10,
+                dividerColor: palette.divider,
 
                 tabs: const <Widget>[
                   Tab(
@@ -689,33 +785,35 @@ class _ChatScreenState extends State<ChatScreen>
       //===============================
       // FLOATING ACTION
       //===============================
-      floatingActionButton: _tabIndex == 2
-          ? null
-          : FloatingActionButton(
-              heroTag: 'chat_fab',
+      floatingActionButton: FloatingActionButton(
+        heroTag: 'chat_fab',
 
-              backgroundColor: _blue,
+        backgroundColor: _blue,
 
-              foregroundColor: Colors.white,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
 
-              onPressed: _tabIndex == 0
-                  ? _openNewMessage
-                  : () {
-                      Navigator.push(
-                        context,
+        onPressed: _tabIndex == 0
+            ? _openNewMessage
+            : _tabIndex == 2
+            ? _openNewCall
+            : () {
+                Navigator.push(
+                  context,
 
-                        MaterialPageRoute<void>(
-                          builder: (_) => const CreateGroupScreen(),
-                        ),
-                      );
-                    },
+                  MaterialPageRoute<void>(
+                    builder: (_) => const CreateGroupScreen(),
+                  ),
+                );
+              },
 
-              child: Icon(
-                _tabIndex == 0
-                    ? Icons.add_comment_rounded
-                    : Icons.group_add_rounded,
-              ),
-            ),
+        child: Icon(
+          _tabIndex == 0
+              ? Icons.add_comment_rounded
+              : _tabIndex == 2
+              ? Icons.add_call
+              : Icons.group_add_rounded,
+        ),
+      ),
     );
   }
 
@@ -730,6 +828,42 @@ class _ChatScreenState extends State<ChatScreen>
     _searchController.dispose();
 
     super.dispose();
+  }
+}
+
+class _UnreadCountBadge extends StatelessWidget {
+  const _UnreadCountBadge({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(
+        minWidth: 20,
+        maxWidth: 34,
+        minHeight: 20,
+        maxHeight: 20,
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 5),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: const Color(0xFF29B6F6),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Text(
+          count > 99 ? '99+' : '$count',
+          maxLines: 1,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onPrimary,
+            fontSize: 9,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ),
+    );
   }
 }
 //===============================
@@ -820,6 +954,8 @@ class _DirectConversationTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final _ChatPalette palette = _ChatPalette.of(context);
+
     return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
       future: userFuture,
 
@@ -886,7 +1022,7 @@ class _DirectConversationTile extends StatelessWidget {
                 },
                 child: CircleAvatar(
                   radius: 27,
-                  backgroundColor: Colors.white10,
+                  backgroundColor: palette.field,
                   backgroundImage: photoUrl.trim().isNotEmpty
                       ? CachedNetworkImageProvider(photoUrl)
                       : null,
@@ -901,7 +1037,7 @@ class _DirectConversationTile extends StatelessWidget {
                 query: search,
 
                 style: TextStyle(
-                  color: Colors.white,
+                  color: palette.text,
 
                   fontWeight: unread > 0 ? FontWeight.w800 : FontWeight.w700,
                 ),
@@ -929,7 +1065,7 @@ class _DirectConversationTile extends StatelessWidget {
                       query: search,
 
                       style: TextStyle(
-                        color: unread > 0 ? Colors.white70 : Colors.white54,
+                        color: unread > 0 ? palette.text : palette.muted,
 
                         fontWeight: unread > 0
                             ? FontWeight.w600
@@ -958,7 +1094,7 @@ class _DirectConversationTile extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.end,
                       style: TextStyle(
-                        color: unread > 0 ? _blue : Colors.white38,
+                        color: unread > 0 ? _blue : palette.subtle,
                         fontSize: 10,
                         fontWeight: unread > 0
                             ? FontWeight.w700
@@ -985,8 +1121,8 @@ class _DirectConversationTile extends StatelessWidget {
                           child: Text(
                             unread > 99 ? '99+' : '$unread',
                             maxLines: 1,
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onPrimary,
                               fontSize: 9,
                               fontWeight: FontWeight.w800,
                             ),
@@ -1025,6 +1161,8 @@ class _DirectConversationTile extends StatelessWidget {
 //===============================
 
 class _ConversationStatus extends StatelessWidget {
+  static const Color _viewedYellow = Color(0xFFFFC107);
+
   const _ConversationStatus({
     required this.conversation,
     required this.otherUid,
@@ -1055,6 +1193,7 @@ class _ConversationStatus extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final _ChatPalette palette = _ChatPalette.of(context);
     final List<String> delivered = _list(
       conversation['lastMessageDeliveredTo'],
     );
@@ -1068,22 +1207,16 @@ class _ConversationStatus extends StatelessWidget {
           return Icon(
             Icons.done_all_rounded,
             size: 16,
-            color: snapshot.data == true
-                ? const Color(0xFF25D366)
-                : Colors.white38,
+            color: snapshot.data == true ? _viewedYellow : palette.subtle,
           );
         },
       );
     }
 
     if (delivered.contains(otherUid)) {
-      return const Icon(
-        Icons.done_all_rounded,
-        size: 16,
-        color: Colors.white38,
-      );
+      return Icon(Icons.done_all_rounded, size: 16, color: palette.subtle);
     }
 
-    return const Icon(Icons.done_rounded, size: 16, color: Colors.white38);
+    return Icon(Icons.done_rounded, size: 16, color: palette.subtle);
   }
 }

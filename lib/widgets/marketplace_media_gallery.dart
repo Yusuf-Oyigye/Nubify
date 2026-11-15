@@ -4,6 +4,7 @@ import 'package:video_player/video_player.dart';
 
 import '../models/marketplace_listing.dart';
 import '../utils/marketplace_theme.dart';
+import 'marketplace_brand_icon.dart';
 
 class MarketplaceMediaGallery extends StatefulWidget {
   const MarketplaceMediaGallery({super.key, required this.listing});
@@ -26,10 +27,10 @@ class _MarketplaceMediaGalleryState extends State<MarketplaceMediaGallery> {
       return ColoredBox(
         color: MarketplaceTheme.softSurface(context),
         child: const Center(
-          child: Icon(
-            Icons.storefront_rounded,
+          child: MarketplaceBrandIcon(
             size: 72,
-            color: MarketplaceTheme.sky,
+            tintColor: MarketplaceTheme.sky,
+            fallbackColor: MarketplaceTheme.sky,
           ),
         ),
       );

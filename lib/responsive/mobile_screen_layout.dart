@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../screens/chat_screen.dart';
 import '../screens/egyptian_arabic_screen.dart';
@@ -14,7 +15,9 @@ import '../screens/nub_ai_tutor_screen.dart';
 import '../screens/nubuzz_screen.dart';
 import '../screens/profile_screen.dart';
 import '../services/chat_sevice.dart';
+import '../services/group_chat_service.dart';
 import '../services/notification_service.dart';
+import '../widgets/marketplace_brand_icon.dart';
 
 //===================================================
 // MOBILE SCREEN LAYOUT
@@ -34,10 +37,23 @@ class MobileScreenLayout extends StatefulWidget {
 class _MobileScreenLayoutState extends State<MobileScreenLayout> {
   int _page = 0;
 
-  StreamSubscription<int>? _chatUnreadSubscription;
+  static const String _chatBadgeCountKey = 'nubify_acknowledged_chat_unread_v1';
+  static const String _notificationBadgeCountKey =
+      'nubify_acknowledged_notification_unread_v1';
+
+  StreamSubscription<int>? _directChatUnreadSubscription;
+  StreamSubscription<int>? _groupChatUnreadSubscription;
   StreamSubscription<int>? _notificationUnreadSubscription;
+  int _directChatUnreadCount = 0;
+  int _groupChatUnreadCount = 0;
   int _chatUnreadCount = 0;
   int _notificationUnreadCount = 0;
+  int _acknowledgedChatUnreadCount = 0;
+  int _acknowledgedNotificationUnreadCount = 0;
+  bool _badgePreferencesLoaded = false;
+  bool _directChatUnreadInitialized = false;
+  bool _groupChatUnreadInitialized = false;
+  bool _notificationUnreadInitialized = false;
   bool _chatBadgeAcknowledged = false;
   bool _notificationBadgeAcknowledged = false;
 
@@ -53,8 +69,6 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
   final String _notificationsIcon =
       'https://img.icons8.com/?size=100&id=F5WMYjiT3vpJ&format=png&color=000000';
 
-  final String _marketplaceIcon =
-      'https://img.icons8.com/?size=100&id=fhk2K3BpkLYx&format=png&color=000000';
   //===================================================
   // HOME KEY
   //===================================================
@@ -72,6 +86,7 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
 
   final GlobalKey<NubuzzScreenState> _nubuzzKey =
       GlobalKey<NubuzzScreenState>();
+  final MenuScreenController _menuController = MenuScreenController();
 
   //===================================================
   // PAGES
@@ -82,16 +97,19 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
     const NUBAiTutorScreen(),
     NubuzzScreen(key: _nubuzzKey, onBackToHome: _goHomeFromNubuzz),
     const EgyptianArabicScreen(),
-    const MenuScreen(),
+    MenuScreen(controller: _menuController),
   ];
 
   @override
   void initState() {
     super.initState();
-    _chatUnreadSubscription = ChatService().totalUnreadCountStream().listen(
-      _handleChatUnreadCount,
-      onError: _handleChatUnreadError,
-    );
+    unawaited(_restoreBadgeAcknowledgements());
+    _directChatUnreadSubscription = ChatService()
+        .totalUnreadCountStream()
+        .listen(_handleDirectChatUnreadCount, onError: _handleChatUnreadError);
+    _groupChatUnreadSubscription = GroupChatService()
+        .totalUnreadCountStream()
+        .listen(_handleGroupChatUnreadCount, onError: _handleChatUnreadError);
     _notificationUnreadSubscription = NotificationService()
         .unreadCountStream()
         .listen(
@@ -100,28 +118,123 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
         );
   }
 
-  void _handleChatUnreadCount(int count) {
+  Future<void> _restoreBadgeAcknowledgements() async {
+    int chatCount = 0;
+    int notificationCount = 0;
+
+    try {
+      final SharedPreferences preferences =
+          await SharedPreferences.getInstance();
+      chatCount = preferences.getInt(_chatBadgeCountKey) ?? 0;
+      notificationCount = preferences.getInt(_notificationBadgeCountKey) ?? 0;
+    } catch (_) {}
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _badgePreferencesLoaded = true;
+      _acknowledgedChatUnreadCount =
+          _directChatUnreadInitialized && _groupChatUnreadInitialized
+          ? (_chatUnreadCount < chatCount ? _chatUnreadCount : chatCount)
+          : chatCount;
+      _acknowledgedNotificationUnreadCount = _notificationUnreadInitialized
+          ? (_notificationUnreadCount < notificationCount
+                ? _notificationUnreadCount
+                : notificationCount)
+          : notificationCount;
+      _chatBadgeAcknowledged = _chatUnreadCount <= _acknowledgedChatUnreadCount;
+      _notificationBadgeAcknowledged =
+          _notificationUnreadCount <= _acknowledgedNotificationUnreadCount;
+    });
+
+    unawaited(_saveBadgeAcknowledgements());
+  }
+
+  Future<void> _saveBadgeAcknowledgements() async {
+    try {
+      final SharedPreferences preferences =
+          await SharedPreferences.getInstance();
+      await preferences.setInt(
+        _chatBadgeCountKey,
+        _acknowledgedChatUnreadCount,
+      );
+      await preferences.setInt(
+        _notificationBadgeCountKey,
+        _acknowledgedNotificationUnreadCount,
+      );
+    } catch (_) {}
+  }
+
+  void _handleDirectChatUnreadCount(int count) {
+    _directChatUnreadCount = count;
+    _directChatUnreadInitialized = true;
+    _handleCombinedChatUnreadCount();
+  }
+
+  void _handleGroupChatUnreadCount(int count) {
+    _groupChatUnreadCount = count;
+    _groupChatUnreadInitialized = true;
+    _handleCombinedChatUnreadCount();
+  }
+
+  void _handleCombinedChatUnreadCount() {
+    if (!_directChatUnreadInitialized || !_groupChatUnreadInitialized) {
+      return;
+    }
+
+    final int count = _directChatUnreadCount + _groupChatUnreadCount;
     if (!mounted || count == _chatUnreadCount) {
       return;
     }
     setState(() {
-      if (count > _chatUnreadCount) {
-        _chatBadgeAcknowledged = false;
+      if (_badgePreferencesLoaded) {
+        if (count > _acknowledgedChatUnreadCount) {
+          _chatBadgeAcknowledged = false;
+        } else {
+          _chatBadgeAcknowledged = true;
+          _acknowledgedChatUnreadCount = count;
+          unawaited(_saveBadgeAcknowledgements());
+        }
       }
       _chatUnreadCount = count;
     });
   }
 
   void _handleNotificationUnreadCount(int count) {
+    _notificationUnreadInitialized = true;
     if (!mounted || count == _notificationUnreadCount) {
       return;
     }
     setState(() {
-      if (count > _notificationUnreadCount) {
-        _notificationBadgeAcknowledged = false;
+      if (_badgePreferencesLoaded) {
+        if (count > _acknowledgedNotificationUnreadCount) {
+          _notificationBadgeAcknowledged = false;
+        } else {
+          _notificationBadgeAcknowledged = true;
+          _acknowledgedNotificationUnreadCount = count;
+          unawaited(_saveBadgeAcknowledgements());
+        }
       }
       _notificationUnreadCount = count;
     });
+  }
+
+  void _acknowledgeChatBadge() {
+    setState(() {
+      _chatBadgeAcknowledged = true;
+      _acknowledgedChatUnreadCount = _chatUnreadCount;
+    });
+    unawaited(_saveBadgeAcknowledgements());
+  }
+
+  void _acknowledgeNotificationBadge() {
+    setState(() {
+      _notificationBadgeAcknowledged = true;
+      _acknowledgedNotificationUnreadCount = _notificationUnreadCount;
+    });
+    unawaited(_saveBadgeAcknowledgements());
   }
 
   void _handleChatUnreadError(Object error, StackTrace stackTrace) {
@@ -229,6 +342,24 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
       return;
     }
 
+    // Always present Menu from its true starting position. This prevents a
+    // retained ListView offset from revealing lower About rows on re-entry.
+    if (page == 4) {
+      if (_page != page) {
+        setState(() {
+          _page = page;
+        });
+      }
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _menuController.resetToTop();
+        }
+      });
+
+      return;
+    }
+
     setState(() {
       _page = page;
     });
@@ -236,7 +367,8 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
 
   @override
   void dispose() {
-    _chatUnreadSubscription?.cancel();
+    _directChatUnreadSubscription?.cancel();
+    _groupChatUnreadSubscription?.cancel();
     _notificationUnreadSubscription?.cancel();
     _homePlaybackEnabled.value = false;
     _homePlaybackEnabled.dispose();
@@ -362,28 +494,40 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
               scrolledUnderElevation: 0,
 
               automaticallyImplyLeading: false,
-              title: const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  Text(
-                    'Nubify',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 26,
-                      color: Color(0xFF29B6F6),
-                    ),
-                  ),
-                  Text(
-                    'Campus Social',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Color(0xFF29B6F6),
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
+
+        title: _page == 1
+            ? const Text(
+          'NUBi',
+          style: TextStyle(
+            fontSize: 27,
+            fontWeight: FontWeight.w800,
+            color: Color(0xFF29B6F6),
+          ),
+        )
+            : const Column(
+          crossAxisAlignment:
+          CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Nubify',
+              style: TextStyle(
+                fontSize: 26,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF29B6F6),
               ),
+            ),
+            Text(
+              'Campus Social',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: Color(0xFF29B6F6),
+              ),
+            ),
+          ],
+        ),
+
               actions: <Widget>[
                 //===================================================
                 // MARKET
@@ -403,18 +547,12 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: <Widget>[
-                        Image.network(
-                          _marketplaceIcon,
-                          width: 24,
-                          height: 24,
-                          fit: BoxFit.contain,
-                          errorBuilder: (_, _, _) {
-                            return const Icon(
-                              Icons.storefront_outlined,
-                              size: 20,
-                              color: Color(0xFF29B6F6),
-                            );
-                          },
+                        const MarketplaceBrandIcon(
+                          // Render the supplied Icons8 PNG at a slightly larger
+                          // size and preserve its black source colour in light
+                          // mode so it stays as crisp as the neighbouring icons.
+                          size: 26,
+                          fallbackColor: Color(0xFF29B6F6),
                         ),
                         const Text('Market', style: TextStyle(fontSize: 9)),
                       ],
@@ -427,9 +565,7 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
                 //===================================================
                 GestureDetector(
                   onTap: () {
-                    if (!_chatBadgeAcknowledged) {
-                      setState(() => _chatBadgeAcknowledged = true);
-                    }
+                    _acknowledgeChatBadge();
                     Navigator.push(
                       context,
                       MaterialPageRoute<void>(
@@ -444,7 +580,9 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
                       children: <Widget>[
                         _withUnreadDot(
                           visible:
-                              _chatUnreadCount > 0 && !_chatBadgeAcknowledged,
+                              _badgePreferencesLoaded &&
+                              _chatUnreadCount > 0 &&
+                              !_chatBadgeAcknowledged,
                           child: const Icon(
                             Icons.chat_bubble_outline_rounded,
                             size: 24,
@@ -461,7 +599,7 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
                 //===================================================
                 GestureDetector(
                   onTap: () {
-                    setState(() => _notificationBadgeAcknowledged = true);
+                    _acknowledgeNotificationBadge();
                     Navigator.push(
                       context,
                       MaterialPageRoute<void>(
@@ -476,6 +614,7 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
                       children: <Widget>[
                         _withUnreadDot(
                           visible:
+                              _badgePreferencesLoaded &&
                               _notificationUnreadCount > 0 &&
                               !_notificationBadgeAcknowledged,
                           child: Image.network(

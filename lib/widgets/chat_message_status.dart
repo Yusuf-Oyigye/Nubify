@@ -8,6 +8,8 @@ import '../models/chat_message.dart';
 
 class ChatMessageStatus
     extends StatelessWidget {
+  static const Color _viewedYellow = Color(0xFFFFC107);
+
   const ChatMessageStatus({
     super.key,
     required this.message,
@@ -53,9 +55,7 @@ class ChatMessageStatus
         size,
         color:
         canShowReadReceipt
-            ? const Color(
-          0xFF25D366,
-        )
+            ? _viewedYellow
             : Colors.white60,
       );
     }

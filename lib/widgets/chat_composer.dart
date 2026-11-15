@@ -741,11 +741,13 @@ class _ChatComposerState extends State<ChatComposer> {
   //===============================
 
   Widget _buildStickerPanel() {
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+
     return Container(
       height: 330,
-      decoration: const BoxDecoration(
-        color: Color(0xFF11181E),
-        border: Border(top: BorderSide(color: Colors.white10)),
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        border: Border(top: BorderSide(color: scheme.outlineVariant)),
       ),
       child: EmojiPicker(
         textEditingController: _stickerEmojiController,
@@ -798,8 +800,10 @@ class _ChatComposerState extends State<ChatComposer> {
   // Retained for the alternate inline emoji-panel layout.
   // ignore: unused_element
   Widget _buildEmojiPanel() {
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+
     return Container(
-      color: const Color(0xFF11181E),
+      color: scheme.surface,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
@@ -854,6 +858,7 @@ class _ChatComposerState extends State<ChatComposer> {
   //===================================================
 
   Widget _voiceWaveform({required bool showPlaybackProgress}) {
+    final ColorScheme scheme = Theme.of(context).colorScheme;
     final int durationMs = _voicePreviewDuration.inMilliseconds;
     final double progress = durationMs <= 0
         ? 0
@@ -879,9 +884,11 @@ class _ChatComposerState extends State<ChatComposer> {
                 height: 7 + (_liveWaveform[index] * 25),
                 decoration: BoxDecoration(
                   color: showPlaybackProgress
-                      ? (played ? const Color(0xFF29B6F6) : Colors.white30)
+                      ? (played
+                            ? const Color(0xFF29B6F6)
+                            : scheme.onSurface.withValues(alpha: 0.28))
                       : (_recordingPaused
-                            ? Colors.white24
+                            ? scheme.onSurface.withValues(alpha: 0.24)
                             : const Color(0xFF29B6F6)),
                   borderRadius: BorderRadius.circular(4),
                 ),
@@ -894,6 +901,7 @@ class _ChatComposerState extends State<ChatComposer> {
   }
 
   Widget _buildVoicePreviewBar() {
+    final ColorScheme scheme = Theme.of(context).colorScheme;
     final Duration shown = _voicePreviewPosition > Duration.zero
         ? _voicePreviewPosition
         : _voicePreviewDuration;
@@ -903,9 +911,9 @@ class _ChatComposerState extends State<ChatComposer> {
 
     return Container(
       padding: const EdgeInsets.fromLTRB(8, 7, 8, 7),
-      decoration: const BoxDecoration(
-        color: Color(0xFF16232B),
-        border: Border(top: BorderSide(color: Colors.white10)),
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        border: Border(top: BorderSide(color: scheme.outlineVariant)),
       ),
       child: Row(
         children: <Widget>[
@@ -928,7 +936,10 @@ class _ChatComposerState extends State<ChatComposer> {
                 _voiceWaveform(showPlaybackProgress: true),
                 Text(
                   '$minutes:${seconds.toString().padLeft(2, '0')} · Review before sending',
-                  style: const TextStyle(color: Colors.white60, fontSize: 10),
+                  style: TextStyle(
+                    color: scheme.onSurfaceVariant,
+                    fontSize: 10,
+                  ),
                 ),
               ],
             ),
@@ -967,11 +978,13 @@ class _ChatComposerState extends State<ChatComposer> {
   }
 
   Widget _buildRecordingBar() {
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 7, 8, 7),
-      decoration: const BoxDecoration(
-        color: Color(0xFF16232B),
-        border: Border(top: BorderSide(color: Colors.white10)),
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        border: Border(top: BorderSide(color: scheme.outlineVariant)),
       ),
       child: Row(
         children: <Widget>[
@@ -983,7 +996,9 @@ class _ChatComposerState extends State<ChatComposer> {
             width: 10,
             height: 10,
             decoration: BoxDecoration(
-              color: _recordingPaused ? Colors.white38 : Colors.redAccent,
+              color: _recordingPaused
+                  ? scheme.onSurfaceVariant
+                  : Colors.redAccent,
               shape: BoxShape.circle,
             ),
           ),
@@ -995,8 +1010,8 @@ class _ChatComposerState extends State<ChatComposer> {
           //===================================================
           Text(
             _recordTime(),
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: scheme.onSurface,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -1016,7 +1031,10 @@ class _ChatComposerState extends State<ChatComposer> {
                   _recordingPaused ? 'Paused' : 'Wave follows your voice live',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: Colors.white60, fontSize: 10),
+                  style: TextStyle(
+                    color: scheme.onSurfaceVariant,
+                    fontSize: 10,
+                  ),
                 ),
               ],
             ),
@@ -1089,12 +1107,15 @@ class _ChatComposerState extends State<ChatComposer> {
 
   Widget _buildMainInput() {
     final bool hasText = widget.controller.text.trim().isNotEmpty;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme scheme = theme.colorScheme;
+    final bool dark = theme.brightness == Brightness.dark;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(7, 6, 7, 7),
-      decoration: const BoxDecoration(
-        color: Color(0xFF0E151A),
-        border: Border(top: BorderSide(color: Colors.white10)),
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        border: Border(top: BorderSide(color: scheme.outlineVariant)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
@@ -1106,15 +1127,17 @@ class _ChatComposerState extends State<ChatComposer> {
                   ? Icons.keyboard_rounded
                   : Icons.emoji_emotions_outlined,
 
-              color: _showStickers ? const Color(0xFF29B6F6) : Colors.white70,
+              color: _showStickers
+                  ? const Color(0xFF29B6F6)
+                  : scheme.onSurfaceVariant,
             ),
           ),
 
           IconButton(
             onPressed: widget.enabled ? _showAttachments : null,
-            icon: const Icon(
+            icon: Icon(
               Icons.photo_camera_outlined,
-              color: Colors.white70,
+              color: scheme.onSurfaceVariant,
             ),
           ),
 
@@ -1122,7 +1145,9 @@ class _ChatComposerState extends State<ChatComposer> {
             child: Container(
               constraints: const BoxConstraints(minHeight: 44),
               decoration: BoxDecoration(
-                color: const Color(0xFF20282E),
+                color: dark
+                    ? const Color(0xFF20282E)
+                    : scheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(24),
               ),
               child: TextField(
@@ -1132,11 +1157,13 @@ class _ChatComposerState extends State<ChatComposer> {
                 maxLines: 5,
                 keyboardType: TextInputType.multiline,
                 textCapitalization: TextCapitalization.sentences,
-                decoration: const InputDecoration(
+                style: TextStyle(color: scheme.onSurface),
+                cursorColor: const Color(0xFF29B6F6),
+                decoration: InputDecoration(
                   hintText: 'Message...',
-                  hintStyle: TextStyle(color: Colors.white38),
+                  hintStyle: TextStyle(color: scheme.onSurfaceVariant),
                   border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(
+                  contentPadding: const EdgeInsets.symmetric(
                     horizontal: 15,
                     vertical: 11,
                   ),
@@ -1172,7 +1199,7 @@ class _ChatComposerState extends State<ChatComposer> {
               decoration: BoxDecoration(
                 color: widget.enabled
                     ? const Color(0xFF29B6F6)
-                    : Colors.white12,
+                    : scheme.onSurface.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
               child: IconButton(

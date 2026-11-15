@@ -11,6 +11,7 @@ import '../services/chat_sevice.dart';
 import '../services/marketplace_service.dart';
 import '../utils/marketplace_constants.dart';
 import '../utils/marketplace_theme.dart';
+import '../widgets/marketplace_brand_icon.dart';
 import '../widgets/marketplace_media_gallery.dart';
 import '../widgets/marketplace_more_from_seller.dart';
 import 'chat_forward_screen.dart';
@@ -36,6 +37,7 @@ class _MarketplaceListingDetailsScreenState
   final CellularCallService _calls = CellularCallService();
   final ChatService _chat = ChatService();
   bool _working = false;
+  bool _calling = false;
 
   Future<void> _messageSeller(MarketplaceListing listing) async {
     if (_working ||
@@ -84,10 +86,10 @@ class _MarketplaceListingDetailsScreenState
   }
 
   Future<void> _callSeller(MarketplaceListing listing) async {
-    if (_working) {
+    if (_calling) {
       return;
     }
-    setState(() => _working = true);
+    setState(() => _calling = true);
     try {
       await _calls.callSeller(listing.listingId);
     } catch (error) {
@@ -96,7 +98,7 @@ class _MarketplaceListingDetailsScreenState
       }
     } finally {
       if (mounted) {
-        setState(() => _working = false);
+        setState(() => _calling = false);
       }
     }
   }
@@ -109,8 +111,10 @@ class _MarketplaceListingDetailsScreenState
     final String value = error.toString();
     final String lower = value.toLowerCase();
     if (lower.contains('not-found') ||
+        lower.contains('failed-precondition') ||
+        lower.contains('phone contact is not available') ||
         lower.contains('has not added a valid phone')) {
-      return 'This seller has not added an Egyptian mobile number yet.';
+      return 'This seller has not added their Egyptian mobile number yet.';
     }
     if (lower.contains('permission-denied') ||
         lower.contains('unauthenticated')) {
@@ -209,22 +213,6 @@ class _MarketplaceListingDetailsScreenState
                 onTap: () {
                   Navigator.pop(sheetContext);
                   _shareToChat(listing);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.link_rounded),
-                title: const Text('Copy Link'),
-                onTap: () {
-                  Navigator.pop(sheetContext);
-                  _copyLink(listing);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.ios_share_rounded),
-                title: const Text('Share to Other Apps'),
-                onTap: () {
-                  Navigator.pop(sheetContext);
-                  _shareExternal(listing);
                 },
               ),
             ],
@@ -368,7 +356,10 @@ class _MarketplaceListingDetailsScreenState
                     IconButton(
                       tooltip: 'Share listing',
                       onPressed: () => _showShareOptions(listing),
-                      icon: const Icon(Icons.share_outlined),
+                      icon: Transform.rotate(
+                        angle: -0.35,
+                        child: const Icon(Icons.send_rounded),
+                      ),
                     ),
                   if (owner)
                     PopupMenuButton<String>(
@@ -402,6 +393,26 @@ class _MarketplaceListingDetailsScreenState
                             child: Text('Archive'),
                           ),
                         const PopupMenuItem(
+                          value: 'copy',
+                          child: Row(
+                            children: <Widget>[
+                              Icon(Icons.link_rounded),
+                              SizedBox(width: 10),
+                              Text('Copy Link'),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuItem(
+                          value: 'share_external',
+                          child: Row(
+                            children: <Widget>[
+                              Icon(Icons.share_rounded),
+                              SizedBox(width: 10),
+                              Text('Share to Other Apps'),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuItem(
                           value: 'delete',
                           child: Text('Delete'),
                         ),
@@ -414,10 +425,31 @@ class _MarketplaceListingDetailsScreenState
                           _reportListing(listing);
                         } else if (value == 'copy') {
                           _copyLink(listing);
+                        } else if (value == 'share_external') {
+                          _shareExternal(listing);
                         }
                       },
                       itemBuilder: (_) => const <PopupMenuEntry<String>>[
-                        PopupMenuItem(value: 'copy', child: Text('Copy Link')),
+                        PopupMenuItem(
+                          value: 'copy',
+                          child: Row(
+                            children: <Widget>[
+                              Icon(Icons.link_rounded),
+                              SizedBox(width: 10),
+                              Text('Copy Link'),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'share_external',
+                          child: Row(
+                            children: <Widget>[
+                              Icon(Icons.share_rounded),
+                              SizedBox(width: 10),
+                              Text('Share to Other Apps'),
+                            ],
+                          ),
+                        ),
                         PopupMenuItem(
                           value: 'report',
                           child: Text('Report Listing'),
@@ -677,17 +709,10 @@ class _MarketplaceListingDetailsScreenState
                           label: 'Call seller using cellular phone',
                           child: IconButton.filled(
                             tooltip: 'Call seller',
-                            onPressed: _working
+                            onPressed: _calling
                                 ? null
                                 : () => _callSeller(listing),
-                            icon: _working
-                                ? const SizedBox.square(
-                                    dimension: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                    ),
-                                  )
-                                : const Icon(Icons.phone_in_talk_rounded),
+                            icon: const Icon(Icons.phone_in_talk_rounded),
                             style: IconButton.styleFrom(
                               backgroundColor: MarketplaceTheme.softSurface(
                                 context,
@@ -709,7 +734,10 @@ class _MarketplaceListingDetailsScreenState
                           child: IconButton.filled(
                             tooltip: 'Share to Story or Chat',
                             onPressed: () => _showShareOptions(listing),
-                            icon: const Icon(Icons.send_rounded),
+                            icon: Transform.rotate(
+                              angle: -0.35,
+                              child: const Icon(Icons.send_rounded),
+                            ),
                             style: IconButton.styleFrom(
                               backgroundColor: MarketplaceTheme.softSurface(
                                 context,
@@ -765,6 +793,10 @@ class _MarketplaceListingDetailsScreenState
           await _service.deleteListing(listing);
           if (mounted) Navigator.pop(context);
         }
+      } else if (action == 'copy') {
+        await _copyLink(listing);
+      } else if (action == 'share_external') {
+        await _shareExternal(listing);
       } else {
         await _service.updateStatus(listing.listingId, action);
       }
@@ -833,10 +865,10 @@ class _UnavailableListingView extends StatelessWidget {
                   color: MarketplaceTheme.sky.withValues(alpha: 0.12),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
-                  Icons.storefront_outlined,
+                child: const MarketplaceBrandIcon(
                   size: 42,
-                  color: MarketplaceTheme.sky,
+                  tintColor: MarketplaceTheme.sky,
+                  fallbackColor: MarketplaceTheme.sky,
                 ),
               ),
               const SizedBox(height: 18),

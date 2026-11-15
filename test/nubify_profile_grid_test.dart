@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter/material.dart';
 import 'package:nubify/models/post.dart';
 import 'package:nubify/widgets/nubify_profile_grid.dart';
 
@@ -6,6 +7,8 @@ void main() {
   Post postWithMedia({
     required List<PostMedia> media,
     String thumbnailUrl = '',
+    int likeCount = 0,
+    int repostCount = 0,
   }) {
     return Post(
       postId: 'post-id',
@@ -21,9 +24,9 @@ void main() {
       poll: null,
       taggedUsers: const <TaggedUser>[],
       taggedUserIds: const <String>[],
-      likeCount: 0,
+      likeCount: likeCount,
       commentCount: 0,
-      repostCount: 0,
+      repostCount: repostCount,
       shareCount: 0,
       viewCount: 0,
       createdAt: null,
@@ -112,5 +115,31 @@ void main() {
       nubifyPostCover(post),
       'https://example.com/first-video-thumbnail.jpg',
     );
+  });
+
+  testWidgets('profile tile keeps like and repost words visible', (
+    WidgetTester tester,
+  ) async {
+    final Post post = postWithMedia(
+      media: const <PostMedia>[],
+      likeCount: 13,
+      repostCount: 1,
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: NubifyProfileGrid(
+            posts: <Post>[post],
+            title: 'Posts',
+            onOpen: (_, _) {},
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('13 Likes'), findsOneWidget);
+    expect(find.text('1 Repost'), findsOneWidget);
   });
 }

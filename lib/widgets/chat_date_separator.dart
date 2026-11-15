@@ -5,12 +5,8 @@ import 'package:intl/intl.dart';
 // CHAT DATE SEPARATOR
 //===============================
 
-class ChatDateSeparator
-    extends StatelessWidget {
-  const ChatDateSeparator({
-    super.key,
-    required this.date,
-  });
+class ChatDateSeparator extends StatelessWidget {
+  const ChatDateSeparator({super.key, required this.date});
 
   final DateTime date;
 
@@ -19,29 +15,13 @@ class ChatDateSeparator
   //===============================
 
   String _label() {
-    final DateTime now =
-    DateTime.now();
+    final DateTime now = DateTime.now();
 
-    final DateTime today =
-    DateTime(
-      now.year,
-      now.month,
-      now.day,
-    );
+    final DateTime today = DateTime(now.year, now.month, now.day);
 
-    final DateTime messageDate =
-    DateTime(
-      date.year,
-      date.month,
-      date.day,
-    );
+    final DateTime messageDate = DateTime(date.year, date.month, date.day);
 
-    final int difference =
-        today
-            .difference(
-          messageDate,
-        )
-            .inDays;
+    final int difference = today.difference(messageDate).inDays;
 
     if (difference == 0) {
       return 'Today';
@@ -51,11 +31,7 @@ class ChatDateSeparator
       return 'Yesterday';
     }
 
-    return DateFormat(
-      'dd/MM/yyyy',
-    ).format(
-      date,
-    );
+    return DateFormat('dd/MM/yyyy').format(date);
   }
 
   //===============================
@@ -63,53 +39,28 @@ class ChatDateSeparator
   //===============================
 
   @override
-  Widget build(
-      BuildContext context,
-      ) {
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme scheme = theme.colorScheme;
+
     return Padding(
-      padding:
-      const EdgeInsets.symmetric(
-        vertical:
-        12,
-      ),
-      child:
-      Center(
-        child:
-        Container(
-          padding:
-          const EdgeInsets.symmetric(
-            horizontal:
-            13,
-            vertical:
-            6,
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 6),
+          decoration: BoxDecoration(
+            color: theme.brightness == Brightness.dark
+                ? const Color(0xFF18232B)
+                : scheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: scheme.outlineVariant),
           ),
-          decoration:
-          BoxDecoration(
-            color:
-            const Color(
-              0xFF18232B,
-            ),
-            borderRadius:
-            BorderRadius.circular(
-              20,
-            ),
-            border:
-            Border.all(
-              color:
-              Colors.white10,
-            ),
-          ),
-          child:
-          Text(
+          child: Text(
             _label(),
-            style:
-            const TextStyle(
-              color:
-              Colors.white70,
-              fontSize:
-              11,
-              fontWeight:
-              FontWeight.w600,
+            style: TextStyle(
+              color: scheme.onSurfaceVariant,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),

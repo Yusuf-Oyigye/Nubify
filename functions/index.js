@@ -1567,3 +1567,11 @@ Object.assign(
   exports,
   require("./marketplace"),
 );
+
+//======================================================
+//NUBi BACKEND
+//=======================================================
+Object.assign(exports, require("./nubi_learning"));
+
+//MINDRUSH BACKEND
+Object.assign(exports, require("./nubi_mindrush"));

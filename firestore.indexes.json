@@ -208,6 +208,11 @@
       "collectionGroup": "marketplaceProducts",
       "queryScope": "COLLECTION",
       "fields": [{"fieldPath":"category","order":"ASCENDING"},{"fieldPath":"status","order":"ASCENDING"},{"fieldPath":"publicVisible","order":"ASCENDING"}]
+    },
+    {
+      "collectionGroup": "players",
+      "queryScope": "COLLECTION",
+      "fields": [{"fieldPath":"faculty","order":"ASCENDING"},{"fieldPath":"xp","order":"DESCENDING"}]
     }
   ],
   "fieldOverrides": [

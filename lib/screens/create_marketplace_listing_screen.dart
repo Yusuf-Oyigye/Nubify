@@ -1,4 +1,3 @@
-
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -11,16 +10,17 @@ import '../services/marketplace_media_service.dart';
 import '../services/marketplace_service.dart';
 import '../utils/marketplace_constants.dart';
 import '../utils/marketplace_theme.dart';
+import '../widgets/marketplace_brand_icon.dart';
 import 'marketplace_listing_details_screen.dart';
 
 class _EditableMarketplaceMedia {
   _EditableMarketplaceMedia.existing(this.existing)
-      : pending = null,
-        key = 'existing-marketplace-media-${_sequence++}';
+    : pending = null,
+      key = 'existing-marketplace-media-${_sequence++}';
 
   _EditableMarketplaceMedia.pending(this.pending)
-      : existing = null,
-        key = 'pending-marketplace-media-${_sequence++}';
+    : existing = null,
+      key = 'pending-marketplace-media-${_sequence++}';
 
   static int _sequence = 0;
 
@@ -48,7 +48,7 @@ class _CreateMarketplaceListingScreenState
   final TextEditingController _description = TextEditingController();
   final TextEditingController _price = TextEditingController();
   final List<_EditableMarketplaceMedia> _mediaItems =
-  <_EditableMarketplaceMedia>[];
+      <_EditableMarketplaceMedia>[];
   final List<MarketplaceMedia> _removedExistingMedia = <MarketplaceMedia>[];
 
   String? _category;
@@ -128,7 +128,7 @@ class _CreateMarketplaceListingScreenState
           .pickGallery(remainingSlots: remaining);
       if (selected.isNotEmpty && mounted) {
         setState(
-              () => _mediaItems.addAll(
+          () => _mediaItems.addAll(
             selected.map(_EditableMarketplaceMedia.pending),
           ),
         );
@@ -151,7 +151,7 @@ class _CreateMarketplaceListingScreenState
           : await _mediaService.capturePhoto();
       if (selected != null && mounted) {
         setState(
-              () => _mediaItems.add(_EditableMarketplaceMedia.pending(selected)),
+          () => _mediaItems.add(_EditableMarketplaceMedia.pending(selected)),
         );
       }
     } catch (error) {
@@ -308,10 +308,10 @@ class _CreateMarketplaceListingScreenState
         publish && (_editingListing?.status ?? 'draft') != 'available';
     try {
       final DocumentSnapshot<Map<String, dynamic>> profile =
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .get();
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .get();
       final Map<String, dynamic> userData =
           profile.data() ?? <String, dynamic>{};
       final String profileFullName = (userData['fullName'] ?? '')
@@ -362,17 +362,17 @@ class _CreateMarketplaceListingScreenState
       int uploadedIndex = 0;
       final List<MarketplaceMedia> combined = _mediaItems
           .map((_EditableMarketplaceMedia item) {
-        if (item.existing != null) {
-          return item.existing!;
-        }
-        final MarketplaceMedia value = uploaded[uploadedIndex];
-        uploadedIndex += 1;
-        return value;
-      })
+            if (item.existing != null) {
+              return item.existing!;
+            }
+            final MarketplaceMedia value = uploaded[uploadedIndex];
+            uploadedIndex += 1;
+            return value;
+          })
           .toList(growable: false);
       final List<MarketplaceMedia> normalized = List<MarketplaceMedia>.generate(
         combined.length,
-            (int index) {
+        (int index) {
           final MarketplaceMedia item = combined[index];
           return MarketplaceMedia(
             type: item.type,
@@ -390,8 +390,8 @@ class _CreateMarketplaceListingScreenState
       final String thumbnail = normalized.isEmpty
           ? ''
           : (normalized[safeCover].thumbnailUrl.trim().isEmpty
-          ? normalized[safeCover].url
-          : normalized[safeCover].thumbnailUrl);
+                ? normalized[safeCover].url
+                : normalized[safeCover].thumbnailUrl);
       final double? numericPrice = double.tryParse(_price.text.trim());
 
       final String previousStatus = _editingListing?.status ?? 'draft';
@@ -399,11 +399,11 @@ class _CreateMarketplaceListingScreenState
       final bool targetIsAvailable = targetStatus == 'available';
       final dynamic publishedAt = targetIsAvailable
           ? (newlyPublishing || _editingListing?.publishedAt == null
-          ? FieldValue.serverTimestamp()
-          : Timestamp.fromDate(_editingListing!.publishedAt!))
+                ? FieldValue.serverTimestamp()
+                : Timestamp.fromDate(_editingListing!.publishedAt!))
           : (_editingListing?.publishedAt == null
-          ? null
-          : Timestamp.fromDate(_editingListing!.publishedAt!));
+                ? null
+                : Timestamp.fromDate(_editingListing!.publishedAt!));
 
       final Map<String, dynamic> listingData = <String, dynamic>{
         'listingId': reference.id,
@@ -430,13 +430,13 @@ class _CreateMarketplaceListingScreenState
           'allowCalls': true,
         },
         'searchPrefixes':
-        publish || (_editingListing?.status ?? 'draft') == 'available'
+            publish || (_editingListing?.status ?? 'draft') == 'available'
             ? MarketplaceConstants.buildSearchPrefixes(<String>[
-          _title.text,
-          _description.text,
-          _category ?? '',
-          sellerName,
-        ])
+                _title.text,
+                _description.text,
+                _category ?? '',
+                sellerName,
+              ])
             : <String>[],
         'createdAt': _editingListing?.createdAt == null
             ? FieldValue.serverTimestamp()
@@ -459,9 +459,11 @@ class _CreateMarketplaceListingScreenState
       // Cleanup is best-effort maintenance; it must never hold up the
       // publication confirmation after Firestore has accepted the listing.
       if (_removedExistingMedia.isNotEmpty) {
-        unawaited(_mediaService.deleteUploadedMedia(
-          List<MarketplaceMedia>.of(_removedExistingMedia),
-        ));
+        unawaited(
+          _mediaService.deleteUploadedMedia(
+            List<MarketplaceMedia>.of(_removedExistingMedia),
+          ),
+        );
       }
 
       // Invalidate cached discovery so the newly published listing and its
@@ -529,7 +531,7 @@ class _CreateMarketplaceListingScreenState
       if (mounted) {
         _message(
           cancellation?.isCancelled == true ||
-              error is MarketplaceUploadCancelledException
+                  error is MarketplaceUploadCancelledException
               ? 'Upload cancelled. Nothing was published.'
               : _saveError(error),
         );
@@ -601,257 +603,257 @@ class _CreateMarketplaceListingScreenState
         body: _loadingExisting
             ? const Center(child: CircularProgressIndicator())
             : _AnimatedComposerEntrance(
-          animation: _entranceAnimation,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: MarketplaceTheme.composerBackground(context),
-            ),
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(18, 14, 18, 120),
-              children: <Widget>[
-                Container(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
-                  decoration: MarketplaceTheme.composerCard(context),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                animation: _entranceAnimation,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: MarketplaceTheme.composerBackground(context),
+                  ),
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(18, 14, 18, 120),
                     children: <Widget>[
-                      Row(
-                        children: <Widget>[
-                          Container(
-                            width: 42,
-                            height: 42,
-                            decoration: BoxDecoration(
-                              gradient:
-                              MarketplaceTheme.mediaAccentGradient,
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            child: const Icon(
-                              Icons.collections_rounded,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          const Expanded(
-                            child: Column(
-                              crossAxisAlignment:
-                              CrossAxisAlignment.start,
+                      Container(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+                        decoration: MarketplaceTheme.composerCard(context),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Row(
                               children: <Widget>[
-                                Text(
-                                  'Photos & videos',
-                                  style: TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.w900,
+                                Container(
+                                  width: 42,
+                                  height: 42,
+                                  decoration: BoxDecoration(
+                                    gradient:
+                                        MarketplaceTheme.mediaAccentGradient,
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  child: const Icon(
+                                    Icons.collections_rounded,
+                                    color: Colors.white,
                                   ),
                                 ),
-                                SizedBox(height: 2),
-                                Text(
-                                  'Add up to five. Tap one to make it the cover.',
+                                const SizedBox(width: 12),
+                                const Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: <Widget>[
+                                      Text(
+                                        'Photos & videos',
+                                        style: TextStyle(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.w900,
+                                        ),
+                                      ),
+                                      SizedBox(height: 2),
+                                      Text(
+                                        'Add up to five. Tap one to make it the cover.',
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                AnimatedContainer(
+                                  duration: const Duration(milliseconds: 220),
+                                  curve: Curves.easeOutCubic,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 11,
+                                    vertical: 7,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: _totalMedia == 5
+                                        ? MarketplaceTheme.emerald
+                                        : MarketplaceTheme.gold.withValues(
+                                            alpha: 0.16,
+                                          ),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Text(
+                                    '$_totalMedia/5',
+                                    style: TextStyle(
+                                      color: _totalMedia == 5
+                                          ? Colors.white
+                                          : MarketplaceTheme.gold,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
                                 ),
                               ],
                             ),
-                          ),
-                          AnimatedContainer(
-                            duration: const Duration(milliseconds: 220),
-                            curve: Curves.easeOutCubic,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 11,
-                              vertical: 7,
-                            ),
-                            decoration: BoxDecoration(
-                              color: _totalMedia == 5
-                                  ? MarketplaceTheme.emerald
-                                  : MarketplaceTheme.gold.withValues(
-                                alpha: 0.16,
+                            const SizedBox(height: 14),
+                            SizedBox(
+                              height: 126,
+                              child: ListView.builder(
+                                scrollDirection: Axis.horizontal,
+                                itemCount:
+                                    _totalMedia + (_totalMedia < 5 ? 1 : 0),
+                                itemBuilder: (BuildContext context, int index) {
+                                  if (index == _mediaItems.length) {
+                                    return Padding(
+                                      key: const ValueKey<String>(
+                                        'add-marketplace-media',
+                                      ),
+                                      padding: const EdgeInsets.only(right: 10),
+                                      child: InkWell(
+                                        borderRadius: BorderRadius.circular(18),
+                                        onTap: _showMediaSource,
+                                        child: Ink(
+                                          width: 112,
+                                          decoration: BoxDecoration(
+                                            gradient: MarketplaceTheme
+                                                .addMediaGradient,
+                                            borderRadius: BorderRadius.circular(
+                                              18,
+                                            ),
+                                            border: Border.all(
+                                              color: MarketplaceTheme.gold
+                                                  .withValues(alpha: 0.4),
+                                            ),
+                                          ),
+                                          child: const Column(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: <Widget>[
+                                              Icon(
+                                                Icons
+                                                    .add_photo_alternate_outlined,
+                                                color: MarketplaceTheme.gold,
+                                                size: 34,
+                                              ),
+                                              SizedBox(height: 7),
+                                              Text(
+                                                'Add photos\nor videos',
+                                                textAlign: TextAlign.center,
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.w800,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                  final _EditableMarketplaceMedia entry =
+                                      _mediaItems[index];
+                                  final Widget tile = entry.existing != null
+                                      ? _ExistingMediaTile(
+                                          item: entry.existing!,
+                                          cover: index == _coverIndex,
+                                          onCover: () => setState(
+                                            () => _coverIndex = index,
+                                          ),
+                                          onReplace: () => _replaceMedia(index),
+                                          onRemove: () => _removeMedia(index),
+                                        )
+                                      : _PendingMediaTile(
+                                          item: entry.pending!,
+                                          cover: index == _coverIndex,
+                                          onCover: () => setState(
+                                            () => _coverIndex = index,
+                                          ),
+                                          onReplace: () => _replaceMedia(index),
+                                          onRemove: () => _removeMedia(index),
+                                        );
+                                  return Padding(
+                                    key: ValueKey<String>(entry.key),
+                                    padding: const EdgeInsets.only(right: 10),
+                                    child: SizedBox(
+                                      width: 112,
+                                      height: 126,
+                                      child: Stack(
+                                        children: <Widget>[
+                                          tile,
+                                          if (_mediaItems.length > 1)
+                                            Positioned(
+                                              left: 4,
+                                              top: 4,
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: <Widget>[
+                                                  _MediaMoveButton(
+                                                    tooltip: 'Move left',
+                                                    icon: Icons
+                                                        .chevron_left_rounded,
+                                                    onTap: index > 0
+                                                        ? () => _moveMedia(
+                                                            index,
+                                                            index - 1,
+                                                          )
+                                                        : null,
+                                                  ),
+                                                  const SizedBox(width: 3),
+                                                  _MediaMoveButton(
+                                                    tooltip: 'Move right',
+                                                    icon: Icons
+                                                        .chevron_right_rounded,
+                                                    onTap:
+                                                        index <
+                                                            _mediaItems.length -
+                                                                1
+                                                        ? () => _moveMedia(
+                                                            index,
+                                                            index + 1,
+                                                          )
+                                                        : null,
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                },
                               ),
-                              borderRadius: BorderRadius.circular(20),
                             ),
-                            child: Text(
-                              '$_totalMedia/5',
-                              style: TextStyle(
-                                color: _totalMedia == 5
-                                    ? Colors.white
-                                    : MarketplaceTheme.gold,
-                                fontWeight: FontWeight.w900,
+                            if (_totalMedia > 0) ...<Widget>[
+                              const SizedBox(height: 8),
+                              Text(
+                                'Tap to choose the cover. Use the arrow buttons to reorder and the swap icon to replace a file.',
+                                style: Theme.of(context).textTheme.bodySmall,
                               ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 22),
+                      _ListingFormPanel(
+                        titleController: _title,
+                        priceController: _price,
+                        descriptionController: _description,
+                        category: _category,
+                        condition: _condition,
+                        onCategoryChanged: (String? value) =>
+                            setState(() => _category = value),
+                        onConditionChanged: (String? value) =>
+                            setState(() => _condition = value),
+                      ),
+                      if (_saving) ...<Widget>[
+                        const SizedBox(height: 18),
+                        LinearProgressIndicator(
+                          value: _progress > 0 && _progress < 1
+                              ? _progress
+                              : null,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(_progressLabel, textAlign: TextAlign.center),
+                        if (_uploadCancellation != null) ...<Widget>[
+                          const SizedBox(height: 8),
+                          OutlinedButton.icon(
+                            onPressed: _cancellingUpload ? null : _cancelUpload,
+                            icon: const Icon(Icons.close_rounded),
+                            label: Text(
+                              _cancellingUpload
+                                  ? 'Cancelling…'
+                                  : 'Cancel Upload',
                             ),
                           ),
                         ],
-                      ),
-                      const SizedBox(height: 14),
-                      SizedBox(
-                        height: 126,
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          itemCount:
-                          _totalMedia + (_totalMedia < 5 ? 1 : 0),
-                          itemBuilder: (BuildContext context, int index) {
-                            if (index == _mediaItems.length) {
-                              return Padding(
-                                key: const ValueKey<String>(
-                                  'add-marketplace-media',
-                                ),
-                                padding: const EdgeInsets.only(right: 10),
-                                child: InkWell(
-                                  borderRadius: BorderRadius.circular(18),
-                                  onTap: _showMediaSource,
-                                  child: Ink(
-                                    width: 112,
-                                    decoration: BoxDecoration(
-                                      gradient: MarketplaceTheme
-                                          .addMediaGradient,
-                                      borderRadius: BorderRadius.circular(
-                                        18,
-                                      ),
-                                      border: Border.all(
-                                        color: MarketplaceTheme.gold
-                                            .withValues(alpha: 0.4),
-                                      ),
-                                    ),
-                                    child: const Column(
-                                      mainAxisAlignment:
-                                      MainAxisAlignment.center,
-                                      children: <Widget>[
-                                        Icon(
-                                          Icons
-                                              .add_photo_alternate_outlined,
-                                          color: MarketplaceTheme.gold,
-                                          size: 34,
-                                        ),
-                                        SizedBox(height: 7),
-                                        Text(
-                                          'Add photos\nor videos',
-                                          textAlign: TextAlign.center,
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.w800,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              );
-                            }
-                            final _EditableMarketplaceMedia entry =
-                            _mediaItems[index];
-                            final Widget tile = entry.existing != null
-                                ? _ExistingMediaTile(
-                              item: entry.existing!,
-                              cover: index == _coverIndex,
-                              onCover: () => setState(
-                                    () => _coverIndex = index,
-                              ),
-                              onReplace: () => _replaceMedia(index),
-                              onRemove: () => _removeMedia(index),
-                            )
-                                : _PendingMediaTile(
-                              item: entry.pending!,
-                              cover: index == _coverIndex,
-                              onCover: () => setState(
-                                    () => _coverIndex = index,
-                              ),
-                              onReplace: () => _replaceMedia(index),
-                              onRemove: () => _removeMedia(index),
-                            );
-                            return Padding(
-                              key: ValueKey<String>(entry.key),
-                              padding: const EdgeInsets.only(right: 10),
-                              child: SizedBox(
-                                width: 112,
-                                height: 126,
-                                child: Stack(
-                                  children: <Widget>[
-                                    tile,
-                                    if (_mediaItems.length > 1)
-                                      Positioned(
-                                        left: 4,
-                                        top: 4,
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: <Widget>[
-                                            _MediaMoveButton(
-                                              tooltip: 'Move left',
-                                              icon: Icons
-                                                  .chevron_left_rounded,
-                                              onTap: index > 0
-                                                  ? () => _moveMedia(
-                                                index,
-                                                index - 1,
-                                              )
-                                                  : null,
-                                            ),
-                                            const SizedBox(width: 3),
-                                            _MediaMoveButton(
-                                              tooltip: 'Move right',
-                                              icon: Icons
-                                                  .chevron_right_rounded,
-                                              onTap:
-                                              index <
-                                                  _mediaItems.length -
-                                                      1
-                                                  ? () => _moveMedia(
-                                                index,
-                                                index + 1,
-                                              )
-                                                  : null,
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      if (_totalMedia > 0) ...<Widget>[
-                        const SizedBox(height: 8),
-                        Text(
-                          'Tap to choose the cover. Use the arrow buttons to reorder and the swap icon to replace a file.',
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
                       ],
                     ],
                   ),
                 ),
-                const SizedBox(height: 22),
-                _ListingFormPanel(
-                  titleController: _title,
-                  priceController: _price,
-                  descriptionController: _description,
-                  category: _category,
-                  condition: _condition,
-                  onCategoryChanged: (String? value) =>
-                      setState(() => _category = value),
-                  onConditionChanged: (String? value) =>
-                      setState(() => _condition = value),
-                ),
-                if (_saving) ...<Widget>[
-                  const SizedBox(height: 18),
-                  LinearProgressIndicator(
-                    value: _progress > 0 && _progress < 1
-                        ? _progress
-                        : null,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(_progressLabel, textAlign: TextAlign.center),
-                  if (_uploadCancellation != null) ...<Widget>[
-                    const SizedBox(height: 8),
-                    OutlinedButton.icon(
-                      onPressed: _cancellingUpload ? null : _cancelUpload,
-                      icon: const Icon(Icons.close_rounded),
-                      label: Text(
-                        _cancellingUpload
-                            ? 'Cancelling…'
-                            : 'Cancel Upload',
-                      ),
-                    ),
-                  ],
-                ],
-              ],
-            ),
-          ),
-        ),
+              ),
         bottomNavigationBar: SafeArea(
           child: Container(
             padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
@@ -871,22 +873,26 @@ class _CreateMarketplaceListingScreenState
                 boxShadow: _saving
                     ? null
                     : <BoxShadow>[
-                  BoxShadow(
-                    color: MarketplaceTheme.emerald.withValues(
-                      alpha: 0.28,
-                    ),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
+                        BoxShadow(
+                          color: MarketplaceTheme.emerald.withValues(
+                            alpha: 0.28,
+                          ),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
               ),
               child: FilledButton.icon(
                 onPressed: _saving
                     ? null
                     : () => _save(
-                  publish: (_editingListing?.status ?? 'draft') != 'sold',
+                        publish: (_editingListing?.status ?? 'draft') != 'sold',
+                      ),
+                icon: const MarketplaceBrandIcon(
+                  size: 22,
+                  tintColor: Colors.white,
+                  fallbackColor: Colors.white,
                 ),
-                icon: const Icon(Icons.storefront_rounded),
                 label: Text(
                   _saving
                       ? 'Saving…'
@@ -980,13 +986,13 @@ class _ListingFormPanel extends StatelessWidget {
   final ValueChanged<String?> onConditionChanged;
 
   InputDecoration _decoration(
-      BuildContext context, {
-        required String label,
-        required IconData icon,
-        String? hint,
-        String? prefixText,
-        bool alignLabelWithHint = false,
-      }) {
+    BuildContext context, {
+    required String label,
+    required IconData icon,
+    String? hint,
+    String? prefixText,
+    bool alignLabelWithHint = false,
+  }) {
     final OutlineInputBorder border = OutlineInputBorder(
       borderRadius: BorderRadius.circular(17),
       borderSide: BorderSide(
@@ -1016,8 +1022,8 @@ class _ListingFormPanel extends StatelessWidget {
     final MarketplaceCategory? selectedCategory = category == null
         ? null
         : MarketplaceConstants.categories
-        .where((MarketplaceCategory item) => item.id == category)
-        .firstOrNull;
+              .where((MarketplaceCategory item) => item.id == category)
+              .firstOrNull;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: MarketplaceTheme.composerCard(context),
@@ -1083,26 +1089,26 @@ class _ListingFormPanel extends StatelessWidget {
             items: MarketplaceConstants.categories
                 .map(
                   (MarketplaceCategory value) => DropdownMenuItem<String>(
-                value: value.id,
-                child: Row(
-                  children: <Widget>[
-                    Icon(
-                      value.icon,
-                      size: 20,
-                      color: MarketplaceTheme.emerald,
+                    value: value.id,
+                    child: Row(
+                      children: <Widget>[
+                        Icon(
+                          value.icon,
+                          size: 20,
+                          color: MarketplaceTheme.emerald,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            value.label,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        value.label,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            )
+                  ),
+                )
                 .toList(),
             onChanged: onCategoryChanged,
           ),
@@ -1140,13 +1146,13 @@ class _ListingFormPanel extends StatelessWidget {
                   items: MarketplaceConstants.conditions
                       .map(
                         (String value) => DropdownMenuItem<String>(
-                      value: value,
-                      child: Text(
-                        MarketplaceConstants.conditionLabel(value),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  )
+                          value: value,
+                          child: Text(
+                            MarketplaceConstants.conditionLabel(value),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      )
                       .toList(),
                   onChanged: onConditionChanged,
                 ),
@@ -1237,36 +1243,36 @@ class _PendingMediaTile extends StatelessWidget {
               height: 126,
               child: item.isVideo
                   ? ColoredBox(
-                color: MarketplaceTheme.navy,
-                child: const Icon(
-                  Icons.play_circle_fill_rounded,
-                  color: Colors.white,
-                  size: 44,
-                ),
-              )
-                  : FutureBuilder<Uint8List>(
-                future: item.file.readAsBytes(),
-                builder:
-                    (
-                    BuildContext context,
-                    AsyncSnapshot<Uint8List> snapshot,
-                    ) {
-                  if (!snapshot.hasData) {
-                    return const ColoredBox(
                       color: MarketplaceTheme.navy,
-                      child: Center(
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                        ),
+                      child: const Icon(
+                        Icons.play_circle_fill_rounded,
+                        color: Colors.white,
+                        size: 44,
                       ),
-                    );
-                  }
-                  return Image.memory(
-                    snapshot.data!,
-                    fit: BoxFit.cover,
-                  );
-                },
-              ),
+                    )
+                  : FutureBuilder<Uint8List>(
+                      future: item.file.readAsBytes(),
+                      builder:
+                          (
+                            BuildContext context,
+                            AsyncSnapshot<Uint8List> snapshot,
+                          ) {
+                            if (!snapshot.hasData) {
+                              return const ColoredBox(
+                                color: MarketplaceTheme.navy,
+                                child: Center(
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                ),
+                              );
+                            }
+                            return Image.memory(
+                              snapshot.data!,
+                              fit: BoxFit.cover,
+                            );
+                          },
+                    ),
             ),
           ),
         ),
@@ -1353,92 +1359,92 @@ class _ExistingMediaTile extends StatelessWidget {
         : item.url;
     return Stack(
       children: <Widget>[
-      GestureDetector(
-      onTap: onCover,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(18),
-        child: SizedBox(
-          width: 112,
-          height: 126,
-          child: preview.isEmpty
-              ? const ColoredBox(
-            color: MarketplaceTheme.navy,
-            child: Icon(
-              Icons.broken_image_outlined,
-              color: Colors.white,
+        GestureDetector(
+          onTap: onCover,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(18),
+            child: SizedBox(
+              width: 112,
+              height: 126,
+              child: preview.isEmpty
+                  ? const ColoredBox(
+                      color: MarketplaceTheme.navy,
+                      child: Icon(
+                        Icons.broken_image_outlined,
+                        color: Colors.white,
+                      ),
+                    )
+                  : Image.network(preview, fit: BoxFit.cover),
             ),
-          )
-              : Image.network(preview, fit: BoxFit.cover),
+          ),
         ),
-      ),
-    ),
-    if (item.isVideo)
-    const Positioned(
-    left: 42,
-    top: 45,
-    child: Icon(
-    Icons.play_circle_fill_rounded,
-    color: Colors.white,
-    size: 30,
-    ),
-    ),
-    if (cover)
-    Positioned(
-    left: 6,
-    bottom: 6,
-    child: Container(
-    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
-    decoration: BoxDecoration(
-    color: MarketplaceTheme.sky,
-    borderRadius: BorderRadius.circular(10),
-    ),
-    child: const Text(
-    'COVER',
-    style: TextStyle(
-    color: MarketplaceTheme.midnight,
-    fontSize: 9,
-    fontWeight: FontWeight.w900,
-    ),
-    ),
-    ),
-    ),
-    Positioned(
-    right: 4,
-    top: 4,
-    child: Material(
-    color: Colors.black54,
-    shape: const CircleBorder(),
-    child: InkWell(
-    customBorder: const CircleBorder(),
-    onTap: onRemove,
-    child: const Padding(
-    padding: EdgeInsets.all(5),
-    child: Icon(Icons.close_rounded, color: Colors.white, size: 17),
-    ),
-    ),
-    ),
-    ),
-    Positioned(
-    right: 4,
-    bottom: 4,
-    child: Material(
-    color: Colors.black54,
-    shape: const CircleBorder(),
-    child: InkWell(
-    customBorder: const CircleBorder(),
-    onTap: onReplace,
-    child: const Padding(
-    padding: EdgeInsets.all(5),
-    child: Icon(
-    Icons.swap_horiz_rounded,
-    color: Colors.white,
-    size: 17,
-    ),
-    ),
-    ),
-    ),
-    ),
-    ]
+        if (item.isVideo)
+          const Positioned(
+            left: 42,
+            top: 45,
+            child: Icon(
+              Icons.play_circle_fill_rounded,
+              color: Colors.white,
+              size: 30,
+            ),
+          ),
+        if (cover)
+          Positioned(
+            left: 6,
+            bottom: 6,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+              decoration: BoxDecoration(
+                color: MarketplaceTheme.sky,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Text(
+                'COVER',
+                style: TextStyle(
+                  color: MarketplaceTheme.midnight,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+          ),
+        Positioned(
+          right: 4,
+          top: 4,
+          child: Material(
+            color: Colors.black54,
+            shape: const CircleBorder(),
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: onRemove,
+              child: const Padding(
+                padding: EdgeInsets.all(5),
+                child: Icon(Icons.close_rounded, color: Colors.white, size: 17),
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          right: 4,
+          bottom: 4,
+          child: Material(
+            color: Colors.black54,
+            shape: const CircleBorder(),
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: onReplace,
+              child: const Padding(
+                padding: EdgeInsets.all(5),
+                child: Icon(
+                  Icons.swap_horiz_rounded,
+                  color: Colors.white,
+                  size: 17,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
-}
+  }
 }

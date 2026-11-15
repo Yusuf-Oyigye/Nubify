@@ -8,7 +8,9 @@ import 'package:image_picker/image_picker.dart';
 import '../services/profile_service.dart';
 import '../services/private_profile_service.dart';
 import '../utils/egyptian_phone.dart';
+import '../utils/faculty_catalog.dart';
 import '../utils/utils.dart';
+import '../widgets/faculty_selector.dart';
 
 //===================================================
 // EDIT PROFILE SCREEN
@@ -51,6 +53,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final TextEditingController _usernameController = TextEditingController();
 
   final TextEditingController _facultyController = TextEditingController();
+
+  String? _selectedFacultyId;
 
   final TextEditingController _hobbiesController = TextEditingController();
 
@@ -120,7 +124,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
       _usernameController.text = (data['username'] ?? '').toString();
 
-      _facultyController.text = (data['faculty'] ?? '').toString();
+      _facultyController.text = (data['faculty'] ?? '').toString().trim();
+      _selectedFacultyId = NubifyFacultyCatalog.selectionIdFor(
+        _facultyController.text,
+      );
 
       _hobbiesController.text = (data['hobbies'] ?? '').toString();
 
@@ -141,6 +148,21 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         });
       }
     }
+  }
+
+  void _selectFaculty(NubifyFaculty faculty) {
+    final bool wasOther = _selectedFacultyId == NubifyFacultyCatalog.other.id;
+
+    setState(() {
+      _selectedFacultyId = faculty.id;
+      if (faculty.isOther) {
+        if (!wasOther) {
+          _facultyController.clear();
+        }
+      } else {
+        _facultyController.text = faculty.name;
+      }
+    });
   }
 
   //===================================================
@@ -265,8 +287,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       return;
     }
 
+    if (_selectedFacultyId == null) {
+      _showMessage('Please choose your faculty.');
+
+      return;
+    }
+
     if (faculty.isEmpty) {
-      _showMessage('Please enter your faculty.');
+      _showMessage('Please type your faculty.');
 
       return;
     }
@@ -886,12 +914,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   //===================================================
                   // FACULTY
                   //===================================================
-                  _field(
-                    controller: _facultyController,
-
-                    label: 'Faculty',
-
-                    icon: Icons.school_outlined,
+                  FacultySelectionField(
+                    selectedId: _selectedFacultyId,
+                    otherController: _facultyController,
+                    onSelected: _selectFaculty,
                   ),
 
                   const SizedBox(height: 14),

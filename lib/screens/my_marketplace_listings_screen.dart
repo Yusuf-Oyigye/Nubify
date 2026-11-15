@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../models/marketplace_listing.dart';
 import '../services/marketplace_service.dart';
 import '../utils/marketplace_theme.dart';
+import '../widgets/marketplace_brand_icon.dart';
 import 'create_marketplace_listing_screen.dart';
 import 'marketplace_listing_details_screen.dart';
 
@@ -380,9 +381,10 @@ class _OwnerListingTileState extends State<_OwnerListingTile> {
             child: listing.coverUrl.isEmpty
                 ? const ColoredBox(
                     color: MarketplaceTheme.navy,
-                    child: Icon(
-                      Icons.storefront_rounded,
-                      color: MarketplaceTheme.sky,
+                    child: MarketplaceBrandIcon(
+                      size: 34,
+                      tintColor: MarketplaceTheme.sky,
+                      fallbackColor: MarketplaceTheme.sky,
                     ),
                   )
                 : Image.network(listing.coverUrl, fit: BoxFit.cover),

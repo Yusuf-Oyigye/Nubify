@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -935,14 +936,14 @@ class GroupChatService {
   // UNREAD COUNT
   //===============================
 
-  Stream<int> unreadCountStream(String groupId) {
+  Stream<int> unreadCountStream(String groupId, {ChatGroup? knownGroup}) {
     final String? uid = currentUid;
 
     if (uid == null || uid.isEmpty) {
       return Stream<int>.value(0);
     }
 
-    return getMessages(groupId).map((
+    return getMessages(groupId, knownGroup: knownGroup).map((
       QuerySnapshot<Map<String, dynamic>> snapshot,
     ) {
       int unread = 0;
@@ -968,6 +969,79 @@ class GroupChatService {
 
       return unread;
     });
+  }
+
+  //===============================
+  // TOTAL GROUP UNREAD COUNT
+  //===============================
+
+  Stream<int> totalUnreadCountStream() {
+    final String? uid = currentUid;
+
+    if (uid == null || uid.isEmpty) {
+      return Stream<int>.value(0);
+    }
+
+    late final StreamController<int> controller;
+    StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? groupsSubscription;
+    final Map<String, StreamSubscription<int>> messageSubscriptions =
+        <String, StreamSubscription<int>>{};
+    final Map<String, int> counts = <String, int>{};
+
+    void emit() {
+      if (!controller.isClosed) {
+        controller.add(
+          counts.values.fold<int>(
+            0,
+            (runningTotal, item) => runningTotal + item,
+          ),
+        );
+      }
+    }
+
+    controller = StreamController<int>(
+      onListen: () {
+        groupsSubscription = getGroups().listen((snapshot) {
+          final Set<String> activeIds = snapshot.docs
+              .map((document) => document.id)
+              .toSet();
+
+          for (final String groupId in messageSubscriptions.keys.toList()) {
+            if (!activeIds.contains(groupId)) {
+              unawaited(messageSubscriptions.remove(groupId)?.cancel());
+              counts.remove(groupId);
+            }
+          }
+
+          for (final document in snapshot.docs) {
+            if (messageSubscriptions.containsKey(document.id)) {
+              continue;
+            }
+
+            final ChatGroup group = ChatGroup.fromDocument(document);
+            messageSubscriptions[document.id] =
+                unreadCountStream(document.id, knownGroup: group).listen((
+                  unreadValue,
+                ) {
+                  counts[document.id] = unreadValue;
+                  emit();
+                }, onError: controller.addError);
+          }
+
+          emit();
+        }, onError: controller.addError);
+      },
+      onCancel: () async {
+        await groupsSubscription?.cancel();
+        for (final subscription in messageSubscriptions.values) {
+          await subscription.cancel();
+        }
+        messageSubscriptions.clear();
+        counts.clear();
+      },
+    );
+
+    return controller.stream.distinct();
   }
 
   //===============================

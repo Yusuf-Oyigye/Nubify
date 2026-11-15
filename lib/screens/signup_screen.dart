@@ -8,7 +8,9 @@ import 'package:image_picker/image_picker.dart';
 import '../resources/auth_method.dart';
 import '../utils/color.dart';
 import '../utils/egyptian_phone.dart';
+import '../utils/faculty_catalog.dart';
 import '../utils/utils.dart';
+import '../widgets/faculty_selector.dart';
 
 import 'login_screen.dart';
 
@@ -39,6 +41,8 @@ class _SignupScreenState extends State<SignupScreen> {
   final TextEditingController _passwordController = TextEditingController();
 
   final TextEditingController _facultyController = TextEditingController();
+
+  String? _selectedFacultyId;
 
   final TextEditingController _phoneController = TextEditingController();
 
@@ -141,10 +145,16 @@ class _SignupScreenState extends State<SignupScreen> {
       }
     }
 
-    if (_currentStep == 4 && _facultyController.text.trim().isEmpty) {
-      showSnackBar('Please enter your faculty', context);
+    if (_currentStep == 4) {
+      if (_selectedFacultyId == null) {
+        showSnackBar('Please choose your faculty', context);
+        return;
+      }
 
-      return;
+      if (_facultyController.text.trim().isEmpty) {
+        showSnackBar('Please type your faculty', context);
+        return;
+      }
     }
 
     if (_currentStep == 5 && !EgyptianPhone.isValid(_phoneController.text)) {
@@ -161,6 +171,21 @@ class _SignupScreenState extends State<SignupScreen> {
         _currentStep++;
       });
     }
+  }
+
+  void _selectFaculty(NubifyFaculty faculty) {
+    final bool wasOther = _selectedFacultyId == NubifyFacultyCatalog.other.id;
+
+    setState(() {
+      _selectedFacultyId = faculty.id;
+      if (faculty.isOther) {
+        if (!wasOther) {
+          _facultyController.clear();
+        }
+      } else {
+        _facultyController.text = faculty.name;
+      }
+    });
   }
 
   //===================================================
@@ -337,10 +362,10 @@ class _SignupScreenState extends State<SignupScreen> {
         );
 
       case 4:
-        return _field(
-          controller: _facultyController,
-          hintText: 'Faculty',
-          icon: Icons.school_outlined,
+        return FacultySelectionField(
+          selectedId: _selectedFacultyId,
+          otherController: _facultyController,
+          onSelected: _selectFaculty,
         );
 
       case 5:
@@ -434,6 +459,15 @@ class _SignupScreenState extends State<SignupScreen> {
   @override
   Widget build(BuildContext context) {
     final double progress = (_currentStep + 1) / 9;
+    final NubifyFaculty? selectedFaculty = NubifyFacultyCatalog.byId(
+      _selectedFacultyId,
+    );
+    final IconData currentIcon = _currentStep == 4 && selectedFaculty != null
+        ? selectedFaculty.icon
+        : _stepIcons[_currentStep];
+    final Color currentIconColor = _currentStep == 4 && selectedFaculty != null
+        ? selectedFaculty.color
+        : _blue;
 
     return Scaffold(
       body: SafeArea(
@@ -466,7 +500,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
               const SizedBox(height: 24),
 
-              Icon(_stepIcons[_currentStep], color: _blue, size: 34),
+              Icon(currentIcon, color: currentIconColor, size: 34),
 
               const SizedBox(height: 8),
 
