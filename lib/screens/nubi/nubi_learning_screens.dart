@@ -74,7 +74,7 @@ class NubiDeckScreen extends StatelessWidget {
         ),
         body: const TabBarView(
           children: [
-            _SourcesTab(),
+            _AllTab(),
             _SourcesTab(unfinishedOnly: true),
             _SessionsTab(),
             _DecksTab(),
@@ -87,6 +87,90 @@ class NubiDeckScreen extends StatelessWidget {
   }
 }
 
+// ===========================================
+// ALL: LECTURES + AI CHAT HISTORY
+// ===========================================
+
+class _AllTab extends StatefulWidget {
+  const _AllTab();
+
+  @override
+  State<_AllTab> createState() => _AllTabState();
+}
+
+class _AllTabState extends State<_AllTab> {
+  // Kept in state so the nested builders don't resubscribe on every
+  // snapshot of the other stream.
+  late final Stream<QuerySnapshot<Map<String, dynamic>>> _sources =
+  NubiService.sources
+      .orderBy('createdAt', descending: true)
+      .limit(50)
+      .snapshots();
+
+  late final Stream<QuerySnapshot<Map<String, dynamic>>> _sessions =
+  NubiService.sessions
+      .orderBy('lastActivity', descending: true)
+      .limit(30)
+      .snapshots();
+
+  // Pending server timestamps are null; treat them as newest.
+  static DateTime _time(Object? value) {
+    return value is Timestamp ? value.toDate() : DateTime.now();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: _sources,
+      builder: (context, sourceSnap) {
+        return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+          stream: _sessions,
+          builder: (context, sessionSnap) {
+            if (sourceSnap.hasError || sessionSnap.hasError) {
+              return nubiEmpty(
+                'Unable to read your deck.',
+              );
+            }
+
+            if (!sourceSnap.hasData || !sessionSnap.hasData) {
+              return const Center(
+                child: CircularProgressIndicator(),
+              );
+            }
+
+            final items = <({DateTime time, Widget tile})>[
+              for (final doc in sourceSnap.data!.docs)
+                if (doc.data()['status'] == 'ready')
+                  (
+                  time: _time(doc.data()['createdAt']),
+                  tile: _SourceCard(doc: doc),
+                  ),
+              for (final doc in sessionSnap.data!.docs)
+                (
+                time: _time(doc.data()['lastActivity']),
+                tile: Card(child: _SessionTile(doc: doc)),
+                ),
+            ]..sort((a, b) => b.time.compareTo(a.time));
+
+            if (items.isEmpty) {
+              return nubiEmpty(
+                'Nothing here yet. Upload a lecture '
+                    'or ask NUBi a question to get started.',
+              );
+            }
+
+            return ListView.builder(
+              padding: const EdgeInsets.all(14),
+              itemCount: items.length,
+              itemBuilder: (context, index) => items[index].tile,
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
 class _SourcesTab extends StatelessWidget {
   const _SourcesTab({
     this.unfinishedOnly = false,
@@ -95,6 +179,76 @@ class _SourcesTab extends StatelessWidget {
 
   final bool unfinishedOnly;
   final bool completedOnly;
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: NubiService.sources
+          .orderBy('createdAt', descending: true)
+          .limit(50)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return nubiEmpty(
+            'Unable to read your saved lectures.',
+          );
+        }
+
+        if (!snapshot.hasData) {
+          return const Center(
+            child: CircularProgressIndicator(),
+          );
+        }
+
+        final docs = snapshot.data!.docs.where((doc) {
+          final data = doc.data();
+
+          if (data['status'] != 'ready') {
+            return false;
+          }
+
+          final total = data['totalSections'] ?? 0;
+          final completed =
+              (data['completedSections'] as List?)
+                  ?.length ?? 0;
+
+          if (unfinishedOnly) {
+            return completed < total;
+          }
+
+          if (completedOnly) {
+            return total > 0 && completed >= total;
+          }
+
+          return true;
+        }).toList();
+
+        if (docs.isEmpty) {
+          return nubiEmpty(
+            'No lectures here yet. Upload '
+                'a lecture from NUBi to get started.',
+          );
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.all(14),
+          itemCount: docs.length,
+          itemBuilder: (context, index) =>
+              _SourceCard(doc: docs[index]),
+        );
+      },
+    );
+  }
+}
+
+// ===========================================
+// SAVED LECTURE CARD
+// ===========================================
+
+class _SourceCard extends StatelessWidget {
+  const _SourceCard({required this.doc});
+
+  final QueryDocumentSnapshot<Map<String, dynamic>> doc;
 
   Future<void> _delete(
       BuildContext context,
@@ -216,114 +370,57 @@ class _SourcesTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      stream: NubiService.sources
-          .orderBy('createdAt', descending: true)
-          .limit(50)
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          return nubiEmpty(
-            'Unable to read your saved lectures.',
-          );
-        }
+    final data = doc.data();
 
-        if (!snapshot.hasData) {
-          return const Center(
-            child: CircularProgressIndicator(),
-          );
-        }
+    final completed =
+        (data['completedSections'] as List?)
+            ?.length ?? 0;
+    final total =
+        (data['totalSections'] as num?)?.toInt()
+            ?? 0;
 
-        final docs = snapshot.data!.docs.where((doc) {
-          final data = doc.data();
-
-          if (data['status'] != 'ready') {
-            return false;
-          }
-
-          final total = data['totalSections'] ?? 0;
-          final completed =
-              (data['completedSections'] as List?)
-                  ?.length ?? 0;
-
-          if (unfinishedOnly) {
-            return completed < total;
-          }
-
-          if (completedOnly) {
-            return total > 0 && completed >= total;
-          }
-
-          return true;
-        }).toList();
-
-        if (docs.isEmpty) {
-          return nubiEmpty(
-            'No lectures here yet. Upload '
-                'a lecture from NUBi to get started.',
-          );
-        }
-
-        return ListView.builder(
-          padding: const EdgeInsets.all(14),
-          itemCount: docs.length,
-          itemBuilder: (context, index) {
-            final doc = docs[index];
-            final data = doc.data();
-
-            final completed =
-                (data['completedSections'] as List?)
-                    ?.length ?? 0;
-            final total =
-                (data['totalSections'] as num?)?.toInt()
-                    ?? 0;
-
-            return Card(
-              child: ListTile(
-                leading: const Icon(
-                  Icons.menu_book_rounded,
-                  color: nubiBlue,
-                ),
-                title: Text(
-                  (data['title'] ?? 'Lecture').toString(),
-                ),
-                subtitle: Text(
-                  '$completed/$total sections completed',
-                ),
-                onTap: () => nubiOpen(
-                  context,
-                  NubiTutorScreen(sourceId: doc.id),
-                ),
-                trailing: PopupMenuButton<String>(
-                  onSelected: (action) {
-                    if (action == 'quiz') {
-                      _generateQuiz(context, doc.id);
-                    } else if (action == 'cards') {
-                      _generateCards(context, doc.id);
-                    } else if (action == 'delete') {
-                      _delete(context, doc.id);
-                    }
-                  },
-                  itemBuilder: (_) => const [
-                    PopupMenuItem(
-                      value: 'quiz',
-                      child: Text('Generate MCQs'),
-                    ),
-                    PopupMenuItem(
-                      value: 'cards',
-                      child: Text('Generate Flashcards'),
-                    ),
-                    PopupMenuItem(
-                      value: 'delete',
-                      child: Text('Delete Lecture'),
-                    ),
-                  ],
-                ),
-              ),
-            );
+    return Card(
+      child: ListTile(
+        leading: const Icon(
+          Icons.menu_book_rounded,
+          color: nubiBlue,
+        ),
+        title: Text(
+          (data['title'] ?? 'Lecture').toString(),
+        ),
+        subtitle: Text(
+          '$completed/$total sections completed',
+        ),
+        onTap: () => nubiOpen(
+          context,
+          NubiTutorScreen(sourceId: doc.id),
+        ),
+        trailing: PopupMenuButton<String>(
+          onSelected: (action) {
+            if (action == 'quiz') {
+              _generateQuiz(context, doc.id);
+            } else if (action == 'cards') {
+              _generateCards(context, doc.id);
+            } else if (action == 'delete') {
+              _delete(context, doc.id);
+            }
           },
-        );
-      },
+          itemBuilder: (_) => const [
+            PopupMenuItem(
+              value: 'quiz',
+              child: Text('Generate MCQs'),
+            ),
+            PopupMenuItem(
+              value: 'cards',
+              child: Text('Generate Flashcards'),
+            ),
+            PopupMenuItem(
+              value: 'delete',
+              child: Text('Delete Lecture'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -356,35 +453,50 @@ class _SessionsTab extends StatelessWidget {
         }
 
         return ListView(
-          children: docs.map((doc) {
-            final data = doc.data();
-
-            final sourceId =
-            (data['sourceId'] ?? '').toString();
-
-            return ListTile(
-              leading: const Icon(Icons.smart_toy_outlined),
-              title: Text(
-                (data['title'] ?? 'NUBi Session')
-                    .toString(),
-              ),
-              subtitle: Text(
-                (data['lastAnswer'] ?? '').toString(),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              onTap: () => nubiOpen(
-                context,
-                NubiTutorScreen(
-                  sourceId: sourceId.isEmpty
-                      ? null : sourceId,
-                  existingSessionId: doc.id,
-                ),
-              ),
-            );
-          }).toList(),
+          children: docs
+              .map((doc) => _SessionTile(doc: doc))
+              .toList(),
         );
       },
+    );
+  }
+}
+
+// ===========================================
+// SAVED AI SESSION TILE
+// ===========================================
+
+class _SessionTile extends StatelessWidget {
+  const _SessionTile({required this.doc});
+
+  final QueryDocumentSnapshot<Map<String, dynamic>> doc;
+
+  @override
+  Widget build(BuildContext context) {
+    final data = doc.data();
+
+    final sourceId =
+    (data['sourceId'] ?? '').toString();
+
+    return ListTile(
+      leading: const Icon(Icons.smart_toy_outlined),
+      title: Text(
+        (data['title'] ?? 'NUBi Session')
+            .toString(),
+      ),
+      subtitle: Text(
+        (data['lastAnswer'] ?? '').toString(),
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+      ),
+      onTap: () => nubiOpen(
+        context,
+        NubiTutorScreen(
+          sourceId: sourceId.isEmpty
+              ? null : sourceId,
+          existingSessionId: doc.id,
+        ),
+      ),
     );
   }
 }
