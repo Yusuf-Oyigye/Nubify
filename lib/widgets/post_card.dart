@@ -1254,7 +1254,7 @@ class _PostCardState extends State<PostCard> {
           content: TextField(
             autofocus: true,
             maxLines: 5,
-            maxLength: 5000,
+            maxLength: 10000,
             keyboardType: TextInputType.multiline,
             onChanged: (String value) {
               text = value;
@@ -1361,7 +1361,7 @@ class _PostCardState extends State<PostCard> {
             content: TextFormField(
               initialValue: widget.post.repostText,
               maxLines: 6,
-              maxLength: 5000,
+              maxLength: 10000,
               autofocus: true,
               keyboardType: TextInputType.multiline,
               onChanged: (String value) {
@@ -1438,7 +1438,7 @@ class _PostCardState extends State<PostCard> {
           content: TextFormField(
             initialValue: _caption,
             maxLines: 6,
-            maxLength: 5000,
+            maxLength: 10000,
             autofocus: true,
             keyboardType: TextInputType.multiline,
             onChanged: (String value) {
@@ -2630,14 +2630,20 @@ class _PostCardState extends State<PostCard> {
 
             final bool highlighted = _pollClosed ? winner : selected;
 
+            // Before voting, a tap or double tap on an option votes for it.
+            // After voting the choice is locked, so a double tap falls
+            // through to the post and likes it with the big heart.
+            final VoidCallback? vote = _pollClosed || _hasVoted || _isVoting
+                ? null
+                : () {
+                    _votePoll(index);
+                  };
+
             return Padding(
               padding: const EdgeInsets.only(bottom: 9),
               child: InkWell(
-                onTap: _pollClosed || _hasVoted || _isVoting
-                    ? null
-                    : () {
-                        _votePoll(index);
-                      },
+                onTap: vote,
+                onDoubleTap: vote,
                 borderRadius: BorderRadius.circular(12),
                 child: Container(
                   height: 56,
@@ -2890,6 +2896,10 @@ class _PostCardState extends State<PostCard> {
         text: _caption,
 
         style: const TextStyle(fontSize: 16, height: 1.4),
+
+        // Long posts show a short preview in the feed. The post's own
+        // page (comments screen) always shows the full text.
+        collapsedMaxLines: widget.inCommentsScreen ? null : 5,
       ),
     );
   }
@@ -3297,13 +3307,21 @@ class _PostCardState extends State<PostCard> {
                 if (quote && quoteText.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
-                    child: Text(
-                      quoteText,
+                    child: UniversalLinkText(
+                      text: quoteText,
                       style: const TextStyle(
                         fontSize: 16,
                         height: 1.4,
                         fontWeight: FontWeight.w500,
                       ),
+
+                      // The quoted post is embedded below, so skip the
+                      // separate link preview card.
+                      showPreview: false,
+
+                      // Same as normal posts: short preview in the feed,
+                      // full text on the post's own page.
+                      collapsedMaxLines: widget.inCommentsScreen ? null : 5,
                     ),
                   ),
 
@@ -3885,12 +3903,17 @@ class _PostCardState extends State<PostCard> {
     final bool highlighted = pollClosed ? winner : selected;
     final bool showResults = pollClosed || hasVoted;
 
+    // Same rule as the main poll: double tap votes until a vote is cast,
+    // then it likes the post instead.
+    final VoidCallback? vote = pollClosed || hasVoted || _isVoting
+        ? null
+        : () {
+            _voteEmbeddedPoll(postId: postId, optionIndex: optionIndex);
+          };
+
     return InkWell(
-      onTap: pollClosed || hasVoted || _isVoting
-          ? null
-          : () {
-              _voteEmbeddedPoll(postId: postId, optionIndex: optionIndex);
-            },
+      onTap: vote,
+      onDoubleTap: vote,
       borderRadius: BorderRadius.circular(10),
       child: Container(
         height: 46,
@@ -4356,9 +4379,9 @@ class _PostCardState extends State<PostCard> {
       onTap: _openCurrentPost,
 
       //===================================================
-      // DOUBLE TAP MEDIA -> LIKE
+      // DOUBLE TAP MEDIA / POLL -> LIKE
       //===================================================
-      onDoubleTap: hasMedia ? _doubleTapLike : null,
+      onDoubleTap: hasMedia || _hasPoll ? _doubleTapLike : null,
 
       child: Container(
         width: double.infinity,

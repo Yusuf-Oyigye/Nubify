@@ -1465,7 +1465,7 @@ class _CreatePostScreenState
                       _captionController,
                       maxLines: null,
                       minLines: 8,
-                      maxLength: 5000,
+                      maxLength: 10000,
                       textAlignVertical:
                       TextAlignVertical
                           .top,

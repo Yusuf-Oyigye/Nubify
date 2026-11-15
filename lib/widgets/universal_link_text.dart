@@ -25,6 +25,7 @@ class UniversalLinkText extends StatefulWidget {
     this.overflow,
     this.leadingSpan,
     this.trailingSpan,
+    this.collapsedMaxLines,
   });
 
   final String text;
@@ -39,6 +40,10 @@ class UniversalLinkText extends StatefulWidget {
   final InlineSpan? leadingSpan;
   final InlineSpan? trailingSpan;
 
+  // When set, text longer than this many lines is cut off with a
+  // "See more" button that reveals the rest.
+  final int? collapsedMaxLines;
+
   @override
   State<UniversalLinkText> createState() => _UniversalLinkTextState();
 }
@@ -51,6 +56,8 @@ class _UniversalLinkTextState extends State<UniversalLinkText> {
   Future<LinkPreview>? _previewFuture;
 
   String? _url;
+
+  bool _expanded = false;
 
   static final RegExp _pattern = RegExp(
     r'((?:https?:\/\/|www\.)[^\s]+)',
@@ -75,6 +82,10 @@ class _UniversalLinkTextState extends State<UniversalLinkText> {
     if (oldWidget.text != widget.text ||
         oldWidget.showPreview != widget.showPreview) {
       _prepare();
+    }
+
+    if (oldWidget.text != widget.text) {
+      _expanded = false;
     }
   }
 
@@ -177,20 +188,26 @@ class _UniversalLinkTextState extends State<UniversalLinkText> {
         widget.trailingSpan == null &&
         onlyUrl != null &&
         LinkDetector.cleanUrl(widget.text.trim()) == onlyUrl;
-    final Widget textWidget = Text.rich(
-      TextSpan(
-        style: widget.style,
-        children: <InlineSpan>[
-          if (widget.leadingSpan != null) widget.leadingSpan!,
-          ..._spans(),
-          if (widget.trailingSpan != null) widget.trailingSpan!,
-        ],
-      ),
-
-      maxLines: widget.maxLines,
-
-      overflow: widget.overflow ?? TextOverflow.clip,
+    final TextSpan span = TextSpan(
+      style: widget.style,
+      children: <InlineSpan>[
+        if (widget.leadingSpan != null) widget.leadingSpan!,
+        ..._spans(),
+        if (widget.trailingSpan != null) widget.trailingSpan!,
+      ],
     );
+
+    final int? collapsedMaxLines = widget.collapsedMaxLines;
+
+    final Widget textWidget = collapsedMaxLines != null && !_expanded
+        ? _buildCollapsibleText(span, collapsedMaxLines)
+        : Text.rich(
+            span,
+
+            maxLines: widget.maxLines,
+
+            overflow: widget.overflow ?? TextOverflow.clip,
+          );
 
     if (_previewFuture == null) {
       return textWidget;
@@ -222,6 +239,70 @@ class _UniversalLinkTextState extends State<UniversalLinkText> {
           },
         ),
       ],
+    );
+  }
+
+  //===================================================
+  // COLLAPSIBLE TEXT ("SEE MORE")
+  //===================================================
+
+  Widget _buildCollapsibleText(TextSpan span, int maxLines) {
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        // Measure with the same base style Text.rich applies, so the
+        // button only appears when the text really is cut off.
+        final TextPainter painter = TextPainter(
+          text: TextSpan(
+            style: DefaultTextStyle.of(context).style,
+            children: <InlineSpan>[span],
+          ),
+          maxLines: maxLines,
+          textDirection: Directionality.of(context),
+          textScaler: MediaQuery.textScalerOf(context),
+        )..layout(maxWidth: constraints.maxWidth);
+
+        final bool isCutOff = painter.didExceedMaxLines;
+
+        painter.dispose();
+
+        if (!isCutOff) {
+          return Text.rich(span);
+        }
+
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text.rich(
+              span,
+
+              maxLines: maxLines,
+
+              overflow: TextOverflow.ellipsis,
+            ),
+
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () {
+                setState(() {
+                  _expanded = true;
+                });
+              },
+              child: Padding(
+                padding: const EdgeInsets.only(top: 4, bottom: 2),
+                child: Text(
+                  'See more',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
