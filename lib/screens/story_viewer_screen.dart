@@ -4082,6 +4082,8 @@ class _StoryPollViewState extends State<_StoryPollView> {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme scheme = theme.colorScheme;
     final StoryPoll? poll = widget.story.poll;
 
     if (poll == null) {
@@ -4123,18 +4125,14 @@ class _StoryPollViewState extends State<_StoryPollView> {
         width: double.infinity,
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: <Color>[Color(0xE6192630), Color(0xE60C1218)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          color: scheme.surface.withValues(alpha: 0.96),
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: Colors.white24),
-          boxShadow: const <BoxShadow>[
+          border: Border.all(color: scheme.outlineVariant),
+          boxShadow: <BoxShadow>[
             BoxShadow(
-              color: Colors.black38,
+              color: Colors.black.withValues(alpha: 0.22),
               blurRadius: 24,
-              offset: Offset(0, 12),
+              offset: const Offset(0, 12),
             ),
           ],
         ),
@@ -4144,8 +4142,8 @@ class _StoryPollViewState extends State<_StoryPollView> {
             Text(
               poll.question,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: scheme.onSurface,
                 fontSize: 21,
                 fontWeight: FontWeight.bold,
               ),
@@ -4170,7 +4168,7 @@ class _StoryPollViewState extends State<_StoryPollView> {
               Text(
                 closed ? 'Final result' : 'Vote locked · cannot be changed',
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white54, fontSize: 11),
+                style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 11),
               ),
           ],
         ),
@@ -4186,11 +4184,14 @@ class _StoryPollViewState extends State<_StoryPollView> {
     required bool selected,
     required bool winner,
   }) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme scheme = theme.colorScheme;
     final StoryPollOption option = poll.options[index];
 
     final double percentage = poll.totalVotes <= 0
         ? 0
         : option.votes / poll.totalVotes;
+    final bool showResults = closed || voted;
 
     return GestureDetector(
       onTap: voted || closed || _voting
@@ -4219,25 +4220,30 @@ class _StoryPollViewState extends State<_StoryPollView> {
         height: 52,
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
-          color: const Color(0xFF171F27),
+          color: scheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(13),
           border: Border.all(
             color: winner || (!closed && selected)
                 ? const Color(0xFF29B6F6)
-                : Colors.white24,
+                : scheme.outlineVariant,
             width: winner || (!closed && selected) ? 1.6 : 1,
           ),
         ),
         child: Stack(
           children: <Widget>[
-            if (closed)
-              FractionallySizedBox(
-                alignment: Alignment.centerLeft,
-                widthFactor: percentage.clamp(0.0, 1.0).toDouble(),
-                child: Container(
-                  color: const Color(
-                    0xFF29B6F6,
-                  ).withValues(alpha: winner ? 0.88 : 0.58),
+            if (showResults)
+              Positioned.fill(
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: FractionallySizedBox(
+                    widthFactor: percentage.clamp(0.0, 1.0).toDouble(),
+                    heightFactor: 1,
+                    child: ColoredBox(
+                      color: const Color(
+                        0xFF29B6F6,
+                      ).withValues(alpha: winner ? 0.92 : 0.64),
+                    ),
+                  ),
                 ),
               ),
 
@@ -4257,8 +4263,8 @@ class _StoryPollViewState extends State<_StoryPollView> {
                   Expanded(
                     child: Text(
                       option.text,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: scheme.onSurface,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -4286,11 +4292,11 @@ class _StoryPollViewState extends State<_StoryPollView> {
                       ),
                     ),
 
-                  if (closed)
+                  if (showResults)
                     Text(
                       '${(percentage * 100).round()}%',
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: scheme.onSurface,
                         fontWeight: FontWeight.bold,
                       ),
                     ),

@@ -9,6 +9,7 @@ import '../models/marketplace_listing.dart';
 import '../services/chat_sevice.dart';
 import '../services/marketplace_service.dart';
 import '../utils/marketplace_theme.dart';
+import '../widgets/marketplace_brand_icon.dart';
 import '../widgets/marketplace_listing_card.dart';
 import 'conversation_screen.dart';
 import 'marketplace_listing_details_screen.dart';
@@ -323,9 +324,7 @@ class _MarketplaceSellerStoreScreenState
         SliverFillRemaining(
           hasScrollBody: false,
           child: _StoreState(
-            icon: _loadError == null
-                ? Icons.storefront_outlined
-                : Icons.cloud_off_rounded,
+            icon: _loadError == null ? null : Icons.cloud_off_rounded,
             title: _selectedStatus == 'available'
                 ? 'No available listings'
                 : 'No sold listing yet',
@@ -687,7 +686,7 @@ class _StoreState extends StatelessWidget {
     this.onAction,
   });
 
-  final IconData icon;
+  final IconData? icon;
   final String title;
   final String message;
   final String? actionLabel;
@@ -701,7 +700,14 @@ class _StoreState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            Icon(icon, size: 58, color: MarketplaceTheme.sky),
+            if (icon == null)
+              const MarketplaceBrandIcon(
+                size: 58,
+                tintColor: MarketplaceTheme.sky,
+                fallbackColor: MarketplaceTheme.sky,
+              )
+            else
+              Icon(icon, size: 58, color: MarketplaceTheme.sky),
             const SizedBox(height: 12),
             Text(
               title,

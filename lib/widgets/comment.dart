@@ -89,7 +89,8 @@ class CommentWidget extends StatelessWidget {
                         '@$username',
                         style: TextStyle(
                           color: Colors.grey.shade600,
-                          fontSize: 12,
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -311,7 +312,8 @@ class ReplyWidget extends StatelessWidget {
                           '@$username',
                           style: TextStyle(
                             color: Colors.grey.shade600,
-                            fontSize: 11,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
                           ),
                           overflow:
                           TextOverflow.ellipsis,

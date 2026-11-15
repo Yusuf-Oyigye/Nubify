@@ -8,12 +8,14 @@ import '../models/post.dart';
 import '../resources/auth_method.dart';
 import '../services/profile_activity_service.dart';
 import '../services/profile_service.dart';
+import '../utils/faculty_catalog.dart';
 import '../widgets/post_card.dart';
 import 'comment_screen.dart';
 import 'conversation_screen.dart';
 import 'edit_profile_screen.dart';
 import 'hidden_posts_screen.dart';
 import 'story_archive_screen.dart';
+import 'user_connections_screen.dart';
 import '../widgets/report_user_dialog.dart';
 import '../widgets/universal_link_text.dart';
 import '../widgets/nubify_profile_grid.dart';
@@ -904,6 +906,8 @@ class _ProfileScreenState extends State<ProfileScreen>
 
     final String faculty = (data['faculty'] ?? '').toString().trim();
 
+    final NubifyFaculty facultyStyle = NubifyFacultyCatalog.displayFor(faculty);
+
     final String hobbies = (data['hobbies'] ?? '').toString().trim();
 
     final String favoriteQuote = (data['favoriteQuote'] ?? '')
@@ -981,12 +985,20 @@ class _ProfileScreenState extends State<ProfileScreen>
                       value: _compactNumber(following.length),
 
                       label: 'Following',
+
+                      onTap: () {
+                        _openConnections(initialIndex: 1);
+                      },
                     ),
 
                     _ProfileStat(
                       value: _compactNumber(followers.length),
 
                       label: 'Followers',
+
+                      onTap: () {
+                        _openConnections(initialIndex: 0);
+                      },
                     ),
 
                     StreamBuilder<int>(
@@ -1021,7 +1033,11 @@ class _ProfileScreenState extends State<ProfileScreen>
             Text(
               '@$username',
 
-              style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
+              style: TextStyle(
+                color: Colors.grey.shade500,
+                fontSize: 14.5,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ],
 
@@ -1035,7 +1051,11 @@ class _ProfileScreenState extends State<ProfileScreen>
 
               children: <Widget>[
                 if (faculty.isNotEmpty)
-                  _ProfileInfoChip(icon: Icons.school_outlined, text: faculty),
+                  _ProfileInfoChip(
+                    icon: facultyStyle.icon,
+                    text: faculty,
+                    color: facultyStyle.color,
+                  ),
 
                 if (hobbies.isNotEmpty)
                   _ProfileInfoChip(
@@ -1050,7 +1070,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           //===================================================
           // FAVORITE QUOTE
           //
-          // WHITE + BOLD
+          // THEME-AWARE + BOLD
           // NO UNDERLINE
           //
           // ONLY THE QUOTE ICONS ARE USED.
@@ -1095,16 +1115,16 @@ class _ProfileScreenState extends State<ProfileScreen>
                 ),
               ),
 
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
 
                 fontStyle: FontStyle.italic,
 
                 fontWeight: FontWeight.bold,
 
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.onSurface,
 
-                height: 4,
+                height: 1.45,
 
                 decoration: TextDecoration.none,
               ),
@@ -1187,6 +1207,18 @@ class _ProfileScreenState extends State<ProfileScreen>
               ],
             ),
         ],
+      ),
+    );
+  }
+
+  void _openConnections({required int initialIndex}) {
+    Navigator.push<void>(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) => UserConnectionsScreen(
+          userId: _profileUid,
+          initialIndex: initialIndex,
+        ),
       ),
     );
   }
@@ -1940,32 +1972,43 @@ class _ProfileTab extends StatelessWidget {
 //===================================================
 
 class _ProfileStat extends StatelessWidget {
-  const _ProfileStat({required this.value, required this.label});
+  const _ProfileStat({required this.value, required this.label, this.onTap});
 
   final String value;
 
   final String label;
 
+  final VoidCallback? onTap;
+
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-
-      children: <Widget>[
-        Text(
-          value,
-
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+    return Semantics(
+      button: onTap != null,
+      label: '$value $label',
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                label,
+                style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
+              ),
+            ],
+          ),
         ),
-
-        const SizedBox(height: 2),
-
-        Text(
-          label,
-
-          style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
-        ),
-      ],
+      ),
     );
   }
 }
@@ -1975,11 +2018,17 @@ class _ProfileStat extends StatelessWidget {
 //===================================================
 
 class _ProfileInfoChip extends StatelessWidget {
-  const _ProfileInfoChip({required this.icon, required this.text});
+  const _ProfileInfoChip({
+    required this.icon,
+    required this.text,
+    this.color = _blue,
+  });
 
   final IconData icon;
 
   final String text;
+
+  final Color color;
 
   static const Color _blue = Color(0xFF29B6F6);
 
@@ -1989,18 +2038,18 @@ class _ProfileInfoChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
 
       decoration: BoxDecoration(
-        color: _blue.withValues(alpha: 0.09),
+        color: color.withValues(alpha: 0.09),
 
         borderRadius: BorderRadius.circular(17),
 
-        border: Border.all(color: _blue.withValues(alpha: 0.30)),
+        border: Border.all(color: color.withValues(alpha: 0.30)),
       ),
 
       child: Row(
         mainAxisSize: MainAxisSize.min,
 
         children: <Widget>[
-          Icon(icon, size: 16, color: _blue),
+          Icon(icon, size: 16, color: color),
 
           const SizedBox(width: 5),
 

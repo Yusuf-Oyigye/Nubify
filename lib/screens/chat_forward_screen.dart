@@ -517,15 +517,18 @@ class _ChatForwardScreenState extends State<ChatForwardScreen> {
   @override
   Widget build(BuildContext context) {
     final int selectedCount = _selectedUsers.length + _selectedGroups.length;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme scheme = theme.colorScheme;
 
     return DefaultTabController(
       length: 2,
 
       child: Scaffold(
-        backgroundColor: const Color(0xFF0B1116),
+        backgroundColor: theme.scaffoldBackgroundColor,
 
         appBar: AppBar(
-          backgroundColor: const Color(0xFF0B1116),
+          backgroundColor: scheme.surface,
+          foregroundColor: scheme.onSurface,
 
           title: const Text('Send to chat'),
 
@@ -557,7 +560,7 @@ class _ChatForwardScreenState extends State<ChatForwardScreen> {
 
                   filled: true,
 
-                  fillColor: Colors.white10,
+                  fillColor: scheme.surfaceContainerHighest,
 
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(24),

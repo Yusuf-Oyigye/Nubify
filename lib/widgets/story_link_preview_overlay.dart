@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../models/link_preview.dart';
@@ -71,7 +73,7 @@ class _StoryLinkPreviewOverlayState extends State<StoryLinkPreviewOverlay> {
   // CARD
   //===================================================
 
-  Widget _card(LinkPreview preview) {
+  Widget _card(LinkPreview preview, double availableWidth) {
     if (widget.style == 'compact') {
       return Container(
         constraints: const BoxConstraints(maxWidth: 230),
@@ -116,15 +118,27 @@ class _StoryLinkPreviewOverlayState extends State<StoryLinkPreviewOverlay> {
       );
     }
 
+    final bool marketplace =
+        preview.internalType.toLowerCase() == 'marketplace' ||
+        preview.contentType.toLowerCase() == 'marketplace' ||
+        preview.contentType.toLowerCase() == 'product';
+    final double preferredWidth = marketplace
+        ? math.min(390, availableWidth * 0.94)
+        : math.min(widget.style == 'large' ? 320 : 270, availableWidth * 0.90);
+
     return SizedBox(
-      width: widget.style == 'large' ? 320 : 270,
+      width: preferredWidth,
 
       child: UniversalLinkPreviewCard(
         preview: preview,
 
-        compact: widget.style != 'large',
+        compact: marketplace ? false : widget.style != 'large',
 
         interactive: false,
+
+        heroAspectRatio: marketplace ? 1.28 : null,
+
+        showOriginalUrl: !marketplace,
       ),
     );
   }
@@ -195,7 +209,7 @@ class _StoryLinkPreviewOverlayState extends State<StoryLinkPreviewOverlay> {
                       child: Transform.scale(
                         scale: widget.scale,
 
-                        child: _card(snapshot.data!),
+                        child: _card(snapshot.data!, constraints.maxWidth),
                       ),
                     ),
                   ),

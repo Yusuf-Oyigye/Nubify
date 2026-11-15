@@ -21,6 +21,7 @@ import '../services/story_service.dart';
 import '../widgets/chat_composer.dart';
 import '../widgets/chat_date_separator.dart';
 import '../widgets/chat_message_bubble.dart';
+import '../widgets/marketplace_brand_icon.dart';
 import 'chat_catalogue_screen.dart';
 import 'chat_media_screen.dart';
 import 'profile_screen.dart';
@@ -32,6 +33,42 @@ import '../widgets/full_photo_viewer.dart';
 import 'comment_screen.dart';
 import '../utils/nubify_call_display.dart';
 import '../widgets/chat_call_event_bubble.dart';
+
+class _ConversationPalette {
+  const _ConversationPalette({
+    required this.canvas,
+    required this.surface,
+    required this.field,
+    required this.text,
+    required this.muted,
+    required this.subtle,
+    required this.divider,
+  });
+
+  final Color canvas;
+  final Color surface;
+  final Color field;
+  final Color text;
+  final Color muted;
+  final Color subtle;
+  final Color divider;
+
+  factory _ConversationPalette.of(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme scheme = theme.colorScheme;
+    final bool dark = theme.brightness == Brightness.dark;
+
+    return _ConversationPalette(
+      canvas: theme.scaffoldBackgroundColor,
+      surface: scheme.surface,
+      field: dark ? const Color(0xFF1A2228) : scheme.surfaceContainerHighest,
+      text: scheme.onSurface,
+      muted: scheme.onSurfaceVariant,
+      subtle: scheme.onSurfaceVariant.withValues(alpha: 0.72),
+      divider: scheme.outlineVariant,
+    );
+  }
+}
 
 //===============================
 // CONVERSATION SCREEN
@@ -101,6 +138,12 @@ class _ConversationScreenState extends State<ConversationScreen> {
   Timer? _typingTimer;
 
   final bool _sending = false;
+
+  bool _readSyncScheduled = false;
+
+  bool _readSyncInFlight = false;
+
+  bool _readSyncAgain = false;
 
   bool _blocked = false;
 
@@ -205,6 +248,84 @@ class _ConversationScreenState extends State<ConversationScreen> {
         _chatService.markConversationRead(widget.otherUserId),
       ]);
     } catch (_) {}
+  }
+
+  //===============================
+  // KEEP VISIBLE MESSAGES READ
+  //===============================
+
+  void _scheduleReadStatusSync(QuerySnapshot<Map<String, dynamic>> snapshot) {
+    final String uid = _auth.currentUser?.uid ?? '';
+
+    if (!mounted || uid.isEmpty) {
+      return;
+    }
+
+    final bool hasUnreadIncoming = snapshot.docs.any((document) {
+      final Map<String, dynamic> data = document.data();
+      final String senderId = (data['senderId'] ?? data['senderUid'] ?? '')
+          .toString();
+
+      if (senderId.isEmpty || senderId == uid) {
+        return false;
+      }
+
+      final List<dynamic> readBy = data['readBy'] is List
+          ? data['readBy'] as List<dynamic>
+          : data['seenBy'] is List
+          ? data['seenBy'] as List<dynamic>
+          : const <dynamic>[];
+
+      return data['isRead'] != true &&
+          !readBy.map((item) => item.toString()).contains(uid);
+    });
+
+    if (!hasUnreadIncoming) {
+      return;
+    }
+
+    if (_readSyncInFlight) {
+      _readSyncAgain = true;
+      return;
+    }
+
+    if (_readSyncScheduled) {
+      return;
+    }
+
+    _readSyncScheduled = true;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _readSyncScheduled = false;
+
+      if (!mounted) {
+        return;
+      }
+
+      unawaited(_synchronizeReadStatus());
+    });
+  }
+
+  Future<void> _synchronizeReadStatus() async {
+    if (_readSyncInFlight) {
+      _readSyncAgain = true;
+      return;
+    }
+
+    _readSyncInFlight = true;
+
+    try {
+      await _chatService.markConversationRead(widget.otherUserId);
+    } catch (_) {
+      // A later Firestore snapshot or a reopened chat will retry safely.
+    } finally {
+      _readSyncInFlight = false;
+
+      if (_readSyncAgain && mounted) {
+        _readSyncAgain = false;
+        unawaited(_synchronizeReadStatus());
+      }
+    }
   }
   //===============================
   // CHECK BLOCKED
@@ -993,6 +1114,8 @@ class _ConversationScreenState extends State<ConversationScreen> {
   //===============================
 
   Widget _buildPresence() {
+    final _ConversationPalette palette = _ConversationPalette.of(context);
+
     return StreamBuilder<bool>(
       stream: _privacyService.mutualActivityStream(widget.otherUserId),
       builder: (BuildContext context, AsyncSnapshot<bool> privacySnapshot) {
@@ -1005,7 +1128,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
                 : 'Nubify',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(color: Colors.white54, fontSize: 11),
+            style: TextStyle(color: palette.muted, fontSize: 11),
           );
         }
 
@@ -1105,8 +1228,8 @@ class _ConversationScreenState extends State<ConversationScreen> {
                                     'last seen ${dayTime.format(context)}',
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      color: Colors.white54,
+                                    style: TextStyle(
+                                      color: palette.muted,
                                       fontSize: 10,
                                     ),
                                   );
@@ -1116,8 +1239,8 @@ class _ConversationScreenState extends State<ConversationScreen> {
                                   widget.otherUsername.trim().isNotEmpty
                                       ? '@${widget.otherUsername}'
                                       : 'offline',
-                                  style: const TextStyle(
-                                    color: Colors.white54,
+                                  style: TextStyle(
+                                    color: palette.muted,
                                     fontSize: 11,
                                   ),
                                 );
@@ -1156,14 +1279,8 @@ class _ConversationScreenState extends State<ConversationScreen> {
             return IconButton(
               tooltip: 'Seller Marketplace listings',
               onPressed: _openCatalogue,
-              icon: CachedNetworkImage(
-                imageUrl:
-                    'https://img.icons8.com/?size=100&id=fhk2K3BpkLYx&format=png&color=000000',
-                width: 25,
-                height: 25,
-                fit: BoxFit.contain,
-                errorWidget: (_, _, _) =>
-                    const Icon(Icons.storefront_outlined, size: 23),
+              icon: const MarketplaceBrandIcon(
+                size: 25,
               ),
             );
           },
@@ -1193,8 +1310,11 @@ class _ConversationScreenState extends State<ConversationScreen> {
   //===============================
 
   PreferredSizeWidget _normalAppBar() {
+    final _ConversationPalette palette = _ConversationPalette.of(context);
+
     return AppBar(
-      backgroundColor: const Color(0xFF0B1116),
+      backgroundColor: palette.surface,
+      foregroundColor: palette.text,
       surfaceTintColor: Colors.transparent,
       titleSpacing: 0,
       title: InkWell(
@@ -1210,7 +1330,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
                 child: CircleAvatar(
                   radius: 19,
 
-                  backgroundColor: Colors.white10,
+                  backgroundColor: palette.field,
 
                   backgroundImage: widget.otherPhotoUrl.trim().isNotEmpty
                       ? CachedNetworkImageProvider(widget.otherPhotoUrl)
@@ -1233,7 +1353,8 @@ class _ConversationScreenState extends State<ConversationScreen> {
                       widget.otherName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
+                        color: palette.text,
                         fontSize: 15,
                         fontWeight: FontWeight.w800,
                       ),
@@ -1327,8 +1448,11 @@ class _ConversationScreenState extends State<ConversationScreen> {
   //===============================
 
   PreferredSizeWidget _searchAppBar() {
+    final _ConversationPalette palette = _ConversationPalette.of(context);
+
     return AppBar(
-      backgroundColor: const Color(0xFF0B1116),
+      backgroundColor: palette.surface,
+      foregroundColor: palette.text,
       leading: IconButton(
         onPressed: () {
           setState(() {
@@ -1365,11 +1489,13 @@ class _ConversationScreenState extends State<ConversationScreen> {
         ? 'You'
         : widget.otherName;
 
+    final _ConversationPalette palette = _ConversationPalette.of(context);
+
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 8, 7, 8),
-      decoration: const BoxDecoration(
-        color: Color(0xFF151E24),
-        border: Border(top: BorderSide(color: Colors.white10)),
+      decoration: BoxDecoration(
+        color: palette.surface,
+        border: Border(top: BorderSide(color: palette.divider)),
       ),
       child: Row(
         children: <Widget>[
@@ -1400,7 +1526,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
                   message.previewText,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: Colors.white60, fontSize: 11),
+                  style: TextStyle(color: palette.muted, fontSize: 11),
                 ),
               ],
             ),
@@ -1408,7 +1534,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
 
           IconButton(
             onPressed: _clearReply,
-            icon: const Icon(Icons.close_rounded, color: Colors.white54),
+            icon: Icon(Icons.close_rounded, color: palette.muted),
           ),
         ],
       ),
@@ -1420,10 +1546,12 @@ class _ConversationScreenState extends State<ConversationScreen> {
   //===============================
 
   Widget _blockedBar() {
+    final _ConversationPalette palette = _ConversationPalette.of(context);
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
-      color: const Color(0xFF151D23),
+      color: palette.surface,
       child: Row(
         children: <Widget>[
           const Icon(Icons.block_rounded, color: Colors.redAccent),
@@ -1433,7 +1561,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
           Expanded(
             child: Text(
               '${widget.otherName} is blocked.',
-              style: const TextStyle(color: Colors.white70),
+              style: TextStyle(color: palette.text),
             ),
           ),
 
@@ -1761,10 +1889,18 @@ class _ConversationScreenState extends State<ConversationScreen> {
 
   Widget _messageList(bool canShowReadReceipt) {
     final String currentUid = _auth.currentUser?.uid ?? '';
+    final _ConversationPalette palette = _ConversationPalette.of(context);
 
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
       stream: _messagesStream,
       builder: (context, messageSnapshot) {
+        final QuerySnapshot<Map<String, dynamic>>? messageData =
+            messageSnapshot.data;
+
+        if (messageData != null) {
+          _scheduleReadStatusSync(messageData);
+        }
+
         //===================================================
         // OUTGOING CALL STREAM
         //===================================================
@@ -1908,7 +2044,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
                       _search.isNotEmpty
                           ? 'No matching messages.'
                           : 'Start the conversation.',
-                      style: const TextStyle(color: Colors.white54),
+                      style: TextStyle(color: palette.muted),
                     ),
                   );
                 }
@@ -2027,8 +2163,10 @@ class _ConversationScreenState extends State<ConversationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final _ConversationPalette palette = _ConversationPalette.of(context);
+
     return Scaffold(
-      backgroundColor: const Color(0xFF0B1116),
+      backgroundColor: palette.canvas,
       appBar: _searching ? _searchAppBar() : _normalAppBar(),
       body: SafeArea(
         child: Column(

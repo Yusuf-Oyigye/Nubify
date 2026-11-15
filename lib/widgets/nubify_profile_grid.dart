@@ -842,7 +842,11 @@ class _ContentTile extends StatelessWidget {
         ? 'Loading post...'
         : 'Post';
 
-    final int count = isVideo ? content.viewCount : (content?.likeCount ?? 0);
+    final Post? metricsPost = content ?? wrapper;
+
+    final int likeCount = metricsPost?.likeCount ?? 0;
+
+    final int repostCount = metricsPost?.repostCount ?? 0;
 
     final Widget fallback = _RealTextCover(
       text: text,
@@ -894,7 +898,7 @@ class _ContentTile extends StatelessWidget {
               Positioned(
                 left: 5,
                 right: 5,
-                bottom: 29,
+                bottom: 46,
                 child: Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 6,
@@ -978,34 +982,88 @@ class _ContentTile extends StatelessWidget {
               ),
 
             //===================================================
-            // VIEW / LIKE COUNT
+            // ALWAYS-READABLE ENGAGEMENT STRIP
+            //
+            // Keep the words and numbers above the thumbnail instead of
+            // relying on shadows over unpredictable photo/video colours.
             //===================================================
             if (!comment && content != null)
               Positioned(
-                left: 7,
-                bottom: 8,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    Icon(
-                      isVideo
-                          ? Icons.play_arrow_rounded
-                          : Icons.favorite_border_rounded,
-                      size: 16,
-                      color: Colors.white,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                height: 40,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF07111C).withValues(alpha: 0.94),
+                    border: const Border(
+                      top: BorderSide(color: Color(0x3DFFFFFF)),
                     ),
-                    const SizedBox(width: 3),
-                    Text(
-                      _compact(count),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
+                  ),
+                  child: Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: _GridEngagementMetric(
+                          icon: Icons.favorite_rounded,
+                          value: _compact(likeCount),
+                          label: likeCount == 1 ? 'Like' : 'Likes',
+                          color: const Color(0xFFFF6B81),
+                        ),
                       ),
-                    ),
-                  ],
+                      Container(width: 1, height: 18, color: Colors.white24),
+                      Expanded(
+                        child: _GridEngagementMetric(
+                          icon: Icons.repeat_rounded,
+                          value: _compact(repostCount),
+                          label: repostCount == 1 ? 'Repost' : 'Reposts',
+                          color: const Color(0xFF36C5F0),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _GridEngagementMetric extends StatelessWidget {
+  const _GridEngagementMetric({
+    required this.icon,
+    required this.value,
+    required this.label,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String value;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Icon(icon, size: 13, color: color),
+            const SizedBox(width: 3),
+            Text(
+              '$value $label',
+              maxLines: 1,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 10.5,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.05,
+              ),
+            ),
           ],
         ),
       ),

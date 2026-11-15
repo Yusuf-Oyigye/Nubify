@@ -10,6 +10,7 @@ import '../services/notification_service.dart';
 import '../utils/marketplace_constants.dart';
 import '../utils/marketplace_motion.dart';
 import '../utils/marketplace_theme.dart';
+import '../widgets/marketplace_brand_icon.dart';
 import '../widgets/marketplace_listing_card.dart';
 import 'campus_sellers_screen.dart';
 import 'chat_screen.dart';
@@ -452,7 +453,6 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
             else if (_freshListings.isEmpty)
               const SliverToBoxAdapter(
                 child: _MarketplaceState(
-                  icon: Icons.storefront_outlined,
                   title: 'No fresh listings yet',
                   message: 'New Marketplace items will appear here.',
                 ),
@@ -892,12 +892,10 @@ class _SectionHeading extends StatelessWidget {
 
 class _MarketplaceState extends StatelessWidget {
   const _MarketplaceState({
-    required this.icon,
     required this.title,
     required this.message,
   });
 
-  final IconData icon;
   final String title;
   final String message;
 
@@ -907,7 +905,11 @@ class _MarketplaceState extends StatelessWidget {
       padding: const EdgeInsets.all(36),
       child: Column(
         children: <Widget>[
-          Icon(icon, size: 55, color: MarketplaceTheme.sky),
+          const MarketplaceBrandIcon(
+            size: 55,
+            tintColor: MarketplaceTheme.sky,
+            fallbackColor: MarketplaceTheme.sky,
+          ),
           const SizedBox(height: 12),
           Text(
             title,

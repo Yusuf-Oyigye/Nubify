@@ -7,6 +7,7 @@ import '../services/marketplace_service.dart';
 import '../utils/marketplace_constants.dart';
 import '../utils/marketplace_motion.dart';
 import '../utils/marketplace_theme.dart';
+import 'marketplace_brand_icon.dart';
 
 class MarketplaceListingCard extends StatefulWidget {
   const MarketplaceListingCard({
@@ -264,10 +265,10 @@ class _CoverImage extends StatelessWidget {
     if (url.trim().isEmpty) {
       return ColoredBox(
         color: MarketplaceTheme.softSurface(context),
-        child: const Icon(
-          Icons.storefront_rounded,
-          color: MarketplaceTheme.sky,
+        child: const MarketplaceBrandIcon(
           size: 42,
+          tintColor: MarketplaceTheme.sky,
+          fallbackColor: MarketplaceTheme.sky,
         ),
       );
     }

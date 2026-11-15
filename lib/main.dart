@@ -23,13 +23,17 @@ import 'screens/story_viewer_screen.dart';
 import 'screens/hidden_posts_screen.dart';
 import 'screens/post_engagements_screen.dart';
 import 'screens/profile_screen.dart';
-import 'screens/signup_screen.dart';
+import 'screens/login_screen.dart';
+
+import 'services/nubify_appearance_controller.dart';
 
 import 'models/story.dart';
 import 'services/media_route_observer.dart';
-import 'utils/color.dart';
 import 'widgets/incoming_call_listener.dart';
 import 'widgets/nubify_deep_link_gate.dart';
+
+import 'package:firebase_app_check/firebase_app_check.dart';
+
 
 //===================================================
 // MAIN
@@ -47,13 +51,26 @@ Future<void> main() async {
       options: const FirebaseOptions(
         apiKey: 'AIzaSyDl7g6nF94iNevELPwv6b7TzMAFLyCin7E',
         projectId: 'nubify-af91b',
-        storageBucket: 'nubify-af91b.firebasestorage.app',
+        storageBucket:
+        'nubify-af91b.firebasestorage.app',
         messagingSenderId: '69403007783',
-        appId: '1:69403007783:web:a13f93c340cb9d2423e702',
+        appId:
+        '1:69403007783:web:a13f93c340cb9d2423e702',
       ),
     );
   } else {
     await Firebase.initializeApp();
+  }
+
+  if (!kIsWeb) {
+    await FirebaseAppCheck.instance.activate(
+      androidProvider: kDebugMode
+          ? AndroidProvider.debug
+          : AndroidProvider.playIntegrity,
+      appleProvider: kDebugMode
+          ? AppleProvider.debug
+          : AppleProvider.appAttest,
+    );
   }
 
   runApp(const MyApp());
@@ -67,219 +84,341 @@ class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   //===================================================
-  // HOME
+  // FIREBASE AUTHENTICATION STREAM
+  //===================================================
+
+  static final Stream<User?> _authStream =
+  FirebaseAuth.instance.authStateChanges();
+
+  //===================================================
+  // EXISTING NUBIFY HOME LAYOUT
   //===================================================
 
   Widget _homeLayout() {
     return const IncomingCallListener(
       child: ResponsiveLayout(
-        mobileScreenLayout: MobileScreenLayout(),
+        mobileScreenLayout:
+        MobileScreenLayout(),
 
-        webScreenLayout: WebScreenLayout(),
+        webScreenLayout:
+        WebScreenLayout(),
       ),
     );
   }
+
   //===================================================
   // ROUTES
   //===================================================
 
-  Route<dynamic>? _onGenerateRoute(RouteSettings settings) {
-    //===================================================
+  Route<dynamic>? _onGenerateRoute(
+      RouteSettings settings,
+      ) {
+    //=================================================
+    // AUTHENTICATION ROUTE PROTECTION
+    //=================================================
+
+    if (settings.name == '/login' ||
+        FirebaseAuth.instance.currentUser == null) {
+      return MaterialPageRoute<void>(
+        settings: settings,
+
+        builder: (_) => const LoginScreen(),
+      );
+    }
+
+    //=================================================
     // PROFILE
-    //===================================================
+    //=================================================
 
     if (settings.name == '/profile') {
-      final String? uid = settings.arguments is String
-          ? (settings.arguments as String).trim()
+      final String? uid =
+      settings.arguments is String
+          ? (settings.arguments as String)
+          .trim()
           : null;
 
       return MaterialPageRoute<void>(
         settings: settings,
-        builder: (_) => ProfileScreen(userId: uid),
+
+        builder: (_) =>
+            ProfileScreen(userId: uid),
       );
     }
-    //===================================================
+
+    //=================================================
     // POST LINK
-    //===================================================
+    //=================================================
 
     if (settings.name == '/post') {
-      final String postId = settings.arguments?.toString().trim() ?? '';
+      final String postId =
+          settings.arguments
+              ?.toString()
+              .trim() ??
+              '';
 
       return MaterialPageRoute<void>(
         settings: settings,
 
         builder: (_) => postId.isEmpty
             ? const _InvalidRouteScreen(
-                title: 'Post',
-
-                message: 'The post could not be found.',
-              )
-            : CommentsScreen(postId: postId),
+          title: 'Post',
+          message:
+          'The post could not be found.',
+        )
+            : CommentsScreen(
+          postId: postId,
+        ),
       );
     }
 
-    //===================================================
+    //=================================================
     // STORY LINK
-    //===================================================
+    //=================================================
 
     if (settings.name == '/story') {
-      final String storyId = settings.arguments?.toString().trim() ?? '';
+      final String storyId =
+          settings.arguments
+              ?.toString()
+              .trim() ??
+              '';
 
       return MaterialPageRoute<void>(
         settings: settings,
 
-        builder: (_) => _StoryLinkLoaderScreen(storyId: storyId),
+        builder: (_) =>
+            _StoryLinkLoaderScreen(
+              storyId: storyId,
+            ),
       );
     }
 
-    //===================================================
+    //=================================================
     // GROUP LINK
-    //===================================================
+    //=================================================
 
     if (settings.name == '/group') {
-      final String groupId = settings.arguments?.toString().trim() ?? '';
+      final String groupId =
+          settings.arguments
+              ?.toString()
+              .trim() ??
+              '';
 
       return MaterialPageRoute<void>(
         settings: settings,
 
         builder: (_) => groupId.isEmpty
             ? const _InvalidRouteScreen(
-                title: 'Group',
-
-                message: 'The group could not be found.',
-              )
-            : GroupChatScreen(groupId: groupId),
+          title: 'Group',
+          message:
+          'The group could not be found.',
+        )
+            : GroupChatScreen(
+          groupId: groupId,
+        ),
       );
     }
 
-    //===================================================
+    //=================================================
     // MARKETPLACE LINK
-    //===================================================
+    //=================================================
 
     if (settings.name == '/marketplace') {
       final String initialProductId =
-          settings.arguments?.toString().trim() ?? '';
+          settings.arguments
+              ?.toString()
+              .trim() ??
+              '';
+
       return MaterialPageRoute<void>(
         settings: settings,
 
-        builder: (_) => MarketplaceScreen(initialProductId: initialProductId),
+        builder: (_) => MarketplaceScreen(
+          initialProductId:
+          initialProductId,
+        ),
       );
     }
 
-    if (settings.name == '/marketplace/listing') {
-      final String listingId = settings.arguments?.toString().trim() ?? '';
+    //=================================================
+    // MARKETPLACE LISTING DETAILS
+    //=================================================
+
+    if (settings.name ==
+        '/marketplace/listing') {
+      final String listingId =
+          settings.arguments
+              ?.toString()
+              .trim() ??
+              '';
+
       return MaterialPageRoute<void>(
         settings: settings,
+
         builder: (_) => listingId.isEmpty
             ? const _InvalidRouteScreen(
-                title: 'Marketplace Listing',
-                message: 'The listing could not be found.',
-              )
-            : MarketplaceListingDetailsScreen(listingId: listingId),
+          title:
+          'Marketplace Listing',
+          message:
+          'The listing could not be found.',
+        )
+            : MarketplaceListingDetailsScreen(
+          listingId: listingId,
+        ),
       );
     }
 
-    if (settings.name == '/marketplace/create') {
+    //=================================================
+    // CREATE MARKETPLACE LISTING
+    //=================================================
+
+    if (settings.name ==
+        '/marketplace/create') {
       return MaterialPageRoute<void>(
         settings: settings,
-        builder: (_) => const CreateMarketplaceListingScreen(),
+
+        builder: (_) =>
+        const CreateMarketplaceListingScreen(),
       );
     }
 
-    if (settings.name == '/marketplace/admin') {
+    //=================================================
+    // MARKETPLACE ADMIN
+    //=================================================
+
+    if (settings.name ==
+        '/marketplace/admin') {
       return MaterialPageRoute<void>(
         settings: settings,
-        builder: (_) => const MarketplaceReportsAdminScreen(),
+
+        builder: (_) =>
+        const MarketplaceReportsAdminScreen(),
       );
     }
 
-    if (settings.name == '/marketplace/admin/reports') {
+    if (settings.name ==
+        '/marketplace/admin/reports') {
       return MaterialPageRoute<void>(
         settings: settings,
-        builder: (_) => const MarketplaceReportsAdminScreen(),
+
+        builder: (_) =>
+        const MarketplaceReportsAdminScreen(),
       );
     }
 
-    if (settings.name == '/marketplace/my-listings') {
+    //=================================================
+    // MY MARKETPLACE LISTINGS
+    //=================================================
+
+    if (settings.name ==
+        '/marketplace/my-listings') {
       return MaterialPageRoute<void>(
         settings: settings,
-        builder: (_) => const MyMarketplaceListingsScreen(),
+
+        builder: (_) =>
+        const MyMarketplaceListingsScreen(),
       );
     }
 
-    if (settings.name == '/marketplace/saved') {
+    //=================================================
+    // SAVED MARKETPLACE LISTINGS
+    //=================================================
+
+    if (settings.name ==
+        '/marketplace/saved') {
       return MaterialPageRoute<void>(
         settings: settings,
-        builder: (_) => const SavedMarketplaceListingsScreen(),
+
+        builder: (_) =>
+        const SavedMarketplaceListingsScreen(),
       );
     }
-    //===================================================
+
+    //=================================================
     // HOME
-    //===================================================
+    //=================================================
 
     if (settings.name == '/home') {
       return MaterialPageRoute<void>(
         settings: settings,
+
         builder: (_) => _homeLayout(),
       );
     }
 
-    //===================================================
+    //=================================================
     // HIDDEN POSTS
-    //===================================================
+    //=================================================
 
-    if (settings.name == '/hidden-posts') {
-      final String? uid = settings.arguments is String
-          ? (settings.arguments as String).trim()
+    if (settings.name ==
+        '/hidden-posts') {
+      final String? uid =
+      settings.arguments is String
+          ? (settings.arguments as String)
+          .trim()
           : null;
 
       return MaterialPageRoute<void>(
         settings: settings,
-        builder: (_) => HiddenPostsScreen(userId: uid),
+
+        builder: (_) =>
+            HiddenPostsScreen(
+              userId: uid,
+            ),
       );
     }
 
-    //===================================================
+    //=================================================
     // POST ENGAGEMENTS
-    //===================================================
+    //=================================================
 
-    if (settings.name == '/post-engagements') {
+    if (settings.name ==
+        '/post-engagements') {
       String postId = '';
 
       int initialTab = 0;
 
-      //===================================================
+      //===============================================
       // STRING ARGUMENT
-      //===================================================
+      //===============================================
 
       if (settings.arguments is String) {
-        postId = (settings.arguments as String).trim();
+        postId =
+            (settings.arguments as String)
+                .trim();
       }
 
-      //===================================================
+      //===============================================
       // MAP ARGUMENT
-      //===================================================
+      //===============================================
 
       if (settings.arguments is Map) {
         final Map<dynamic, dynamic> arguments =
-            settings.arguments as Map<dynamic, dynamic>;
+        settings.arguments
+        as Map<dynamic, dynamic>;
 
-        postId = (arguments['postId'] ?? '').toString().trim();
+        postId =
+            (arguments['postId'] ?? '')
+                .toString()
+                .trim();
 
-        final dynamic rawTab = arguments['initialTab'];
+        final dynamic rawTab =
+        arguments['initialTab'];
 
         if (rawTab is int) {
           initialTab = rawTab;
         } else if (rawTab is num) {
           initialTab = rawTab.toInt();
         } else {
-          initialTab = int.tryParse(rawTab?.toString() ?? '') ?? 0;
+          initialTab = int.tryParse(
+            rawTab?.toString() ?? '',
+          ) ??
+              0;
         }
       }
 
-      //===================================================
-      // VALID TAB
-      //===================================================
+      //===============================================
+      // VALID TAB RANGE
+      //===============================================
 
       if (initialTab < 0) {
         initialTab = 0;
@@ -289,24 +428,31 @@ class MyApp extends StatelessWidget {
         initialTab = 1;
       }
 
-      //===================================================
+      //===============================================
       // INVALID POST
-      //===================================================
+      //===============================================
 
       if (postId.isEmpty) {
         return MaterialPageRoute<void>(
           settings: settings,
-          builder: (_) => const _InvalidRouteScreen(
+
+          builder: (_) =>
+          const _InvalidRouteScreen(
             title: 'Post Engagements',
-            message: 'The post could not be found.',
+            message:
+            'The post could not be found.',
           ),
         );
       }
 
       return MaterialPageRoute<void>(
         settings: settings,
+
         builder: (_) =>
-            PostEngagementsScreen(postId: postId, initialTab: initialTab),
+            PostEngagementsScreen(
+              postId: postId,
+              initialTab: initialTab,
+            ),
       );
     }
 
@@ -314,69 +460,207 @@ class MyApp extends StatelessWidget {
   }
 
   //===================================================
-  // BUILD
+  // NUBIFY GLOBAL LIGHT & DARK THEME
+  //===================================================
+
+  ThemeData _appTheme(
+      Brightness brightness,
+      ) {
+    final bool isDark =
+        brightness == Brightness.dark;
+
+    final scheme =
+    ColorScheme.fromSeed(
+      seedColor:
+      const Color(0xFF29B6F6),
+      brightness: brightness,
+
+      surface: isDark
+          ? const Color(0xFF1C2735)
+          : Colors.white,
+    );
+
+    return ThemeData(
+      useMaterial3: true,
+      brightness: brightness,
+      colorScheme: scheme,
+
+      scaffoldBackgroundColor: isDark
+          ? const Color(0xFF101824)
+          : const Color(0xFFF5F7FB),
+
+      appBarTheme: AppBarTheme(
+        backgroundColor: isDark
+            ? const Color(0xFF101824)
+            : const Color(0xFFF5F7FB),
+
+        foregroundColor: isDark
+            ? Colors.white
+            : const Color(0xFF202D40),
+
+        elevation: 0,
+        surfaceTintColor:
+        Colors.transparent,
+      ),
+
+      cardTheme: CardThemeData(
+        color: isDark
+            ? const Color(0xFF1C2735)
+            : Colors.white,
+
+        elevation: 0,
+      ),
+    );
+  }
+
+  //===================================================
+  // BUILD APPLICATION
   //===================================================
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider<UserProvider>(create: (_) => UserProvider()),
-      ],
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: 'Nubify',
-        theme: ThemeData.dark().copyWith(
-          scaffoldBackgroundColor: mobileBackgroundColor,
-        ),
-        onGenerateRoute: _onGenerateRoute,
-        navigatorObservers: <NavigatorObserver>[nubifyMediaRouteObserver],
-        home: NubifyDeepLinkGate(
-          child: StreamBuilder<User?>(
-            stream: FirebaseAuth.instance.authStateChanges(),
-            builder: (BuildContext context, AsyncSnapshot<User?> snapshot) {
-              //===================================================
-              // AUTH ACTIVE
-              //===================================================
+    //=================================================
+    // GLOBAL APPEARANCE PROVIDER
+    //=================================================
 
-              if (snapshot.connectionState == ConnectionState.active) {
-                if (snapshot.hasData) {
-                  return _homeLayout();
-                }
+    return ChangeNotifierProvider<
+        NubifyAppearanceController>(
+      create: (_) =>
+          NubifyAppearanceController(),
 
-                if (snapshot.hasError) {
-                  return Scaffold(
-                    body: Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(20),
+      child:
+      Consumer<NubifyAppearanceController>(
+        builder: (
+            context,
+            appearance,
+            _,
+            ) {
+          //===========================================
+          // AUTHENTICATION STATE LISTENER
+          //===========================================
+
+          return StreamBuilder<User?>(
+            stream: _authStream,
+
+            builder: (context, snapshot) {
+              final bool loading =
+                  snapshot.connectionState !=
+                      ConnectionState.active;
+
+              final User? authenticatedUser =
+                  snapshot.data;
+
+              //=====================================
+              // SESSION IDENTITY KEY
+              //=====================================
+
+              final String sessionKey =
+              loading
+                  ? 'loading'
+                  : (authenticatedUser?.uid ??
+                  'signed-out');
+
+              //=====================================
+              // USER PROVIDER
+              //=====================================
+
+              return ChangeNotifierProvider<
+                  UserProvider>(
+                key: ValueKey<String>(
+                  'user-provider-$sessionKey',
+                ),
+
+                create: (_) =>
+                    UserProvider(),
+
+                child: MaterialApp(
+                  //=================================
+                  // IMPORTANT:
+                  // A different authentication
+                  // session creates a new Navigator.
+                  //
+                  // Old protected routes and
+                  // authenticated widgets are
+                  // discarded after logout.
+                  //=================================
+
+                  key: ValueKey<String>(
+                    'nubify-session-$sessionKey',
+                  ),
+
+                  debugShowCheckedModeBanner:
+                  false,
+
+                  title: 'Nubify',
+
+                  // LIGHT THEME
+                  theme: _appTheme(
+                    Brightness.light,
+                  ),
+
+                  // DARK THEME
+                  darkTheme: _appTheme(
+                    Brightness.dark,
+                  ),
+
+                  // SELECTED THEME
+                  themeMode:
+                  appearance.mode,
+
+                  // EXISTING NAMED ROUTES
+                  onGenerateRoute:
+                  _onGenerateRoute,
+
+                  // MEDIA ROUTE OBSERVERS
+                  navigatorObservers:
+                  authenticatedUser == null
+                      ? <NavigatorObserver>[]
+                      : <NavigatorObserver>[
+                    nubifyMediaRouteObserver,
+                  ],
+
+                  //=================================
+                  // AUTHENTICATION GATE
+                  //=================================
+
+                  home: NubifyDeepLinkGate(
+                    child: loading
+                        ? const Scaffold(
+                      body: Center(
+                        child:
+                        CircularProgressIndicator(),
+                      ),
+                    )
+
+                    // AUTHENTICATION ERROR
+                        : snapshot.hasError
+                        ? Scaffold(
+                      body: Center(
                         child: Text(
-                          '${snapshot.error}',
-                          textAlign: TextAlign.center,
+                          'Unable to check your login status: ${snapshot.error}',
                         ),
                       ),
-                    ),
-                  );
-                }
+                    )
 
-                return const SignupScreen();
-              }
+                    //=======================
+                    // SIGNED OUT
+                    //=======================
 
-              //===================================================
-              // WAITING
-              //===================================================
+                        : authenticatedUser ==
+                        null
+                        ? const LoginScreen()
 
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Scaffold(
-                  body: Center(
-                    child: CircularProgressIndicator(color: primaryColor),
+                    //===================
+                    // SIGNED IN
+                    //===================
+
+                        : _homeLayout(),
                   ),
-                );
-              }
-
-              return const SignupScreen();
+                ),
+              );
             },
-          ),
-        ),
+          );
+        },
       ),
     );
   }
@@ -386,27 +670,38 @@ class MyApp extends StatelessWidget {
 // INVALID ROUTE SCREEN
 //===================================================
 
-class _InvalidRouteScreen extends StatelessWidget {
-  const _InvalidRouteScreen({required this.title, required this.message});
+class _InvalidRouteScreen
+    extends StatelessWidget {
+  const _InvalidRouteScreen({
+    required this.title,
+    required this.message,
+  });
 
   final String title;
-
   final String message;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(title)),
+      appBar: AppBar(
+        title: Text(title),
+      ),
+
       body: Center(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding:
+          const EdgeInsets.all(24),
+
           child: Column(
-            mainAxisSize: MainAxisSize.min,
+            mainAxisSize:
+            MainAxisSize.min,
+
             children: <Widget>[
               const Icon(
                 Icons.error_outline_rounded,
                 size: 54,
-                color: Color(0xFF29B6F6),
+                color:
+                Color(0xFF29B6F6),
               ),
 
               const SizedBox(height: 14),
@@ -414,9 +709,11 @@ class _InvalidRouteScreen extends StatelessWidget {
               Text(
                 message,
                 textAlign: TextAlign.center,
+
                 style: const TextStyle(
                   fontSize: 16,
-                  fontWeight: FontWeight.w600,
+                  fontWeight:
+                  FontWeight.w600,
                 ),
               ),
 
@@ -424,19 +721,27 @@ class _InvalidRouteScreen extends StatelessWidget {
 
               FilledButton.icon(
                 onPressed: () {
-                  if (Navigator.of(context).canPop()) {
-                    Navigator.of(context).pop();
-
+                  if (Navigator.of(context)
+                      .canPop()) {
+                    Navigator.of(context)
+                        .pop();
                     return;
                   }
 
-                  Navigator.of(context).pushNamedAndRemoveUntil(
+                  Navigator.of(context)
+                      .pushNamedAndRemoveUntil(
                     '/home',
-                    (Route<dynamic> route) => false,
+                        (Route<dynamic> route) =>
+                    false,
                   );
                 },
-                icon: const Icon(Icons.arrow_back_rounded),
-                label: const Text('Go Back'),
+
+                icon: const Icon(
+                  Icons.arrow_back_rounded,
+                ),
+
+                label:
+                const Text('Go Back'),
               ),
             ],
           ),
@@ -445,12 +750,16 @@ class _InvalidRouteScreen extends StatelessWidget {
     );
   }
 }
+
 //===================================================
 // STORY LINK LOADER
 //===================================================
 
-class _StoryLinkLoaderScreen extends StatelessWidget {
-  const _StoryLinkLoaderScreen({required this.storyId});
+class _StoryLinkLoaderScreen
+    extends StatelessWidget {
+  const _StoryLinkLoaderScreen({
+    required this.storyId,
+  });
 
   final String storyId;
 
@@ -459,58 +768,81 @@ class _StoryLinkLoaderScreen extends StatelessWidget {
     if (storyId.trim().isEmpty) {
       return const _InvalidRouteScreen(
         title: 'Story',
-
-        message: 'The Story could not be found.',
+        message:
+        'The Story could not be found.',
       );
     }
 
-    return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+    return FutureBuilder<
+        DocumentSnapshot<Map<String, dynamic>>>(
       future: FirebaseFirestore.instance
           .collection('stories')
           .doc(storyId)
           .get(),
 
-      builder:
-          (
-            BuildContext context,
-            AsyncSnapshot<DocumentSnapshot<Map<String, dynamic>>> snapshot,
+      builder: (
+          BuildContext context,
+          AsyncSnapshot<
+              DocumentSnapshot<Map<String, dynamic>>> snapshot,
           ) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Scaffold(
-                backgroundColor: Colors.black,
+        //===========================================
+        // LOADING
+        //===========================================
 
-                body: Center(
-                  child: CircularProgressIndicator(color: Color(0xFF29B6F6)),
-                ),
-              );
-            }
+        if (snapshot.connectionState ==
+            ConnectionState.waiting) {
+          return const Scaffold(
+            backgroundColor:
+            Colors.black,
 
-            if (!snapshot.hasData || !snapshot.data!.exists) {
-              return const _InvalidRouteScreen(
-                title: 'Story',
+            body: Center(
+              child:
+              CircularProgressIndicator(
+                color:
+                Color(0xFF29B6F6),
+              ),
+            ),
+          );
+        }
 
-                message: 'This Story is no longer available.',
-              );
-            }
+        //===========================================
+        // STORY NOT FOUND
+        //===========================================
 
-            try {
-              final NubifyStory story = NubifyStory.fromFirestore(
-                snapshot.data!,
-              );
+        if (!snapshot.hasData ||
+            !snapshot.data!.exists) {
+          return const _InvalidRouteScreen(
+            title: 'Story',
+            message:
+            'This Story is no longer available.',
+          );
+        }
 
-              return StoryViewerScreen(
-                stories: <NubifyStory>[story],
+        //===========================================
+        // OPEN EXISTING STORY VIEWER
+        //===========================================
 
-                allowExpiredStories: true,
-              );
-            } catch (_) {
-              return const _InvalidRouteScreen(
-                title: 'Story',
+        try {
+          final NubifyStory story =
+          NubifyStory.fromFirestore(
+            snapshot.data!,
+          );
 
-                message: 'Unable to open this Story.',
-              );
-            }
-          },
+          return StoryViewerScreen(
+            stories: <NubifyStory>[
+              story,
+            ],
+
+            allowExpiredStories: true,
+          );
+        } catch (_) {
+          return const _InvalidRouteScreen(
+            title: 'Story',
+            message:
+            'Unable to open this Story.',
+          );
+        }
+      },
     );
   }
 }

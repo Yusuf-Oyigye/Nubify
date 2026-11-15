@@ -61,6 +61,125 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+//==========================================================
+// NUBi-specific rule fragments.
+// Merge inside your existing rules_version = '2'
+// Firestore rules structure.
+//==========================================================
+
+match /nubiStealAttempts/{roomId}/claims/{attemptId} {
+  allow read, write: if false;
+}
+
+function nubiSignedIn() {
+  return request.auth != null;
+}
+
+function nubiOwner(uid) {
+  return nubiSignedIn() &&
+    request.auth.uid == uid;
+}
+
+// STUDENT LEARNING SOURCES
+match /users/{uid}/learningSources/{sourceId} {
+  allow read: if nubiOwner(uid);
+  allow write: if false;
+}
+
+// TUTOR SESSIONS
+match /users/{uid}/tutorSessions/{sessionId} {
+  allow read: if nubiOwner(uid);
+  allow write: if false;
+
+  match /messages/{messageId} {
+    allow read: if nubiOwner(uid);
+    allow write: if false;
+  }
+}
+
+// QUIZZES
+match /users/{uid}/quizzes/{quizId} {
+  allow read: if nubiOwner(uid);
+  allow write: if false;
+
+  match /answers/{answerId} {
+    allow read: if nubiOwner(uid);
+    allow write: if false;
+  }
+}
+
+// FLASHCARD DECKS
+match /users/{uid}/flashcardDecks/{deckId} {
+  allow read: if nubiOwner(uid);
+  allow write: if false;
+}
+
+// TUTOR CHECKPOINT ANSWERS
+match /users/{uid}/checkpointAnswers/{answerId} {
+  allow read: if nubiOwner(uid);
+  allow write: if false;
+}
+
+// XP SUMMARY
+match /users/{uid}/xpSummary/{summaryId} {
+  allow read: if nubiOwner(uid);
+  allow write: if false;
+}
+
+// XP EVENTS
+match /users/{uid}/xpEvents/{eventId} {
+  allow read: if nubiOwner(uid);
+  allow write: if false;
+}
+
+// RANKING PRIVACY SETTINGS
+match /users/{uid}/nubiSettings/{settingId} {
+  allow read: if nubiOwner(uid);
+  allow write: if false;
+}
+
+// VERIFIED FACULTY MEMBERSHIP
+match /nubiMembership/{uid} {
+  allow read: if nubiOwner(uid);
+  allow write: if false;
+}
+
+// PUBLIC RANKINGS
+match /nubiRankings/{periodId}/players/{uid} {
+  allow read: if nubiSignedIn();
+  allow write: if false;
+}
+
+// MINDRUSH ROOMS
+match /mindrushRooms/{roomId} {
+  allow read: if nubiSignedIn() &&
+    request.auth.uid in resource.data.players;
+  allow write: if false;
+}
+
+// PRIVATE QUIZ ANSWERS
+match /nubiPrivateQuizzes/{quizId} {
+  allow read, write: if false;
+}
+
+// PRIVATE CHECKPOINT ANSWERS
+match /nubiPrivateCheckpoints/{checkpointId} {
+  allow read, write: if false;
+}
+
+// PRIVATE MINDRUSH QUESTION BANK
+match /nubiPrivateMindrush/{roomId} {
+  allow read, write: if false;
+}
+
+// BACKEND-ONLY QUOTA DOCUMENTS
+match /nubiQuotas/{quotaId} {
+  allow read, write: if false;
+}
+
+match /nubiGlobalQuotas/{quotaId} {
+  allow read, write: if false;
+}
 
 //===================================================
 // NUBIFY EGYPTIAN ARABIC — SHARED DECKS

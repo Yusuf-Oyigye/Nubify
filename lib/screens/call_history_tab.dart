@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../utils/nubify_call_display.dart';
 import '../widgets/full_photo_viewer.dart';
+import 'audio_call_screen.dart';
 import 'conversation_screen.dart';
 
 //===================================================
@@ -51,10 +52,21 @@ class _CallHistoryTabState extends State<CallHistoryTab> {
   String get _uid => _auth.currentUser?.uid ?? '';
 
   Future<DocumentSnapshot<Map<String, dynamic>>> _user(String uid) {
-    return _users.putIfAbsent(
-      uid,
-      () => _firestore.collection('users').doc(uid).get(),
-    );
+    return _users.putIfAbsent(uid, () async {
+      final DocumentReference<Map<String, dynamic>> reference = _firestore
+          .collection('users')
+          .doc(uid);
+
+      try {
+        final DocumentSnapshot<Map<String, dynamic>> cached = await reference
+            .get(const GetOptions(source: Source.cache));
+        if (cached.exists) {
+          return cached;
+        }
+      } catch (_) {}
+
+      return reference.get(const GetOptions(source: Source.serverAndCache));
+    });
   }
 
   DateTime _time(Map<String, dynamic> data) {
@@ -159,12 +171,19 @@ class _CallHistoryTabState extends State<CallHistoryTab> {
     required String username,
     required String photoUrl,
   }) async {
-    await _openConversation(
-      uid: uid,
-      name: name,
-      username: username,
-      photoUrl: photoUrl,
-      startCall: true,
+    if (!mounted || uid.isEmpty || uid == _uid) {
+      return;
+    }
+
+    await Navigator.push<void>(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) => AudioCallScreen(
+          otherUserId: uid,
+          otherName: name,
+          otherPhotoUrl: photoUrl,
+        ),
+      ),
     );
   }
 
@@ -187,6 +206,7 @@ class _CallHistoryTabState extends State<CallHistoryTab> {
   //===================================================
 
   Widget _tile(QueryDocumentSnapshot<Map<String, dynamic>> document) {
+    final ColorScheme scheme = Theme.of(context).colorScheme;
     final Map<String, dynamic> data = document.data();
 
     final String caller = (data['callerId'] ?? '').toString();
@@ -237,12 +257,15 @@ class _CallHistoryTabState extends State<CallHistoryTab> {
                 },
                 child: CircleAvatar(
                   radius: 25,
-                  backgroundColor: const Color(0xFF1A2228),
+                  backgroundColor: scheme.surfaceContainerHighest,
                   backgroundImage: photo.isNotEmpty
                       ? NetworkImage(photo)
                       : null,
                   child: photo.isEmpty
-                      ? const Icon(Icons.person_rounded, color: Colors.white70)
+                      ? Icon(
+                          Icons.person_rounded,
+                          color: scheme.onSurfaceVariant,
+                        )
                       : null,
                 ),
               ),
@@ -253,8 +276,8 @@ class _CallHistoryTabState extends State<CallHistoryTab> {
 
                 overflow: TextOverflow.ellipsis,
 
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: scheme.onSurface,
 
                   fontWeight: FontWeight.w700,
                 ),
@@ -281,7 +304,9 @@ class _CallHistoryTabState extends State<CallHistoryTab> {
                       overflow: TextOverflow.ellipsis,
 
                       style: TextStyle(
-                        color: missed ? Colors.redAccent : Colors.white60,
+                        color: missed
+                            ? Colors.redAccent
+                            : scheme.onSurfaceVariant,
 
                         fontSize: 12,
                       ),
@@ -293,7 +318,10 @@ class _CallHistoryTabState extends State<CallHistoryTab> {
                   Text(
                     _timeText(_time(data)),
 
-                    style: const TextStyle(color: Colors.white38, fontSize: 10),
+                    style: TextStyle(
+                      color: scheme.onSurfaceVariant,
+                      fontSize: 10,
+                    ),
                   ),
                 ],
               ),
@@ -339,6 +367,7 @@ class _CallHistoryTabState extends State<CallHistoryTab> {
 
     required List<QueryDocumentSnapshot<Map<String, dynamic>>> incoming,
   }) {
+    final ColorScheme scheme = Theme.of(context).colorScheme;
     final Map<String, QueryDocumentSnapshot<Map<String, dynamic>>> unique =
         <String, QueryDocumentSnapshot<Map<String, dynamic>>>{};
 
@@ -359,8 +388,11 @@ class _CallHistoryTabState extends State<CallHistoryTab> {
     final List<QueryDocumentSnapshot<Map<String, dynamic>>> visible = calls;
 
     if (visible.isEmpty) {
-      return const Center(
-        child: Text('No recent calls', style: TextStyle(color: Colors.white54)),
+      return Center(
+        child: Text(
+          'No recent calls',
+          style: TextStyle(color: scheme.onSurfaceVariant),
+        ),
       );
     }
 
@@ -370,7 +402,7 @@ class _CallHistoryTabState extends State<CallHistoryTab> {
       itemCount: visible.length,
 
       separatorBuilder: (_, _) =>
-          const Divider(height: 1, indent: 74, color: Colors.white10),
+          Divider(height: 1, indent: 74, color: scheme.outlineVariant),
 
       itemBuilder: (_, int index) => _tile(visible[index]),
     );
@@ -383,6 +415,7 @@ class _CallHistoryTabState extends State<CallHistoryTab> {
   @override
   Widget build(BuildContext context) {
     final String uid = _uid;
+    final ColorScheme scheme = Theme.of(context).colorScheme;
 
     if (uid.isEmpty) {
       return const Center(child: Text('Please log in to view calls.'));
@@ -409,10 +442,10 @@ class _CallHistoryTabState extends State<CallHistoryTab> {
                     AsyncSnapshot<QuerySnapshot<Map<String, dynamic>>> incoming,
                   ) {
                     if (outgoing.hasError || incoming.hasError) {
-                      return const Center(
+                      return Center(
                         child: Text(
                           'Unable to load call history.',
-                          style: TextStyle(color: Colors.white70),
+                          style: TextStyle(color: scheme.onSurfaceVariant),
                         ),
                       );
                     }
