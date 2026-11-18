@@ -63,18 +63,19 @@ void main() {
     expect(find.textContaining('— Yusuf Oyigye'), findsNothing);
   });
 
-  testWidgets('lists Gmail with the other social handles', (tester) async {
+  testWidgets('shows only WhatsApp and Gmail contacts', (tester) async {
     await pumpScreen(tester, width: 320, brightness: Brightness.light);
 
     await tester.scrollUntilVisible(find.text('Gmail'), 300);
-    for (final String label in [
-      'WhatsApp',
+    expect(find.text('WhatsApp'), findsOneWidget);
+    expect(find.text('Gmail'), findsOneWidget);
+    for (final String removed in [
+      'Social media handles',
       'Instagram',
       'TikTok',
       'Facebook',
-      'Gmail',
     ]) {
-      expect(find.text(label), findsOneWidget);
+      expect(find.text(removed), findsNothing);
     }
     expect(tester.takeException(), isNull);
   });

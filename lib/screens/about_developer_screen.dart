@@ -85,11 +85,8 @@ class _Developer {
   static const String signOff =
       'Built with passion. Driven by consistency. Inspired by community.';
 
-  // Paste your full links. An empty link shows "Coming soon".
+  // An empty value shows "Coming soon".
   static const String whatsapp = ''; // https://wa.me/20XXXXXXXXXX
-  static const String instagram = ''; // https://instagram.com/yourname
-  static const String tiktok = ''; // https://www.tiktok.com/@yourname
-  static const String facebook = ''; // https://facebook.com/yourname
   static const String gmail = ''; // yourname@gmail.com (address only)
 }
 
@@ -318,7 +315,7 @@ class AboutDeveloperScreen extends StatelessWidget {
   }
 
   //===================================================
-  // SOCIAL MEDIA HANDLES
+  // CONTACT — WHATSAPP AND GMAIL
   //===================================================
 
   Widget _buildSocials(BuildContext context) {
@@ -330,36 +327,9 @@ class AboutDeveloperScreen extends StatelessWidget {
         link: _Developer.whatsapp,
         colors: [Color(0xFF25D366), Color(0xFF128C7E)],
       ),
-      const _SocialLink(
-        label: 'Instagram',
-        action: 'Follow me',
-        logo: FaIcon(FontAwesomeIcons.instagram, color: Colors.white, size: 20),
-        link: _Developer.instagram,
-        colors: [
-          Color(0xFFFEDA75),
-          Color(0xFFFA7E1E),
-          Color(0xFFD62976),
-          Color(0xFF962FBF),
-          Color(0xFF4F5BD5),
-        ],
-      ),
-      const _SocialLink(
-        label: 'TikTok',
-        action: 'Watch my videos',
-        logo: FaIcon(FontAwesomeIcons.tiktok, color: Colors.white, size: 20),
-        link: _Developer.tiktok,
-        colors: [Color(0xFF111111), Color(0xFF333333)],
-      ),
-      const _SocialLink(
-        label: 'Facebook',
-        action: 'Add me',
-        logo: FaIcon(FontAwesomeIcons.facebookF, color: Colors.white, size: 20),
-        link: _Developer.facebook,
-        colors: [Color(0xFF1877F2), Color(0xFF0B5FCC)],
-      ),
       _SocialLink(
         label: 'Gmail',
-        action: _Developer.gmail.isEmpty ? 'Email me' : _Developer.gmail,
+        action: 'Email me',
         logo: const Icon(Icons.mail_rounded, color: Colors.white, size: 21),
         link: _Developer.gmail.isEmpty ? '' : 'mailto:${_Developer.gmail}',
         colors: const [Color(0xFFEA4335), Color(0xFFB31412)],
@@ -429,31 +399,15 @@ class AboutDeveloperScreen extends StatelessWidget {
       );
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const NubifySectionLabel(
-          text: 'Social media handles',
-          accent: NubifyHonorColors.gold,
-        ),
-        Row(
-          children: [
-            Expanded(child: tile(links[0])),
-            const SizedBox(width: 12),
-            Expanded(child: tile(links[1])),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(child: tile(links[2])),
-            const SizedBox(width: 12),
-            Expanded(child: tile(links[3])),
-          ],
-        ),
-        const SizedBox(height: 12),
-        tile(links[4]),
-      ],
+    return Padding(
+      padding: const EdgeInsets.only(top: 18),
+      child: Row(
+        children: [
+          Expanded(child: tile(links[0])),
+          const SizedBox(width: 12),
+          Expanded(child: tile(links[1])),
+        ],
+      ),
     );
   }
 
