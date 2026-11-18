@@ -41,19 +41,27 @@ void main() {
       (tester) async {
     await pumpScreen(tester, width: 411, brightness: Brightness.dark);
 
-    for (final String name in [
+    final List<String> order = [
       'Umar Harun',
+      'Yakub (Badoo)',
       "Mubarak Rabi'u",
       'Abdulsalam Modu',
       'Abdulrahman Buhari',
-      'Yakub (Badoo)',
       'Hindatu Zakari',
-    ]) {
-      expect(find.text(name), findsOneWidget);
+    ];
+    for (int i = 0; i < order.length; i++) {
+      expect(find.text(order[i]), findsOneWidget);
+      if (i > 0) {
+        expect(
+          tester.getTopLeft(find.text(order[i])).dy,
+          greaterThan(tester.getTopLeft(find.text(order[i - 1])).dy),
+        );
+      }
     }
     expect(find.text('Grand Patron of Nubify'), findsOneWidget);
+    expect(find.text('Advisor'), findsOneWidget);
     expect(find.text('Moderator'), findsNWidgets(3));
-    expect(find.text('Member'), findsNWidgets(2));
+    expect(find.text('Member'), findsOneWidget);
 
     for (final String header in ['Patron', 'Moderators', 'Members']) {
       expect(find.text(header), findsNothing);

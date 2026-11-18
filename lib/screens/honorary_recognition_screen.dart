@@ -39,6 +39,12 @@ const List<_Honoree> _honorees = [
     photo: '',
   ),
   _Honoree(
+    name: 'Yakub (Badoo)',
+    faculty: 'Faculty of Computer Science',
+    role: 'Advisor',
+    photo: '',
+  ),
+  _Honoree(
     name: "Mubarak Rabi'u",
     faculty: 'Faculty of Medicine',
     role: 'Moderator',
@@ -54,12 +60,6 @@ const List<_Honoree> _honorees = [
     name: 'Abdulrahman Buhari',
     faculty: 'Faculty of Medicine',
     role: 'Moderator',
-    photo: '',
-  ),
-  _Honoree(
-    name: 'Yakub (Badoo)',
-    faculty: 'Faculty of Computer Science',
-    role: 'Member',
     photo: '',
   ),
   _Honoree(
