@@ -55,7 +55,6 @@ class _Developer {
         'their faculty, nationality, race, religion or cultural background. I '
         'believe that despite our differences, we all share something in '
         'common: we are part of the same university community.',
-    'This belief became the foundation of Nubify.',
     'Building Nubify while pursuing Medicine and Surgery has not always been '
         'easy. Balancing academics with learning and working on technology '
         'comes with its own challenges. There have been moments of '
@@ -66,7 +65,7 @@ class _Developer {
         'one thing I have come to believe is that you don\'t have to know '
         "everything before you start working towards something you've always "
         'imagined.',
-    'What started as an imagination, an idea that sometimes seemed like a '
+    'What started as a delusion, imagination, an idea that sometimes seemed like a '
         'distant dream, has gradually become a reality.',
     'Nubify is more than just an application to me. It represents an idea, a '
         'passion, a personal journey and my little contribution to the '
@@ -75,9 +74,6 @@ class _Developer {
         'grow and improve. But every great journey has a beginning, and this '
         'is ours.',
   ];
-
-  // This paragraph is shown as a gold highlight.
-  static const String highlight = 'This belief became the foundation of Nubify.';
 
   static const String motto =
       'One university. Different backgrounds. One connected community.';
@@ -294,18 +290,15 @@ class AboutDeveloperScreen extends StatelessWidget {
         children: [
           for (int i = 0; i < _Developer.story.length; i++) ...[
             if (i > 0) const SizedBox(height: 14),
-            if (_Developer.story[i] == _Developer.highlight)
-              _HighlightLine(text: _Developer.story[i])
-            else
-              Text(
-                _Developer.story[i],
-                style: TextStyle(
-                  color: NubifyHonorColors.text(context),
-                  fontSize: i == 0 ? 16.5 : 15,
-                  height: 1.7,
-                  fontWeight: i == 0 ? FontWeight.w600 : FontWeight.w400,
-                ),
+            Text(
+              _Developer.story[i],
+              style: TextStyle(
+                color: NubifyHonorColors.text(context),
+                fontSize: i == 0 ? 16.5 : 15,
+                height: 1.7,
+                fontWeight: i == 0 ? FontWeight.w600 : FontWeight.w400,
               ),
+            ),
           ],
           const SizedBox(height: 22),
           const _ClosingPanel(),
@@ -938,40 +931,6 @@ class _RoleLine extends StatelessWidget {
           fontSize: 13,
           fontWeight: FontWeight.w700,
           letterSpacing: .3,
-        ),
-      ),
-    );
-  }
-}
-
-//===================================================
-// HIGHLIGHTED LINE INSIDE THE STORY
-//===================================================
-
-class _HighlightLine extends StatelessWidget {
-  const _HighlightLine({required this.text});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(14, 10, 12, 10),
-      decoration: BoxDecoration(
-        color: NubifyHonorColors.gold.withValues(alpha: .08),
-        borderRadius: const BorderRadius.horizontal(right: Radius.circular(14)),
-        border: const Border(
-          left: BorderSide(color: NubifyHonorColors.gold, width: 3),
-        ),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(
-          color: NubifyHonorColors.text(context),
-          fontSize: 16.5,
-          height: 1.5,
-          fontWeight: FontWeight.w700,
-          fontStyle: FontStyle.italic,
         ),
       ),
     );

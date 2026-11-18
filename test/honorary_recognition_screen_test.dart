@@ -58,7 +58,7 @@ void main() {
         );
       }
     }
-    expect(find.text('Patron of Nubify'), findsOneWidget);
+    expect(find.text('Grand-Patron of Nubify'), findsOneWidget);
     expect(find.text('Advisor'), findsOneWidget);
     expect(find.text('Moderator'), findsNWidgets(3));
     expect(find.text('Member'), findsOneWidget);
@@ -79,7 +79,7 @@ void main() {
 
       final Set<Color?> colors = {
         for (final String role in [
-          'Patron of Nubify',
+          'Grand-Patron of Nubify',
           'Advisor',
           'Moderator',
           'Member',

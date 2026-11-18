@@ -35,7 +35,7 @@ const List<_Honoree> _honorees = [
   _Honoree(
     name: 'Umar Harun',
     faculty: 'Faculty of Physical Therapy',
-    role: 'Patron of Nubify',
+    role: 'Grand-Patron of Nubify',
     photo: '',
   ),
   _Honoree(
