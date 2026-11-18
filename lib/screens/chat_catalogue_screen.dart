@@ -153,8 +153,6 @@ class ChatCatalogueScreen extends StatelessWidget {
                           children: <Widget>[
                             MarketplaceBrandIcon(
                               size: 56,
-                              tintColor: scheme.onSurfaceVariant,
-                              fallbackColor: scheme.onSurfaceVariant,
                             ),
                             SizedBox(height: 12),
                             Text(
@@ -228,8 +226,6 @@ class ChatCatalogueScreen extends StatelessWidget {
                                   ? Image.network(imageUrl, fit: BoxFit.cover)
                                   : const MarketplaceBrandIcon(
                                       size: 26,
-                                      tintColor: _blue,
-                                      fallbackColor: _blue,
                                     ),
                             ),
                           ),

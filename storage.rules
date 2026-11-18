@@ -135,6 +135,25 @@ service firebase.storage {
     }
 
     //===================================================
+    // ABOUT THE DEVELOPER PHOTO
+    //
+    // Only the Nubify owner can upload or remove it.
+    //===================================================
+
+    match /nubifyPublicPages/{allPaths=**} {
+
+      allow read: if signedIn();
+
+      allow create, update: if signedIn() &&
+        request.auth.token.get('marketplaceOwner', false) == true &&
+        request.resource.size <= 10 * 1024 * 1024 &&
+        request.resource.contentType.matches('image/.*');
+
+      allow delete: if signedIn() &&
+        request.auth.token.get('marketplaceOwner', false) == true;
+    }
+
+    //===================================================
     // DENY ALL OTHER STORAGE PATHS
     //===================================================
 

@@ -364,8 +364,6 @@ class UniversalLinkPreviewCard extends StatelessWidget {
                         if (_isMarketplace)
                           const MarketplaceBrandIcon(
                             size: 17,
-                            tintColor: _blue,
-                            fallbackColor: _blue,
                           )
                         else
                           Icon(_contentIcon, color: _blue, size: 17),

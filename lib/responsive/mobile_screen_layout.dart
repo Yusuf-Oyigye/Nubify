@@ -548,11 +548,9 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: <Widget>[
                         const MarketplaceBrandIcon(
-                          // Render the supplied Icons8 PNG at a slightly larger
-                          // size and preserve its black source colour in light
-                          // mode so it stays as crisp as the neighbouring icons.
+                          // The full-colour Twemoji cart reads best a touch
+                          // larger than the 24px outline icons beside it.
                           size: 26,
-                          fallbackColor: Color(0xFF29B6F6),
                         ),
                         const Text('Market', style: TextStyle(fontSize: 9)),
                       ],
@@ -585,7 +583,7 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
                               !_chatBadgeAcknowledged,
                           child: const Icon(
                             Icons.chat_bubble_outline_rounded,
-                            size: 24,
+                            size: 22,
                           ),
                         ),
                         const Text('Chat', style: TextStyle(fontSize: 9)),

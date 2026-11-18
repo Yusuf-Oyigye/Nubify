@@ -383,8 +383,6 @@ class _OwnerListingTileState extends State<_OwnerListingTile> {
                     color: MarketplaceTheme.navy,
                     child: MarketplaceBrandIcon(
                       size: 34,
-                      tintColor: MarketplaceTheme.sky,
-                      fallbackColor: MarketplaceTheme.sky,
                     ),
                   )
                 : Image.network(listing.coverUrl, fit: BoxFit.cover),

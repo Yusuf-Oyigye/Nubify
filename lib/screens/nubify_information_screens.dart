@@ -114,6 +114,22 @@ class NubifyAboutAppScreen extends StatelessWidget {
               ),
             ),
           ),
+
+          const SizedBox(height: 12),
+
+          //=========================================
+          // CREDITS (required by the CC-BY 4.0 licence)
+          //=========================================
+          Text(
+            'Marketplace cart icon: Twemoji by Twitter, Inc. and other '
+            'contributors, licensed under CC-BY 4.0.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 11.5,
+              height: 1.4,
+              color: NubifyMenuColors.secondaryText(context),
+            ),
+          ),
         ],
       ),
     );
@@ -405,6 +421,68 @@ class NubifyLegalScreen extends StatelessWidget {
     );
   }
 }
+//===================================================
+// NUB — THE UNIVERSITY
+//===================================================
+
+class NubUniversityScreen extends StatelessWidget {
+  const NubUniversityScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return NubifyMenuPage(
+      title: 'The University',
+      subtitle: 'Nahda University in Beni Suef · Est. 2006',
+
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+
+        children: [
+          //=========================================
+          // UNIVERSITY LOGO
+          //=========================================
+          Container(
+            padding: const EdgeInsets.all(24),
+
+            decoration: BoxDecoration(
+              color: const Color(0xFF103A75),
+              borderRadius: BorderRadius.circular(25),
+            ),
+
+            child: Image.asset(
+              'assets/images/nub_logo.png',
+              height: 200,
+              fit: BoxFit.contain,
+            ),
+          ),
+
+          const SizedBox(height: 14),
+
+          //=========================================
+          // ABOUT THE UNIVERSITY
+          //=========================================
+          const _TextPanel(
+            title: 'About Nahda University',
+            content: _nubAboutText,
+          ),
+
+        ],
+      ),
+    );
+  }
+}
+
+const _nubAboutText = '''Nahda University in Beni Suef (NUB) is a leading private Egyptian university established in 2006 and located in New Beni Suef, Beni Suef Governorate, Egypt. As one of the pioneers of private higher education in Upper Egypt, the university is dedicated to providing quality education, advancing scientific research, encouraging innovation, and preparing students to become competent professionals and future leaders.
+
+The university comprises ten faculties: Medicine, Oral and Dental Medicine, Pharmacy, Physical Therapy, Nursing, Engineering, Computer Science, Business Administration, Mass Communication and Applied Languages, and Fine Arts. Through its diverse academic programmes, NUB provides students with opportunities to pursue their educational and professional ambitions across various disciplines.
+
+Nahda University emphasizes academic excellence, practical learning, critical thinking, research, entrepreneurship, and community engagement. Its educational environment combines theoretical knowledge with practical and professional training, supported by laboratories, libraries, digital learning resources, specialized facilities, and clinical training opportunities through its university hospital.
+
+The university also promotes international academic collaboration, faculty development, scientific conferences, student activities, and professional development opportunities to broaden students' academic and cultural experiences.
+
+Beyond the classroom, NUB encourages students to participate in extracurricular activities, sports, cultural events, scientific initiatives, and community service. It aims to create an inclusive and supportive university environment where students can develop their knowledge, talents, leadership abilities, creativity, and interpersonal skills.
+
+With its commitment to education, research, innovation, and societal development, Nahda University continues to contribute to the advancement of higher education in Egypt, particularly in Upper Egypt, while preparing graduates to meet the challenges and opportunities of an increasingly connected world.''';
 
 //===================================================
 // REUSABLE INFORMATION ROW
@@ -451,8 +529,6 @@ class _InfoRow extends StatelessWidget {
               ),
               child: MarketplaceBrandIcon(
                 size: 23,
-                tintColor: color,
-                fallbackColor: color,
               ),
             )
           else

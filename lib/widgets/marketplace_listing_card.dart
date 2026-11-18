@@ -267,8 +267,6 @@ class _CoverImage extends StatelessWidget {
         color: MarketplaceTheme.softSurface(context),
         child: const MarketplaceBrandIcon(
           size: 42,
-          tintColor: MarketplaceTheme.sky,
-          fallbackColor: MarketplaceTheme.sky,
         ),
       );
     }

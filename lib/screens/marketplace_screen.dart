@@ -907,8 +907,6 @@ class _MarketplaceState extends StatelessWidget {
         children: <Widget>[
           const MarketplaceBrandIcon(
             size: 55,
-            tintColor: MarketplaceTheme.sky,
-            fallbackColor: MarketplaceTheme.sky,
           ),
           const SizedBox(height: 12),
           Text(

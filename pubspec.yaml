@@ -94,6 +94,7 @@ dependencies:
   #Dark and light theme
   shared_preferences: ^2.5.6
   firebase_app_check: ^0.4.1+4
+  font_awesome_flutter: ^11.0.0
 
 
 
@@ -124,6 +125,10 @@ flutter:
     - assets/ic_nubify.svg
     - assets/animations/nubi_digitaldoc_intro.mp4
     - assets/animations/nubi_intro_poster.png
+    - assets/images/nub_logo.png
+    - assets/images/my_pic.jpg
+    - assets/images/faculties/
+    - assets/icons/
 
   #   - images/a_dot_burr.jpeg
   #   - images/a_dot_ham.jpeg

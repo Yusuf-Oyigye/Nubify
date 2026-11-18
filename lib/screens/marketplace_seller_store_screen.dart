@@ -703,8 +703,6 @@ class _StoreState extends StatelessWidget {
             if (icon == null)
               const MarketplaceBrandIcon(
                 size: 58,
-                tintColor: MarketplaceTheme.sky,
-                fallbackColor: MarketplaceTheme.sky,
               )
             else
               Icon(icon, size: 58, color: MarketplaceTheme.sky),

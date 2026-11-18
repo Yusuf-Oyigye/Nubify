@@ -890,8 +890,6 @@ class _CreateMarketplaceListingScreenState
                       ),
                 icon: const MarketplaceBrandIcon(
                   size: 22,
-                  tintColor: Colors.white,
-                  fallbackColor: Colors.white,
                 ),
                 label: Text(
                   _saving

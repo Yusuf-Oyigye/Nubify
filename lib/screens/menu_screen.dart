@@ -5,10 +5,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'profile_screen.dart';
 import 'nubify_information_screens.dart';
+import 'nub_faculties_screen.dart';
 import 'honorary_recognition_screen.dart';
 import 'nubify_settings_screen.dart';
 import 'user_connections_screen.dart';
 import '../widgets/nubify_menu_components.dart';
+import 'about_developer_screen.dart';
 
 //===================================================
 // NUBIFY — PREMIUM MENU SCREEN
@@ -869,7 +871,7 @@ class _MenuScreenState extends State<MenuScreen> {
         'Faculties & Programmes',
         Icons.school_outlined,
         NubifyPalette.amber,
-        () => _unavailable('Faculties & Programmes'),
+            () => _push(const NubFacultiesScreen()),
       ),
 
       _MenuItem(
@@ -886,7 +888,7 @@ class _MenuScreenState extends State<MenuScreen> {
         'The University',
         Icons.account_balance_outlined,
         NubifyPalette.indigo,
-        () => _unavailable('The University'),
+            () => _push(const NubUniversityScreen()),
       ),
 
       _MenuItem(
@@ -1002,7 +1004,7 @@ class _MenuScreenState extends State<MenuScreen> {
         'About the Developer',
         Icons.person_pin_circle_outlined,
         NubifyPalette.violet,
-        () => _push(const NubifyDeveloperScreen()),
+            () => _push(const AboutDeveloperScreen()),
       ),
 
       _MenuItem(

@@ -867,8 +867,6 @@ class _UnavailableListingView extends StatelessWidget {
                 ),
                 child: const MarketplaceBrandIcon(
                   size: 42,
-                  tintColor: MarketplaceTheme.sky,
-                  fallbackColor: MarketplaceTheme.sky,
                 ),
               ),
               const SizedBox(height: 18),

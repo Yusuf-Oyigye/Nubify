@@ -2111,6 +2111,23 @@ match /calls/{callId} {
     }
 
     //===================================================
+    // PUBLIC MENU PAGES (ABOUT THE DEVELOPER PHOTO)
+    //
+    // Every signed-in user can read. Only the Nubify
+    // owner can change it from inside the app.
+    //===================================================
+
+    match /nubify_public_pages/{pageId} {
+
+      allow read: if isSignedIn();
+
+      allow create, update: if isSignedIn() &&
+          request.auth.token.get('marketplaceOwner', false) == true;
+
+      allow delete: if false;
+    }
+
+    //===================================================
     // STORIES
     //===================================================
 

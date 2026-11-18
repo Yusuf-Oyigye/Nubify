@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../widgets/delete_account_dialog.dart';
 import '../widgets/nubify_menu_components.dart';
 import 'nubify_information_screens.dart';
-
 //===================================================
 // NUBIFY — PREMIUM SETTINGS SCREEN
 //===================================================
@@ -110,6 +110,41 @@ class NubifySettingsScreen extends StatelessWidget {
                   ),
                 ),
               );
+            },
+          ),
+
+          const SizedBox(height: 25),
+
+          //=========================================
+          // ACCOUNT
+          //=========================================
+
+          Text(
+            'Account',
+
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color:
+              NubifyMenuColors.primaryText(
+                context,
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 13),
+
+          //=========================================
+          // DELETE ACCOUNT
+          //=========================================
+
+          _SettingsLink(
+            label: 'Delete Account',
+            icon: Icons.delete_forever_outlined,
+            color: NubifyPalette.crimson,
+
+            onTap: () {
+              confirmDeleteAccount(context);
             },
           ),
         ],

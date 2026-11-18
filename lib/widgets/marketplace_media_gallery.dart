@@ -29,8 +29,6 @@ class _MarketplaceMediaGalleryState extends State<MarketplaceMediaGallery> {
         child: const Center(
           child: MarketplaceBrandIcon(
             size: 72,
-            tintColor: MarketplaceTheme.sky,
-            fallbackColor: MarketplaceTheme.sky,
           ),
         ),
       );

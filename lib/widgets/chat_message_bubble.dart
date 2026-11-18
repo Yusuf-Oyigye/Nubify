@@ -416,8 +416,6 @@ class ChatMessageBubble extends StatelessWidget {
                 color: Colors.white10,
                 child: const MarketplaceBrandIcon(
                   size: 40,
-                  tintColor: _blue,
-                  fallbackColor: _blue,
                 ),
               ),
 
@@ -455,8 +453,6 @@ class ChatMessageBubble extends StatelessWidget {
                     children: <Widget>[
                       MarketplaceBrandIcon(
                         size: 15,
-                        tintColor: Colors.white60,
-                        fallbackColor: Colors.white60,
                       ),
                       SizedBox(width: 5),
                       Text(
