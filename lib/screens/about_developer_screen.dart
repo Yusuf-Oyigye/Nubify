@@ -27,8 +27,10 @@ class _Developer {
 
   static const String roleLine = 'Founder / Developer / Super-Admin of Nubify';
 
-  // Shown until you pick a new photo inside the app.
+  // Shown until you pick a new photo inside the app. The
+  // square frame shows the top part; tapping shows it all.
   static const String photoAsset = 'assets/images/my_pic.jpg';
+  static const Alignment photoFocus = Alignment(0, -.7);
 
   // Your Nubify user id. When filled, a "View my Nubify
   // profile" button appears at the bottom.
@@ -88,6 +90,7 @@ class _Developer {
   static const String instagram = ''; // https://instagram.com/yourname
   static const String tiktok = ''; // https://www.tiktok.com/@yourname
   static const String facebook = ''; // https://facebook.com/yourname
+  static const String gmail = ''; // yourname@gmail.com (address only)
 }
 
 //===================================================
@@ -242,14 +245,15 @@ class AboutDeveloperScreen extends StatelessWidget {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 6),
                           const Text(
                             _Developer.handle,
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               color: NubifyHonorColors.goldLight,
-                              fontSize: 15,
+                              fontSize: 17.5,
                               fontWeight: FontWeight.w600,
+                              letterSpacing: 1.2,
                             ),
                           ),
                           const SizedBox(height: 12),
@@ -274,77 +278,42 @@ class AboutDeveloperScreen extends StatelessWidget {
   //===================================================
 
   Widget _buildStory(BuildContext context) {
-    final Color text = NubifyHonorColors.text(context);
-    final Color muted = NubifyHonorColors.muted(context);
-
-    final int words = [
-      ..._Developer.story,
-      _Developer.motto,
-      _Developer.welcome,
-      _Developer.signOff,
-    ].join(' ').split(RegExp(r'\s+')).length;
-    final int minutes = math.max(1, (words / 200).round());
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const NubifySectionLabel(
-          text: 'The story behind Nubify',
-          accent: NubifyHonorColors.gold,
-        ),
-        Container(
-          padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
-          decoration: BoxDecoration(
-            color: NubifyHonorColors.card(context),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: NubifyHonorColors.line(context)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: .06),
-                blurRadius: 24,
-                offset: const Offset(0, 10),
-              ),
-            ],
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+      decoration: BoxDecoration(
+        color: NubifyHonorColors.card(context),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: NubifyHonorColors.line(context)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: .06),
+            blurRadius: 24,
+            offset: const Offset(0, 10),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(Icons.auto_stories_rounded, size: 16, color: muted),
-                  const SizedBox(width: 6),
-                  Text(
-                    '$minutes min read',
-                    style: TextStyle(
-                      color: muted,
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (int i = 0; i < _Developer.story.length; i++) ...[
+            if (i > 0) const SizedBox(height: 14),
+            if (_Developer.story[i] == _Developer.highlight)
+              _HighlightLine(text: _Developer.story[i])
+            else
+              Text(
+                _Developer.story[i],
+                style: TextStyle(
+                  color: NubifyHonorColors.text(context),
+                  fontSize: i == 0 ? 16.5 : 15,
+                  height: 1.7,
+                  fontWeight: i == 0 ? FontWeight.w600 : FontWeight.w400,
+                ),
               ),
-              const SizedBox(height: 14),
-              for (int i = 0; i < _Developer.story.length; i++) ...[
-                if (i > 0) const SizedBox(height: 14),
-                if (_Developer.story[i] == _Developer.highlight)
-                  _HighlightLine(text: _Developer.story[i])
-                else
-                  Text(
-                    _Developer.story[i],
-                    style: TextStyle(
-                      color: text,
-                      fontSize: i == 0 ? 16.5 : 15,
-                      height: 1.7,
-                      fontWeight: i == 0 ? FontWeight.w600 : FontWeight.w400,
-                    ),
-                  ),
-              ],
-              const SizedBox(height: 22),
-              const _ClosingPanel(),
-            ],
-          ),
-        ),
-      ],
+          ],
+          const SizedBox(height: 22),
+          const _ClosingPanel(),
+        ],
+      ),
     );
   }
 
@@ -387,6 +356,13 @@ class AboutDeveloperScreen extends StatelessWidget {
         logo: FaIcon(FontAwesomeIcons.facebookF, color: Colors.white, size: 20),
         link: _Developer.facebook,
         colors: [Color(0xFF1877F2), Color(0xFF0B5FCC)],
+      ),
+      _SocialLink(
+        label: 'Gmail',
+        action: _Developer.gmail.isEmpty ? 'Email me' : _Developer.gmail,
+        logo: const Icon(Icons.mail_rounded, color: Colors.white, size: 21),
+        link: _Developer.gmail.isEmpty ? '' : 'mailto:${_Developer.gmail}',
+        colors: const [Color(0xFFEA4335), Color(0xFFB31412)],
       ),
     ];
 
@@ -475,6 +451,8 @@ class AboutDeveloperScreen extends StatelessWidget {
             Expanded(child: tile(links[3])),
           ],
         ),
+        const SizedBox(height: 12),
+        tile(links[4]),
       ],
     );
   }
@@ -768,7 +746,8 @@ class _DeveloperPhotoState extends State<_DeveloperPhoto>
     _snack(context, message);
   }
 
-  void _viewLarge(Widget photo) {
+  // Shows the whole photo, not the square crop.
+  void _viewLarge() {
     showDialog<void>(
       context: context,
       barrierColor: Colors.black.withValues(alpha: .88),
@@ -776,11 +755,11 @@ class _DeveloperPhotoState extends State<_DeveloperPhoto>
         onTap: () => Navigator.pop(dialogContext),
         child: Center(
           child: Padding(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(20),
             child: InteractiveViewer(
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(28),
-                child: AspectRatio(aspectRatio: 1, child: photo),
+                borderRadius: BorderRadius.circular(20),
+                child: _photo(_currentUrl, BoxFit.contain),
               ),
             ),
           ),
@@ -793,10 +772,11 @@ class _DeveloperPhotoState extends State<_DeveloperPhoto>
   // BUILD
   //===================================================
 
-  Widget _photo(String url) {
-    const Widget asset = Image(
-      image: AssetImage(_Developer.photoAsset),
-      fit: BoxFit.cover,
+  Widget _photo(String url, BoxFit fit) {
+    final Widget asset = Image(
+      image: const AssetImage(_Developer.photoAsset),
+      fit: fit,
+      alignment: _Developer.photoFocus,
     );
 
     if (!url.startsWith('http')) {
@@ -805,7 +785,8 @@ class _DeveloperPhotoState extends State<_DeveloperPhoto>
 
     return CachedNetworkImage(
       imageUrl: url,
-      fit: BoxFit.cover,
+      fit: fit,
+      alignment: _Developer.photoFocus,
       placeholder: (_, _) => asset,
       errorWidget: (_, _, _) => asset,
     );
@@ -823,7 +804,6 @@ class _DeveloperPhotoState extends State<_DeveloperPhoto>
       initialData: '',
       builder: (context, snapshot) {
         _currentUrl = snapshot.data ?? '';
-        final Widget photo = _photo(_currentUrl);
 
         return SizedBox.square(
           dimension: size + 10,
@@ -874,8 +854,8 @@ class _DeveloperPhotoState extends State<_DeveloperPhoto>
                           image: true,
                           label: 'Photo of ${_Developer.name}',
                           child: GestureDetector(
-                            onTap: () => _viewLarge(photo),
-                            child: photo,
+                            onTap: _viewLarge,
+                            child: _photo(_currentUrl, BoxFit.cover),
                           ),
                         ),
                         if (_busy)
@@ -1113,17 +1093,6 @@ class _ClosingPanel extends StatelessWidget {
               fontSize: 13,
               height: 1.5,
               fontStyle: FontStyle.italic,
-            ),
-          ),
-          const SizedBox(height: 12),
-          const Text(
-            '— ${_Developer.name} · Digitaldoc',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: NubifyHonorColors.goldLight,
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              letterSpacing: .3,
             ),
           ),
         ],

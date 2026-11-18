@@ -58,6 +58,41 @@ void main() {
     expect(find.byIcon(Icons.copy_rounded), findsNothing);
     expect(find.byIcon(Icons.format_quote_rounded), findsNothing);
     expect(find.text('What I built'), findsNothing);
+    expect(find.text('The story behind Nubify'), findsNothing);
+    expect(find.textContaining('min read'), findsNothing);
+    expect(find.textContaining('— Yusuf Oyigye'), findsNothing);
+  });
+
+  testWidgets('lists Gmail with the other social handles', (tester) async {
+    await pumpScreen(tester, width: 320, brightness: Brightness.light);
+
+    await tester.scrollUntilVisible(find.text('Gmail'), 300);
+    for (final String label in [
+      'WhatsApp',
+      'Instagram',
+      'TikTok',
+      'Facebook',
+      'Gmail',
+    ]) {
+      expect(find.text(label), findsOneWidget);
+    }
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('tapping the photo shows the whole, uncropped photo',
+      (tester) async {
+    await pumpScreen(tester, width: 411, brightness: Brightness.dark);
+
+    await tester.tap(find.bySemanticsLabel('Photo of Yusuf Oyigye'));
+    await tester.pump(const Duration(seconds: 1));
+
+    final Image full = tester.widget<Image>(
+      find.descendant(
+        of: find.byType(InteractiveViewer),
+        matching: find.byType(Image),
+      ),
+    );
+    expect(full.fit, BoxFit.contain);
   });
 
   testWidgets('hides the change-photo button for normal users',
