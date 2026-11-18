@@ -35,7 +35,7 @@ const List<_Honoree> _honorees = [
   _Honoree(
     name: 'Umar Harun',
     faculty: 'Faculty of Physical Therapy',
-    role: 'Grand Patron of Nubify',
+    role: 'Patron of Nubify',
     photo: '',
   ),
   _Honoree(
@@ -275,7 +275,7 @@ class _HonoreeCard extends StatelessWidget {
                 const SizedBox(height: 7),
                 _FacultyChip(faculty: honoree.faculty),
                 const SizedBox(height: 7),
-                _GreenRolePill(role: honoree.role),
+                _RolePill(role: honoree.role),
               ],
             ),
           ),
@@ -411,31 +411,99 @@ class _FacultyChip extends StatelessWidget {
   }
 }
 
-class _GreenRolePill extends StatelessWidget {
-  const _GreenRolePill({required this.role});
+// Each role has its own colour and icon.
+class _RoleStyle {
+  const _RoleStyle({
+    required this.color,
+    required this.lightText,
+    required this.darkText,
+    required this.icon,
+  });
+
+  final Color color;
+  final Color lightText;
+  final Color darkText;
+  final IconData icon;
+
+  static const _RoleStyle patron = _RoleStyle(
+    color: NubifyHonorColors.gold,
+    lightText: Color(0xFF7A5C0A),
+    darkText: NubifyHonorColors.goldLight,
+    icon: Icons.star_rounded,
+  );
+
+  static const _RoleStyle advisor = _RoleStyle(
+    color: Color(0xFF8B6FE8),
+    lightText: Color(0xFF5B3FC4),
+    darkText: Color(0xFFCDBEFF),
+    icon: Icons.lightbulb_rounded,
+  );
+
+  static const _RoleStyle moderator = _RoleStyle(
+    color: NubifyHonorColors.emerald,
+    lightText: NubifyHonorColors.emeraldDeep,
+    darkText: NubifyHonorColors.emeraldLight,
+    icon: Icons.shield_rounded,
+  );
+
+  static const _RoleStyle member = _RoleStyle(
+    color: Color(0xFF6B8299),
+    lightText: Color(0xFF3F5468),
+    darkText: Color(0xFFBFD0E0),
+    icon: Icons.person_rounded,
+  );
+
+  static _RoleStyle of(String role) {
+    final String value = role.toLowerCase();
+
+    if (value.contains('patron')) {
+      return patron;
+    }
+    if (value.contains('advis')) {
+      return advisor;
+    }
+    if (value.contains('moderator')) {
+      return moderator;
+    }
+    return member;
+  }
+}
+
+class _RolePill extends StatelessWidget {
+  const _RolePill({required this.role});
 
   final String role;
 
   @override
   Widget build(BuildContext context) {
     final bool dark = NubifyHonorColors.isDark(context);
+    final _RoleStyle style = _RoleStyle.of(role);
+    final Color text = dark ? style.darkText : style.lightText;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.fromLTRB(8, 4, 10, 4),
       decoration: BoxDecoration(
-        color: NubifyHonorColors.emerald.withValues(alpha: dark ? .2 : .12),
+        color: style.color.withValues(alpha: dark ? .2 : .12),
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: style.color.withValues(alpha: .35)),
       ),
-      child: Text(
-        role,
-        style: TextStyle(
-          color: dark
-              ? NubifyHonorColors.emeraldLight
-              : NubifyHonorColors.emeraldDeep,
-          fontSize: 11.5,
-          fontWeight: FontWeight.w700,
-          letterSpacing: .3,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(style.icon, size: 13, color: text),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              role,
+              style: TextStyle(
+                color: text,
+                fontSize: 11.5,
+                fontWeight: FontWeight.w700,
+                letterSpacing: .3,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

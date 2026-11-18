@@ -58,7 +58,7 @@ void main() {
         );
       }
     }
-    expect(find.text('Grand Patron of Nubify'), findsOneWidget);
+    expect(find.text('Patron of Nubify'), findsOneWidget);
     expect(find.text('Advisor'), findsOneWidget);
     expect(find.text('Moderator'), findsNWidgets(3));
     expect(find.text('Member'), findsOneWidget);
@@ -68,6 +68,31 @@ void main() {
     }
     expect(find.textContaining('honourees'), findsNothing);
   });
+
+  for (final Brightness brightness in Brightness.values) {
+    testWidgets('each role has its own colour (${brightness.name})',
+        (tester) async {
+      await pumpScreen(tester, width: 411, brightness: brightness);
+
+      Color? colorOf(String role) =>
+          tester.widget<Text>(find.text(role).first).style?.color;
+
+      final Set<Color?> colors = {
+        for (final String role in [
+          'Patron of Nubify',
+          'Advisor',
+          'Moderator',
+          'Member',
+        ])
+          colorOf(role),
+      };
+      expect(colors.length, 4);
+      expect(find.byIcon(Icons.star_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.lightbulb_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.shield_rounded), findsNWidgets(3));
+      expect(find.byIcon(Icons.person_rounded), findsOneWidget);
+    });
+  }
 
   testWidgets('each faculty uses its sign-up icon', (tester) async {
     await pumpScreen(tester, width: 411, brightness: Brightness.light);
