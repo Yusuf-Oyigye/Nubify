@@ -11,6 +11,7 @@ import 'nubify_settings_screen.dart';
 import 'user_connections_screen.dart';
 import '../widgets/nubify_menu_components.dart';
 import 'about_developer_screen.dart';
+import 'explore_nub_screen.dart';
 
 //===================================================
 // NUBIFY — PREMIUM MENU SCREEN
@@ -851,7 +852,7 @@ class _MenuScreenState extends State<MenuScreen> {
       // ROW 2
       //===============================================
       _MenuItem(
-        'Live 3D Map',
+        'NUB Map',
         Icons.map_outlined,
         NubifyPalette.emerald,
         () => _unavailable('Live 3D Map'),
@@ -878,7 +879,7 @@ class _MenuScreenState extends State<MenuScreen> {
         'Explore NUB',
         Icons.explore_outlined,
         NubifyPalette.teal,
-        () => _unavailable('Explore NUB'),
+            () => _push(const ExploreNubScreen()),
       ),
 
       //===============================================

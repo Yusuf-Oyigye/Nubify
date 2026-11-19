@@ -38,7 +38,7 @@ class _Developer {
 
   // The story, one paragraph per item.
   static const List<String> story = [
-    'Yusuf Oyigye, also known as Digitaldoc, is a student of the Faculty of '
+    'Yusuf Muhammad Oyigye, also known as Digitaldoc, is a student of the Faculty of '
         'Medicine and Surgery with a strong interest in technology and a '
         'passion for learning new things.',
     'The idea behind Nubify came from different life experiences, personal '
@@ -56,7 +56,7 @@ class _Developer {
         'believe that despite our differences, we all share something in '
         'common: we are part of the same university community.',
     'Building Nubify while pursuing Medicine and Surgery has not always been '
-        'easy. Balancing academics with learning and working on technology '
+        'easy. Balancing academics with learning and working on tech '
         'comes with its own challenges. There have been moments of '
         'uncertainty, mistakes and plenty of things to figure out along the '
         'way. But through consistency, determination and a willingness to keep '

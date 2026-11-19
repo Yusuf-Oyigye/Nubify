@@ -2126,6 +2126,20 @@ match /calls/{callId} {
 
       allow delete: if false;
     }
+        //===================================================
+        // EXPLORE NUB CAMPUS PHOTOS
+        //
+        // Every signed-in user can see them. Only the Nubify
+        // owner can add or remove them from inside the app.
+        //===================================================
+
+        match /nubify_explore_places/{placeId} {
+
+          allow read: if isSignedIn();
+
+          allow create, update, delete: if isSignedIn() &&
+              request.auth.token.get('marketplaceOwner', false) == true;
+        }
 
     //===================================================
     // STORIES
