@@ -819,7 +819,7 @@ class _MenuScreenState extends State<MenuScreen> {
   }
 
   //===================================================
-  // EIGHT COLORFUL SHORTCUTS
+  // TEN COLORFUL SHORTCUTS
   //===================================================
 
   Widget _shortcutGrid() {
@@ -846,6 +846,14 @@ class _MenuScreenState extends State<MenuScreen> {
         Icons.trending_up_rounded,
         NubifyPalette.coral,
         () => _unavailable('NUB Trend'),
+      ),
+
+      // Games will live here later.
+      _MenuItem(
+        'Games',
+        Icons.sports_esports_rounded,
+        NubifyPalette.sapphire,
+        () => _unavailable('Games'),
       ),
 
       //===============================================
