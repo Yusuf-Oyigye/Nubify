@@ -4,204 +4,149 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../models/chat_message.dart';
 import '../services/chat_sevice.dart';
+import '../widgets/full_photo_viewer.dart';
+import '../widgets/nubify_chat_style.dart';
 
 //===============================
 // CHAT MEDIA SCREEN
+//
+// Every photo, video, link and document shared in a
+// chat, split into three tabs.
 //===============================
 
-class ChatMediaScreen
-    extends StatelessWidget {
-  ChatMediaScreen({
+class ChatMediaScreen extends StatefulWidget {
+  const ChatMediaScreen({
     super.key,
     required this.otherUserId,
     required this.otherName,
+    this.initialTab = 0,
   });
 
   final String otherUserId;
 
   final String otherName;
 
-  final ChatService
-  _chatService =
-  ChatService();
+  // 0 = Media, 1 = Links, 2 = Docs.
+  final int initialTab;
 
-  //===============================
-  // URL REGEX
-  //===============================
+  @override
+  State<ChatMediaScreen> createState() => _ChatMediaScreenState();
+}
 
-  final RegExp _urlRegex =
-  RegExp(
+class _ChatMediaScreenState extends State<ChatMediaScreen> {
+  static final RegExp _urlRegex = RegExp(
     r'(https?:\/\/[^\s]+)',
-    caseSensitive:
-    false,
+    caseSensitive: false,
   );
+
+  final ChatService _chatService = ChatService();
+
+  late final Stream<QuerySnapshot<Map<String, dynamic>>> _messagesStream =
+      _chatService.getMessages(widget.otherUserId);
 
   //===============================
   // OPEN URL
   //===============================
 
-  Future<void> _openUrl(
-      String url,
-      ) async {
-    final Uri? uri =
-    Uri.tryParse(
-      url,
-    );
+  Future<void> _openUrl(String url) async {
+    final Uri? uri = Uri.tryParse(url);
 
     if (uri == null) {
       return;
     }
 
-    if (await canLaunchUrl(
-      uri,
-    )) {
-      await launchUrl(
-        uri,
-        mode:
-        LaunchMode
-            .externalApplication,
-      );
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
+  }
+
+  void _openPhoto(String url) {
+    Navigator.push(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) => FullPhotoViewer(title: widget.otherName, photoUrl: url),
+      ),
+    );
   }
 
   //===============================
   // MEDIA
   //===============================
 
-  Widget _mediaTab(
-      List<ChatMessage>
-      messages,
-      ) {
-    final List<ChatMessage>
-    media =
-    messages
+  Widget _mediaTab(List<ChatMessage> messages) {
+    final bool dark = NubifyChatStyle.isDark(context);
+
+    final List<ChatMessage> media = messages
         .where(
-          (
-          ChatMessage
-          message,
-          ) =>
-      message.isImage ||
-          message.isVideo,
-    )
+          (ChatMessage message) =>
+              (message.isImage || message.isVideo) &&
+              message.mediaUrl.trim().isNotEmpty,
+        )
         .toList();
 
     if (media.isEmpty) {
-      return _empty(
-        'No media sent yet.',
-        Icons
-            .photo_library_outlined,
-      );
+      return _empty('No media sent yet.', Icons.photo_library_rounded);
     }
 
     return GridView.builder(
-      padding:
-      const EdgeInsets.all(
-        2,
+      padding: const EdgeInsets.all(12),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        mainAxisSpacing: 6,
+        crossAxisSpacing: 6,
       ),
-      gridDelegate:
-      const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount:
-        3,
-        mainAxisSpacing:
-        2,
-        crossAxisSpacing:
-        2,
-      ),
-      itemCount:
-      media.length,
-      itemBuilder:
-          (
-          BuildContext context,
-          int index,
-          ) {
-        final ChatMessage
-        message =
-        media[index];
+      itemCount: media.length,
+      itemBuilder: (BuildContext context, int index) {
+        final ChatMessage message = media[index];
 
-        if (message.isVideo) {
-          return GestureDetector(
-            onTap:
-                () {
-              _openUrl(
-                message.mediaUrl,
-              );
+        return Semantics(
+          button: true,
+          label: message.isVideo ? 'Open video' : 'Open photo',
+          child: GestureDetector(
+            onTap: () {
+              if (message.isVideo) {
+                _openUrl(message.mediaUrl);
+              } else {
+                _openPhoto(message.mediaUrl);
+              }
             },
-            child:
-            Container(
-              color:
-              Colors.white10,
-              child:
-              Stack(
-                alignment:
-                Alignment.center,
-                children:
-                <Widget>[
-                  const Positioned.fill(
-                    child:
-                    Icon(
-                      Icons
-                          .videocam_rounded,
-                      color:
-                      Colors.white24,
-                      size:
-                      42,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(14),
+              child: message.isVideo
+                  ? DecoratedBox(
+                      decoration: const BoxDecoration(
+                        gradient: NubifyChatStyle.outgoing,
+                      ),
+                      child: Center(
+                        child: Container(
+                          width: 42,
+                          height: 42,
+                          decoration: const BoxDecoration(
+                            color: Colors.black38,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.play_arrow_rounded,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    )
+                  : Image.network(
+                      message.mediaUrl,
+                      fit: BoxFit.cover,
+                      cacheWidth: 360,
+                      errorBuilder: (_, _, _) => ColoredBox(
+                        color: dark
+                            ? const Color(0xFF223042)
+                            : const Color(0xFFE7EEF8),
+                        child: const Icon(
+                          Icons.broken_image_outlined,
+                          color: Colors.grey,
+                        ),
+                      ),
                     ),
-                  ),
-                  Container(
-                    width:
-                    42,
-                    height:
-                    42,
-                    decoration:
-                    const BoxDecoration(
-                      color:
-                      Colors.black54,
-                      shape:
-                      BoxShape.circle,
-                    ),
-                    child:
-                    const Icon(
-                      Icons
-                          .play_arrow_rounded,
-                      color:
-                      Colors.white,
-                    ),
-                  ),
-                ],
-              ),
             ),
-          );
-        }
-
-        return GestureDetector(
-          onTap:
-              () {
-            _openUrl(
-              message.mediaUrl,
-            );
-          },
-          child:
-          Image.network(
-            message.mediaUrl,
-            fit:
-            BoxFit.cover,
-            errorBuilder:
-                (
-                _,
-                _,
-                _,
-                ) =>
-                Container(
-                  color:
-                  Colors.white10,
-                  child:
-                  const Icon(
-                    Icons
-                        .broken_image_outlined,
-                    color:
-                    Colors.white38,
-                  ),
-                ),
           ),
         );
       },
@@ -212,118 +157,28 @@ class ChatMediaScreen
   // LINKS
   //===============================
 
-  Widget _linksTab(
-      List<ChatMessage>
-      messages,
-      ) {
-    final List<String>
-    links =
-    <String>[];
-
-    for (final ChatMessage
-    message
-    in messages) {
-      links.addAll(
-        _urlRegex
-            .allMatches(
-          message.text,
-        )
-            .map(
-              (
-              RegExpMatch match,
-              ) =>
-          match.group(
-            0,
-          ) ??
-              '',
-        )
-            .where(
-              (
-              String item,
-              ) =>
-          item.isNotEmpty,
-        ),
-      );
-    }
+  Widget _linksTab(List<ChatMessage> messages) {
+    final List<String> links = <String>[
+      for (final ChatMessage message in messages)
+        for (final RegExpMatch match in _urlRegex.allMatches(message.text))
+          if ((match.group(0) ?? '').isNotEmpty) match.group(0)!,
+    ];
 
     if (links.isEmpty) {
-      return _empty(
-        'No links sent yet.',
-        Icons.link_rounded,
-      );
+      return _empty('No links sent yet.', Icons.link_rounded);
     }
 
-    return ListView.separated(
-      itemCount:
-      links.length,
-      separatorBuilder:
-          (
-          _,
-          _,
-          ) =>
-      const Divider(
-        height:
-        1,
-        color:
-        Colors.white10,
-      ),
-      itemBuilder:
-          (
-          BuildContext context,
-          int index,
-          ) {
-        final String link =
-        links[index];
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 20),
+      itemCount: links.length,
+      itemBuilder: (BuildContext context, int index) {
+        final String link = links[index];
 
-        return ListTile(
-          leading:
-          Container(
-            width:
-            44,
-            height:
-            44,
-            decoration:
-            BoxDecoration(
-              color:
-              const Color(
-                0xFF29B6F6,
-              ).withValues(
-                alpha: 0.12,
-              ),
-              borderRadius:
-              BorderRadius.circular(
-                12,
-              ),
-            ),
-            child:
-            const Icon(
-              Icons
-                  .link_rounded,
-              color:
-              Color(
-                0xFF29B6F6,
-              ),
-            ),
-          ),
-          title:
-          Text(
-            link,
-            maxLines:
-            2,
-            overflow:
-            TextOverflow
-                .ellipsis,
-            style:
-            const TextStyle(
-              color:
-              Colors.white,
-            ),
-          ),
-          onTap:
-              () {
-            _openUrl(
-              link,
-            );
+        return _rowCard(
+          icon: Icons.link_rounded,
+          title: link,
+          onTap: () {
+            _openUrl(link);
           },
         );
       },
@@ -334,103 +189,28 @@ class ChatMediaScreen
   // DOCUMENTS
   //===============================
 
-  Widget _documentsTab(
-      List<ChatMessage>
-      messages,
-      ) {
-    final List<ChatMessage>
-    documents =
-    messages
-        .where(
-          (
-          ChatMessage
-          message,
-          ) =>
-      message.isDocument,
-    )
+  Widget _documentsTab(List<ChatMessage> messages) {
+    final List<ChatMessage> documents = messages
+        .where((ChatMessage message) => message.isDocument)
         .toList();
 
     if (documents.isEmpty) {
-      return _empty(
-        'No documents sent yet.',
-        Icons
-            .description_outlined,
-      );
+      return _empty('No documents sent yet.', Icons.description_rounded);
     }
 
-    return ListView.separated(
-      itemCount:
-      documents.length,
-      separatorBuilder:
-          (
-          _,
-          _,
-          ) =>
-      const Divider(
-        height:
-        1,
-        color:
-        Colors.white10,
-      ),
-      itemBuilder:
-          (
-          BuildContext context,
-          int index,
-          ) {
-        final ChatMessage
-        message =
-        documents[index];
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 20),
+      itemCount: documents.length,
+      itemBuilder: (BuildContext context, int index) {
+        final ChatMessage message = documents[index];
 
-        return ListTile(
-          leading:
-          Container(
-            width:
-            44,
-            height:
-            44,
-            decoration:
-            BoxDecoration(
-              color:
-              Colors.white10,
-              borderRadius:
-              BorderRadius.circular(
-                12,
-              ),
-            ),
-            child:
-            const Icon(
-              Icons
-                  .description_rounded,
-              color:
-              Color(
-                0xFF29B6F6,
-              ),
-            ),
-          ),
-          title:
-          Text(
-            message.fileName
-                .trim()
-                .isNotEmpty
-                ? message
-                .fileName
-                : 'Document',
-            maxLines:
-            2,
-            overflow:
-            TextOverflow
-                .ellipsis,
-            style:
-            const TextStyle(
-              color:
-              Colors.white,
-            ),
-          ),
-          onTap:
-              () {
-            _openUrl(
-              message.mediaUrl,
-            );
+        return _rowCard(
+          icon: Icons.description_rounded,
+          title: message.fileName.trim().isNotEmpty
+              ? message.fileName
+              : 'Document',
+          onTap: () {
+            _openUrl(message.mediaUrl);
           },
         );
       },
@@ -438,40 +218,132 @@ class ChatMediaScreen
   }
 
   //===============================
+  // ROW CARD
+  //===============================
+
+  Widget _rowCard({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+  }) {
+    final bool dark = NubifyChatStyle.isDark(context);
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+    final BorderRadius radius = BorderRadius.circular(18);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: scheme.surface,
+          borderRadius: radius,
+          border: Border.all(
+            color: dark
+                ? Colors.white.withValues(alpha: 0.06)
+                : const Color(0xFFE3E9F3),
+          ),
+        ),
+        child: Material(
+          type: MaterialType.transparency,
+          child: InkWell(
+            borderRadius: radius,
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                children: <Widget>[
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      gradient: NubifyChatStyle.brand,
+                      borderRadius: BorderRadius.circular(13),
+                    ),
+                    child: Icon(icon, color: Colors.white, size: 21),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: scheme.onSurface,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    Icons.open_in_new_rounded,
+                    color: scheme.onSurfaceVariant,
+                    size: 18,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  //===============================
   // EMPTY
   //===============================
 
-  Widget _empty(
-      String text,
-      IconData icon,
-      ) {
+  Widget _empty(String text, IconData icon) {
     return Center(
-      child:
-      Column(
-        mainAxisSize:
-        MainAxisSize.min,
-        children:
-        <Widget>[
-          Icon(
-            icon,
-            color:
-            Colors.white30,
-            size:
-            48,
-          ),
-          const SizedBox(
-            height:
-            10,
-          ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          NubifyChatEmptyIcon(icon: icon),
+          const SizedBox(height: 14),
           Text(
             text,
-            style:
-            const TextStyle(
-              color:
-              Colors.white54,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  //===============================
+  // PILL TABS
+  //===============================
+
+  PreferredSizeWidget _tabs() {
+    final bool dark = NubifyChatStyle.isDark(context);
+
+    return PreferredSize(
+      preferredSize: const Size.fromHeight(56),
+      child: Container(
+        height: 44,
+        margin: const EdgeInsets.fromLTRB(14, 0, 14, 12),
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          color: dark ? const Color(0xFF1C2735) : const Color(0xFFE8EEF7),
+          borderRadius: BorderRadius.circular(22),
+        ),
+        child: TabBar(
+          indicator: BoxDecoration(
+            gradient: NubifyChatStyle.brand,
+            borderRadius: BorderRadius.circular(18),
+          ),
+          indicatorSize: TabBarIndicatorSize.tab,
+          dividerColor: Colors.transparent,
+          labelColor: Colors.white,
+          unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
+          labelStyle: const TextStyle(fontWeight: FontWeight.w800),
+          tabs: const <Widget>[
+            Tab(text: 'Media'),
+            Tab(text: 'Links'),
+            Tab(text: 'Docs'),
+          ],
+        ),
       ),
     );
   }
@@ -481,129 +353,50 @@ class ChatMediaScreen
   //===============================
 
   @override
-  Widget build(
-      BuildContext context,
-      ) {
+  Widget build(BuildContext context) {
     return DefaultTabController(
-      length:
-      3,
-      child:
-      Scaffold(
-        backgroundColor:
-        const Color(
-          0xFF0B1116,
+      length: 3,
+      initialIndex: widget.initialTab.clamp(0, 2),
+      child: Scaffold(
+        appBar: AppBar(
+          surfaceTintColor: Colors.transparent,
+          title: Text(
+            'Media with ${widget.otherName}',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontWeight: FontWeight.w800),
+          ),
+          bottom: _tabs(),
         ),
-        appBar:
-        AppBar(
-          backgroundColor:
-          const Color(
-            0xFF0B1116,
-          ),
-          title:
-          Text(
-            'Media with $otherName',
-            maxLines:
-            1,
-            overflow:
-            TextOverflow
-                .ellipsis,
-          ),
-          bottom:
-          const TabBar(
-            indicatorColor:
-            Color(
-              0xFF29B6F6,
-            ),
-            labelColor:
-            Color(
-              0xFF29B6F6,
-            ),
-            unselectedLabelColor:
-            Colors.white54,
-            tabs:
-            <Widget>[
-              Tab(
-                text:
-                'Media',
-              ),
-              Tab(
-                text:
-                'Links',
-              ),
-              Tab(
-                text:
-                'Docs',
-              ),
-            ],
-          ),
-        ),
-        body:
-        StreamBuilder<
-            QuerySnapshot<
-                Map<String,
-                    dynamic>>>(
-          stream:
-          _chatService
-              .getMessages(
-            otherUserId,
-          ),
+        body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+          stream: _messagesStream,
           builder:
               (
-              BuildContext
-              context,
-              AsyncSnapshot<
-                  QuerySnapshot<
-                      Map<String,
-                          dynamic>>>
-              snapshot,
+                BuildContext context,
+                AsyncSnapshot<QuerySnapshot<Map<String, dynamic>>> snapshot,
               ) {
-            if (snapshot
-                .connectionState ==
-                ConnectionState
-                    .waiting) {
-              return const Center(
-                child:
-                CircularProgressIndicator(
-                  color:
-                  Color(
-                    0xFF29B6F6,
-                  ),
-                ),
-              );
-            }
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(
+                    child: CircularProgressIndicator(
+                      color: NubifyChatStyle.royal,
+                    ),
+                  );
+                }
 
-            final List<ChatMessage>
-            messages =
-            (snapshot.data
-                ?.docs ??
-                <QueryDocumentSnapshot<
-                    Map<String,
-                        dynamic>>>[])
-                .map(
-                  (
-                  document,
-                  ) =>
-                  ChatMessage.fromDocument(
-                    document,
-                  ),
-            )
-                .toList();
+                final List<ChatMessage> messages =
+                    (snapshot.data?.docs ??
+                            <QueryDocumentSnapshot<Map<String, dynamic>>>[])
+                        .map(ChatMessage.fromDocument)
+                        .toList();
 
-            return TabBarView(
-              children:
-              <Widget>[
-                _mediaTab(
-                  messages,
-                ),
-                _linksTab(
-                  messages,
-                ),
-                _documentsTab(
-                  messages,
-                ),
-              ],
-            );
-          },
+                return TabBarView(
+                  children: <Widget>[
+                    _mediaTab(messages),
+                    _linksTab(messages),
+                    _documentsTab(messages),
+                  ],
+                );
+              },
         ),
       ),
     );

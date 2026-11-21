@@ -31,11 +31,13 @@ class NubifyChatStyle {
     colors: <Color>[sky, royal, violet],
   );
 
-  // Your own messages.
+  // Your own messages: navy blue.
+  static const Color navy = Color(0xFF14286B);
+
   static const LinearGradient outgoing = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: <Color>[Color(0xFF2E8BFF), Color(0xFF5B4DF0)],
+    colors: <Color>[Color(0xFF1F3A8F), navy],
   );
 
   static bool isDark(BuildContext context) =>
@@ -65,7 +67,7 @@ class NubifyChatStyle {
           : Border.all(color: Colors.white.withValues(alpha: 0.06)),
       boxShadow: <BoxShadow>[
         BoxShadow(
-          color: (mine ? const Color(0xFF4058F2) : Colors.black).withValues(
+          color: (mine ? navy : Colors.black).withValues(
             alpha: dark ? 0.30 : 0.16,
           ),
           blurRadius: 12,

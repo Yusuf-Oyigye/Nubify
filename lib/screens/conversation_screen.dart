@@ -22,6 +22,7 @@ import '../widgets/chat_date_separator.dart';
 import '../widgets/chat_message_bubble.dart';
 import '../widgets/marketplace_brand_icon.dart';
 import 'chat_catalogue_screen.dart';
+import 'chat_contact_info_screen.dart';
 import 'chat_media_screen.dart';
 import 'profile_screen.dart';
 import 'story_viewer_screen.dart';
@@ -874,6 +875,36 @@ class _ConversationScreenState extends State<ConversationScreen> {
   }
 
   //===============================
+  // OPEN CONTACT INFO
+  //===============================
+
+  // Tapping the name or photo at the top opens contact
+  // info (media, links, docs, block, report), like WhatsApp.
+  void _openContactInfo() {
+    Navigator.push(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) => ChatContactInfoScreen(
+          otherUserId: widget.otherUserId,
+          otherName: widget.otherName,
+          otherUsername: widget.otherUsername,
+          otherPhotoUrl: widget.otherPhotoUrl,
+          isBlocked: () => _blocked,
+          onCall: _startCall,
+          onSearch: () {
+            setState(() {
+              _searching = true;
+            });
+          },
+          onCopyLink: _copyProfileLink,
+          onReport: _reportUser,
+          onToggleBlock: _blockOrUnblock,
+        ),
+      ),
+    );
+  }
+
+  //===============================
   // COPY PROFILE LINK
   //===============================
 
@@ -1292,9 +1323,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
             return IconButton(
               tooltip: 'Seller Marketplace listings',
               onPressed: _openCatalogue,
-              icon: const MarketplaceBrandIcon(
-                size: 25,
-              ),
+              icon: const MarketplaceBrandIcon(size: 25),
             );
           },
     );
@@ -1334,20 +1363,16 @@ class _ConversationScreenState extends State<ConversationScreen> {
         bottom: BorderSide(color: palette.divider.withValues(alpha: 0.45)),
       ),
       title: InkWell(
-        onTap: _openProfile,
+        onTap: _openContactInfo,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 2),
           child: Row(
             children: <Widget>[
-              GestureDetector(
-                onTap: _openProfile,
-
-                child: NubifyChatAvatar(
-                  photoUrl: widget.otherPhotoUrl,
-                  radius: 17,
-                  ring: true,
-                ),
+              NubifyChatAvatar(
+                photoUrl: widget.otherPhotoUrl,
+                radius: 17,
+                ring: true,
               ),
 
               const SizedBox(width: 10),
@@ -2191,53 +2216,54 @@ class _ConversationScreenState extends State<ConversationScreen> {
       appBar: _searching ? _searchAppBar() : _normalAppBar(),
       body: NubifyChatBackground(
         child: SafeArea(
-        child: Column(
-          children: <Widget>[
-            //===============================
-            // MESSAGES
-            //===============================
+          child: Column(
+            children: <Widget>[
+              //===============================
+              // MESSAGES
+              //===============================
 
-            Expanded(
-              child: StreamBuilder<bool>(
-                stream: _activityStream,
-                builder: (BuildContext context, AsyncSnapshot<bool> snapshot) {
-                  return _messageList(snapshot.data == true);
-                },
+              Expanded(
+                child: StreamBuilder<bool>(
+                  stream: _activityStream,
+                  builder:
+                      (BuildContext context, AsyncSnapshot<bool> snapshot) {
+                        return _messageList(snapshot.data == true);
+                      },
+                ),
               ),
-            ),
 
-            //===============================
-            // REPLY
-            //===============================
-            _replyBar(),
+              //===============================
+              // REPLY
+              //===============================
+              _replyBar(),
 
-            //===============================
-            // BLOCKED / COMPOSER
-            //===============================
-            if (_blocked)
-              _blockedBar()
-            else
-              ChatComposer(
-                onLinkPreviewSuppressedChanged: (bool value) {
-                  setState(() {
-                    _linkPreviewDisabled = value;
-                  });
-                },
-                controller: _messageController,
-                sending: _sending,
-                enabled: !_blocked,
-                onSend: _sendMessage,
-                onCamera: _pickCamera,
-                onGallery: _pickGallery,
-                onVideo: _pickVideo,
-                onDocument: _pickDocument,
-                onVoiceRecorded: _sendVoice,
-                onStickerSelected: _sendSticker,
-                onTextChanged: _typingChanged,
-                onRecordingChanged: _recordingChanged,
-              ),
-          ],
-        ),
+              //===============================
+              // BLOCKED / COMPOSER
+              //===============================
+              if (_blocked)
+                _blockedBar()
+              else
+                ChatComposer(
+                  onLinkPreviewSuppressedChanged: (bool value) {
+                    setState(() {
+                      _linkPreviewDisabled = value;
+                    });
+                  },
+                  controller: _messageController,
+                  sending: _sending,
+                  enabled: !_blocked,
+                  onSend: _sendMessage,
+                  onCamera: _pickCamera,
+                  onGallery: _pickGallery,
+                  onVideo: _pickVideo,
+                  onDocument: _pickDocument,
+                  onVoiceRecorded: _sendVoice,
+                  onStickerSelected: _sendSticker,
+                  onTextChanged: _typingChanged,
+                  onRecordingChanged: _recordingChanged,
+                ),
+            ],
+          ),
         ),
       ),
     );
