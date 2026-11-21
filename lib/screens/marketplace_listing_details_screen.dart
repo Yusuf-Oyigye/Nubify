@@ -10,14 +10,13 @@ import '../services/cellular_call_service.dart';
 import '../services/chat_sevice.dart';
 import '../services/marketplace_service.dart';
 import '../utils/marketplace_constants.dart';
+import '../utils/marketplace_share.dart';
 import '../utils/marketplace_theme.dart';
 import '../widgets/marketplace_brand_icon.dart';
 import '../widgets/marketplace_media_gallery.dart';
 import '../widgets/marketplace_more_from_seller.dart';
-import 'chat_forward_screen.dart';
 import 'conversation_screen.dart';
 import 'create_marketplace_listing_screen.dart';
-import 'create_story_screen.dart';
 import 'marketplace_seller_store_screen.dart';
 import 'profile_screen.dart';
 
@@ -146,38 +145,44 @@ class _MarketplaceListingDetailsScreenState
   }
 
   Future<void> _shareToStory(MarketplaceListing listing) async {
-    final bool? shared = await Navigator.push<bool>(
-      context,
-      MaterialPageRoute<bool>(
-        builder: (_) => CreateStoryScreen(
-          initialLinkUrl: _listingLink(listing),
-          initialText: '${listing.title}\n${listing.priceLabel}',
-          initialCaption: 'Discover this on NUB Marketplace',
-          initialBackgroundColor: 0xFF102A43,
-        ),
-      ),
-    );
-    if (mounted && shared == true) {
+    final bool shared = await shareListingToStory(context, listing);
+    if (mounted && shared) {
       _message('Listing added to your Story.');
     }
   }
 
   Future<void> _shareToChat(MarketplaceListing listing) async {
-    final bool? sent = await Navigator.push<bool>(
-      context,
-      MaterialPageRoute<bool>(
-        builder: (_) => ChatForwardScreen(
-          productId: listing.listingId,
-          productSellerId: listing.sellerId,
-          productName: listing.title,
-          productImageUrl: listing.coverUrl,
-          productPrice: listing.priceLabel,
-        ),
-      ),
-    );
-    if (mounted && sent == true) {
+    final bool sent = await shareListingToChat(context, listing);
+    if (mounted && sent) {
       _message('Listing sent.');
     }
+  }
+
+  // Share to Story and Share to Chat, for both the owner's
+  // and the buyer's ⋮ menu.
+  List<PopupMenuEntry<String>> _shareMenuItems() {
+    return const <PopupMenuEntry<String>>[
+      PopupMenuItem(
+        value: 'story',
+        child: Row(
+          children: <Widget>[
+            Icon(Icons.auto_stories_outlined),
+            SizedBox(width: 10),
+            Text('Share to Story'),
+          ],
+        ),
+      ),
+      PopupMenuItem(
+        value: 'chat',
+        child: Row(
+          children: <Widget>[
+            Icon(Icons.near_me_outlined),
+            SizedBox(width: 10),
+            Text('Share to Chat'),
+          ],
+        ),
+      ),
+    ];
   }
 
   Future<void> _showShareOptions(MarketplaceListing listing) async {
@@ -356,10 +361,7 @@ class _MarketplaceListingDetailsScreenState
                     IconButton(
                       tooltip: 'Share listing',
                       onPressed: () => _showShareOptions(listing),
-                      icon: Transform.rotate(
-                        angle: -0.35,
-                        child: const Icon(Icons.send_rounded),
-                      ),
+                      icon: const Icon(Icons.near_me_outlined),
                     ),
                   if (owner)
                     PopupMenuButton<String>(
@@ -392,6 +394,8 @@ class _MarketplaceListingDetailsScreenState
                             value: 'archived',
                             child: Text('Archive'),
                           ),
+                        const PopupMenuDivider(),
+                        ..._shareMenuItems(),
                         const PopupMenuItem(
                           value: 'copy',
                           child: Row(
@@ -423,14 +427,19 @@ class _MarketplaceListingDetailsScreenState
                       onSelected: (String value) {
                         if (value == 'report') {
                           _reportListing(listing);
+                        } else if (value == 'story') {
+                          _shareToStory(listing);
+                        } else if (value == 'chat') {
+                          _shareToChat(listing);
                         } else if (value == 'copy') {
                           _copyLink(listing);
                         } else if (value == 'share_external') {
                           _shareExternal(listing);
                         }
                       },
-                      itemBuilder: (_) => const <PopupMenuEntry<String>>[
-                        PopupMenuItem(
+                      itemBuilder: (_) => <PopupMenuEntry<String>>[
+                        ..._shareMenuItems(),
+                        const PopupMenuItem(
                           value: 'copy',
                           child: Row(
                             children: <Widget>[
@@ -440,7 +449,7 @@ class _MarketplaceListingDetailsScreenState
                             ],
                           ),
                         ),
-                        PopupMenuItem(
+                        const PopupMenuItem(
                           value: 'share_external',
                           child: Row(
                             children: <Widget>[
@@ -450,7 +459,7 @@ class _MarketplaceListingDetailsScreenState
                             ],
                           ),
                         ),
-                        PopupMenuItem(
+                        const PopupMenuItem(
                           value: 'report',
                           child: Text('Report Listing'),
                         ),
@@ -734,10 +743,7 @@ class _MarketplaceListingDetailsScreenState
                           child: IconButton.filled(
                             tooltip: 'Share to Story or Chat',
                             onPressed: () => _showShareOptions(listing),
-                            icon: Transform.rotate(
-                              angle: -0.35,
-                              child: const Icon(Icons.send_rounded),
-                            ),
+                            icon: const Icon(Icons.near_me_outlined),
                             style: IconButton.styleFrom(
                               backgroundColor: MarketplaceTheme.softSurface(
                                 context,
@@ -793,6 +799,10 @@ class _MarketplaceListingDetailsScreenState
           await _service.deleteListing(listing);
           if (mounted) Navigator.pop(context);
         }
+      } else if (action == 'story') {
+        await _shareToStory(listing);
+      } else if (action == 'chat') {
+        await _shareToChat(listing);
       } else if (action == 'copy') {
         await _copyLink(listing);
       } else if (action == 'share_external') {

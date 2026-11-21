@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../models/marketplace_listing.dart';
 import '../services/marketplace_service.dart';
+import '../utils/marketplace_share.dart';
 import '../utils/marketplace_theme.dart';
 import '../widgets/marketplace_brand_icon.dart';
 import 'create_marketplace_listing_screen.dart';
@@ -126,7 +127,17 @@ class _ListingStatusTabState extends State<_ListingStatusTab>
   void initState() {
     super.initState();
     _scrollController.addListener(_handleScroll);
+    MarketplaceService.listingsChanged.addListener(_handleListingsChanged);
     unawaited(_loadListings(reset: true));
+  }
+
+  // A listing was marked sold, restored, edited or deleted
+  // anywhere in the app: every tab reloads, so it moves
+  // straight to the right tab.
+  void _handleListingsChanged() {
+    if (mounted) {
+      unawaited(_loadListings(reset: true));
+    }
   }
 
   @override
@@ -269,6 +280,7 @@ class _ListingStatusTabState extends State<_ListingStatusTab>
 
   @override
   void dispose() {
+    MarketplaceService.listingsChanged.removeListener(_handleListingsChanged);
     _scrollController.dispose();
     super.dispose();
   }
@@ -302,6 +314,23 @@ class _OwnerListingTileState extends State<_OwnerListingTile> {
         ),
       );
       widget.onChanged();
+      return;
+    }
+    if (value == 'story' || value == 'chat') {
+      final bool done = value == 'story'
+          ? await shareListingToStory(context, widget.listing)
+          : await shareListingToChat(context, widget.listing);
+      if (mounted && done) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              value == 'story'
+                  ? 'Listing added to your Story.'
+                  : 'Listing sent.',
+            ),
+          ),
+        );
+      }
       return;
     }
     if (value == 'edit') {
@@ -444,6 +473,12 @@ class _OwnerListingTileState extends State<_OwnerListingTile> {
         ),
       if (listing.status != 'archived')
         const PopupMenuItem(value: 'archived', child: Text('Archive')),
+      // Only a live listing can be opened by the people you share it with.
+      if (listing.status == 'available') ...<PopupMenuEntry<String>>[
+        const PopupMenuDivider(),
+        const PopupMenuItem(value: 'story', child: Text('Share to Story')),
+        const PopupMenuItem(value: 'chat', child: Text('Share to Chat')),
+      ],
       const PopupMenuDivider(),
       const PopupMenuItem(value: 'delete', child: Text('Delete')),
     ];

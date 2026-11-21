@@ -1647,7 +1647,8 @@ class _NubiLeaderboardScreenState
                   .doc(_periodKey)
                   .collection('players'))
                   .orderBy('xp', descending: true)
-                  .limit(50)
+                  // Only the top ten students are ranked.
+                  .limit(10)
                   .snapshots(),
 
               builder: (context, snapshot) {
@@ -1668,13 +1669,15 @@ class _NubiLeaderboardScreenState
 
                 // For production, replace the client
                 // filter with an indexed faculty query.
-                final docs = _scope == 'University'
+                final docs = (_scope == 'University'
                     ? all
                     : all.where(
                       (doc) =>
                   doc.data()['faculty'] ==
                       _myFaculty,
-                ).toList();
+                ))
+                    .take(10)
+                    .toList();
 
                 if (docs.isEmpty) {
                   return nubiEmpty(
@@ -1762,8 +1765,8 @@ class _NubiLeaderboardScreenState
 // ===========================================
 // RANK TITLES AND MEDALS
 //
-// Every place on the leaderboard earns a title and a
-// medal, so everyone has something to be proud of.
+// Each of the top ten earns a title and a
+// medal, so everyone on the board feels proud.
 // ===========================================
 
 class _RankTier {
@@ -1793,13 +1796,13 @@ _RankTier _rankTierFor(int rank) {
       Color(0xFFB45309),
     ]);
   }
-  if (rank <= 10) {
+  if (rank <= 5) {
     return const _RankTier('🏅', 'Elite Scholar', [
       Color(0xFFA78BFA),
       Color(0xFF6D28D9),
     ]);
   }
-  if (rank <= 25) {
+  if (rank <= 10) {
     return const _RankTier('🌟', 'Rising Star', [
       Color(0xFF38BDF8),
       Color(0xFF2563EB),

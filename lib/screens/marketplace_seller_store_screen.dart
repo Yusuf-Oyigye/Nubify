@@ -49,6 +49,7 @@ class _MarketplaceSellerStoreScreenState
   void initState() {
     super.initState();
     _scrollController.addListener(_handleScroll);
+    MarketplaceService.listingsChanged.addListener(_handleListingsChanged);
     _resetOwnerCounts();
     unawaited(_loadListings(reset: true));
   }
@@ -82,8 +83,22 @@ class _MarketplaceSellerStoreScreenState
     if (_selectedStatus == status) {
       return;
     }
-    setState(() => _selectedStatus = status);
+    // Clear the other tab's items, so Available items can
+    // never show under Sold while (or if) Sold loads.
+    setState(() {
+      _selectedStatus = status;
+      _listings = const <MarketplaceListing>[];
+    });
     await _loadListings(reset: true);
+  }
+
+  // A listing was marked sold, restored, edited or deleted
+  // somewhere in the app: reload so this store is current.
+  void _handleListingsChanged() {
+    if (mounted) {
+      setState(_resetOwnerCounts);
+      unawaited(_loadListings(reset: true));
+    }
   }
 
   Future<void> _loadListings({bool reset = false}) async {
@@ -123,12 +138,17 @@ class _MarketplaceSellerStoreScreenState
       final Set<String> existingIds = _listings
           .map((MarketplaceListing item) => item.listingId)
           .toSet();
+      // Only items whose status matches the tab: Sold shows
+      // only what the seller marked as sold.
+      final List<MarketplaceListing> matching = page.listings
+          .where((MarketplaceListing item) => item.status == _selectedStatus)
+          .toList();
       setState(() {
         _listings = reset
-            ? page.listings
+            ? matching
             : <MarketplaceListing>[
                 ..._listings,
-                ...page.listings.where(
+                ...matching.where(
                   (MarketplaceListing item) => existingIds.add(item.listingId),
                 ),
               ];
@@ -145,6 +165,8 @@ class _MarketplaceSellerStoreScreenState
         _loadError = error;
         _loading = false;
         _loadingMore = false;
+        // A failed fresh load must not leave old items behind.
+        if (reset) _listings = const <MarketplaceListing>[];
       });
     }
   }
@@ -398,6 +420,7 @@ class _MarketplaceSellerStoreScreenState
 
   @override
   void dispose() {
+    MarketplaceService.listingsChanged.removeListener(_handleListingsChanged);
     _scrollController.dispose();
     super.dispose();
   }
@@ -537,7 +560,7 @@ class _SellerProfileCard extends StatelessWidget {
                     label: const Text('Message seller'),
                     style: FilledButton.styleFrom(
                       minimumSize: const Size.fromHeight(54),
-                      backgroundColor: const Color(0xFF728273),
+                      backgroundColor: MarketplaceTheme.sky,
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(17),
@@ -651,7 +674,7 @@ class _StoreStatusButton extends StatelessWidget {
       duration: const Duration(milliseconds: 220),
       curve: Curves.easeOutCubic,
       decoration: BoxDecoration(
-        color: selected ? const Color(0xFF728273) : Colors.transparent,
+        color: selected ? MarketplaceTheme.sky : Colors.transparent,
         borderRadius: BorderRadius.circular(21),
       ),
       child: Material(
