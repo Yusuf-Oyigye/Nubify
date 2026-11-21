@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 
 import '../services/nubi_service.dart';
 import '../widgets/nubi_intro_video.dart';
-import 'chat_screen.dart';
 import 'nubi/nubi_learning_screens.dart';
 import 'nubi/nubi_mindrush_screen.dart';
 
@@ -20,6 +19,7 @@ class NUBAiTutorScreen extends StatefulWidget {
 class _NUBAiTutorScreenState
     extends State<NUBAiTutorScreen> {
   static const blue = Color(0xFF29B6F6);
+  static const navy = Color(0xFF14286B);
 
   final TextEditingController _controller =
   TextEditingController();
@@ -257,8 +257,6 @@ class _NUBAiTutorScreenState
 
   @override
   Widget build(BuildContext context) {
-    final uid = NubiService.uid;
-
     return ListView(
       padding: const EdgeInsets.fromLTRB(
         16, 14, 16, 30,
@@ -297,13 +295,9 @@ class _NUBAiTutorScreenState
                   controller: _controller,
                   minLines: 1,
                   maxLines: 5,
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     hintText: 'Ask NUBi anything...',
                     border: InputBorder.none,
-                    suffixIcon: IconButton.filled(
-                      icon: const Icon(Icons.arrow_upward),
-                      onPressed: _send,
-                    ),
                   ),
                   onSubmitted: (_) => _send(),
                 ),
@@ -330,28 +324,17 @@ class _NUBAiTutorScreenState
                       ),
                       label: const Text('Photo'),
                     ),
-                    PopupMenuButton<String>(
-                      tooltip: 'More learning tools',
-                      icon: const Icon(
-                        Icons.more_horiz_rounded,
+                    const Spacer(),
+                    // Navy send button, on the same line as
+                    // Upload File and Photo.
+                    IconButton.filled(
+                      tooltip: 'Ask NUBi',
+                      style: IconButton.styleFrom(
+                        backgroundColor: navy,
+                        foregroundColor: Colors.white,
                       ),
-                      onSelected: (value) {
-                        if (value == 'groups') {
-                          _open(const ChatScreen());
-                        } else {
-                          _open(const NubiDeckScreen());
-                        }
-                      },
-                      itemBuilder: (_) => const [
-                        PopupMenuItem(
-                          value: 'deck',
-                          child: Text('My Deck'),
-                        ),
-                        PopupMenuItem(
-                          value: 'groups',
-                          child: Text('Study Groups'),
-                        ),
-                      ],
+                      icon: const Icon(Icons.arrow_upward),
+                      onPressed: _send,
                     ),
                   ],
                 ),
@@ -501,19 +484,6 @@ class _NUBAiTutorScreenState
               ),
             );
           },
-        ),
-
-        const SizedBox(height: 27),
-        _sectionTitle('Study Groups'),
-
-        _panel(
-          title: 'Study better together',
-          description:
-          'Open existing Nubify group chats',
-          icon: Icons.groups_rounded,
-          onTap: () => _open(
-            const ChatScreen(),
-          ),
         ),
 
         const SizedBox(height: 27),

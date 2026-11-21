@@ -7,6 +7,7 @@ import '../services/story_service.dart';
 import '../utils/nubify_time.dart';
 
 import 'comment_screen.dart';
+import 'nubi/nubi_mindrush_screen.dart';
 import 'story_viewer_screen.dart';
 
 //===================================================
@@ -195,6 +196,20 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       }
       return;
     }
+    //===================================================
+    // MINDRUSH INVITE: JOIN THE BATTLE
+    //===================================================
+
+    if (type == 'mindrushInvite') {
+      final String roomId = (data['mindrushRoomId'] ?? '').toString().trim();
+
+      if (roomId.isNotEmpty) {
+        await joinMindrushRoom(context, roomId);
+      }
+
+      return;
+    }
+
 
     //===================================================
     // STORY
@@ -817,6 +832,9 @@ class _NotificationTile extends StatelessWidget {
     switch (type) {
       case 'like':
         return Icons.favorite_rounded;
+
+      case 'mindrushInvite':
+        return Icons.bolt_rounded;
 
       case 'comment':
         return Icons.chat_bubble_rounded;

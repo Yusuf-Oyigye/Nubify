@@ -157,6 +157,35 @@ if (!["classic", "exam"].includes(mode)) {
   );
 }
 
+    // Who can join: "friends" (invites and the room
+    // code) or "public" (listed for every student).
+    const visibility =
+      request.data.visibility === "public" ?
+        "public" : "friends";
+
+    const owner = await db.doc(`users/${uid}`).get();
+    const ownerData = owner.exists ? owner.data() : {};
+    const hostName = String(
+      ownerData.fullName || ownerData.username ||
+        "Nubify student",
+    ).slice(0, 80);
+    const hostPhotoUrl =
+      String(ownerData.photoUrl || "").slice(0, 500);
+    const lectureTitle =
+      String(source.data().title || "Lecture").slice(0, 120);
+
+    // Only people you follow, or who follow you, can be
+    // invited, and never more than the room can hold.
+    const listOf = (value) =>
+      Array.isArray(value) ? value.map(String) : [];
+    const connections = new Set([
+      ...listOf(ownerData.followers),
+      ...listOf(ownerData.following),
+    ]);
+    const invited = [...new Set(listOf(request.data.invitedUids))]
+      .filter((id) => id !== uid && connections.has(id))
+      .slice(0, MAX_PLAYERS - 1);
+
     const ref = db.collection(
       "mindrushRooms",
     ).doc();
@@ -166,6 +195,11 @@ if (!["classic", "exam"].includes(mode)) {
       sourceId,
       status: "waiting",
       mode,
+      visibility,
+      invited,
+      hostName,
+      hostPhotoUrl,
+      lectureTitle,
       players: [uid],
       perPlayer,
       answerSeconds,
@@ -174,6 +208,36 @@ if (!["classic", "exam"].includes(mode)) {
       roundIndex: -1,
       createdAt: now(),
     });
+
+    // Tell each invited friend. A failed notification
+    // must not undo the room.
+    if (invited.length > 0) {
+      const batch = db.batch();
+
+      for (const receiverId of invited) {
+        const notification =
+          db.collection("notifications").doc();
+
+        batch.set(notification, {
+          notificationId: notification.id,
+          receiverId,
+          senderId: uid,
+          type: "mindrushInvite",
+          message:
+            `${hostName} invited you to a MindRush ` +
+            `battle on ${lectureTitle}`,
+          mindrushRoomId: ref.id,
+          isRead: false,
+          createdAt: now(),
+        });
+      }
+
+      try {
+        await batch.commit();
+      } catch (error) {
+        console.warn("MindRush invite notifications failed", error);
+      }
+    }
 
     return {roomId: ref.id};
   },

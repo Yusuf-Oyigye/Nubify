@@ -745,11 +745,11 @@ class _ChatScreenState extends State<ChatScreen>
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                gradient: NubifyChatStyle.brand,
+                gradient: NubifyChatStyle.navyGradient,
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: <BoxShadow>[
                   BoxShadow(
-                    color: NubifyChatStyle.royal.withValues(alpha: 0.30),
+                    color: NubifyChatStyle.navy.withValues(alpha: 0.35),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),

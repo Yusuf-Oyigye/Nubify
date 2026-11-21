@@ -151,9 +151,14 @@ match /nubiRankings/{periodId}/players/{uid} {
 }
 
 // MINDRUSH ROOMS
+// Players, invited friends, and everyone for public
+// rooms can see a room. Only the backend writes.
 match /mindrushRooms/{roomId} {
-  allow read: if nubiSignedIn() &&
-    request.auth.uid in resource.data.players;
+  allow read: if nubiSignedIn() && (
+    request.auth.uid in resource.data.players ||
+    request.auth.uid in resource.data.get('invited', []) ||
+    resource.data.get('visibility', 'friends') == 'public'
+  );
   allow write: if false;
 }
 

@@ -337,12 +337,18 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
               automaticallyImplyLeading: false,
 
               title: _page == 1
-                  ? const Text(
-                      'NUBi',
-                      style: TextStyle(
-                        fontSize: 27,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF29B6F6),
+                  // Shrinks to fit beside the top-bar icons on small phones.
+                  ? const FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'NUBintelligence',
+                        maxLines: 1,
+                        style: TextStyle(
+                          fontSize: 25,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF29B6F6),
+                        ),
                       ),
                     )
                   : const Column(

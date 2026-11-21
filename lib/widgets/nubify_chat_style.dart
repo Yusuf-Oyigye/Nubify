@@ -17,7 +17,7 @@ class NubifyChatStyle {
   static const Color violet = Color(0xFF6C5CE7);
 
   // Read receipts are green. The bright one sits on the
-  // sky blue bubbles (with tickShadow so it stands out),
+  // navy bubbles (with tickShadow so it stands out),
   // the deeper one on plain surfaces.
   static const Color readGreen = Color(0xFF00E676);
   static const Color readGreenOnSurface = Color(0xFF22C55E);
@@ -26,7 +26,8 @@ class NubifyChatStyle {
     Shadow(color: Color(0x99003A66), blurRadius: 3),
   ];
 
-  // Navy blue: the selected Messages / Groups / Calls tab.
+  // Navy blue: your own messages, the selected
+  // Messages / Groups / Calls tab and the Chats icon.
   static const Color navy = Color(0xFF14286B);
 
   static const LinearGradient navyGradient = LinearGradient(
@@ -45,14 +46,8 @@ class NubifyChatStyle {
     colors: <Color>[sky, royal, violet],
   );
 
-  // Your own messages: sky blue.
-  static const Color skyDeep = Color(0xFF0B8BDD);
-
-  static const LinearGradient outgoing = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: <Color>[Color(0xFF2EB4F5), skyDeep],
-  );
+  // Your own messages: navy blue.
+  static const LinearGradient outgoing = navyGradient;
 
   static bool isDark(BuildContext context) =>
       Theme.of(context).brightness == Brightness.dark;
@@ -81,7 +76,7 @@ class NubifyChatStyle {
           : Border.all(color: Colors.white.withValues(alpha: 0.06)),
       boxShadow: <BoxShadow>[
         BoxShadow(
-          color: (mine ? skyDeep : Colors.black).withValues(
+          color: (mine ? navy : Colors.black).withValues(
             alpha: dark ? 0.30 : 0.16,
           ),
           blurRadius: 12,

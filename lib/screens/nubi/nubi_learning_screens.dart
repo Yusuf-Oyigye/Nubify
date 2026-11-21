@@ -1,5 +1,6 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../services/nubi_service.dart';
@@ -1681,29 +1682,39 @@ class _NubiLeaderboardScreenState
                   );
                 }
 
-                return ListView.builder(
-                  itemCount: docs.length,
-                  itemBuilder: (context, index) {
-                    final student = docs[index].data();
+                final String me =
+                    FirebaseAuth.instance.currentUser?.uid ?? '';
 
-                    return ListTile(
-                      leading: CircleAvatar(
-                        child: Text('${index + 1}'),
+                // Top three stand on the podium; everyone
+                // else gets a ranked card with their title.
+                final podium = docs.take(3).toList();
+                final rest = docs.skip(3).toList();
+
+                return ListView(
+                  padding: const EdgeInsets.fromLTRB(12, 4, 12, 24),
+                  children: [
+                    _RankPodium(
+                      students: podium
+                          .map((doc) => doc.data())
+                          .toList(),
+                    ),
+                    const SizedBox(height: 14),
+                    for (int i = 0; i < rest.length; i++)
+                      _RankCard(
+                        rank: i + 4,
+                        student: rest[i].data(),
+                        isMe: rest[i].id == me,
                       ),
-                      title: Text(
-                        (student['displayName'] ??
-                            'Student')
-                            .toString(),
+                    if (podium.any((doc) => doc.id == me))
+                      const Padding(
+                        padding: EdgeInsets.only(top: 6),
+                        child: Text(
+                          'You are on the podium! Keep it up 🎉',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontWeight: FontWeight.w800),
+                        ),
                       ),
-                      subtitle: Text(
-                        (student['faculty'] ?? '')
-                            .toString(),
-                      ),
-                      trailing: Text(
-                        '${student['xp'] ?? 0} XP',
-                      ),
-                    );
-                  },
+                  ],
                 );
               },
             ),
@@ -1746,4 +1757,293 @@ class _NubiLeaderboardScreenState
     }
   }
 
+}
+
+// ===========================================
+// RANK TITLES AND MEDALS
+//
+// Every place on the leaderboard earns a title and a
+// medal, so everyone has something to be proud of.
+// ===========================================
+
+class _RankTier {
+  const _RankTier(this.medal, this.title, this.colors);
+
+  final String medal;
+  final String title;
+  final List<Color> colors;
+}
+
+_RankTier _rankTierFor(int rank) {
+  if (rank == 1) {
+    return const _RankTier('🥇', 'Grand Champion', [
+      Color(0xFFFFD54F),
+      Color(0xFFF59E0B),
+    ]);
+  }
+  if (rank == 2) {
+    return const _RankTier('🥈', 'Silver Genius', [
+      Color(0xFFE2E8F0),
+      Color(0xFF94A3B8),
+    ]);
+  }
+  if (rank == 3) {
+    return const _RankTier('🥉', 'Bronze Brain', [
+      Color(0xFFFDBA74),
+      Color(0xFFB45309),
+    ]);
+  }
+  if (rank <= 10) {
+    return const _RankTier('🏅', 'Elite Scholar', [
+      Color(0xFFA78BFA),
+      Color(0xFF6D28D9),
+    ]);
+  }
+  if (rank <= 25) {
+    return const _RankTier('🌟', 'Rising Star', [
+      Color(0xFF38BDF8),
+      Color(0xFF2563EB),
+    ]);
+  }
+  return const _RankTier('🔥', 'Challenger', [
+    Color(0xFFFB923C),
+    Color(0xFFEF4444),
+  ]);
+}
+
+String _studentName(Map<String, dynamic> student) =>
+    (student['displayName'] ?? 'Student').toString();
+
+// ===========================================
+// PODIUM FOR THE TOP THREE
+// ===========================================
+
+class _RankPodium extends StatelessWidget {
+  const _RankPodium({required this.students});
+
+  final List<Map<String, dynamic>> students;
+
+  Widget _place(BuildContext context, int rank, double height) {
+    if (students.length < rank) {
+      return const Expanded(child: SizedBox.shrink());
+    }
+
+    final Map<String, dynamic> student = students[rank - 1];
+    final _RankTier tier = _rankTierFor(rank);
+
+    return Expanded(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          if (rank == 1) const Text('👑', style: TextStyle(fontSize: 26)),
+          Text(tier.medal, style: TextStyle(fontSize: rank == 1 ? 40 : 32)),
+          const SizedBox(height: 4),
+          Text(
+            _studentName(student),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontWeight: FontWeight.w800),
+          ),
+          Text(
+            '${student['xp'] ?? 0} XP',
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Container(
+            height: height,
+            margin: const EdgeInsets.symmetric(horizontal: 4),
+            alignment: Alignment.topCenter,
+            padding: const EdgeInsets.only(top: 8),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: tier.colors,
+              ),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(16),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: tier.colors.last.withValues(alpha: 0.35),
+                  blurRadius: 14,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                Text(
+                  '$rank',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 26,
+                    fontWeight: FontWeight.w900,
+                    shadows: [Shadow(color: Colors.black26, blurRadius: 4)],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: Text(
+                    tier.title,
+                    maxLines: 2,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      shadows: [Shadow(color: Colors.black26, blurRadius: 4)],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Second, first, third, like a real podium.
+    return SizedBox(
+      height: 300,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          _place(context, 2, 96),
+          _place(context, 1, 124),
+          _place(context, 3, 78),
+        ],
+      ),
+    );
+  }
+}
+
+// ===========================================
+// RANKED CARD FROM 4TH PLACE DOWN
+// ===========================================
+
+class _RankCard extends StatelessWidget {
+  const _RankCard({
+    required this.rank,
+    required this.student,
+    required this.isMe,
+  });
+
+  final int rank;
+  final Map<String, dynamic> student;
+  final bool isMe;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+    final _RankTier tier = _rankTierFor(rank);
+    final String faculty = (student['faculty'] ?? '').toString();
+    final String name = _studentName(student);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.fromLTRB(10, 10, 14, 10),
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: isMe
+              ? tier.colors.last
+              : scheme.outlineVariant.withValues(alpha: 0.5),
+          width: isMe ? 1.6 : 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 46,
+            height: 46,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: tier.colors,
+              ),
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: Text(tier.medal, style: const TextStyle(fontSize: 22)),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  isMe ? '$name (You)' : name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 2),
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        tier.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          // Lighter shade on dark backgrounds.
+                          color: Theme.of(context).brightness ==
+                                  Brightness.dark
+                              ? tier.colors.first
+                              : tier.colors.last,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                    if (faculty.isNotEmpty)
+                      Flexible(
+                        child: Text(
+                          ' · $faculty',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: scheme.onSurfaceVariant,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                '#$rank',
+                style: TextStyle(
+                  color: scheme.onSurfaceVariant,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              Text(
+                '${student['xp'] ?? 0} XP',
+                style: const TextStyle(fontWeight: FontWeight.w900),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 }
