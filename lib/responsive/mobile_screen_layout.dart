@@ -4,20 +4,20 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-import '../screens/chat_screen.dart';
-import '../screens/egyptian_arabic_screen.dart';
-import '../screens/home_screen.dart';
-import '../screens/marketplace_screen.dart';
-import '../screens/menu_screen.dart';
-import '../screens/notifications_screen.dart';
-import '../screens/nub_ai_tutor_screen.dart';
-import '../screens/nubuzz_screen.dart';
-import '../screens/profile_screen.dart';
-import '../services/chat_badge_service.dart';
-import '../services/notification_service.dart';
-import '../widgets/marketplace_brand_icon.dart';
-import '../widgets/nubify_count_badge.dart';
-import '../widgets/huddle_mini_bar.dart';
+import '../screens/chat/chat_screen.dart';
+import '../screens/egyptian_arabic/egyptian_arabic_screen.dart';
+import '../screens/feed/home_screen.dart';
+import '../screens/marketplace/marketplace_screen.dart';
+import '../screens/menu/menu_screen.dart';
+import '../screens/notifications/notifications_screen.dart';
+import '../screens/nubi/nub_ai_tutor_screen.dart';
+import '../screens/nubuzz/nubuzz_screen.dart';
+import '../screens/profile/profile_screen.dart';
+import '../services/chat/chat_badge_service.dart';
+import '../services/notifications/notification_service.dart';
+import '../widgets/marketplace/marketplace_brand_icon.dart';
+import '../widgets/common/nubify_count_badge.dart';
+import '../widgets/huddles/huddle_mini_bar.dart';
 
 //===================================================
 // MOBILE SCREEN LAYOUT

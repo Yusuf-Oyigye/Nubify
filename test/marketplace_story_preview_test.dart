@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nubify/models/link_preview.dart';
-import 'package:nubify/widgets/marketplace_brand_icon.dart';
-import 'package:nubify/widgets/universal_link_preview_card.dart';
+import 'package:nubify/models/links/link_preview.dart';
+import 'package:nubify/widgets/marketplace/marketplace_brand_icon.dart';
+import 'package:nubify/widgets/links/universal_link_preview_card.dart';
 
 void main() {
   testWidgets('Marketplace story card prioritizes a large product image', (

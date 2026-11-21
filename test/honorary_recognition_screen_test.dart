@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nubify/screens/honorary_recognition_screen.dart';
+import 'package:nubify/screens/menu/honorary_recognition_screen.dart';
 
 void main() {
   Future<void> pumpScreen(

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../models/huddle.dart';
-import '../../widgets/huddle_ui.dart';
+import '../../models/huddles/huddle.dart';
+import '../../widgets/huddles/huddle_ui.dart';
 
 //===================================================
 // "THIS HUDDLE HAS ENDED"

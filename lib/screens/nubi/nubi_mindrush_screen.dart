@@ -7,7 +7,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../services/nubi_service.dart';
+import '../../services/nubi/nubi_service.dart';
 import 'nubi_learning_screens.dart';
 
 // ===========================================

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nubify/widgets/universal_link_text.dart';
+import 'package:nubify/widgets/links/universal_link_text.dart';
 
 Widget _wrap(Widget child) {
   return MaterialApp(

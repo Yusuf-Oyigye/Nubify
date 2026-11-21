@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
-import 'package:nubify/models/post.dart';
-import 'package:nubify/widgets/nubify_profile_grid.dart';
+import 'package:nubify/models/feed/post.dart';
+import 'package:nubify/widgets/profile/nubify_profile_grid.dart';
 
 void main() {
   Post postWithMedia({

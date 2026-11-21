@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nubify/widgets/profile_vertical_feed.dart';
-import 'package:nubify/widgets/universal_link_text.dart';
+import 'package:nubify/widgets/profile/profile_vertical_feed.dart';
+import 'package:nubify/widgets/links/universal_link_text.dart';
 
 void main() {
   testWidgets(

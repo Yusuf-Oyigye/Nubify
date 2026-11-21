@@ -3,11 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 
-import '../../models/chat_group.dart';
-import '../../models/huddle.dart';
-import '../../services/group_chat_service.dart';
-import '../../services/huddle_service.dart';
-import '../../widgets/huddle_ui.dart';
+import '../../models/chat/chat_group.dart';
+import '../../models/huddles/huddle.dart';
+import '../../services/chat/group_chat_service.dart';
+import '../../services/huddles/huddle_service.dart';
+import '../../widgets/huddles/huddle_ui.dart';
 
 //===================================================
 // NUB HUDDLES — INVITE / SHARE

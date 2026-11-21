@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nubify/utils/faculty_catalog.dart';
-import 'package:nubify/widgets/faculty_selector.dart';
+import 'package:nubify/utils/faculties/faculty_catalog.dart';
+import 'package:nubify/widgets/faculties/faculty_selector.dart';
 
 void main() {
   test('faculty catalogue contains ten named faculties plus Others', () {

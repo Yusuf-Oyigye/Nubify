@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nubify/services/marketplace_media_service.dart';
+import 'package:nubify/services/marketplace/marketplace_media_service.dart';
 
 void main() {
   test(

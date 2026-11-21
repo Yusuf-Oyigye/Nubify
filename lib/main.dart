@@ -11,26 +11,26 @@ import 'responsive/mobile_screen_layout.dart';
 import 'responsive/responsive_layout_screen.dart';
 import 'responsive/web_screen_layout.dart';
 
-import 'screens/comment_screen.dart';
-import 'screens/group_chat_screen.dart';
-import 'screens/marketplace_screen.dart';
-import 'screens/create_marketplace_listing_screen.dart';
-import 'screens/marketplace_listing_details_screen.dart';
-import 'screens/marketplace_reports_admin_screen.dart';
-import 'screens/my_marketplace_listings_screen.dart';
-import 'screens/saved_marketplace_listings_screen.dart';
-import 'screens/story_viewer_screen.dart';
-import 'screens/hidden_posts_screen.dart';
-import 'screens/post_engagements_screen.dart';
-import 'screens/profile_screen.dart';
-import 'screens/login_screen.dart';
+import 'screens/feed/comment_screen.dart';
+import 'screens/chat/groups/group_chat_screen.dart';
+import 'screens/marketplace/marketplace_screen.dart';
+import 'screens/marketplace/create_marketplace_listing_screen.dart';
+import 'screens/marketplace/marketplace_listing_details_screen.dart';
+import 'screens/marketplace/marketplace_reports_admin_screen.dart';
+import 'screens/marketplace/my_marketplace_listings_screen.dart';
+import 'screens/marketplace/saved_marketplace_listings_screen.dart';
+import 'screens/stories/story_viewer_screen.dart';
+import 'screens/feed/hidden_posts_screen.dart';
+import 'screens/feed/post_engagements_screen.dart';
+import 'screens/profile/profile_screen.dart';
+import 'screens/auth/login_screen.dart';
 
-import 'services/nubify_appearance_controller.dart';
+import 'services/common/nubify_appearance_controller.dart';
 
-import 'models/story.dart';
-import 'services/media_route_observer.dart';
-import 'widgets/incoming_call_listener.dart';
-import 'widgets/nubify_deep_link_gate.dart';
+import 'models/stories/story.dart';
+import 'services/common/media_route_observer.dart';
+import 'widgets/chat/incoming_call_listener.dart';
+import 'widgets/links/nubify_deep_link_gate.dart';
 
 import 'package:firebase_app_check/firebase_app_check.dart';
 

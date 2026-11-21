@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-import '../../services/nubi_service.dart';
+import '../../services/nubi/nubi_service.dart';
 
 const nubiBlue = Color(0xFF29B6F6);
 

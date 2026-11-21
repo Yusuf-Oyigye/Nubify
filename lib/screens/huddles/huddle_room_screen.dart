@@ -4,11 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:livekit_client/livekit_client.dart' hide ConnectionState;
 
-import '../../models/huddle.dart';
-import '../../services/huddle_service.dart';
-import '../../services/huddle_session.dart';
-import '../../widgets/huddle_ui.dart';
-import '../../widgets/report_user_dialog.dart';
+import '../../models/huddles/huddle.dart';
+import '../../services/huddles/huddle_service.dart';
+import '../../services/huddles/huddle_session.dart';
+import '../../widgets/huddles/huddle_ui.dart';
+import '../../widgets/profile/report_user_dialog.dart';
 import 'huddle_chat_sheet.dart';
 import 'huddle_ended_screen.dart';
 import 'huddle_invite_sheet.dart';

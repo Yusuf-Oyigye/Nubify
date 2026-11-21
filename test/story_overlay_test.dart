@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nubify/models/story.dart';
+import 'package:nubify/models/stories/story.dart';
 
 void main() {
   test('story text position and finger drawing survive serialization', () {

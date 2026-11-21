@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nubify/screens/about_developer_screen.dart';
+import 'package:nubify/screens/menu/about_developer_screen.dart';
 
 void main() {
   Future<void> pumpScreen(

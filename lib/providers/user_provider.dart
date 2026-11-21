@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:nubify/models/user.dart';
-import 'package:nubify/resources/auth_method.dart';
+import 'package:nubify/models/profile/user.dart';
+import 'package:nubify/services/auth/auth_method.dart';
 
 class UserProvider with ChangeNotifier {
   User? _user;

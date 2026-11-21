@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../models/huddle.dart';
-import '../../services/huddle_service.dart';
-import '../../widgets/huddle_ui.dart';
+import '../../models/huddles/huddle.dart';
+import '../../services/huddles/huddle_service.dart';
+import '../../widgets/huddles/huddle_ui.dart';
 
 //===================================================
 // NUB HUDDLES — LIVE CHAT

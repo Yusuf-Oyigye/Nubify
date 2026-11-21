@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../models/huddle.dart';
-import '../../services/huddle_service.dart';
-import '../../services/huddle_session.dart';
+import '../../models/huddles/huddle.dart';
+import '../../services/huddles/huddle_service.dart';
+import '../../services/huddles/huddle_session.dart';
 import 'huddle_ended_screen.dart';
 import 'huddle_room_screen.dart';
 

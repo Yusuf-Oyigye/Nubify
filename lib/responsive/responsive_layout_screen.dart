@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:nubify/utils/dimensions.dart';
+import 'package:nubify/utils/common/dimensions.dart';
 import 'package:provider/provider.dart';
 import '../providers/user_provider.dart';
 

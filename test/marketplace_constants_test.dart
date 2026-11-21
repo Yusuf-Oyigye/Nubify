@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nubify/utils/marketplace_constants.dart';
+import 'package:nubify/utils/marketplace/marketplace_constants.dart';
 
 void main() {
   test('search prefixes are normalized and capped', () {

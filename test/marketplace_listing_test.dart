@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nubify/models/marketplace_listing.dart';
+import 'package:nubify/models/marketplace/marketplace_listing.dart';
 
 MarketplaceListing listing({
   String priceType = 'fixed',

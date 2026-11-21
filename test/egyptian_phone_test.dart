@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nubify/utils/egyptian_phone.dart';
+import 'package:nubify/utils/common/egyptian_phone.dart';
 
 void main() {
   group('EgyptianPhone', () {
