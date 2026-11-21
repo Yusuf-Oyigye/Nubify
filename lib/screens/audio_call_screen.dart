@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import '../widgets/nubify_chat_style.dart';
+
 //===============================
 // AUDIO CALL SCREEN
 //===============================
@@ -905,182 +907,164 @@ class _AudioCallScreenState
         }
       },
 
-      child:
-      Scaffold(
-        backgroundColor:
-        const Color(
-          0xFF081017,
-        ),
+      child: Scaffold(
+        backgroundColor: const Color(0xFF070D1A),
+        body: Stack(
+          children: <Widget>[
+            const Positioned.fill(child: _CallBackdrop()),
+            SafeArea(
+              child: Column(
+                children: <Widget>[
+                  const SizedBox(height: 18),
 
-        body:
-        SafeArea(
-          child:
-          Column(
-            children:
-            <Widget>[
-              const SizedBox(
-                height:
-                70,
-              ),
-
-              CircleAvatar(
-                radius:
-                58,
-
-                backgroundColor:
-                Colors.white10,
-
-                backgroundImage:
-                widget
-                    .otherPhotoUrl
-                    .trim()
-                    .isNotEmpty
-                    ? NetworkImage(
-                  widget
-                      .otherPhotoUrl,
-                )
-                    : null,
-
-                child:
-                widget
-                    .otherPhotoUrl
-                    .trim()
-                    .isEmpty
-                    ? const Icon(
-                  Icons
-                      .person_rounded,
-                  size:
-                  58,
-                  color:
-                  Colors.white70,
-                )
-                    : null,
-              ),
-
-              const SizedBox(
-                height:
-                20,
-              ),
-
-              Text(
-                widget.otherName,
-                textAlign:
-                TextAlign.center,
-                style:
-                const TextStyle(
-                  color:
-                  Colors.white,
-                  fontSize:
-                  25,
-                  fontWeight:
-                  FontWeight.w800,
-                ),
-              ),
-
-              const SizedBox(
-                height:
-                8,
-              ),
-
-              Text(
-                _statusText,
-                style:
-                const TextStyle(
-                  color:
-                  Colors.white60,
-                  fontSize:
-                  14,
-                ),
-              ),
-
-              const Spacer(),
-
-              Row(
-                mainAxisAlignment:
-                MainAxisAlignment
-                    .spaceEvenly,
-                children:
-                <Widget>[
-                  _CallActionButton(
-                    icon:
-                    _muted
-                        ? Icons
-                        .mic_off_rounded
-                        : Icons
-                        .mic_rounded,
-
-                    label:
-                    _muted
-                        ? 'Unmute'
-                        : 'Mute',
-
-                    onTap:
-                    _toggleMute,
+                  //===============================
+                  // CALL TYPE PILL
+                  //===============================
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 7,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.12),
+                      ),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        Icon(
+                          Icons.graphic_eq_rounded,
+                          color: NubifyChatStyle.sky,
+                          size: 16,
+                        ),
+                        SizedBox(width: 6),
+                        Text(
+                          'Nubify audio call',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
 
-                  _CallActionButton(
-                    icon:
-                    _speakerOn
-                        ? Icons
-                        .volume_up_rounded
-                        : Icons
-                        .volume_down_rounded,
+                  const Spacer(flex: 2),
 
-                    label:
-                    'Speaker',
+                  //===============================
+                  // PHOTO WITH PULSING RINGS
+                  //===============================
+                  _PulsingAvatar(photoUrl: widget.otherPhotoUrl),
 
-                    active:
-                    _speakerOn,
+                  const SizedBox(height: 24),
 
-                    onTap:
-                    _toggleSpeaker,
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Text(
+                      widget.otherName,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 28,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  //===============================
+                  // STATUS PILL
+                  //===============================
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 7,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.07),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        const DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: NubifyChatStyle.sky,
+                            shape: BoxShape.circle,
+                          ),
+                          child: SizedBox(width: 7, height: 7),
+                        ),
+                        const SizedBox(width: 7),
+                        Text(
+                          _statusText,
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const Spacer(flex: 3),
+
+                  //===============================
+                  // GLASS CONTROL PANEL
+                  //===============================
+                  Container(
+                    margin: const EdgeInsets.fromLTRB(18, 0, 18, 22),
+                    padding: const EdgeInsets.fromLTRB(18, 22, 18, 22),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.07),
+                      borderRadius: BorderRadius.circular(34),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.10),
+                      ),
+                    ),
+                    child: Column(
+                      children: <Widget>[
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: <Widget>[
+                            _CallActionButton(
+                              icon: _muted
+                                  ? Icons.mic_off_rounded
+                                  : Icons.mic_rounded,
+                              label: _muted ? 'Unmute' : 'Mute',
+                              active: _muted,
+                              onTap: _toggleMute,
+                            ),
+                            _CallActionButton(
+                              icon: _speakerOn
+                                  ? Icons.volume_up_rounded
+                                  : Icons.volume_down_rounded,
+                              label: 'Speaker',
+                              active: _speakerOn,
+                              onTap: _toggleSpeaker,
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 22),
+
+                        _HangUpButton(onTap: _hangUp),
+                      ],
+                    ),
                   ),
                 ],
               ),
-
-              const SizedBox(
-                height:
-                34,
-              ),
-
-              GestureDetector(
-                onTap:
-                _hangUp,
-
-                child:
-                Container(
-                  width:
-                  72,
-
-                  height:
-                  72,
-
-                  decoration:
-                  const BoxDecoration(
-                    color:
-                    Colors.redAccent,
-                    shape:
-                    BoxShape.circle,
-                  ),
-
-                  child:
-                  const Icon(
-                    Icons
-                        .call_end_rounded,
-                    color:
-                    Colors.white,
-                    size:
-                    34,
-                  ),
-                ),
-              ),
-
-              const SizedBox(
-                height:
-                56,
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -1122,8 +1106,7 @@ class _AudioCallScreenState
 // CALL ACTION BUTTON
 //===============================
 
-class _CallActionButton
-    extends StatelessWidget {
+class _CallActionButton extends StatelessWidget {
   const _CallActionButton({
     required this.icon,
     required this.label,
@@ -1140,61 +1123,255 @@ class _CallActionButton
   final bool active;
 
   @override
-  Widget build(
-      BuildContext context,
-      ) {
+  Widget build(BuildContext context) {
     return Column(
-      children:
-      <Widget>[
-        Material(
-          color:
-          active
-              ? const Color(
-            0xFF29B6F6,
-          )
-              : Colors.white12,
-          shape:
-          const CircleBorder(),
-          child:
-          InkWell(
-            customBorder:
-            const CircleBorder(),
-            onTap:
-            onTap,
-            child:
-            SizedBox(
-              width:
-              62,
-              height:
-              62,
-              child:
-              Icon(
-                icon,
-                color:
-                Colors.white,
-                size:
-                27,
+      children: <Widget>[
+        Container(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: active ? NubifyChatStyle.brand : null,
+            color: active ? null : Colors.white.withValues(alpha: 0.10),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: active ? 0 : 0.16),
+            ),
+            boxShadow: active
+                ? <BoxShadow>[
+                    BoxShadow(
+                      color: NubifyChatStyle.royal.withValues(alpha: 0.45),
+                      blurRadius: 18,
+                      offset: const Offset(0, 6),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Material(
+            type: MaterialType.transparency,
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: onTap,
+              child: SizedBox(
+                width: 64,
+                height: 64,
+                child: Icon(icon, color: Colors.white, size: 27),
               ),
             ),
           ),
         ),
 
-        const SizedBox(
-          height:
-          8,
-        ),
+        const SizedBox(height: 8),
 
         Text(
           label,
-          style:
-          const TextStyle(
-            color:
-            Colors.white70,
-            fontSize:
-            12,
+          style: const TextStyle(
+            color: Colors.white70,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ],
+    );
+  }
+}
+
+//===============================
+// HANG UP BUTTON
+//===============================
+
+class _HangUpButton extends StatelessWidget {
+  const _HangUpButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: 'End call',
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: 76,
+          height: 76,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: <Color>[Color(0xFFFF6B81), Color(0xFFE5243F)],
+            ),
+            boxShadow: <BoxShadow>[
+              BoxShadow(
+                color: NubifyChatStyle.danger.withValues(alpha: 0.50),
+                blurRadius: 24,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: const Icon(
+            Icons.call_end_rounded,
+            color: Colors.white,
+            size: 34,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+//===============================
+// PHOTO WITH PULSING RINGS
+//===============================
+
+class _PulsingAvatar extends StatefulWidget {
+  const _PulsingAvatar({required this.photoUrl});
+
+  final String photoUrl;
+
+  @override
+  State<_PulsingAvatar> createState() => _PulsingAvatarState();
+}
+
+class _PulsingAvatarState extends State<_PulsingAvatar>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulse = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 2400),
+  )..repeat();
+
+  @override
+  void dispose() {
+    _pulse.dispose();
+
+    super.dispose();
+  }
+
+  Widget _ring(double progress) {
+    return Transform.scale(
+      scale: 1 + progress * 0.55,
+      child: Container(
+        width: 140,
+        height: 140,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: NubifyChatStyle.sky.withValues(alpha: (1 - progress) * 0.5),
+            width: 2,
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bool still = MediaQuery.of(context).disableAnimations;
+    final String url = widget.photoUrl.trim();
+
+    return SizedBox(
+      width: 240,
+      height: 240,
+      child: Stack(
+        alignment: Alignment.center,
+        children: <Widget>[
+          if (!still)
+            AnimatedBuilder(
+              animation: _pulse,
+              builder: (BuildContext context, Widget? child) {
+                return Stack(
+                  alignment: Alignment.center,
+                  children: <Widget>[
+                    _ring(_pulse.value),
+                    _ring((_pulse.value + 0.5) % 1),
+                  ],
+                );
+              },
+            ),
+
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: NubifyChatStyle.brand,
+              boxShadow: <BoxShadow>[
+                BoxShadow(
+                  color: NubifyChatStyle.royal.withValues(alpha: 0.45),
+                  blurRadius: 36,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+            child: Container(
+              padding: const EdgeInsets.all(3),
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: Color(0xFF0B1224),
+              ),
+              child: CircleAvatar(
+                radius: 62,
+                backgroundColor: const Color(0xFF1A2540),
+                backgroundImage: url.isNotEmpty ? NetworkImage(url) : null,
+                child: url.isEmpty
+                    ? const Icon(
+                        Icons.person_rounded,
+                        size: 60,
+                        color: Colors.white70,
+                      )
+                    : null,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+//===============================
+// DEEP GRADIENT BACKGROUND
+//===============================
+
+class _CallBackdrop extends StatelessWidget {
+  const _CallBackdrop();
+
+  Widget _glow(Alignment alignment, Color color, double size) {
+    return Align(
+      alignment: alignment,
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(
+            colors: <Color>[
+              color.withValues(alpha: 0.38),
+              color.withValues(alpha: 0),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: <Color>[
+            Color(0xFF0B1630),
+            Color(0xFF151A45),
+            Color(0xFF0A0E1C),
+          ],
+        ),
+      ),
+      child: Stack(
+        children: <Widget>[
+          _glow(const Alignment(-1.3, -0.7), NubifyChatStyle.sky, 380),
+          _glow(const Alignment(1.4, 0.1), NubifyChatStyle.violet, 420),
+        ],
+      ),
     );
   }
 }

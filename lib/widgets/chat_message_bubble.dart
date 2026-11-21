@@ -9,6 +9,7 @@ import 'chat_voice_message.dart';
 import 'chat_link_text.dart';
 import 'nubify_shared_chat_card.dart';
 import 'marketplace_brand_icon.dart';
+import 'nubify_chat_style.dart';
 
 //===============================
 // CHAT MESSAGE BUBBLE
@@ -47,13 +48,6 @@ class ChatMessageBubble extends StatelessWidget {
   final VoidCallback? onLongPress;
 
   static const Color _blue = Color(0xFF29B6F6);
-  //===============================
-  // MESSAGE BUBBLE COLORS
-  //===============================
-
-  static const Color _outgoing = Color(0xFF0D3B66);
-
-  static const Color _incoming = Color(0xFF242B31);
 
   //===============================
   // TIME
@@ -148,11 +142,16 @@ class ChatMessageBubble extends StatelessWidget {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 7),
-      padding: const EdgeInsets.fromLTRB(9, 7, 9, 7),
+      padding: const EdgeInsets.fromLTRB(10, 7, 9, 7),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.18),
-        borderRadius: BorderRadius.circular(9),
-        border: const Border(left: BorderSide(color: Colors.white70, width: 3)),
+        color: Colors.white.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(12),
+        border: Border(
+          left: BorderSide(
+            color: mine ? Colors.white : NubifyChatStyle.sky,
+            width: 3,
+          ),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -638,12 +637,16 @@ class ChatMessageBubble extends StatelessWidget {
         children: counts.entries
             .map(
               (entry) => Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
 
                 decoration: BoxDecoration(
-                  color: Colors.black26,
+                  color: Colors.white.withValues(alpha: 0.16),
 
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(14),
+
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.18),
+                  ),
                 ),
 
                 child: Text(
@@ -681,24 +684,16 @@ class ChatMessageBubble extends StatelessWidget {
           margin: EdgeInsets.only(
             left: mine ? 45 : 3,
             right: mine ? 3 : 45,
-            bottom: 3,
+            bottom: 5,
           ),
           padding: sticker
               ? const EdgeInsets.fromLTRB(5, 2, 5, 3)
               : compactVisualMedia
               ? const EdgeInsets.fromLTRB(3, 3, 3, 4)
-              : const EdgeInsets.fromLTRB(9, 8, 9, 5),
+              : const EdgeInsets.fromLTRB(12, 9, 11, 6),
           decoration: sticker
               ? null
-              : BoxDecoration(
-                  color: mine ? _outgoing : _incoming,
-                  borderRadius: BorderRadius.only(
-                    topLeft: const Radius.circular(18),
-                    topRight: const Radius.circular(18),
-                    bottomLeft: Radius.circular(mine ? 18 : 5),
-                    bottomRight: Radius.circular(mine ? 5 : 18),
-                  ),
-                ),
+              : NubifyChatStyle.bubble(context, mine: mine),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
@@ -740,8 +735,11 @@ class ChatMessageBubble extends StatelessWidget {
                     Text(
                       _time(),
                       style: TextStyle(
-                        color: sticker ? Colors.white54 : Colors.white70,
-                        fontSize: 9,
+                        color: sticker
+                            ? Theme.of(context).colorScheme.onSurfaceVariant
+                            : Colors.white70,
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
 

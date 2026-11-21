@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
+import 'nubify_chat_style.dart';
 import 'universal_link_composer_preview.dart';
 
 //===============================
@@ -233,7 +234,7 @@ class _ChatComposerState extends State<ChatComposer> {
 
     await showModalBottomSheet<void>(
       context: context,
-      backgroundColor: const Color(0xFF141B21),
+      backgroundColor: const Color(0xFF111A28),
       showDragHandle: true,
       builder: (BuildContext context) {
         return SafeArea(
@@ -910,11 +911,9 @@ class _ChatComposerState extends State<ChatComposer> {
     final int seconds = shown.inSeconds % 60;
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(8, 7, 8, 7),
-      decoration: BoxDecoration(
-        color: scheme.surface,
-        border: Border(top: BorderSide(color: scheme.outlineVariant)),
-      ),
+      margin: NubifyChatStyle.composerMargin,
+      padding: const EdgeInsets.fromLTRB(6, 6, 6, 6),
+      decoration: NubifyChatStyle.composerCard(context),
       child: Row(
         children: <Widget>[
           IconButton(
@@ -953,10 +952,7 @@ class _ChatComposerState extends State<ChatComposer> {
             ),
           ),
           Container(
-            decoration: const BoxDecoration(
-              color: Color(0xFF29B6F6),
-              shape: BoxShape.circle,
-            ),
+            decoration: NubifyChatStyle.actionCircle(),
             child: IconButton(
               tooltip: 'Send voice note',
               onPressed: _processingVoice ? null : _sendVoicePreview,
@@ -981,11 +977,9 @@ class _ChatComposerState extends State<ChatComposer> {
     final ColorScheme scheme = Theme.of(context).colorScheme;
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(12, 7, 8, 7),
-      decoration: BoxDecoration(
-        color: scheme.surface,
-        border: Border(top: BorderSide(color: scheme.outlineVariant)),
-      ),
+      margin: NubifyChatStyle.composerMargin,
+      padding: const EdgeInsets.fromLTRB(14, 6, 6, 6),
+      decoration: NubifyChatStyle.composerCard(context),
       child: Row(
         children: <Widget>[
           //===================================================
@@ -1075,10 +1069,7 @@ class _ChatComposerState extends State<ChatComposer> {
           // SEND RECORDING
           //===================================================
           Container(
-            decoration: const BoxDecoration(
-              color: Color(0xFF29B6F6),
-              shape: BoxShape.circle,
-            ),
+            decoration: NubifyChatStyle.actionCircle(),
             child: IconButton(
               tooltip: 'Finish and send voice note',
               onPressed: _processingVoice || _pauseActionBusy
@@ -1109,14 +1100,11 @@ class _ChatComposerState extends State<ChatComposer> {
     final bool hasText = widget.controller.text.trim().isNotEmpty;
     final ThemeData theme = Theme.of(context);
     final ColorScheme scheme = theme.colorScheme;
-    final bool dark = theme.brightness == Brightness.dark;
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(7, 6, 7, 7),
-      decoration: BoxDecoration(
-        color: scheme.surface,
-        border: Border(top: BorderSide(color: scheme.outlineVariant)),
-      ),
+      margin: NubifyChatStyle.composerMargin,
+      padding: const EdgeInsets.fromLTRB(2, 5, 5, 5),
+      decoration: NubifyChatStyle.composerCard(context),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: <Widget>[
@@ -1128,16 +1116,8 @@ class _ChatComposerState extends State<ChatComposer> {
                   : Icons.emoji_emotions_outlined,
 
               color: _showStickers
-                  ? const Color(0xFF29B6F6)
+                  ? NubifyChatStyle.royal
                   : scheme.onSurfaceVariant,
-            ),
-          ),
-
-          IconButton(
-            onPressed: widget.enabled ? _showAttachments : null,
-            icon: Icon(
-              Icons.photo_camera_outlined,
-              color: scheme.onSurfaceVariant,
             ),
           ),
 
@@ -1145,10 +1125,8 @@ class _ChatComposerState extends State<ChatComposer> {
             child: Container(
               constraints: const BoxConstraints(minHeight: 44),
               decoration: BoxDecoration(
-                color: dark
-                    ? const Color(0xFF20282E)
-                    : scheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(24),
+                color: NubifyChatStyle.fieldFill(context),
+                borderRadius: BorderRadius.circular(22),
               ),
               child: TextField(
                 controller: widget.controller,
@@ -1158,28 +1136,30 @@ class _ChatComposerState extends State<ChatComposer> {
                 keyboardType: TextInputType.multiline,
                 textCapitalization: TextCapitalization.sentences,
                 style: TextStyle(color: scheme.onSurface),
-                cursorColor: const Color(0xFF29B6F6),
+                cursorColor: NubifyChatStyle.royal,
                 decoration: InputDecoration(
                   hintText: 'Message...',
                   hintStyle: TextStyle(color: scheme.onSurfaceVariant),
                   border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 15,
-                    vertical: 11,
+                  contentPadding: const EdgeInsets.fromLTRB(15, 11, 4, 11),
+                  suffixIcon: IconButton(
+                    tooltip: 'Attach',
+                    onPressed: widget.enabled ? _showAttachments : null,
+                    icon: Icon(
+                      Icons.attach_file_rounded,
+                      color: scheme.onSurfaceVariant,
+                    ),
                   ),
                 ),
               ),
             ),
           ),
 
-          const SizedBox(width: 5),
+          const SizedBox(width: 6),
 
           if (hasText)
             Container(
-              decoration: const BoxDecoration(
-                color: Color(0xFF29B6F6),
-                shape: BoxShape.circle,
-              ),
+              decoration: NubifyChatStyle.actionCircle(),
               child: IconButton(
                 onPressed: widget.sending || !widget.enabled ? null : _sendText,
                 icon: widget.sending
@@ -1196,12 +1176,7 @@ class _ChatComposerState extends State<ChatComposer> {
             )
           else
             Container(
-              decoration: BoxDecoration(
-                color: widget.enabled
-                    ? const Color(0xFF29B6F6)
-                    : scheme.onSurface.withValues(alpha: 0.12),
-                shape: BoxShape.circle,
-              ),
+              decoration: NubifyChatStyle.actionCircle(enabled: widget.enabled),
               child: IconButton(
                 onPressed: widget.enabled ? _startRecording : null,
                 icon: const Icon(Icons.mic_rounded, color: Colors.white),
@@ -1306,10 +1281,24 @@ class _AttachmentButton extends StatelessWidget {
               width: 54,
               height: 54,
               decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.16),
-                borderRadius: BorderRadius.circular(17),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: <Color>[
+                    Color.lerp(color, Colors.white, 0.18)!,
+                    color,
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(18),
+                boxShadow: <BoxShadow>[
+                  BoxShadow(
+                    color: color.withValues(alpha: 0.35),
+                    blurRadius: 12,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
               ),
-              child: Icon(icon, color: color, size: 27),
+              child: Icon(icon, color: Colors.white, size: 26),
             ),
             const SizedBox(height: 6),
             Text(

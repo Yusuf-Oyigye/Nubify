@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
@@ -17,6 +16,7 @@ import '../widgets/search_highlight_text.dart';
 import 'call_history_tab.dart';
 import 'new_call_screen.dart';
 import '../widgets/full_photo_viewer.dart';
+import '../widgets/nubify_chat_style.dart';
 
 class _ChatPalette {
   const _ChatPalette({
@@ -71,7 +71,6 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen>
     with SingleTickerProviderStateMixin {
-  static const Color _blue = Color(0xFF29B6F6);
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
@@ -209,17 +208,17 @@ class _ChatScreenState extends State<ChatScreen>
 
                       SwitchListTile(
                         value: current,
-                        activeThumbColor: const Color(0xFFFFC107),
+                        activeThumbColor: NubifyChatStyle.readGreenOnSurface,
                         secondary: Icon(
                           Icons.done_all_rounded,
                           color: current
-                              ? const Color(0xFFFFC107)
+                              ? NubifyChatStyle.readGreenOnSurface
                               : palette.subtle,
                         ),
                         title: const Text('Read receipts'),
                         subtitle: Text(
                           current
-                              ? 'Read receipts are on. The yellow privacy control shows this setting is active.'
+                              ? 'Read receipts are on. Messages you have read show green ticks.'
                               : 'Read receipts and online visibility are hidden for both sides.',
                         ),
                         onChanged: (bool value) async {
@@ -454,23 +453,28 @@ class _ChatScreenState extends State<ChatScreen>
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
-                    Icon(
-                      Icons.groups_2_outlined,
-                      color: palette.subtle,
-                      size: 54,
-                    ),
+                    const NubifyChatEmptyIcon(icon: Icons.groups_2_rounded),
 
-                    const SizedBox(height: 11),
+                    const SizedBox(height: 16),
 
                     Text(
-                      'No groups yet.',
+                      'No groups yet',
                       style: TextStyle(
                         color: palette.text,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 17,
                       ),
                     ),
 
                     const SizedBox(height: 5),
+
+                    Text(
+                      'Bring your classmates together in one place.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: palette.muted),
+                    ),
+
+                    const SizedBox(height: 8),
 
                     TextButton.icon(
                       onPressed: () {
@@ -490,10 +494,14 @@ class _ChatScreenState extends State<ChatScreen>
             }
 
             return ListView.separated(
-              padding: const EdgeInsets.only(bottom: 100),
+              padding: const EdgeInsets.only(top: 4, bottom: 100),
               itemCount: groups.length,
-              separatorBuilder: (_, _) =>
-                  Divider(height: 1, indent: 82, color: palette.divider),
+              separatorBuilder: (_, _) => Divider(
+                height: 1,
+                indent: 88,
+                endIndent: 16,
+                color: palette.divider.withValues(alpha: 0.45),
+              ),
               itemBuilder: (BuildContext context, int index) {
                 final ChatGroup group = groups[index];
 
@@ -524,18 +532,11 @@ class _ChatScreenState extends State<ChatScreen>
                             ),
                           );
                         },
-                        child: CircleAvatar(
-                          radius: 27,
-                          backgroundColor: palette.field,
-                          backgroundImage: group.photoUrl.trim().isNotEmpty
-                              ? CachedNetworkImageProvider(group.photoUrl)
-                              : null,
-                          child: group.photoUrl.trim().isEmpty
-                              ? const Icon(
-                                  Icons.groups_rounded,
-                                  color: Color(0xFF29B6F6),
-                                )
-                              : null,
+                        child: NubifyChatAvatar(
+                          photoUrl: group.photoUrl,
+                          radius: 25,
+                          ring: unread > 0,
+                          group: true,
                         ),
                       ),
                       title: SearchHighlightText(
@@ -573,16 +574,18 @@ class _ChatScreenState extends State<ChatScreen>
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
-                                  color: unread > 0 ? _blue : palette.subtle,
-                                  fontSize: 10,
+                                  color: unread > 0
+                                      ? NubifyChatStyle.royal
+                                      : palette.subtle,
+                                  fontSize: 10.5,
                                   fontWeight: unread > 0
-                                      ? FontWeight.w700
-                                      : FontWeight.normal,
+                                      ? FontWeight.w800
+                                      : FontWeight.w500,
                                 ),
                               ),
                             if (unread > 0) ...<Widget>[
-                              const SizedBox(height: 5),
-                              _UnreadCountBadge(count: unread),
+                              const SizedBox(height: 6),
+                              NubifyUnreadBadge(count: unread),
                             ],
                           ],
                         ),
@@ -622,16 +625,8 @@ class _ChatScreenState extends State<ChatScreen>
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Container(
-            width: 76,
-            height: 76,
-            decoration: BoxDecoration(
-              color: _blue.withValues(alpha: 0.10),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.forum_outlined, color: _blue, size: 39),
-          ),
-          const SizedBox(height: 14),
+          const NubifyChatEmptyIcon(icon: Icons.forum_rounded),
+          const SizedBox(height: 16),
           Text(
             title,
             style: TextStyle(
@@ -676,15 +671,52 @@ class _ChatScreenState extends State<ChatScreen>
       appBar: AppBar(
         backgroundColor: palette.canvas,
         surfaceTintColor: Colors.transparent,
-        titleSpacing: 3,
-        title: const Text(
-          'Chats',
-          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 22),
+        titleSpacing: 16,
+        title: Row(
+          children: <Widget>[
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                gradient: NubifyChatStyle.brand,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: <BoxShadow>[
+                  BoxShadow(
+                    color: NubifyChatStyle.royal.withValues(alpha: 0.30),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.chat_bubble_rounded,
+                color: Colors.white,
+                size: 19,
+              ),
+            ),
+            const SizedBox(width: 11),
+            const Text(
+              'Chats',
+              style: TextStyle(
+                fontWeight: FontWeight.w900,
+                fontSize: 25,
+                letterSpacing: -0.4,
+              ),
+            ),
+          ],
         ),
         actions: <Widget>[
-          IconButton(
-            onPressed: _showPrivacyMenu,
-            icon: const Icon(Icons.more_vert_rounded),
+          Padding(
+            padding: const EdgeInsets.only(right: 10),
+            child: IconButton.filledTonal(
+              tooltip: 'Chat privacy',
+              style: IconButton.styleFrom(
+                backgroundColor: palette.field,
+                foregroundColor: palette.text,
+              ),
+              onPressed: _showPrivacyMenu,
+              icon: const Icon(Icons.tune_rounded, size: 21),
+            ),
           ),
         ],
         //===============================
@@ -692,7 +724,7 @@ class _ChatScreenState extends State<ChatScreen>
         //===============================
 
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(112),
+          preferredSize: const Size.fromHeight(116),
           child: Column(
             children: <Widget>[
               //===============================
@@ -700,13 +732,16 @@ class _ChatScreenState extends State<ChatScreen>
               //===============================
 
               Padding(
-                padding: const EdgeInsets.fromLTRB(13, 5, 13, 9),
+                padding: const EdgeInsets.fromLTRB(14, 6, 14, 10),
                 child: TextField(
                   controller: _searchController,
                   decoration: InputDecoration(
-                    hintText: 'Search users, conversations or groups',
-                    hintStyle: const TextStyle(fontSize: 13),
-                    prefixIcon: const Icon(Icons.search_rounded),
+                    hintText: 'Search people, chats or groups',
+                    hintStyle: TextStyle(fontSize: 13.5, color: palette.subtle),
+                    prefixIcon: const Icon(
+                      Icons.search_rounded,
+                      color: NubifyChatStyle.royal,
+                    ),
                     suffixIcon: _searchController.text.isNotEmpty
                         ? IconButton(
                             onPressed: () {
@@ -719,8 +754,15 @@ class _ChatScreenState extends State<ChatScreen>
                     fillColor: palette.field,
                     contentPadding: EdgeInsets.zero,
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(24),
+                      borderRadius: BorderRadius.circular(18),
                       borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(18),
+                      borderSide: BorderSide(
+                        color: NubifyChatStyle.royal.withValues(alpha: 0.55),
+                        width: 1.4,
+                      ),
                     ),
                   ),
                 ),
@@ -729,34 +771,55 @@ class _ChatScreenState extends State<ChatScreen>
               // CHAT TABS
               //===============================
 
-              TabBar(
-                controller: _tabController,
+              Container(
+                height: 48,
+                margin: const EdgeInsets.fromLTRB(14, 0, 14, 8),
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: palette.field,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: TabBar(
+                  controller: _tabController,
 
-                indicatorColor: _blue,
-
-                indicatorWeight: 3,
-
-                labelColor: _blue,
-
-                unselectedLabelColor: palette.muted,
-
-                dividerColor: palette.divider,
-
-                tabs: const <Widget>[
-                  Tab(
-                    icon: Icon(Icons.chat_bubble_rounded, size: 20),
-
-                    text: 'Messages',
+                  indicator: BoxDecoration(
+                    gradient: NubifyChatStyle.brand,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: <BoxShadow>[
+                      BoxShadow(
+                        color: NubifyChatStyle.royal.withValues(alpha: 0.30),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
                   ),
 
-                  Tab(
-                    icon: Icon(Icons.groups_2_rounded, size: 22),
+                  indicatorSize: TabBarIndicatorSize.tab,
 
-                    text: 'Groups',
+                  labelColor: Colors.white,
+
+                  unselectedLabelColor: palette.muted,
+
+                  labelStyle: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13,
                   ),
 
-                  Tab(icon: Icon(Icons.call_rounded, size: 21), text: 'Calls'),
-                ],
+                  unselectedLabelStyle: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+
+                  dividerColor: Colors.transparent,
+
+                  splashBorderRadius: BorderRadius.circular(12),
+
+                  tabs: const <Widget>[
+                    _ChatTab(icon: Icons.chat_bubble_rounded, label: 'Messages'),
+                    _ChatTab(icon: Icons.groups_2_rounded, label: 'Groups'),
+                    _ChatTab(icon: Icons.call_rounded, label: 'Calls'),
+                  ],
+                ),
               ),
 
               //===============================
@@ -785,12 +848,12 @@ class _ChatScreenState extends State<ChatScreen>
       //===============================
       // FLOATING ACTION
       //===============================
-      floatingActionButton: FloatingActionButton(
-        heroTag: 'chat_fab',
-
-        backgroundColor: _blue,
-
-        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+      floatingActionButton: NubifyGradientFab(
+        tooltip: _tabIndex == 0
+            ? 'New message'
+            : _tabIndex == 2
+            ? 'New call'
+            : 'New group',
 
         onPressed: _tabIndex == 0
             ? _openNewMessage
@@ -806,13 +869,11 @@ class _ChatScreenState extends State<ChatScreen>
                 );
               },
 
-        child: Icon(
-          _tabIndex == 0
-              ? Icons.add_comment_rounded
-              : _tabIndex == 2
-              ? Icons.add_call
-              : Icons.group_add_rounded,
-        ),
+        icon: _tabIndex == 0
+            ? Icons.add_comment_rounded
+            : _tabIndex == 2
+            ? Icons.add_call
+            : Icons.group_add_rounded,
       ),
     );
   }
@@ -831,37 +892,29 @@ class _ChatScreenState extends State<ChatScreen>
   }
 }
 
-class _UnreadCountBadge extends StatelessWidget {
-  const _UnreadCountBadge({required this.count});
+//===============================
+// PILL TAB: ICON + LABEL
+//===============================
 
-  final int count;
+class _ChatTab extends StatelessWidget {
+  const _ChatTab({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      constraints: const BoxConstraints(
-        minWidth: 20,
-        maxWidth: 34,
-        minHeight: 20,
-        maxHeight: 20,
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 5),
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: const Color(0xFF29B6F6),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: FittedBox(
-        fit: BoxFit.scaleDown,
-        child: Text(
-          count > 99 ? '99+' : '$count',
-          maxLines: 1,
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onPrimary,
-            fontSize: 9,
-            fontWeight: FontWeight.w800,
+    return Tab(
+      height: 40,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          Icon(icon, size: 17),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -892,7 +945,6 @@ class _DirectConversationTile extends StatelessWidget {
 
   final ChatPrivacyService privacyService;
 
-  static const Color _blue = Color(0xFF29B6F6);
 
   //===============================
   // STRING LIST
@@ -1020,15 +1072,10 @@ class _DirectConversationTile extends StatelessWidget {
                     ),
                   );
                 },
-                child: CircleAvatar(
-                  radius: 27,
-                  backgroundColor: palette.field,
-                  backgroundImage: photoUrl.trim().isNotEmpty
-                      ? CachedNetworkImageProvider(photoUrl)
-                      : null,
-                  child: photoUrl.trim().isEmpty
-                      ? const Icon(Icons.person_rounded)
-                      : null,
+                child: NubifyChatAvatar(
+                  photoUrl: photoUrl,
+                  radius: 25,
+                  ring: unread > 0,
                 ),
               ),
               title: SearchHighlightText(
@@ -1094,41 +1141,18 @@ class _DirectConversationTile extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.end,
                       style: TextStyle(
-                        color: unread > 0 ? _blue : palette.subtle,
-                        fontSize: 10,
+                        color: unread > 0
+                            ? NubifyChatStyle.royal
+                            : palette.subtle,
+                        fontSize: 10.5,
                         fontWeight: unread > 0
-                            ? FontWeight.w700
-                            : FontWeight.normal,
+                            ? FontWeight.w800
+                            : FontWeight.w500,
                       ),
                     ),
                     if (unread > 0) ...<Widget>[
-                      const SizedBox(height: 5),
-                      Container(
-                        constraints: const BoxConstraints(
-                          minWidth: 20,
-                          maxWidth: 34,
-                          minHeight: 20,
-                          maxHeight: 20,
-                        ),
-                        padding: const EdgeInsets.symmetric(horizontal: 5),
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: _blue,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text(
-                            unread > 99 ? '99+' : '$unread',
-                            maxLines: 1,
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.onPrimary,
-                              fontSize: 9,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ),
-                      ),
+                      const SizedBox(height: 6),
+                      NubifyUnreadBadge(count: unread),
                     ],
                   ],
                 ),
@@ -1161,8 +1185,6 @@ class _DirectConversationTile extends StatelessWidget {
 //===============================
 
 class _ConversationStatus extends StatelessWidget {
-  static const Color _viewedYellow = Color(0xFFFFC107);
-
   const _ConversationStatus({
     required this.conversation,
     required this.otherUid,
@@ -1207,7 +1229,9 @@ class _ConversationStatus extends StatelessWidget {
           return Icon(
             Icons.done_all_rounded,
             size: 16,
-            color: snapshot.data == true ? _viewedYellow : palette.subtle,
+            color: snapshot.data == true
+                ? NubifyChatStyle.readGreenOnSurface
+                : palette.subtle,
           );
         },
       );

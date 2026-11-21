@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -22,6 +21,7 @@ import 'group_permissions_screen.dart';
 import 'chat_forward_screen.dart';
 import '../widgets/full_photo_viewer.dart';
 import '../widgets/universal_link_composer_preview.dart';
+import '../widgets/nubify_chat_style.dart';
 
 //===============================
 // GROUP CHAT SCREEN
@@ -43,7 +43,6 @@ class GroupChatScreen extends StatefulWidget {
 //===============================
 
 class _GroupChatScreenState extends State<GroupChatScreen> {
-  static const Color _blue = Color(0xFF29B6F6);
 
   Stream<QuerySnapshot<Map<String, dynamic>>>? _groupMessagesStream;
 
@@ -609,16 +608,8 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
       child: Align(
         alignment: Alignment.centerRight,
         child: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: _blue,
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(17),
-              topRight: Radius.circular(17),
-              bottomLeft: Radius.circular(17),
-              bottomRight: Radius.circular(5),
-            ),
-          ),
+          padding: const EdgeInsets.all(9),
+          decoration: NubifyChatStyle.bubble(context, mine: true),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             mainAxisSize: MainAxisSize.min,
@@ -1011,11 +1002,19 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
     final ColorScheme scheme = Theme.of(context).colorScheme;
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(12, 7, 7, 7),
-      color: scheme.surface,
+      margin: const EdgeInsets.fromLTRB(8, 6, 8, 0),
+      padding: const EdgeInsets.fromLTRB(12, 7, 4, 7),
+      decoration: NubifyChatStyle.composerCard(context),
       child: Row(
         children: <Widget>[
-          Container(width: 3, height: 39, color: _blue),
+          Container(
+            width: 4,
+            height: 39,
+            decoration: BoxDecoration(
+              gradient: NubifyChatStyle.brand,
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
           const SizedBox(width: 9),
           Expanded(
             child: Column(
@@ -1024,8 +1023,8 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                 const Text(
                   'Replying to message',
                   style: TextStyle(
-                    color: _blue,
-                    fontWeight: FontWeight.w700,
+                    color: NubifyChatStyle.royal,
+                    fontWeight: FontWeight.w800,
                     fontSize: 11,
                   ),
                 ),
@@ -1182,7 +1181,13 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
               appBar: AppBar(
                 backgroundColor: scheme.surface,
                 foregroundColor: scheme.onSurface,
+                surfaceTintColor: Colors.transparent,
                 titleSpacing: 0,
+                shape: Border(
+                  bottom: BorderSide(
+                    color: scheme.outlineVariant.withValues(alpha: 0.45),
+                  ),
+                ),
                 title: InkWell(
                   onTap: () {
                     Navigator.push(
@@ -1194,17 +1199,13 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                   },
                   child: Row(
                     children: <Widget>[
-                      CircleAvatar(
-                        radius: 19,
-                        backgroundColor: scheme.surfaceContainerHighest,
-                        backgroundImage: group.photoUrl.trim().isNotEmpty
-                            ? CachedNetworkImageProvider(group.photoUrl)
-                            : null,
-                        child: group.photoUrl.trim().isEmpty
-                            ? const Icon(Icons.groups_rounded, color: _blue)
-                            : null,
+                      NubifyChatAvatar(
+                        photoUrl: group.photoUrl,
+                        radius: 17,
+                        ring: true,
+                        group: true,
                       ),
-                      const SizedBox(width: 9),
+                      const SizedBox(width: 10),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1282,7 +1283,8 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
               //===============================
               // BODY
               //===============================
-              body: SafeArea(
+              body: NubifyChatBackground(
+                child: SafeArea(
                 child: Column(
                   children: <Widget>[
                     Expanded(
@@ -1336,11 +1338,30 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
 
                               if (messages.isEmpty) {
                                 return Center(
-                                  child: Text(
-                                    'Start the group conversation.',
-                                    style: TextStyle(
-                                      color: scheme.onSurfaceVariant,
-                                    ),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: <Widget>[
+                                      const NubifyChatEmptyIcon(
+                                        icon: Icons.groups_2_rounded,
+                                      ),
+                                      const SizedBox(height: 14),
+                                      Text(
+                                        'Welcome to ${group.name}',
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          color: scheme.onSurface,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'Start the group conversation.',
+                                        style: TextStyle(
+                                          color: scheme.onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 );
                               }
@@ -1414,8 +1435,9 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                     if (!canSend)
                       Container(
                         width: double.infinity,
+                        margin: NubifyChatStyle.composerMargin,
                         padding: const EdgeInsets.all(14),
-                        color: scheme.surface,
+                        decoration: NubifyChatStyle.composerCard(context),
                         child: Text(
                           'Only admins can send messages in this group.',
                           textAlign: TextAlign.center,
@@ -1446,6 +1468,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                           _sendSticker(group, sticker),
                     ),
                   ],
+                ),
                 ),
               ),
             );

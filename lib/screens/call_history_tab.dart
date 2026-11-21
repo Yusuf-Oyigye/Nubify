@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../utils/nubify_call_display.dart';
 import '../widgets/full_photo_viewer.dart';
+import '../widgets/nubify_chat_style.dart';
 import 'audio_call_screen.dart';
 import 'conversation_screen.dart';
 
@@ -255,19 +256,7 @@ class _CallHistoryTabState extends State<CallHistoryTab> {
                 onTap: () {
                   _openPhoto(name: name, photoUrl: photo);
                 },
-                child: CircleAvatar(
-                  radius: 25,
-                  backgroundColor: scheme.surfaceContainerHighest,
-                  backgroundImage: photo.isNotEmpty
-                      ? NetworkImage(photo)
-                      : null,
-                  child: photo.isEmpty
-                      ? Icon(
-                          Icons.person_rounded,
-                          color: scheme.onSurfaceVariant,
-                        )
-                      : null,
-                ),
+                child: NubifyChatAvatar(photoUrl: photo, radius: 23),
               ),
               title: Text(
                 name,
@@ -339,7 +328,16 @@ class _CallHistoryTabState extends State<CallHistoryTab> {
                     photoUrl: photo,
                   );
                 },
-                icon: const Icon(Icons.call_rounded, color: _blue),
+                style: IconButton.styleFrom(
+                  backgroundColor: NubifyChatStyle.royal.withValues(
+                    alpha: 0.12,
+                  ),
+                ),
+                icon: const Icon(
+                  Icons.call_rounded,
+                  color: NubifyChatStyle.royal,
+                  size: 21,
+                ),
               ),
 
               //===================================================
@@ -389,20 +387,40 @@ class _CallHistoryTabState extends State<CallHistoryTab> {
 
     if (visible.isEmpty) {
       return Center(
-        child: Text(
-          'No recent calls',
-          style: TextStyle(color: scheme.onSurfaceVariant),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            const NubifyChatEmptyIcon(icon: Icons.call_rounded),
+            const SizedBox(height: 16),
+            Text(
+              'No recent calls',
+              style: TextStyle(
+                color: scheme.onSurface,
+                fontSize: 17,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 5),
+            Text(
+              'Your voice calls will show up here.',
+              style: TextStyle(color: scheme.onSurfaceVariant),
+            ),
+          ],
         ),
       );
     }
 
     return ListView.separated(
-      padding: const EdgeInsets.only(bottom: 90),
+      padding: const EdgeInsets.only(top: 4, bottom: 90),
 
       itemCount: visible.length,
 
-      separatorBuilder: (_, _) =>
-          Divider(height: 1, indent: 74, color: scheme.outlineVariant),
+      separatorBuilder: (_, _) => Divider(
+        height: 1,
+        indent: 84,
+        endIndent: 16,
+        color: scheme.outlineVariant.withValues(alpha: 0.45),
+      ),
 
       itemBuilder: (_, int index) => _tile(visible[index]),
     );

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/chat_message.dart';
+import 'nubify_chat_style.dart';
 
 //===============================
 // CHAT MESSAGE STATUS
@@ -8,8 +9,6 @@ import '../models/chat_message.dart';
 
 class ChatMessageStatus
     extends StatelessWidget {
-  static const Color _viewedYellow = Color(0xFFFFC107);
-
   const ChatMessageStatus({
     super.key,
     required this.message,
@@ -55,7 +54,7 @@ class ChatMessageStatus
         size,
         color:
         canShowReadReceipt
-            ? _viewedYellow
+            ? NubifyChatStyle.readGreen
             : Colors.white60,
       );
     }

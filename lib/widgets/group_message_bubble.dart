@@ -5,6 +5,7 @@ import 'package:video_player/video_player.dart';
 import '../models/chat_message.dart';
 import '../widgets/chat_voice_message.dart';
 import '../widgets/chat_link_text.dart';
+import 'nubify_chat_style.dart';
 import 'nubify_shared_chat_card.dart';
 
 //===============================
@@ -42,13 +43,6 @@ class GroupMessageBubble extends StatelessWidget {
 
   static const Color _blue = Color(0xFF29B6F6);
 
-  static const Color _incoming = Color(0xFF242B31);
-  //===============================
-  // MESSAGE BUBBLE COLORS
-  //===============================
-
-  static const Color _outgoing = Color(0xFF0D3B66);
-
   //===============================
   // TIME
   //===============================
@@ -75,7 +69,7 @@ class GroupMessageBubble extends StatelessWidget {
       return const Icon(
         Icons.done_all_rounded,
         size: 15,
-        color: Color(0xFF25D366),
+        color: NubifyChatStyle.readGreen,
       );
     }
 
@@ -118,11 +112,16 @@ class GroupMessageBubble extends StatelessWidget {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 7),
-      padding: const EdgeInsets.all(8),
+      padding: const EdgeInsets.fromLTRB(10, 7, 9, 7),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.17),
-        borderRadius: BorderRadius.circular(9),
-        border: const Border(left: BorderSide(color: Colors.white70, width: 3)),
+        color: Colors.white.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(12),
+        border: Border(
+          left: BorderSide(
+            color: mine ? Colors.white : NubifyChatStyle.sky,
+            width: 3,
+          ),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -369,12 +368,16 @@ class GroupMessageBubble extends StatelessWidget {
         children: counts.entries
             .map(
               (MapEntry<String, int> entry) => Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
 
                 decoration: BoxDecoration(
-                  color: Colors.black26,
+                  color: Colors.white.withValues(alpha: 0.16),
 
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(14),
+
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.18),
+                  ),
                 ),
 
                 child: Text(
@@ -413,19 +416,7 @@ class GroupMessageBubble extends StatelessWidget {
             GestureDetector(
               onTap: onSenderPhotoTap,
 
-              child: CircleAvatar(
-                radius: 16,
-
-                backgroundColor: Colors.white10,
-
-                backgroundImage: senderPhotoUrl.trim().isNotEmpty
-                    ? NetworkImage(senderPhotoUrl)
-                    : null,
-
-                child: senderPhotoUrl.trim().isEmpty
-                    ? const Icon(Icons.person_rounded, size: 17)
-                    : null,
-              ),
+              child: NubifyChatAvatar(photoUrl: senderPhotoUrl, radius: 14),
             ),
 
             const SizedBox(width: 6),
@@ -440,18 +431,10 @@ class GroupMessageBubble extends StatelessWidget {
                 ),
                 padding: sticker
                     ? const EdgeInsets.all(3)
-                    : const EdgeInsets.fromLTRB(9, 7, 9, 5),
+                    : const EdgeInsets.fromLTRB(12, 8, 11, 6),
                 decoration: sticker
                     ? null
-                    : BoxDecoration(
-                        color: mine ? _outgoing : _incoming,
-                        borderRadius: BorderRadius.only(
-                          topLeft: const Radius.circular(17),
-                          topRight: const Radius.circular(17),
-                          bottomLeft: Radius.circular(mine ? 17 : 5),
-                          bottomRight: Radius.circular(mine ? 5 : 17),
-                        ),
-                      ),
+                    : NubifyChatStyle.bubble(context, mine: mine),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
@@ -462,8 +445,8 @@ class GroupMessageBubble extends StatelessWidget {
                         child: Text(
                           senderName,
                           style: const TextStyle(
-                            color: Color(0xFF81D4FA),
-                            fontSize: 11,
+                            color: Color(0xFF7DD3FC),
+                            fontSize: 11.5,
                             fontWeight: FontWeight.w800,
                           ),
                         ),
@@ -494,9 +477,12 @@ class GroupMessageBubble extends StatelessWidget {
                         children: <Widget>[
                           Text(
                             _time(),
-                            style: const TextStyle(
-                              color: Colors.white60,
-                              fontSize: 9,
+                            style: TextStyle(
+                              color: sticker
+                                  ? Theme.of(context).colorScheme.onSurfaceVariant
+                                  : Colors.white70,
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
 

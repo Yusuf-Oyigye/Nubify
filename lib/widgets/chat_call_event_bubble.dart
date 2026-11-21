@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../utils/nubify_call_display.dart';
+import 'nubify_chat_style.dart';
 
 //===================================================
 // CHAT CALL EVENT BUBBLE
@@ -52,15 +53,27 @@ class ChatCallEventBubble extends StatelessWidget {
           margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
           padding: const EdgeInsets.fromLTRB(12, 11, 6, 9),
           decoration: BoxDecoration(
+            gradient: outgoing ? NubifyChatStyle.outgoing : null,
             color: outgoing
-                ? const Color(0xFF0D3B66)
-                : (dark
-                      ? const Color(0xFF242B31)
-                      : scheme.surfaceContainerHighest),
-            borderRadius: BorderRadius.circular(15),
+                ? null
+                : (dark ? const Color(0xFF1D2836) : Colors.white),
+            borderRadius: BorderRadius.circular(18),
             border: missed
                 ? Border.all(color: Colors.redAccent.withValues(alpha: 0.45))
-                : null,
+                : (outgoing
+                      ? null
+                      : Border.all(
+                          color: dark
+                              ? Colors.white.withValues(alpha: 0.06)
+                              : const Color(0xFFE1E8F2),
+                        )),
+            boxShadow: <BoxShadow>[
+              BoxShadow(
+                color: Colors.black.withValues(alpha: dark ? 0.28 : 0.07),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -74,12 +87,14 @@ class ChatCallEventBubble extends StatelessWidget {
                 height: 39,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: accent.withValues(alpha: 0.16),
+                  color: outgoing && !missed
+                      ? Colors.white.withValues(alpha: 0.18)
+                      : accent.withValues(alpha: 0.16),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
                   NubifyCallDisplay.icon(call, viewerId),
-                  color: accent,
+                  color: outgoing && !missed ? Colors.white : accent,
                   size: 21,
                 ),
               ),
@@ -127,10 +142,10 @@ class ChatCallEventBubble extends StatelessWidget {
                 tooltip: 'Call again',
                 visualDensity: VisualDensity.compact,
                 onPressed: onCall,
-                icon: const Icon(
+                icon: Icon(
                   Icons.call_rounded,
                   size: 19,
-                  color: NubifyCallDisplay.blue,
+                  color: outgoing ? Colors.white : NubifyCallDisplay.blue,
                 ),
               ),
             ],

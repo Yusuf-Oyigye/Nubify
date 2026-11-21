@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -33,6 +32,7 @@ import '../widgets/full_photo_viewer.dart';
 import 'comment_screen.dart';
 import '../utils/nubify_call_display.dart';
 import '../widgets/chat_call_event_bubble.dart';
+import '../widgets/nubify_chat_style.dart';
 
 class _ConversationPalette {
   const _ConversationPalette({
@@ -1202,12 +1202,25 @@ class _ConversationScreenState extends State<ConversationScreen> {
                                 }
 
                                 if (online) {
-                                  return const Text(
-                                    'online',
-                                    style: TextStyle(
-                                      color: _blue,
-                                      fontSize: 11,
-                                    ),
+                                  return const Row(
+                                    children: <Widget>[
+                                      DecoratedBox(
+                                        decoration: BoxDecoration(
+                                          color: NubifyChatStyle.online,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: SizedBox(width: 7, height: 7),
+                                      ),
+                                      SizedBox(width: 5),
+                                      Text(
+                                        'online',
+                                        style: TextStyle(
+                                          color: NubifyChatStyle.online,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
                                   );
                                 }
 
@@ -1317,6 +1330,9 @@ class _ConversationScreenState extends State<ConversationScreen> {
       foregroundColor: palette.text,
       surfaceTintColor: Colors.transparent,
       titleSpacing: 0,
+      shape: Border(
+        bottom: BorderSide(color: palette.divider.withValues(alpha: 0.45)),
+      ),
       title: InkWell(
         onTap: _openProfile,
         borderRadius: BorderRadius.circular(12),
@@ -1327,22 +1343,14 @@ class _ConversationScreenState extends State<ConversationScreen> {
               GestureDetector(
                 onTap: _openProfile,
 
-                child: CircleAvatar(
-                  radius: 19,
-
-                  backgroundColor: palette.field,
-
-                  backgroundImage: widget.otherPhotoUrl.trim().isNotEmpty
-                      ? CachedNetworkImageProvider(widget.otherPhotoUrl)
-                      : null,
-
-                  child: widget.otherPhotoUrl.trim().isEmpty
-                      ? const Icon(Icons.person_rounded, size: 21)
-                      : null,
+                child: NubifyChatAvatar(
+                  photoUrl: widget.otherPhotoUrl,
+                  radius: 17,
+                  ring: true,
                 ),
               ),
 
-              const SizedBox(width: 9),
+              const SizedBox(width: 10),
 
               Expanded(
                 child: Column(
@@ -1373,7 +1381,11 @@ class _ConversationScreenState extends State<ConversationScreen> {
         IconButton(
           tooltip: 'Audio call',
           onPressed: _startCall,
-          icon: const Icon(Icons.call_outlined),
+          style: IconButton.styleFrom(
+            backgroundColor: NubifyChatStyle.royal.withValues(alpha: 0.12),
+            foregroundColor: NubifyChatStyle.royal,
+          ),
+          icon: const Icon(Icons.call_rounded, size: 21),
         ),
 
         PopupMenuButton<String>(
@@ -1492,18 +1504,16 @@ class _ConversationScreenState extends State<ConversationScreen> {
     final _ConversationPalette palette = _ConversationPalette.of(context);
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(12, 8, 7, 8),
-      decoration: BoxDecoration(
-        color: palette.surface,
-        border: Border(top: BorderSide(color: palette.divider)),
-      ),
+      margin: const EdgeInsets.fromLTRB(8, 6, 8, 0),
+      padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
+      decoration: NubifyChatStyle.composerCard(context),
       child: Row(
         children: <Widget>[
           Container(
-            width: 3,
+            width: 4,
             height: 38,
             decoration: BoxDecoration(
-              color: _blue,
+              gradient: NubifyChatStyle.brand,
               borderRadius: BorderRadius.circular(4),
             ),
           ),
@@ -1517,9 +1527,9 @@ class _ConversationScreenState extends State<ConversationScreen> {
                 Text(
                   sender,
                   style: const TextStyle(
-                    color: _blue,
+                    color: NubifyChatStyle.royal,
                     fontSize: 12,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
                 Text(
@@ -1768,21 +1778,9 @@ class _ConversationScreenState extends State<ConversationScreen> {
         child: Container(
           constraints: const BoxConstraints(maxWidth: 275),
 
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.all(9),
 
-          decoration: const BoxDecoration(
-            color: _blue,
-
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(17),
-
-              topRight: Radius.circular(17),
-
-              bottomLeft: Radius.circular(17),
-
-              bottomRight: Radius.circular(5),
-            ),
-          ),
+          decoration: NubifyChatStyle.bubble(context, mine: true),
 
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.end,
@@ -2040,11 +2038,34 @@ class _ConversationScreenState extends State<ConversationScreen> {
 
                 if (items.isEmpty && visiblePending.isEmpty) {
                   return Center(
-                    child: Text(
-                      _search.isNotEmpty
-                          ? 'No matching messages.'
-                          : 'Start the conversation.',
-                      style: TextStyle(color: palette.muted),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        NubifyChatEmptyIcon(
+                          icon: _search.isNotEmpty
+                              ? Icons.search_off_rounded
+                              : Icons.waving_hand_rounded,
+                        ),
+                        const SizedBox(height: 14),
+                        Text(
+                          _search.isNotEmpty
+                              ? 'No matching messages.'
+                              : 'Say hi to ${widget.otherName}',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: palette.text,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        if (_search.isEmpty) ...<Widget>[
+                          const SizedBox(height: 4),
+                          Text(
+                            'Start the conversation.',
+                            style: TextStyle(color: palette.muted),
+                          ),
+                        ],
+                      ],
                     ),
                   );
                 }
@@ -2168,7 +2189,8 @@ class _ConversationScreenState extends State<ConversationScreen> {
     return Scaffold(
       backgroundColor: palette.canvas,
       appBar: _searching ? _searchAppBar() : _normalAppBar(),
-      body: SafeArea(
+      body: NubifyChatBackground(
+        child: SafeArea(
         child: Column(
           children: <Widget>[
             //===============================
@@ -2215,6 +2237,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
                 onRecordingChanged: _recordingChanged,
               ),
           ],
+        ),
         ),
       ),
     );
