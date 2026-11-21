@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'profile_screen.dart';
@@ -203,7 +204,8 @@ class _MenuScreenState extends State<MenuScreen> {
                   ListTile(
                     onTap: () => Navigator.pop(sheetContext, language.code),
                     leading: NubifyIconTile(
-                      icon: Icons.translate_rounded,
+                      icon: Symbols.translate_rounded,
+                      fill: 1,
                       color: language.code == _languageCode
                           ? nubifySky
                           : NubifyPalette.slate,
@@ -779,10 +781,11 @@ class _MenuScreenState extends State<MenuScreen> {
         child: Row(
           children: <Widget>[
             const NubifyIconTile(
-              icon: Icons.translate_rounded,
+              icon: Symbols.translate_rounded,
               color: NubifyPalette.teal,
               size: 30,
               iconSize: 16,
+              fill: 1,
             ),
             const SizedBox(width: 8),
             Expanded(
@@ -826,7 +829,7 @@ class _MenuScreenState extends State<MenuScreen> {
     final items = <_MenuItem>[
       _MenuItem(
         'Find Friends & Users',
-        Icons.person_search_rounded,
+        Symbols.group_add_rounded,
         nubifySky,
         () => _push(const UserDirectoryScreen()),
       ),
@@ -836,14 +839,14 @@ class _MenuScreenState extends State<MenuScreen> {
       //===============================================
       _MenuItem(
         'NUB Huddles',
-        Icons.groups_2_outlined,
+        Symbols.podcasts_rounded,
         NubifyPalette.purple,
         () => _unavailable('NUB Huddles'),
       ),
 
       _MenuItem(
         'NUB Trend',
-        Icons.trending_up_rounded,
+        Symbols.insights_rounded,
         NubifyPalette.coral,
         () => _unavailable('NUB Trend'),
       ),
@@ -851,9 +854,10 @@ class _MenuScreenState extends State<MenuScreen> {
       // Games will live here later.
       _MenuItem(
         'Games',
-        Icons.sports_esports_rounded,
+        Symbols.stadia_controller_rounded,
         NubifyPalette.sapphire,
         () => _unavailable('Games'),
+        picture: 'assets/menu_icons/video_game_3d.png',
       ),
 
       //===============================================
@@ -861,14 +865,15 @@ class _MenuScreenState extends State<MenuScreen> {
       //===============================================
       _MenuItem(
         'NUB Map',
-        Icons.map_outlined,
+        Symbols.location_on_rounded,
         NubifyPalette.emerald,
         () => _unavailable('Live 3D Map'),
+        picture: 'assets/menu_icons/world_map_3d.png',
       ),
 
       _MenuItem(
         'Verification Badges',
-        Icons.verified_rounded,
+        Symbols.verified_rounded,
         const Color(0xFFD9A11E),
         () => _unavailable('Verification Badges'),
       ),
@@ -878,16 +883,17 @@ class _MenuScreenState extends State<MenuScreen> {
       //===============================================
       _MenuItem(
         'Faculties & Programmes',
-        Icons.school_outlined,
+        Symbols.school_rounded,
         NubifyPalette.amber,
             () => _push(const NubFacultiesScreen()),
       ),
 
       _MenuItem(
         'Explore NUB',
-        Icons.explore_outlined,
+        Symbols.photo_library_rounded,
         NubifyPalette.teal,
             () => _push(const ExploreNubScreen()),
+        picture: 'assets/menu_icons/framed_picture_3d.png',
       ),
 
       //===============================================
@@ -895,14 +901,14 @@ class _MenuScreenState extends State<MenuScreen> {
       //===============================================
       _MenuItem(
         'The University',
-        Icons.account_balance_outlined,
+        Symbols.location_city_rounded,
         NubifyPalette.indigo,
             () => _push(const NubUniversityScreen()),
       ),
 
       _MenuItem(
         'Settings',
-        Icons.settings_outlined,
+        Symbols.settings_rounded,
         NubifyPalette.slate,
         () => _push(const NubifySettingsScreen()),
       ),
@@ -967,6 +973,8 @@ class _MenuScreenState extends State<MenuScreen> {
                         color: item.color,
                         size: 35,
                         iconSize: 19,
+                        image: item.picture,
+                        fill: 1,
                       ),
 
                       const SizedBox(width: 8),
@@ -1004,42 +1012,42 @@ class _MenuScreenState extends State<MenuScreen> {
     final items = <_MenuItem>[
       _MenuItem(
         'About the App',
-        Icons.info_outline_rounded,
+        Symbols.info_rounded,
         nubifySky,
         () => _push(const NubifyAboutAppScreen()),
       ),
 
       _MenuItem(
         'About the Developer',
-        Icons.person_pin_circle_outlined,
+        Symbols.person_pin_circle_rounded,
         NubifyPalette.violet,
             () => _push(const AboutDeveloperScreen()),
       ),
 
       _MenuItem(
         'Honorary Recognition',
-        Icons.workspace_premium_outlined,
+        Symbols.workspace_premium_rounded,
         NubifyPalette.amber,
         () => _push(const HonoraryRecognitionScreen()),
       ),
 
       _MenuItem(
         'Terms and Conditions',
-        Icons.gavel_rounded,
+        Symbols.contract_rounded,
         NubifyPalette.teal,
         () => _push(const NubifyLegalScreen(type: NubifyLegalType.terms)),
       ),
 
       _MenuItem(
         'Privacy Policy',
-        Icons.shield_outlined,
+        Symbols.shield_lock_rounded,
         NubifyPalette.emerald,
         () => _push(const NubifyLegalScreen(type: NubifyLegalType.privacy)),
       ),
 
       _MenuItem(
         'Log Out',
-        Icons.logout_rounded,
+        Symbols.logout_rounded,
         NubifyPalette.crimson,
         _confirmLogout,
       ),
@@ -1098,6 +1106,8 @@ class _MenuScreenState extends State<MenuScreen> {
               color: item.color,
               size: 44,
               iconSize: 22,
+              image: item.picture,
+              fill: 1,
             ),
 
             const SizedBox(width: 13),
@@ -1136,12 +1146,21 @@ class _MenuScreenState extends State<MenuScreen> {
 //===================================================
 
 class _MenuItem {
-  const _MenuItem(this.title, this.icon, this.color, this.onTap);
+  const _MenuItem(
+    this.title,
+    this.icon,
+    this.color,
+    this.onTap, {
+    this.picture,
+  });
 
   final String title;
   final IconData icon;
   final Color color;
   final VoidCallback onTap;
+
+  // 3D picture from assets/menu_icons/, shown instead of the icon.
+  final String? picture;
 }
 
 class _LanguageOption {

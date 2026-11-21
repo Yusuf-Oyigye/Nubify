@@ -59,6 +59,8 @@ class NubifyIconTile extends StatelessWidget {
     required this.color,
     this.size = 46,
     this.iconSize = 23,
+    this.image,
+    this.fill,
   });
 
   final IconData icon;
@@ -66,8 +68,18 @@ class NubifyIconTile extends StatelessWidget {
   final double size;
   final double iconSize;
 
+  // A 3D picture (PNG asset) shown instead of the icon.
+  // The icon still shows if the picture can't load.
+  final String? image;
+
+  // 1 = solid Material Symbols icon, 0 = outlined.
+  final double? fill;
+
   @override
   Widget build(BuildContext context) {
+    final String? picture = image;
+    final Widget symbol = Icon(icon, color: color, size: iconSize, fill: fill);
+
     return Container(
       width: size,
       height: size,
@@ -76,7 +88,16 @@ class NubifyIconTile extends StatelessWidget {
         color: NubifyMenuColors.tint(context, color),
         borderRadius: BorderRadius.circular(15),
       ),
-      child: Icon(icon, color: color, size: iconSize),
+      child: picture == null
+          ? symbol
+          : Image.asset(
+              picture,
+              width: size * .7,
+              height: size * .7,
+              fit: BoxFit.contain,
+              filterQuality: FilterQuality.medium,
+              errorBuilder: (_, _, _) => symbol,
+            ),
     );
   }
 }

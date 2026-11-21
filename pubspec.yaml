@@ -95,6 +95,7 @@ dependencies:
   shared_preferences: ^2.5.6
   firebase_app_check: ^0.4.1+4
   font_awesome_flutter: ^11.0.0
+  material_symbols_icons: ^4.2960.0
 
 
 
@@ -129,6 +130,7 @@ flutter:
     - assets/images/my_pic.jpg
     - assets/images/faculties/
     - assets/icons/
+    - assets/menu_icons/
 
   #   - images/a_dot_burr.jpeg
   #   - images/a_dot_ham.jpeg
