@@ -19,6 +19,7 @@ class NubifyPalette {
   static const Color slate = Color(0xFF7187A2);
   static const Color violet = Color(0xFF9A70D9);
   static const Color crimson = Color(0xFFCD5960);
+  static const Color red = Color(0xFFE53935);
 }
 
 //===================================================

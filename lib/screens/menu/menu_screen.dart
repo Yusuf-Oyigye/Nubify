@@ -851,6 +851,7 @@ class _MenuScreenState extends State<MenuScreen> {
         Symbols.insights_rounded,
         NubifyPalette.coral,
         () => _unavailable('NUB Trend'),
+        picture: 'assets/menu_icons/rocket_3d.png',
       ),
 
       // Games will live here later.
@@ -868,9 +869,8 @@ class _MenuScreenState extends State<MenuScreen> {
       _MenuItem(
         'NUB Map',
         Symbols.location_on_rounded,
-        NubifyPalette.emerald,
+        NubifyPalette.red,
         () => _unavailable('Live 3D Map'),
-        picture: 'assets/menu_icons/world_map_3d.png',
       ),
 
       _MenuItem(
