@@ -16,6 +16,42 @@ import 'story_people_picker_screen.dart';
 import '../widgets/draggable_story_tags.dart';
 import '../widgets/story_link_preview_overlay.dart';
 import '../widgets/story_drawing_canvas.dart';
+import '../widgets/nubify_chat_style.dart';
+
+//===================================================
+// STORY STUDIO LOOK
+//
+// A deep night background, frosted glass panels and the
+// Nubify sky → royal → violet gradient for anything that
+// is selected or important.
+//===================================================
+
+class _Studio {
+  _Studio._();
+
+  static const Color sky = Color(0xFF29B6F6);
+
+  static const Color night = Color(0xFF070B16);
+
+  // Bottom sheets and menus.
+  static const Color sheet = Color(0xFF101727);
+
+  // Frosted glass panels and their thin edges.
+  static const Color glass = Color(0x14FFFFFF);
+  static const Color glassEdge = Color(0x1FFFFFFF);
+
+  static const LinearGradient backdrop = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: <Color>[Color(0xFF111A3A), Color(0xFF0A0F22), Color(0xFF05070E)],
+  );
+
+  static BoxDecoration glassPanel({double radius = 22}) => BoxDecoration(
+    color: glass,
+    borderRadius: BorderRadius.circular(radius),
+    border: Border.all(color: glassEdge),
+  );
+}
 
 //===================================================
 // CREATE STORY SCREEN
@@ -1785,7 +1821,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF171717),
+      backgroundColor: _Studio.sheet,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -2591,7 +2627,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF151515),
+      backgroundColor: _Studio.sheet,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -2658,7 +2694,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
                             children: <Widget>[
                               Container(
                                 height: 49,
-                                color: const Color(0xFF111111),
+                                color: _Studio.night,
                                 child: TabBar(
                                   isScrollable: true,
                                   tabAlignment: TabAlignment.start,
@@ -2827,7 +2863,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
     result = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF121720),
+      backgroundColor: _Studio.sheet,
       showDragHandle: true,
       builder: (BuildContext sheetContext) {
         return StatefulBuilder(
@@ -3260,281 +3296,484 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
   // BUILD
   //===================================================
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF080A0F),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF080A0F),
-        surfaceTintColor: Colors.transparent,
-        title: const Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text(
-              'Story Studio',
-              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 21),
-            ),
-            Text(
-              'Create something worth watching',
-              style: TextStyle(
-                color: Colors.white54,
-                fontSize: 10,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
+  //===================================================
+  // SHARE BUTTON
+  //===================================================
+
+  Widget _buildShareButton() {
+    final bool busy = _isPosting;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 8, 12, 8),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: busy ? null : NubifyChatStyle.brand,
+          color: busy ? Colors.white12 : null,
+          borderRadius: BorderRadius.circular(22),
+          boxShadow: busy
+              ? null
+              : <BoxShadow>[
+                  BoxShadow(
+                    color: NubifyChatStyle.royal.withValues(alpha: 0.45),
+                    blurRadius: 16,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
         ),
-        actions: <Widget>[
-          Padding(
-            padding: const EdgeInsets.fromLTRB(4, 7, 10, 7),
-            child: FilledButton.icon(
-              style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFF29B6F6),
-                foregroundColor: const Color(0xFF071310),
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-              ),
-              onPressed: _isPosting ? null : _postStory,
-              icon: _isPosting
-                  ? const SizedBox(
+        child: Material(
+          type: MaterialType.transparency,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(22),
+            onTap: busy ? null : _postStory,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  if (busy)
+                    const SizedBox(
                       width: 16,
                       height: 16,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: Color(0xFF071310),
+                        color: Colors.white,
                       ),
                     )
-                  : const Icon(Icons.arrow_upward_rounded, size: 18),
-              label: const Text(
-                'Share',
-                style: TextStyle(fontWeight: FontWeight.w800),
+                  else
+                    const Icon(
+                      Icons.send_rounded,
+                      color: Colors.white,
+                      size: 17,
+                    ),
+                  const SizedBox(width: 7),
+                  Text(
+                    busy ? 'Sharing…' : 'Share',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
-        ],
+        ),
       ),
-      body: SafeArea(
-        child: Column(
-          children: <Widget>[
-            _buildModeBar(),
+    );
+  }
 
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(10, 6, 10, 4),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(22),
-                  child: Container(
-                    width: double.infinity,
+  //===================================================
+  // BACKGROUND GLOW
+  //===================================================
+
+  Widget _glow(Alignment alignment, Color color, double size) {
+    return Align(
+      alignment: alignment,
+      child: IgnorePointer(
+        child: Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: RadialGradient(
+              colors: <Color>[
+                color.withValues(alpha: 0.22),
+                color.withValues(alpha: 0),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: const BoxDecoration(gradient: _Studio.backdrop),
+      child: Stack(
+        children: <Widget>[
+          _glow(const Alignment(-1.4, -1.1), NubifyChatStyle.sky, 360),
+          _glow(const Alignment(1.5, 0.4), NubifyChatStyle.violet, 420),
+          Scaffold(
+            backgroundColor: Colors.transparent,
+            appBar: AppBar(
+              backgroundColor: Colors.transparent,
+              foregroundColor: Colors.white,
+              surfaceTintColor: Colors.transparent,
+              titleSpacing: 0,
+              title: Row(
+                children: <Widget>[
+                  Container(
+                    width: 36,
+                    height: 36,
                     decoration: BoxDecoration(
-                      color: Color(_backgroundColor),
-                      border: Border.all(color: Colors.white12),
+                      gradient: NubifyChatStyle.brand,
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Stack(
-                      fit: StackFit.expand,
+                    child: const Icon(
+                      Icons.auto_awesome_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  const Flexible(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
-                        _buildCanvasContent(),
-
-                        if (_storyLinkUrl.trim().isNotEmpty)
-                          Positioned.fill(
-                            child: StoryLinkPreviewOverlay(
-                              url: _storyLinkUrl,
-                              style: _storyLinkStyle,
-                              x: _storyLinkX,
-                              y: _storyLinkY,
-                              scale: _storyLinkScale,
-                              editable: !_isDrawing,
-                              onChanged: (double x, double y, double scale) {
-                                setState(() {
-                                  _storyLinkX = x;
-                                  _storyLinkY = y;
-                                  _storyLinkScale = scale;
-                                });
-                              },
-                            ),
+                        Text(
+                          'Story Studio',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 20,
+                            letterSpacing: -0.3,
                           ),
-
-                        if (_mode != 'text' &&
-                            _storyTextController.text.trim().isNotEmpty)
-                          _buildEditableTextOverlay(),
-                        //=============================
-                        // DRAGGABLE + RESIZABLE STICKER
-                        //
-                        // ONE FINGER = MOVE
-                        // TWO FINGERS = RESIZE
-                        //=============================
-
-                        if (_sticker.isNotEmpty)
-                          Positioned.fill(
-                            child: LayoutBuilder(
-                              builder: (BuildContext context, BoxConstraints constraints) {
-                                return Stack(
-                                  clipBehavior: Clip.none,
-                                  children: <Widget>[
-                                    Positioned(
-                                      left: (_stickerX * constraints.maxWidth)
-                                          .clamp(0.0, constraints.maxWidth)
-                                          .toDouble(),
-
-                                      top: (_stickerY * constraints.maxHeight)
-                                          .clamp(0.0, constraints.maxHeight)
-                                          .toDouble(),
-
-                                      child: Transform.translate(
-                                        offset: Offset(
-                                          -_stickerSize * 0.55,
-                                          -_stickerSize * 0.55,
-                                        ),
-
-                                        child: GestureDetector(
-                                          behavior: HitTestBehavior.translucent,
-
-                                          //=============================
-                                          // START MOVE / RESIZE
-                                          //=============================
-                                          onScaleStart:
-                                              (ScaleStartDetails details) {
-                                                _stickerStartSize =
-                                                    _stickerSize;
-                                              },
-
-                                          //=============================
-                                          // MOVE + RESIZE
-                                          //=============================
-                                          onScaleUpdate: (ScaleUpdateDetails details) {
-                                            if (!mounted) {
-                                              return;
-                                            }
-
-                                            setState(() {
-                                              if (constraints.maxWidth > 0) {
-                                                _stickerX =
-                                                    (_stickerX +
-                                                            details
-                                                                    .focalPointDelta
-                                                                    .dx /
-                                                                constraints
-                                                                    .maxWidth)
-                                                        .clamp(0.04, 0.96)
-                                                        .toDouble();
-                                              }
-
-                                              if (constraints.maxHeight > 0) {
-                                                _stickerY =
-                                                    (_stickerY +
-                                                            details
-                                                                    .focalPointDelta
-                                                                    .dy /
-                                                                constraints
-                                                                    .maxHeight)
-                                                        .clamp(0.04, 0.96)
-                                                        .toDouble();
-                                              }
-
-                                              _stickerSize =
-                                                  (_stickerStartSize *
-                                                          details.scale)
-                                                      .clamp(28.0, 120.0)
-                                                      .toDouble();
-                                            });
-                                          },
-
-                                          //=============================
-                                          // FINISH MOVE / RESIZE
-                                          //=============================
-                                          onScaleEnd:
-                                              (ScaleEndDetails details) {
-                                                _stickerStartSize =
-                                                    _stickerSize;
-                                              },
-
-                                          child: Padding(
-                                            padding: const EdgeInsets.all(12),
-
-                                            child: Text(
-                                              _sticker,
-
-                                              style: TextStyle(
-                                                fontSize: _stickerSize,
-
-                                                height: 1,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                );
-                              },
-                            ),
-                          ),
-                        if (_taggedPeople.isNotEmpty)
-                          Positioned.fill(
-                            child: DraggableStoryTags(
-                              people: _taggedPeople,
-
-                              editable: true,
-
-                              onChanged: (List<StoryPerson> people) {
-                                setState(() {
-                                  _taggedPeople = people;
-                                });
-                              },
-                            ),
-                          ),
-
-                        Positioned.fill(
-                          child: StoryDrawingCanvas(
-                            strokes: _drawingStrokes,
-                            editing: _isDrawing,
-                            color: _drawingColor,
-                            strokeWidth: _drawingWidth,
-                            onChanged: (List<StoryDrawingStroke> strokes) {
-                              setState(() {
-                                _drawingStrokes = strokes;
-                              });
-                            },
+                        ),
+                        Text(
+                          'Create something worth watching',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: Colors.white60,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ],
                     ),
                   ),
-                ),
+                ],
               ),
+              actions: <Widget>[_buildShareButton()],
             ),
+            body: SafeArea(
+              child: Column(
+                children: <Widget>[
+                  _buildModeBar(),
 
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 220),
-              child: _isDrawing
-                  ? _buildDrawingControls()
-                  : _buildEditingControls(),
-            ),
-            if (!_isDrawing)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(12, 5, 12, 10),
-                child: TextField(
-                  controller: _captionController,
-                  maxLength: 160,
-                  maxLines: 1,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: InputDecoration(
-                    counterText: '',
-                    hintText: 'Add a caption for your viewers...',
-                    hintStyle: const TextStyle(color: Colors.white54),
-                    filled: true,
-                    fillColor: const Color(0xFF151A24),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      borderSide: BorderSide.none,
-                    ),
-                    prefixIcon: const Icon(
-                      Icons.short_text_rounded,
-                      color: Color(0xFF29B6F6),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 6, 12, 6),
+                      child: Container(
+                        // A thin gradient edge with a soft glow around the canvas.
+                        padding: const EdgeInsets.all(1.5),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(28),
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: <Color>[
+                              NubifyChatStyle.sky.withValues(alpha: 0.65),
+                              Colors.white.withValues(alpha: 0.08),
+                              NubifyChatStyle.violet.withValues(alpha: 0.65),
+                            ],
+                          ),
+                          boxShadow: <BoxShadow>[
+                            BoxShadow(
+                              color: NubifyChatStyle.royal.withValues(
+                                alpha: 0.25,
+                              ),
+                              blurRadius: 28,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(26.5),
+                          child: Container(
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              color: Color(_backgroundColor),
+                            ),
+                            child: Stack(
+                              fit: StackFit.expand,
+                              children: <Widget>[
+                                _buildCanvasContent(),
+
+                                if (_storyLinkUrl.trim().isNotEmpty)
+                                  Positioned.fill(
+                                    child: StoryLinkPreviewOverlay(
+                                      url: _storyLinkUrl,
+                                      style: _storyLinkStyle,
+                                      x: _storyLinkX,
+                                      y: _storyLinkY,
+                                      scale: _storyLinkScale,
+                                      editable: !_isDrawing,
+                                      onChanged:
+                                          (double x, double y, double scale) {
+                                            setState(() {
+                                              _storyLinkX = x;
+                                              _storyLinkY = y;
+                                              _storyLinkScale = scale;
+                                            });
+                                          },
+                                    ),
+                                  ),
+
+                                if (_mode != 'text' &&
+                                    _storyTextController.text.trim().isNotEmpty)
+                                  _buildEditableTextOverlay(),
+                                //=============================
+                                // DRAGGABLE + RESIZABLE STICKER
+                                //
+                                // ONE FINGER = MOVE
+                                // TWO FINGERS = RESIZE
+                                //=============================
+
+                                if (_sticker.isNotEmpty)
+                                  Positioned.fill(
+                                    child: LayoutBuilder(
+                                      builder:
+                                          (
+                                            BuildContext context,
+                                            BoxConstraints constraints,
+                                          ) {
+                                            return Stack(
+                                              clipBehavior: Clip.none,
+                                              children: <Widget>[
+                                                Positioned(
+                                                  left:
+                                                      (_stickerX *
+                                                              constraints
+                                                                  .maxWidth)
+                                                          .clamp(
+                                                            0.0,
+                                                            constraints
+                                                                .maxWidth,
+                                                          )
+                                                          .toDouble(),
+
+                                                  top:
+                                                      (_stickerY *
+                                                              constraints
+                                                                  .maxHeight)
+                                                          .clamp(
+                                                            0.0,
+                                                            constraints
+                                                                .maxHeight,
+                                                          )
+                                                          .toDouble(),
+
+                                                  child: Transform.translate(
+                                                    offset: Offset(
+                                                      -_stickerSize * 0.55,
+                                                      -_stickerSize * 0.55,
+                                                    ),
+
+                                                    child: GestureDetector(
+                                                      behavior: HitTestBehavior
+                                                          .translucent,
+
+                                                      //=============================
+                                                      // START MOVE / RESIZE
+                                                      //=============================
+                                                      onScaleStart:
+                                                          (
+                                                            ScaleStartDetails
+                                                            details,
+                                                          ) {
+                                                            _stickerStartSize =
+                                                                _stickerSize;
+                                                          },
+
+                                                      //=============================
+                                                      // MOVE + RESIZE
+                                                      //=============================
+                                                      onScaleUpdate:
+                                                          (
+                                                            ScaleUpdateDetails
+                                                            details,
+                                                          ) {
+                                                            if (!mounted) {
+                                                              return;
+                                                            }
+
+                                                            setState(() {
+                                                              if (constraints
+                                                                      .maxWidth >
+                                                                  0) {
+                                                                _stickerX =
+                                                                    (_stickerX +
+                                                                            details.focalPointDelta.dx /
+                                                                                constraints.maxWidth)
+                                                                        .clamp(
+                                                                          0.04,
+                                                                          0.96,
+                                                                        )
+                                                                        .toDouble();
+                                                              }
+
+                                                              if (constraints
+                                                                      .maxHeight >
+                                                                  0) {
+                                                                _stickerY =
+                                                                    (_stickerY +
+                                                                            details.focalPointDelta.dy /
+                                                                                constraints.maxHeight)
+                                                                        .clamp(
+                                                                          0.04,
+                                                                          0.96,
+                                                                        )
+                                                                        .toDouble();
+                                                              }
+
+                                                              _stickerSize =
+                                                                  (_stickerStartSize *
+                                                                          details
+                                                                              .scale)
+                                                                      .clamp(
+                                                                        28.0,
+                                                                        120.0,
+                                                                      )
+                                                                      .toDouble();
+                                                            });
+                                                          },
+
+                                                      //=============================
+                                                      // FINISH MOVE / RESIZE
+                                                      //=============================
+                                                      onScaleEnd:
+                                                          (
+                                                            ScaleEndDetails
+                                                            details,
+                                                          ) {
+                                                            _stickerStartSize =
+                                                                _stickerSize;
+                                                          },
+
+                                                      child: Padding(
+                                                        padding:
+                                                            const EdgeInsets.all(
+                                                              12,
+                                                            ),
+
+                                                        child: Text(
+                                                          _sticker,
+
+                                                          style: TextStyle(
+                                                            fontSize:
+                                                                _stickerSize,
+
+                                                            height: 1,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            );
+                                          },
+                                    ),
+                                  ),
+                                if (_taggedPeople.isNotEmpty)
+                                  Positioned.fill(
+                                    child: DraggableStoryTags(
+                                      people: _taggedPeople,
+
+                                      editable: true,
+
+                                      onChanged: (List<StoryPerson> people) {
+                                        setState(() {
+                                          _taggedPeople = people;
+                                        });
+                                      },
+                                    ),
+                                  ),
+
+                                Positioned.fill(
+                                  child: StoryDrawingCanvas(
+                                    strokes: _drawingStrokes,
+                                    editing: _isDrawing,
+                                    color: _drawingColor,
+                                    strokeWidth: _drawingWidth,
+                                    onChanged:
+                                        (List<StoryDrawingStroke> strokes) {
+                                          setState(() {
+                                            _drawingStrokes = strokes;
+                                          });
+                                        },
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
-                ),
+
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 220),
+                    child: _isDrawing
+                        ? _buildDrawingControls()
+                        : _buildEditingControls(),
+                  ),
+                  if (!_isDrawing)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 4, 12, 10),
+                      child: TextField(
+                        controller: _captionController,
+                        maxLength: 160,
+                        maxLines: 1,
+                        style: const TextStyle(color: Colors.white),
+                        cursorColor: _Studio.sky,
+                        decoration: InputDecoration(
+                          counterText: '',
+                          hintText: 'Add a caption for your viewers...',
+                          hintStyle: const TextStyle(color: Colors.white54),
+                          filled: true,
+                          fillColor: _Studio.glass,
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 14,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(24),
+                            borderSide: const BorderSide(
+                              color: _Studio.glassEdge,
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(24),
+                            borderSide: const BorderSide(
+                              color: _Studio.glassEdge,
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(24),
+                            borderSide: BorderSide(
+                              color: _Studio.sky.withValues(alpha: 0.7),
+                              width: 1.3,
+                            ),
+                          ),
+                          prefixIcon: Padding(
+                            padding: const EdgeInsets.all(7),
+                            child: Container(
+                              width: 34,
+                              height: 34,
+                              decoration: const BoxDecoration(
+                                gradient: NubifyChatStyle.brand,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.short_text_rounded,
+                                color: Colors.white,
+                                size: 19,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
-          ],
-        ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -3573,10 +3812,10 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
     ];
 
     return SizedBox(
-      height: 66,
+      height: 54,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         itemCount: modes.length,
         itemBuilder: (BuildContext context, int index) {
           final String id = modes[index]['id'] as String;
@@ -3585,61 +3824,70 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
 
           final bool locked = _modeHasContent(_mode) && id != _mode;
 
-          return Opacity(
-            opacity: locked ? 0.35 : 1,
-            child: InkWell(
-              onTap: locked
-                  ? () {
-                      _showMessage(
-                        'Delete the current ${_modeLabel(_mode)} first before choosing ${_modeLabel(id)}.',
-                      );
-                    }
-                  : () {
-                      _selectMode(id);
-                    },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                curve: Curves.easeOutCubic,
-                width: 78,
-                margin: const EdgeInsets.symmetric(horizontal: 3),
-                decoration: BoxDecoration(
-                  color: selected
-                      ? const Color(0xFF29B6F6).withValues(alpha: 0.16)
-                      : const Color(0xFF151A24),
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(
-                    color: selected ? const Color(0xFF29B6F6) : Colors.white12,
-                  ),
-                  boxShadow: selected
-                      ? <BoxShadow>[
-                          BoxShadow(
-                            color: const Color(
-                              0xFF29B6F6,
-                            ).withValues(alpha: 0.12),
-                            blurRadius: 12,
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: <Widget>[
-                    Icon(
-                      modes[index]['icon'] as IconData,
-                      color: selected
-                          ? const Color(0xFF29B6F6)
-                          : Colors.white70,
-                    ),
-                    Text(
-                      modes[index]['label'] as String,
-                      style: TextStyle(
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Opacity(
+              opacity: locked ? 0.35 : 1,
+              child: Semantics(
+                button: true,
+                selected: selected,
+                child: GestureDetector(
+                  onTap: locked
+                      ? () {
+                          _showMessage(
+                            'Delete the current ${_modeLabel(_mode)} first before choosing ${_modeLabel(id)}.',
+                          );
+                        }
+                      : () {
+                          _selectMode(id);
+                        },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeOutCubic,
+                    padding: const EdgeInsets.symmetric(horizontal: 15),
+                    decoration: BoxDecoration(
+                      gradient: selected ? NubifyChatStyle.brand : null,
+                      color: selected ? null : _Studio.glass,
+                      borderRadius: BorderRadius.circular(21),
+                      border: Border.all(
                         color: selected
-                            ? const Color(0xFF29B6F6)
-                            : Colors.white70,
-                        fontSize: 11,
+                            ? Colors.transparent
+                            : _Studio.glassEdge,
                       ),
+                      boxShadow: selected
+                          ? <BoxShadow>[
+                              BoxShadow(
+                                color: NubifyChatStyle.royal.withValues(
+                                  alpha: 0.40,
+                                ),
+                                blurRadius: 14,
+                                offset: const Offset(0, 4),
+                              ),
+                            ]
+                          : null,
                     ),
-                  ],
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        Icon(
+                          modes[index]['icon'] as IconData,
+                          color: selected ? Colors.white : Colors.white70,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 7),
+                        Text(
+                          modes[index]['label'] as String,
+                          style: TextStyle(
+                            color: selected ? Colors.white : Colors.white70,
+                            fontSize: 13,
+                            fontWeight: selected
+                                ? FontWeight.w800
+                                : FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -4492,27 +4740,36 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
     return Container(
       key: const ValueKey<String>('story-drawing-controls'),
       height: 74,
-      margin: const EdgeInsets.fromLTRB(10, 4, 10, 3),
+      margin: const EdgeInsets.fromLTRB(12, 4, 12, 6),
       padding: const EdgeInsets.symmetric(horizontal: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFF151A24),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: Colors.white12),
-      ),
+      decoration: _Studio.glassPanel(radius: 26),
       child: Row(
         children: <Widget>[
-          IconButton.filled(
-            style: IconButton.styleFrom(
-              backgroundColor: const Color(0xFF29B6F6),
-              foregroundColor: const Color(0xFF071310),
+          Tooltip(
+            message: 'Finish drawing',
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  _isDrawing = false;
+                });
+              },
+              child: Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  gradient: NubifyChatStyle.brand,
+                  shape: BoxShape.circle,
+                  boxShadow: <BoxShadow>[
+                    BoxShadow(
+                      color: NubifyChatStyle.royal.withValues(alpha: 0.45),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: const Icon(Icons.check_rounded, color: Colors.white),
+              ),
             ),
-            tooltip: 'Finish drawing',
-            onPressed: () {
-              setState(() {
-                _isDrawing = false;
-              });
-            },
-            icon: const Icon(Icons.check_rounded),
           ),
           IconButton(
             tooltip: 'Undo last line',
@@ -4549,11 +4806,17 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
                       color: Color(value),
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: selected
-                            ? const Color(0xFF29B6F6)
-                            : Colors.white30,
+                        color: selected ? Colors.white : Colors.white30,
                         width: selected ? 3 : 1,
                       ),
+                      boxShadow: selected
+                          ? <BoxShadow>[
+                              BoxShadow(
+                                color: Color(value).withValues(alpha: 0.6),
+                                blurRadius: 10,
+                              ),
+                            ]
+                          : null,
                     ),
                   ),
                 );
@@ -4563,7 +4826,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
           PopupMenuButton<double>(
             tooltip: 'Pen thickness',
             initialValue: _drawingWidth,
-            color: const Color(0xFF1A202C),
+            color: _Studio.sheet,
             onSelected: (double value) {
               setState(() {
                 _drawingWidth = value;
@@ -4603,10 +4866,10 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
   Widget _buildEditingControls() {
     return SizedBox(
       key: const ValueKey<String>('story-editing-controls'),
-      height: 58,
+      height: 76,
       child: ListView(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 10),
         children: <Widget>[
           _controlButton(
             icon: Icons.person_add_alt,
@@ -4683,26 +4946,42 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
     required String label,
     required VoidCallback onTap,
   }) {
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        width: 82,
-        margin: const EdgeInsets.symmetric(horizontal: 3, vertical: 5),
-        decoration: BoxDecoration(
-          color: const Color(0xFF151A24),
-          borderRadius: BorderRadius.circular(15),
-          border: Border.all(color: Colors.white10),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Icon(icon, color: const Color(0xFF29B6F6), size: 21),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: const TextStyle(color: Colors.white70, fontSize: 10),
-            ),
-          ],
+    return Semantics(
+      button: true,
+      label: label,
+      excludeSemantics: true,
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: SizedBox(
+          width: 70,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              Container(
+                width: 46,
+                height: 46,
+                decoration: _Studio.glassPanel(radius: 16),
+                child: ShaderMask(
+                  blendMode: BlendMode.srcIn,
+                  shaderCallback: (Rect bounds) =>
+                      NubifyChatStyle.brand.createShader(bounds),
+                  child: Icon(icon, color: Colors.white, size: 23),
+                ),
+              ),
+              const SizedBox(height: 5),
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -4719,7 +4998,10 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
   }) {
     return Material(
       color: Colors.black54,
-      borderRadius: BorderRadius.circular(18),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: const BorderSide(color: _Studio.glassEdge),
+      ),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(18),
@@ -4755,21 +5037,53 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
     required VoidCallback onTap,
   }) {
     return Center(
-      child: InkWell(
-        onTap: onTap,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Icon(icon, color: Colors.white70, size: 58),
-            const SizedBox(height: 12),
-            Text(
-              label,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
+      child: Semantics(
+        button: true,
+        label: label,
+        excludeSemantics: true,
+        child: GestureDetector(
+          onTap: onTap,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Container(
+                width: 92,
+                height: 92,
+                decoration: BoxDecoration(
+                  gradient: NubifyChatStyle.brand,
+                  borderRadius: BorderRadius.circular(30),
+                  boxShadow: <BoxShadow>[
+                    BoxShadow(
+                      color: NubifyChatStyle.royal.withValues(alpha: 0.45),
+                      blurRadius: 28,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: Icon(icon, color: Colors.white, size: 44),
               ),
-            ),
-          ],
+              const SizedBox(height: 14),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.black38,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: _Studio.glassEdge),
+                ),
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -4855,7 +5169,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
 
     final String? selected = await showModalBottomSheet<String>(
       context: context,
-      backgroundColor: const Color(0xFF151515),
+      backgroundColor: _Studio.sheet,
       showDragHandle: true,
       builder: (BuildContext sheetContext) {
         return SafeArea(
@@ -5038,7 +5352,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
   }) async {
     return showModalBottomSheet<int>(
       context: context,
-      backgroundColor: const Color(0xFF151515),
+      backgroundColor: _Studio.sheet,
       showDragHandle: true,
       builder: (BuildContext sheetContext) {
         return SafeArea(

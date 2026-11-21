@@ -1202,7 +1202,6 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                       NubifyChatAvatar(
                         photoUrl: group.photoUrl,
                         radius: 17,
-                        ring: true,
                         group: true,
                       ),
                       const SizedBox(width: 10),

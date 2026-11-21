@@ -1,11 +1,18 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../models/chat_group.dart';
+import '../models/story.dart';
+import '../services/chat_badge_service.dart';
 import '../services/chat_privacy_service.dart';
 import '../services/chat_sevice.dart';
 import '../services/group_chat_service.dart';
+import '../services/story_service.dart';
+import '../widgets/chat_story_avatar.dart';
+import '../widgets/nubify_count_badge.dart';
 import '../utils/nubify_time.dart';
 import 'blocked_users_screen.dart';
 import 'conversation_screen.dart';
@@ -71,7 +78,6 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen>
     with SingleTickerProviderStateMixin {
-
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -89,9 +95,47 @@ class _ChatScreenState extends State<ChatScreen>
 
   late final TabController _tabController;
 
+  late final Stream<List<NubifyStory>> _storiesStream;
+
   String _search = '';
 
   int _tabIndex = 0;
+
+  //===============================
+  // TAB COUNTS
+  //
+  // Unread messages, unread group messages and missed
+  // calls. They go down as each one is read or seen.
+  //===============================
+
+  final List<StreamSubscription<int>> _countSubscriptions =
+      <StreamSubscription<int>>[];
+
+  int _messagesUnread = 0;
+
+  int _groupsUnread = 0;
+
+  int _missedCalls = 0;
+
+  void _listenToCounts() {
+    _countSubscriptions.addAll(<StreamSubscription<int>>[
+      _chatService.totalUnreadCountStream().listen((int count) {
+        if (mounted) setState(() => _messagesUnread = count);
+      }, onError: (Object _) {}),
+      _groupService.totalUnreadCountStream().listen((int count) {
+        if (mounted) setState(() => _groupsUnread = count);
+      }, onError: (Object _) {}),
+      ChatBadgeService.instance.missedCallsStream().listen((int count) {
+        if (!mounted) return;
+        setState(() => _missedCalls = count);
+
+        // A call missed while you are looking at Calls is seen.
+        if (count > 0 && _tabIndex == 2) {
+          ChatBadgeService.instance.markCallsSeen();
+        }
+      }, onError: (Object _) {}),
+    ]);
+  }
   //===============================
   // USER CACHE
   //===============================
@@ -134,7 +178,11 @@ class _ChatScreenState extends State<ChatScreen>
     _conversationsStream = _chatService.getConversations();
 
     _groupsStream = _groupService.getGroups();
+
+    _storiesStream = StoryService().watchActiveStories();
     _privacyService.ensureSettingsExist();
+
+    _listenToCounts();
 
     _tabController = TabController(length: 3, vsync: this);
 
@@ -144,6 +192,11 @@ class _ChatScreenState extends State<ChatScreen>
           setState(() {
             _tabIndex = _tabController.index;
           });
+        }
+
+        // Opening Calls marks missed calls as seen.
+        if (_tabController.index == 2) {
+          ChatBadgeService.instance.markCallsSeen();
         }
       }
     });
@@ -345,55 +398,70 @@ class _ChatScreenState extends State<ChatScreen>
               return _emptyMessages();
             }
 
-            return ListView.builder(
-              padding: const EdgeInsets.only(bottom: 100),
+            return StreamBuilder<List<NubifyStory>>(
+              stream: _storiesStream,
+              builder:
+                  (
+                    BuildContext context,
+                    AsyncSnapshot<List<NubifyStory>> storySnapshot,
+                  ) {
+                    final List<NubifyStory> stories =
+                        storySnapshot.data ?? const <NubifyStory>[];
 
-              itemCount: docs.length,
+                    return ListView.builder(
+                      padding: const EdgeInsets.only(bottom: 100),
 
-              itemBuilder: (BuildContext context, int index) {
-                final QueryDocumentSnapshot<Map<String, dynamic>> document =
-                    docs[index];
+                      itemCount: docs.length,
 
-                final Map<String, dynamic> data = document.data();
+                      itemBuilder: (BuildContext context, int index) {
+                        final QueryDocumentSnapshot<Map<String, dynamic>>
+                        document = docs[index];
 
-                final List<String> participants = data['participants'] is List
-                    ? (data['participants'] as List)
-                          .map((dynamic item) => item.toString())
-                          .toList()
-                    : data['participantIds'] is List
-                    ? (data['participantIds'] as List)
-                          .map((dynamic item) => item.toString())
-                          .toList()
-                    : <String>[];
+                        final Map<String, dynamic> data = document.data();
 
-                String otherUid = '';
+                        final List<String> participants =
+                            data['participants'] is List
+                            ? (data['participants'] as List)
+                                  .map((dynamic item) => item.toString())
+                                  .toList()
+                            : data['participantIds'] is List
+                            ? (data['participantIds'] as List)
+                                  .map((dynamic item) => item.toString())
+                                  .toList()
+                            : <String>[];
 
-                for (final String uid in participants) {
-                  if (uid != currentUid) {
-                    otherUid = uid;
+                        String otherUid = '';
 
-                    break;
-                  }
-                }
+                        for (final String uid in participants) {
+                          if (uid != currentUid) {
+                            otherUid = uid;
 
-                if (otherUid.isEmpty) {
-                  return const SizedBox.shrink();
-                }
+                            break;
+                          }
+                        }
 
-                return _DirectConversationTile(
-                  conversation: data,
+                        if (otherUid.isEmpty) {
+                          return const SizedBox.shrink();
+                        }
 
-                  otherUid: otherUid,
+                        return _DirectConversationTile(
+                          conversation: data,
 
-                  currentUid: currentUid,
+                          otherUid: otherUid,
 
-                  search: _search,
+                          currentUid: currentUid,
 
-                  userFuture: _cachedUser(otherUid),
+                          search: _search,
 
-                  privacyService: _privacyService,
-                );
-              },
+                          userFuture: _cachedUser(otherUid),
+
+                          privacyService: _privacyService,
+
+                          stories: stories,
+                        );
+                      },
+                    );
+                  },
             );
           },
     );
@@ -535,7 +603,6 @@ class _ChatScreenState extends State<ChatScreen>
                         child: NubifyChatAvatar(
                           photoUrl: group.photoUrl,
                           radius: 25,
-                          ring: unread > 0,
                           group: true,
                         ),
                       ),
@@ -783,11 +850,11 @@ class _ChatScreenState extends State<ChatScreen>
                   controller: _tabController,
 
                   indicator: BoxDecoration(
-                    gradient: NubifyChatStyle.brand,
+                    gradient: NubifyChatStyle.navyGradient,
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: <BoxShadow>[
                       BoxShadow(
-                        color: NubifyChatStyle.royal.withValues(alpha: 0.30),
+                        color: NubifyChatStyle.navy.withValues(alpha: 0.35),
                         blurRadius: 10,
                         offset: const Offset(0, 3),
                       ),
@@ -814,10 +881,22 @@ class _ChatScreenState extends State<ChatScreen>
 
                   splashBorderRadius: BorderRadius.circular(12),
 
-                  tabs: const <Widget>[
-                    _ChatTab(icon: Icons.chat_bubble_rounded, label: 'Messages'),
-                    _ChatTab(icon: Icons.groups_2_rounded, label: 'Groups'),
-                    _ChatTab(icon: Icons.call_rounded, label: 'Calls'),
+                  tabs: <Widget>[
+                    _ChatTab(
+                      icon: Icons.chat_bubble_rounded,
+                      label: 'Messages',
+                      count: _messagesUnread,
+                    ),
+                    _ChatTab(
+                      icon: Icons.groups_2_rounded,
+                      label: 'Groups',
+                      count: _groupsUnread,
+                    ),
+                    _ChatTab(
+                      icon: Icons.call_rounded,
+                      label: 'Calls',
+                      count: _missedCalls,
+                    ),
                   ],
                 ),
               ),
@@ -884,6 +963,10 @@ class _ChatScreenState extends State<ChatScreen>
 
   @override
   void dispose() {
+    for (final StreamSubscription<int> subscription in _countSubscriptions) {
+      subscription.cancel();
+    }
+
     _tabController.dispose();
 
     _searchController.dispose();
@@ -897,24 +980,46 @@ class _ChatScreenState extends State<ChatScreen>
 //===============================
 
 class _ChatTab extends StatelessWidget {
-  const _ChatTab({required this.icon, required this.label});
+  const _ChatTab({
+    required this.icon,
+    required this.label,
+    required this.count,
+  });
 
   final IconData icon;
   final String label;
+
+  // Pending items, shown as a small red number on the icon.
+  final int count;
 
   @override
   Widget build(BuildContext context) {
     return Tab(
       height: 40,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: <Widget>[
-          Icon(icon, size: 17),
-          const SizedBox(width: 6),
-          Flexible(
-            child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
-          ),
-        ],
+      child: Semantics(
+        label: count > 0 ? '$label, $count new' : label,
+        excludeSemantics: true,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            Stack(
+              clipBehavior: Clip.none,
+              children: <Widget>[
+                Icon(icon, size: 17),
+                if (count > 0)
+                  Positioned(
+                    top: -7,
+                    right: -10,
+                    child: NubifyCountBadge(count: count, small: true),
+                  ),
+              ],
+            ),
+            SizedBox(width: count > 0 ? 11 : 6),
+            Flexible(
+              child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -931,6 +1036,7 @@ class _DirectConversationTile extends StatelessWidget {
     required this.search,
     required this.userFuture,
     required this.privacyService,
+    required this.stories,
   });
 
   final Map<String, dynamic> conversation;
@@ -945,6 +1051,8 @@ class _DirectConversationTile extends StatelessWidget {
 
   final ChatPrivacyService privacyService;
 
+  // Active stories, for the ring around the photo.
+  final List<NubifyStory> stories;
 
   //===============================
   // STRING LIST
@@ -1061,22 +1169,11 @@ class _DirectConversationTile extends StatelessWidget {
                 horizontal: 14,
                 vertical: 5,
               ),
-              leading: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () {
-                  Navigator.push<void>(
-                    context,
-                    MaterialPageRoute<void>(
-                      builder: (_) =>
-                          FullPhotoViewer(title: name, photoUrl: photoUrl),
-                    ),
-                  );
-                },
-                child: NubifyChatAvatar(
-                  photoUrl: photoUrl,
-                  radius: 25,
-                  ring: unread > 0,
-                ),
+              leading: NubifyChatStoryAvatar(
+                uid: otherUid,
+                name: name,
+                photoUrl: photoUrl,
+                stories: stories,
               ),
               title: SearchHighlightText(
                 text: name,

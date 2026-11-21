@@ -34,6 +34,106 @@ import 'comment_screen.dart';
 import '../utils/nubify_call_display.dart';
 import '../widgets/chat_call_event_bubble.dart';
 import '../widgets/nubify_chat_style.dart';
+import '../widgets/chat_story_avatar.dart';
+
+//===============================
+// IS ONLINE
+//
+// Online only if their app said so in the last 100
+// seconds, so a phone that lost signal stops showing.
+//===============================
+
+bool _presenceIsOnline(Map<String, dynamic> presence) {
+  if (presence['online'] != true) {
+    return false;
+  }
+
+  final dynamic updatedAt = presence['updatedAt'];
+
+  if (updatedAt is Timestamp) {
+    final int seconds = DateTime.now()
+        .difference(updatedAt.toDate().toLocal())
+        .inSeconds;
+
+    return seconds <= 100;
+  }
+
+  return true;
+}
+
+//===============================
+// HEADER AVATAR
+//
+// Their photo at the top of the chat: a story ring
+// (blue new, grey watched) and a green dot while they
+// are online. The dot follows the same rule as "online"
+// under the name, so it hides when either of you has
+// read receipts turned off.
+//===============================
+
+class _HeaderAvatar extends StatefulWidget {
+  const _HeaderAvatar({required this.uid, required this.photoUrl});
+
+  final String uid;
+
+  final String photoUrl;
+
+  @override
+  State<_HeaderAvatar> createState() => _HeaderAvatarState();
+}
+
+class _HeaderAvatarState extends State<_HeaderAvatar> {
+  final List<StreamSubscription<dynamic>> _subscriptions =
+      <StreamSubscription<dynamic>>[];
+
+  bool _activityAllowed = false;
+
+  Map<String, dynamic> _presence = const <String, dynamic>{};
+
+  NubifyStoryRing _story = NubifyStoryRing.none;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _subscriptions.addAll(<StreamSubscription<dynamic>>[
+      ChatPrivacyService().mutualActivityStream(widget.uid).listen((
+        bool allowed,
+      ) {
+        if (mounted) setState(() => _activityAllowed = allowed);
+      }, onError: (Object _) {}),
+      ChatPresenceService().presenceStream(widget.uid).listen((
+        DocumentSnapshot<Map<String, dynamic>> snapshot,
+      ) {
+        if (mounted) {
+          setState(() => _presence = snapshot.data() ?? <String, dynamic>{});
+        }
+      }, onError: (Object _) {}),
+      StoryService().watchActiveStories().listen((List<NubifyStory> stories) {
+        if (mounted) setState(() => _story = storyRingFor(stories, widget.uid));
+      }, onError: (Object _) {}),
+    ]);
+  }
+
+  @override
+  void dispose() {
+    for (final StreamSubscription<dynamic> subscription in _subscriptions) {
+      subscription.cancel();
+    }
+
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return NubifyChatAvatar(
+      photoUrl: widget.photoUrl,
+      radius: 17,
+      story: _story,
+      online: _activityAllowed && _presenceIsOnline(_presence),
+    );
+  }
+}
 
 class _ConversationPalette {
   const _ConversationPalette({
@@ -1212,27 +1312,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
                                     presenceSnapshot.data?.data() ??
                                     <String, dynamic>{};
 
-                                final bool rawOnline =
-                                    presence['online'] == true;
-
-                                final Timestamp? updatedAt =
-                                    presence['updatedAt'] is Timestamp
-                                    ? presence['updatedAt'] as Timestamp
-                                    : null;
-
-                                bool online = rawOnline;
-
-                                if (updatedAt != null) {
-                                  final int seconds = DateTime.now()
-                                      .difference(updatedAt.toDate().toLocal())
-                                      .inSeconds;
-
-                                  if (seconds > 100) {
-                                    online = false;
-                                  }
-                                }
-
-                                if (online) {
+                                if (_presenceIsOnline(presence)) {
                                   return const Row(
                                     children: <Widget>[
                                       DecoratedBox(
@@ -1369,10 +1449,9 @@ class _ConversationScreenState extends State<ConversationScreen> {
           padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 2),
           child: Row(
             children: <Widget>[
-              NubifyChatAvatar(
+              _HeaderAvatar(
+                uid: widget.otherUserId,
                 photoUrl: widget.otherPhotoUrl,
-                radius: 17,
-                ring: true,
               ),
 
               const SizedBox(width: 10),

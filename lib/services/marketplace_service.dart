@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 
 import '../models/marketplace_filter.dart';
 import '../models/marketplace_listing.dart';
@@ -81,10 +82,15 @@ class MarketplaceService {
 
   MarketplaceListingPage? get cachedFreshPage => _cachedFreshPage;
 
+  /// Goes up whenever a listing is posted, changed or removed, so an open
+  /// Marketplace screen can reload and show it right away.
+  static final ValueNotifier<int> listingsChanged = ValueNotifier<int>(0);
+
   /// Refresh both Marketplace and seller-discovery data after publishing.
   void invalidateDiscoveryCache() {
     _cachedFreshPage = null;
     _cachedHomeDiscovery = null;
+    listingsChanged.value++;
   }
 
   MarketplaceHomeDiscovery? get cachedHomeDiscovery {
@@ -627,8 +633,7 @@ class MarketplaceService {
         'updatedAt': FieldValue.serverTimestamp(),
       });
     });
-    _cachedFreshPage = null;
-    _cachedHomeDiscovery = null;
+    invalidateDiscoveryCache();
   }
 
   Future<void> updateStatus(String listingId, String status) async {
@@ -699,8 +704,7 @@ class MarketplaceService {
       }
       transaction.update(snapshot.reference, changes);
     });
-    _cachedFreshPage = null;
-    _cachedHomeDiscovery = null;
+    invalidateDiscoveryCache();
   }
 
   Future<void> deleteListing(MarketplaceListing listing) async {
@@ -710,8 +714,7 @@ class MarketplaceService {
     }
     await _listings.doc(listing.listingId).delete();
     await _mediaService.deleteUploadedMedia(listing.media);
-    _cachedFreshPage = null;
-    _cachedHomeDiscovery = null;
+    invalidateDiscoveryCache();
   }
 
   List<MarketplaceListing> _mapListings(

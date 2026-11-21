@@ -4,7 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../models/marketplace_listing.dart';
-import '../services/chat_sevice.dart';
+import '../services/chat_badge_service.dart';
 import '../services/marketplace_service.dart';
 import '../services/notification_service.dart';
 import '../utils/marketplace_constants.dart';
@@ -12,6 +12,7 @@ import '../utils/marketplace_motion.dart';
 import '../utils/marketplace_theme.dart';
 import '../widgets/marketplace_brand_icon.dart';
 import '../widgets/marketplace_listing_card.dart';
+import '../widgets/nubify_count_badge.dart';
 import 'campus_sellers_screen.dart';
 import 'chat_screen.dart';
 import 'marketplace_listing_details_screen.dart';
@@ -44,12 +45,12 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
   late final Stream<Set<String>> _savedIdsStream;
   MarketplaceHomeDiscovery? _discovery;
   bool _loadingDiscovery = true;
+  // Live counts on the Chat and Alerts buttons. They go
+  // down as each message, call or notification is seen.
   StreamSubscription<int>? _chatUnreadSubscription;
   StreamSubscription<int>? _notificationUnreadSubscription;
   int _chatUnreadCount = 0;
   int _notificationUnreadCount = 0;
-  bool _chatBadgeAcknowledged = false;
-  bool _notificationBadgeAcknowledged = false;
 
   @override
   void initState() {
@@ -57,7 +58,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     _savedIdsStream = _service.watchSavedIds();
     final MarketplaceListingPage? cachedFresh = _service.cachedFreshPage;
     if (cachedFresh != null) {
-      _freshListings = cachedFresh.listings;
+      _freshListings = _newestFirst(cachedFresh.listings);
       _freshLastPage = cachedFresh;
       _hasMoreFresh = cachedFresh.hasMore;
       _loadingFresh = false;
@@ -65,26 +66,17 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     _discovery = _service.cachedHomeDiscovery;
     _loadingDiscovery = _discovery == null;
     _scrollController.addListener(_handleScroll);
-    _chatUnreadSubscription = ChatService().totalUnreadCountStream().listen((
-      int count,
-    ) {
-      if (!mounted) return;
-      setState(() {
-        if (count > _chatUnreadCount) _chatBadgeAcknowledged = false;
-        _chatUnreadCount = count;
-      });
-    });
+    MarketplaceService.listingsChanged.addListener(_handleListingsChanged);
+    _chatUnreadSubscription = ChatBadgeService.instance
+        .totalPendingStream()
+        .listen((int count) {
+          if (mounted) setState(() => _chatUnreadCount = count);
+        }, onError: (Object _) {});
     _notificationUnreadSubscription = NotificationService()
         .unreadCountStream()
         .listen((int count) {
-          if (!mounted) return;
-          setState(() {
-            if (count > _notificationUnreadCount) {
-              _notificationBadgeAcknowledged = false;
-            }
-            _notificationUnreadCount = count;
-          });
-        });
+          if (mounted) setState(() => _notificationUnreadCount = count);
+        }, onError: (Object _) {});
     unawaited(_loadFreshListings(reset: true));
     unawaited(_loadDiscovery());
     WidgetsBinding.instance.addPostFrameCallback((_) => _openInitialListing());
@@ -96,27 +88,31 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     }
   }
 
-  Widget _unreadDot({required Widget child, required bool visible}) {
-    return Stack(
-      clipBehavior: Clip.none,
-      children: <Widget>[
-        child,
-        if (visible)
-          Positioned(
-            right: -4,
-            top: -4,
-            child: Container(
-              width: 10,
-              height: 10,
-              decoration: BoxDecoration(
-                color: const Color(0xFFE53935),
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 1.4),
-              ),
-            ),
-          ),
-      ],
+  //===================================================
+  // NEWEST LISTINGS FIRST
+  //
+  // By when each listing went live (published), so a
+  // draft posted today sits above older listings.
+  //===================================================
+
+  List<MarketplaceListing> _newestFirst(List<MarketplaceListing> listings) {
+    DateTime liveAt(MarketplaceListing listing) =>
+        listing.publishedAt ??
+        listing.createdAt ??
+        DateTime.fromMillisecondsSinceEpoch(0);
+
+    return List<MarketplaceListing>.of(listings)..sort(
+      (MarketplaceListing a, MarketplaceListing b) =>
+          liveAt(b).compareTo(liveAt(a)),
     );
+  }
+
+  // A listing was posted, edited, sold or removed
+  // somewhere in the app: reload so it shows right away.
+  void _handleListingsChanged() {
+    if (!mounted) return;
+    unawaited(_loadFreshListings(reset: true));
+    unawaited(_loadDiscovery());
   }
 
   Future<void> _loadFreshListings({bool reset = false}) async {
@@ -152,14 +148,17 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
           .map((MarketplaceListing item) => item.listingId)
           .toSet();
       setState(() {
-        _freshListings = reset
-            ? page.listings
-            : <MarketplaceListing>[
-                ..._freshListings,
-                ...page.listings.where(
-                  (MarketplaceListing item) => existingIds.add(item.listingId),
-                ),
-              ];
+        _freshListings = _newestFirst(
+          reset
+              ? page.listings
+              : <MarketplaceListing>[
+                  ..._freshListings,
+                  ...page.listings.where(
+                    (MarketplaceListing item) =>
+                        existingIds.add(item.listingId),
+                  ),
+                ],
+        );
         _freshLastPage = page;
         _hasMoreFresh = page.hasMore;
         _loadingFresh = false;
@@ -303,14 +302,13 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
             label: 'Chat',
             color: MarketplaceTheme.sky,
             onPressed: () {
-              setState(() => _chatBadgeAcknowledged = true);
               Navigator.push(
                 context,
                 MaterialPageRoute<void>(builder: (_) => const ChatScreen()),
               );
             },
-            child: _unreadDot(
-              visible: _chatUnreadCount > 0 && !_chatBadgeAcknowledged,
+            child: NubifyBadgedIcon(
+              count: _chatUnreadCount,
               child: const Icon(Icons.chat_bubble_rounded, size: 19),
             ),
           ),
@@ -319,7 +317,6 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
             label: 'Alerts',
             color: MarketplaceTheme.gold,
             onPressed: () {
-              setState(() => _notificationBadgeAcknowledged = true);
               Navigator.push(
                 context,
                 MaterialPageRoute<void>(
@@ -327,10 +324,8 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                 ),
               );
             },
-            child: _unreadDot(
-              visible:
-                  _notificationUnreadCount > 0 &&
-                  !_notificationBadgeAcknowledged,
+            child: NubifyBadgedIcon(
+              count: _notificationUnreadCount,
               child: CachedNetworkImage(
                 imageUrl:
                     'https://img.icons8.com/?size=100&id=F5WMYjiT3vpJ&format=png&color=000000',
@@ -533,6 +528,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
 
   @override
   void dispose() {
+    MarketplaceService.listingsChanged.removeListener(_handleListingsChanged);
     _chatUnreadSubscription?.cancel();
     _notificationUnreadSubscription?.cancel();
     _scrollController.dispose();
@@ -891,10 +887,7 @@ class _SectionHeading extends StatelessWidget {
 }
 
 class _MarketplaceState extends StatelessWidget {
-  const _MarketplaceState({
-    required this.title,
-    required this.message,
-  });
+  const _MarketplaceState({required this.title, required this.message});
 
   final String title;
   final String message;
@@ -905,9 +898,7 @@ class _MarketplaceState extends StatelessWidget {
       padding: const EdgeInsets.all(36),
       child: Column(
         children: <Widget>[
-          const MarketplaceBrandIcon(
-            size: 55,
-          ),
+          const MarketplaceBrandIcon(size: 55),
           const SizedBox(height: 12),
           Text(
             title,

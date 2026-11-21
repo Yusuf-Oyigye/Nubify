@@ -1,9 +1,13 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import '../models/story.dart';
+import '../services/story_service.dart';
 import '../utils/nubify_call_display.dart';
-import '../widgets/full_photo_viewer.dart';
+import '../widgets/chat_story_avatar.dart';
 import '../widgets/nubify_chat_style.dart';
 import 'audio_call_screen.dart';
 import 'conversation_screen.dart';
@@ -26,9 +30,22 @@ class _CallHistoryTabState extends State<CallHistoryTab> {
 
   late final Stream<QuerySnapshot<Map<String, dynamic>>> _incomingCallsStream;
 
+  // Active stories, for the ring around each photo.
+  StreamSubscription<List<NubifyStory>>? _storiesSubscription;
+
+  List<NubifyStory> _stories = const <NubifyStory>[];
+
   @override
   void initState() {
     super.initState();
+
+    _storiesSubscription = StoryService().watchActiveStories().listen((
+      List<NubifyStory> stories,
+    ) {
+      if (mounted) {
+        setState(() => _stories = stories);
+      }
+    }, onError: (Object _) {});
 
     final String uid = _auth.currentUser?.uid ?? '';
 
@@ -189,20 +206,6 @@ class _CallHistoryTabState extends State<CallHistoryTab> {
   }
 
   //===================================================
-  // OPEN FULL PROFILE PHOTO
-  //===================================================
-
-  void _openPhoto({required String name, required String photoUrl}) {
-    if (!mounted) return;
-
-    Navigator.push<void>(
-      context,
-      MaterialPageRoute<void>(
-        builder: (_) => FullPhotoViewer(title: name, photoUrl: photoUrl),
-      ),
-    );
-  }
-  //===================================================
   // CALL TILE
   //===================================================
 
@@ -251,12 +254,12 @@ class _CallHistoryTabState extends State<CallHistoryTab> {
               //===================================================
               // TAP PHOTO TO VIEW FULL IMAGE
               //===================================================
-              leading: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () {
-                  _openPhoto(name: name, photoUrl: photo);
-                },
-                child: NubifyChatAvatar(photoUrl: photo, radius: 23),
+              leading: NubifyChatStoryAvatar(
+                uid: otherUid,
+                name: name,
+                photoUrl: photo,
+                stories: _stories,
+                radius: 23,
               ),
               title: Text(
                 name,
@@ -480,6 +483,13 @@ class _CallHistoryTabState extends State<CallHistoryTab> {
             );
           },
     );
+  }
+
+  @override
+  void dispose() {
+    _storiesSubscription?.cancel();
+
+    super.dispose();
   }
 
   //===================================================

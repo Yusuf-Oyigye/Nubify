@@ -70,6 +70,7 @@ class GroupMessageBubble extends StatelessWidget {
         Icons.done_all_rounded,
         size: 15,
         color: NubifyChatStyle.readGreen,
+        shadows: NubifyChatStyle.tickShadow,
       );
     }
 
@@ -479,7 +480,9 @@ class GroupMessageBubble extends StatelessWidget {
                             _time(),
                             style: TextStyle(
                               color: sticker
-                                  ? Theme.of(context).colorScheme.onSurfaceVariant
+                                  ? Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant
                                   : Colors.white70,
                               fontSize: 9.5,
                               fontWeight: FontWeight.w500,

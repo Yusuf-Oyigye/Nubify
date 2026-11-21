@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../screens/chat_screen.dart';
 import '../screens/egyptian_arabic_screen.dart';
@@ -14,10 +13,10 @@ import '../screens/notifications_screen.dart';
 import '../screens/nub_ai_tutor_screen.dart';
 import '../screens/nubuzz_screen.dart';
 import '../screens/profile_screen.dart';
-import '../services/chat_sevice.dart';
-import '../services/group_chat_service.dart';
+import '../services/chat_badge_service.dart';
 import '../services/notification_service.dart';
 import '../widgets/marketplace_brand_icon.dart';
+import '../widgets/nubify_count_badge.dart';
 
 //===================================================
 // MOBILE SCREEN LAYOUT
@@ -37,25 +36,12 @@ class MobileScreenLayout extends StatefulWidget {
 class _MobileScreenLayoutState extends State<MobileScreenLayout> {
   int _page = 0;
 
-  static const String _chatBadgeCountKey = 'nubify_acknowledged_chat_unread_v1';
-  static const String _notificationBadgeCountKey =
-      'nubify_acknowledged_notification_unread_v1';
-
-  StreamSubscription<int>? _directChatUnreadSubscription;
-  StreamSubscription<int>? _groupChatUnreadSubscription;
+  // Live counts on the Chat and Notifications icons. They
+  // go down as each message, call or notification is seen.
+  StreamSubscription<int>? _chatPendingSubscription;
   StreamSubscription<int>? _notificationUnreadSubscription;
-  int _directChatUnreadCount = 0;
-  int _groupChatUnreadCount = 0;
-  int _chatUnreadCount = 0;
+  int _chatPendingCount = 0;
   int _notificationUnreadCount = 0;
-  int _acknowledgedChatUnreadCount = 0;
-  int _acknowledgedNotificationUnreadCount = 0;
-  bool _badgePreferencesLoaded = false;
-  bool _directChatUnreadInitialized = false;
-  bool _groupChatUnreadInitialized = false;
-  bool _notificationUnreadInitialized = false;
-  bool _chatBadgeAcknowledged = false;
-  bool _notificationBadgeAcknowledged = false;
 
   final String _aiTutorIcon =
       'https://img.icons8.com/?size=100&id=9inONWn9EvfI&format=png&color=000000';
@@ -103,148 +89,30 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
   @override
   void initState() {
     super.initState();
-    unawaited(_restoreBadgeAcknowledgements());
-    _directChatUnreadSubscription = ChatService()
-        .totalUnreadCountStream()
-        .listen(_handleDirectChatUnreadCount, onError: _handleChatUnreadError);
-    _groupChatUnreadSubscription = GroupChatService()
-        .totalUnreadCountStream()
-        .listen(_handleGroupChatUnreadCount, onError: _handleChatUnreadError);
+    _chatPendingSubscription = ChatBadgeService.instance
+        .totalPendingStream()
+        .listen((int count) {
+          if (mounted && count != _chatPendingCount) {
+            setState(() => _chatPendingCount = count);
+          }
+        }, onError: _handleChatUnreadError);
     _notificationUnreadSubscription = NotificationService()
         .unreadCountStream()
-        .listen(
-          _handleNotificationUnreadCount,
-          onError: _handleNotificationUnreadError,
-        );
-  }
-
-  Future<void> _restoreBadgeAcknowledgements() async {
-    int chatCount = 0;
-    int notificationCount = 0;
-
-    try {
-      final SharedPreferences preferences =
-          await SharedPreferences.getInstance();
-      chatCount = preferences.getInt(_chatBadgeCountKey) ?? 0;
-      notificationCount = preferences.getInt(_notificationBadgeCountKey) ?? 0;
-    } catch (_) {}
-
-    if (!mounted) {
-      return;
-    }
-
-    setState(() {
-      _badgePreferencesLoaded = true;
-      _acknowledgedChatUnreadCount =
-          _directChatUnreadInitialized && _groupChatUnreadInitialized
-          ? (_chatUnreadCount < chatCount ? _chatUnreadCount : chatCount)
-          : chatCount;
-      _acknowledgedNotificationUnreadCount = _notificationUnreadInitialized
-          ? (_notificationUnreadCount < notificationCount
-                ? _notificationUnreadCount
-                : notificationCount)
-          : notificationCount;
-      _chatBadgeAcknowledged = _chatUnreadCount <= _acknowledgedChatUnreadCount;
-      _notificationBadgeAcknowledged =
-          _notificationUnreadCount <= _acknowledgedNotificationUnreadCount;
-    });
-
-    unawaited(_saveBadgeAcknowledgements());
-  }
-
-  Future<void> _saveBadgeAcknowledgements() async {
-    try {
-      final SharedPreferences preferences =
-          await SharedPreferences.getInstance();
-      await preferences.setInt(
-        _chatBadgeCountKey,
-        _acknowledgedChatUnreadCount,
-      );
-      await preferences.setInt(
-        _notificationBadgeCountKey,
-        _acknowledgedNotificationUnreadCount,
-      );
-    } catch (_) {}
-  }
-
-  void _handleDirectChatUnreadCount(int count) {
-    _directChatUnreadCount = count;
-    _directChatUnreadInitialized = true;
-    _handleCombinedChatUnreadCount();
-  }
-
-  void _handleGroupChatUnreadCount(int count) {
-    _groupChatUnreadCount = count;
-    _groupChatUnreadInitialized = true;
-    _handleCombinedChatUnreadCount();
-  }
-
-  void _handleCombinedChatUnreadCount() {
-    if (!_directChatUnreadInitialized || !_groupChatUnreadInitialized) {
-      return;
-    }
-
-    final int count = _directChatUnreadCount + _groupChatUnreadCount;
-    if (!mounted || count == _chatUnreadCount) {
-      return;
-    }
-    setState(() {
-      if (_badgePreferencesLoaded) {
-        if (count > _acknowledgedChatUnreadCount) {
-          _chatBadgeAcknowledged = false;
-        } else {
-          _chatBadgeAcknowledged = true;
-          _acknowledgedChatUnreadCount = count;
-          unawaited(_saveBadgeAcknowledgements());
-        }
-      }
-      _chatUnreadCount = count;
-    });
-  }
-
-  void _handleNotificationUnreadCount(int count) {
-    _notificationUnreadInitialized = true;
-    if (!mounted || count == _notificationUnreadCount) {
-      return;
-    }
-    setState(() {
-      if (_badgePreferencesLoaded) {
-        if (count > _acknowledgedNotificationUnreadCount) {
-          _notificationBadgeAcknowledged = false;
-        } else {
-          _notificationBadgeAcknowledged = true;
-          _acknowledgedNotificationUnreadCount = count;
-          unawaited(_saveBadgeAcknowledgements());
-        }
-      }
-      _notificationUnreadCount = count;
-    });
-  }
-
-  void _acknowledgeChatBadge() {
-    setState(() {
-      _chatBadgeAcknowledged = true;
-      _acknowledgedChatUnreadCount = _chatUnreadCount;
-    });
-    unawaited(_saveBadgeAcknowledgements());
-  }
-
-  void _acknowledgeNotificationBadge() {
-    setState(() {
-      _notificationBadgeAcknowledged = true;
-      _acknowledgedNotificationUnreadCount = _notificationUnreadCount;
-    });
-    unawaited(_saveBadgeAcknowledgements());
+        .listen((int count) {
+          if (mounted && count != _notificationUnreadCount) {
+            setState(() => _notificationUnreadCount = count);
+          }
+        }, onError: _handleNotificationUnreadError);
   }
 
   void _handleChatUnreadError(Object error, StackTrace stackTrace) {
     // A badge is optional UI. A temporary Firestore/network failure must never
     // take down the complete mobile shell or show Flutter's red error screen.
     debugPrint('Chat unread badge unavailable: $error');
-    if (!mounted || _chatUnreadCount == 0) {
+    if (!mounted || _chatPendingCount == 0) {
       return;
     }
-    setState(() => _chatUnreadCount = 0);
+    setState(() => _chatPendingCount = 0);
   }
 
   void _handleNotificationUnreadError(Object error, StackTrace stackTrace) {
@@ -253,32 +121,6 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
       return;
     }
     setState(() => _notificationUnreadCount = 0);
-  }
-
-  Widget _withUnreadDot({required Widget child, required bool visible}) {
-    return Stack(
-      clipBehavior: Clip.none,
-      children: <Widget>[
-        child,
-        if (visible)
-          Positioned(
-            right: -3,
-            top: -3,
-            child: Container(
-              width: 10,
-              height: 10,
-              decoration: BoxDecoration(
-                color: const Color(0xFFE53935),
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: Theme.of(context).scaffoldBackgroundColor,
-                  width: 1.5,
-                ),
-              ),
-            ),
-          ),
-      ],
-    );
   }
 
   //===================================================
@@ -367,8 +209,7 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
 
   @override
   void dispose() {
-    _directChatUnreadSubscription?.cancel();
-    _groupChatUnreadSubscription?.cancel();
+    _chatPendingSubscription?.cancel();
     _notificationUnreadSubscription?.cancel();
     _homePlaybackEnabled.value = false;
     _homePlaybackEnabled.dispose();
@@ -495,38 +336,37 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
 
               automaticallyImplyLeading: false,
 
-        title: _page == 1
-            ? const Text(
-          'NUBi',
-          style: TextStyle(
-            fontSize: 27,
-            fontWeight: FontWeight.w800,
-            color: Color(0xFF29B6F6),
-          ),
-        )
-            : const Column(
-          crossAxisAlignment:
-          CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Nubify',
-              style: TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF29B6F6),
-              ),
-            ),
-            Text(
-              'Campus Social',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: Color(0xFF29B6F6),
-              ),
-            ),
-          ],
-        ),
+              title: _page == 1
+                  ? const Text(
+                      'NUBi',
+                      style: TextStyle(
+                        fontSize: 27,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF29B6F6),
+                      ),
+                    )
+                  : const Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Nubify',
+                          style: TextStyle(
+                            fontSize: 26,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF29B6F6),
+                          ),
+                        ),
+                        Text(
+                          'Campus Social',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFF29B6F6),
+                          ),
+                        ),
+                      ],
+                    ),
 
               actions: <Widget>[
                 //===================================================
@@ -563,7 +403,6 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
                 //===================================================
                 GestureDetector(
                   onTap: () {
-                    _acknowledgeChatBadge();
                     Navigator.push(
                       context,
                       MaterialPageRoute<void>(
@@ -576,11 +415,8 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: <Widget>[
-                        _withUnreadDot(
-                          visible:
-                              _badgePreferencesLoaded &&
-                              _chatUnreadCount > 0 &&
-                              !_chatBadgeAcknowledged,
+                        NubifyBadgedIcon(
+                          count: _chatPendingCount,
                           child: const Icon(
                             Icons.chat_bubble_outline_rounded,
                             size: 22,
@@ -597,7 +433,6 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
                 //===================================================
                 GestureDetector(
                   onTap: () {
-                    _acknowledgeNotificationBadge();
                     Navigator.push(
                       context,
                       MaterialPageRoute<void>(
@@ -610,11 +445,8 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: <Widget>[
-                        _withUnreadDot(
-                          visible:
-                              _badgePreferencesLoaded &&
-                              _notificationUnreadCount > 0 &&
-                              !_notificationBadgeAcknowledged,
+                        NubifyBadgedIcon(
+                          count: _notificationUnreadCount,
                           child: Image.network(
                             _notificationsIcon,
                             width: 24,

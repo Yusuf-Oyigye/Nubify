@@ -56,6 +56,10 @@ class ChatMessageStatus
         canShowReadReceipt
             ? NubifyChatStyle.readGreen
             : Colors.white60,
+        shadows:
+        canShowReadReceipt
+            ? NubifyChatStyle.tickShadow
+            : null,
       );
     }
     //===============================

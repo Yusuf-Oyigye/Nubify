@@ -236,11 +236,7 @@ class _ChatContactInfoScreenState extends State<ChatContactInfoScreen> {
                     ),
                   ],
                 ),
-                child: NubifyChatAvatar(
-                  photoUrl: photoUrl,
-                  radius: 58,
-                  ring: true,
-                ),
+                child: NubifyChatAvatar(photoUrl: photoUrl, radius: 58),
               ),
             ),
           ),

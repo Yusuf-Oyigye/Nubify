@@ -1,15 +1,21 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
+import '../models/marketplace_listing.dart';
 import '../widgets/marketplace_brand_icon.dart';
+import '../widgets/nubify_chat_style.dart';
 import 'marketplace_listing_details_screen.dart';
 
 //===============================
 // CHAT CATALOGUE SCREEN
+//
+// The seller's available products, opened from a chat,
+// shown as a grid of square tiles: newest first.
 //===============================
 
-class ChatCatalogueScreen extends StatelessWidget {
-  ChatCatalogueScreen({
+class ChatCatalogueScreen extends StatefulWidget {
+  const ChatCatalogueScreen({
     super.key,
     required this.sellerId,
     required this.sellerName,
@@ -25,9 +31,235 @@ class ChatCatalogueScreen extends StatelessWidget {
 
   final String sellerPhotoUrl;
 
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  @override
+  State<ChatCatalogueScreen> createState() => _ChatCatalogueScreenState();
+}
 
-  static const Color _blue = Color(0xFF29B6F6);
+class _ChatCatalogueScreenState extends State<ChatCatalogueScreen> {
+  late final Stream<QuerySnapshot<Map<String, dynamic>>> _productsStream =
+      FirebaseFirestore.instance
+          .collection('marketplaceProducts')
+          .where('sellerId', isEqualTo: widget.sellerId)
+          .where('status', isEqualTo: 'available')
+          .where('publicVisible', isEqualTo: true)
+          .limit(50)
+          .snapshots();
+
+  //===============================
+  // NEWEST FIRST
+  //===============================
+
+  List<MarketplaceListing> _newestFirst(
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
+  ) {
+    DateTime liveAt(MarketplaceListing listing) =>
+        listing.publishedAt ??
+        listing.createdAt ??
+        DateTime.fromMillisecondsSinceEpoch(0);
+
+    return docs.map(MarketplaceListing.fromFirestore).toList()..sort(
+      (MarketplaceListing a, MarketplaceListing b) =>
+          liveAt(b).compareTo(liveAt(a)),
+    );
+  }
+
+  void _openListing(MarketplaceListing listing) {
+    Navigator.push<void>(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) =>
+            MarketplaceListingDetailsScreen(listingId: listing.listingId),
+      ),
+    );
+  }
+
+  //===============================
+  // SELLER HEADER
+  //===============================
+
+  Widget _header(int? count) {
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+    final bool dark = NubifyChatStyle.isDark(context);
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(14, 6, 14, 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: dark
+              ? Colors.white.withValues(alpha: 0.06)
+              : const Color(0xFFE3E9F3),
+        ),
+      ),
+      child: Row(
+        children: <Widget>[
+          NubifyChatAvatar(photoUrl: widget.sellerPhotoUrl, radius: 28),
+
+          const SizedBox(width: 12),
+
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  widget.sellerName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: scheme.onSurface,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                if (widget.sellerUsername.trim().isNotEmpty)
+                  Text(
+                    '@${widget.sellerUsername}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: scheme.onSurfaceVariant),
+                  ),
+              ],
+            ),
+          ),
+
+          if (count != null && count > 0)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: NubifyChatStyle.royal.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                count == 1 ? '1 product' : '$count products',
+                style: const TextStyle(
+                  color: NubifyChatStyle.royal,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  //===============================
+  // SQUARE PRODUCT TILE
+  //===============================
+
+  Widget _tile(MarketplaceListing listing) {
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+    final String cover = listing.coverUrl.trim();
+
+    return Semantics(
+      button: true,
+      label: '${listing.title}, ${listing.priceLabel}',
+      child: GestureDetector(
+        onTap: () {
+          _openListing(listing);
+        },
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(18),
+          child: Stack(
+            fit: StackFit.expand,
+            children: <Widget>[
+              if (cover.isNotEmpty)
+                CachedNetworkImage(
+                  imageUrl: cover,
+                  fit: BoxFit.cover,
+                  memCacheWidth: 500,
+                  placeholder: (_, _) =>
+                      ColoredBox(color: scheme.surfaceContainerHighest),
+                  errorWidget: (_, _, _) => ColoredBox(
+                    color: scheme.surfaceContainerHighest,
+                    child: const Center(child: MarketplaceBrandIcon(size: 36)),
+                  ),
+                )
+              else
+                ColoredBox(
+                  color: scheme.surfaceContainerHighest,
+                  child: const Center(child: MarketplaceBrandIcon(size: 36)),
+                ),
+
+              // Dark fade at the bottom so the text stays readable.
+              const DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    stops: <double>[0.45, 1],
+                    colors: <Color>[Colors.transparent, Color(0xCC000000)],
+                  ),
+                ),
+              ),
+
+              if (listing.hasVideo)
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(
+                      color: Colors.black45,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.play_arrow_rounded,
+                      color: Colors.white,
+                      size: 16,
+                    ),
+                  ),
+                ),
+
+              Positioned(
+                left: 10,
+                right: 10,
+                bottom: 10,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      listing.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        gradient: NubifyChatStyle.outgoing,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        listing.priceLabel,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
   //===============================
   // BUILD
@@ -35,249 +267,103 @@ class ChatCatalogueScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme scheme = theme.colorScheme;
-    final bool dark = theme.brightness == Brightness.dark;
+    final ColorScheme scheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: scheme.surface,
-        foregroundColor: scheme.onSurface,
+        surfaceTintColor: Colors.transparent,
         title: const Text(
           'Catalogue',
-          style: TextStyle(fontWeight: FontWeight.w700),
+          style: TextStyle(fontWeight: FontWeight.w800),
         ),
       ),
-      body: Column(
-        children: <Widget>[
-          //===============================
-          // SELLER HEADER
-          //===============================
-
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: dark
-                    ? const <Color>[Color(0xFF15242D), Color(0xFF0B1116)]
-                    : <Color>[scheme.surface, theme.scaffoldBackgroundColor],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
-            ),
-            child: Row(
-              children: <Widget>[
-                CircleAvatar(
-                  radius: 32,
-                  backgroundColor: scheme.surfaceContainerHighest,
-                  backgroundImage: sellerPhotoUrl.trim().isNotEmpty
-                      ? NetworkImage(sellerPhotoUrl)
-                      : null,
-                  child: sellerPhotoUrl.trim().isEmpty
-                      ? Icon(
-                          Icons.person_rounded,
-                          color: scheme.onSurfaceVariant,
-                        )
-                      : null,
-                ),
-
-                const SizedBox(width: 12),
-
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(
-                        sellerName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: scheme.onSurface,
-                          fontSize: 19,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-
-                      if (sellerUsername.trim().isNotEmpty)
-                        Text(
-                          '@$sellerUsername',
-                          style: TextStyle(color: scheme.onSurfaceVariant),
-                        ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          //===============================
-          // PRODUCTS
-          //===============================
-          Expanded(
-            child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-              stream: _firestore
-                  .collection('marketplaceProducts')
-                  .where('sellerId', isEqualTo: sellerId)
-                  .where('status', isEqualTo: 'available')
-                  .where('publicVisible', isEqualTo: true)
-                  .limit(50)
-                  .snapshots(),
-              builder:
-                  (
-                    BuildContext context,
-                    AsyncSnapshot<QuerySnapshot<Map<String, dynamic>>> snapshot,
-                  ) {
-                    if (snapshot.hasError) {
-                      return const Center(
+      body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+        stream: _productsStream,
+        builder:
+            (
+              BuildContext context,
+              AsyncSnapshot<QuerySnapshot<Map<String, dynamic>>> snapshot,
+            ) {
+              if (snapshot.hasError) {
+                return Column(
+                  children: <Widget>[
+                    _header(null),
+                    const Expanded(
+                      child: Center(
                         child: Text(
                           'Products could not load right now. Please try again.',
                           textAlign: TextAlign.center,
                         ),
-                      );
-                    }
+                      ),
+                    ),
+                  ],
+                );
+              }
 
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(
-                        child: CircularProgressIndicator(color: _blue),
-                      );
-                    }
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return Column(
+                  children: <Widget>[
+                    _header(null),
+                    const Expanded(
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          color: NubifyChatStyle.royal,
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              }
 
-                    final docs = snapshot.data?.docs ?? [];
+              final List<MarketplaceListing> products = _newestFirst(
+                snapshot.data?.docs ??
+                    <QueryDocumentSnapshot<Map<String, dynamic>>>[],
+              );
 
-                    if (docs.isEmpty) {
-                      return Center(
+              if (products.isEmpty) {
+                return Column(
+                  children: <Widget>[
+                    _header(0),
+                    Expanded(
+                      child: Center(
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: <Widget>[
-                            MarketplaceBrandIcon(
-                              size: 56,
-                            ),
-                            SizedBox(height: 12),
+                            const MarketplaceBrandIcon(size: 56),
+                            const SizedBox(height: 12),
                             Text(
                               'No products listed yet.',
                               style: TextStyle(color: scheme.onSurfaceVariant),
                             ),
                           ],
                         ),
-                      );
-                    }
+                      ),
+                    ),
+                  ],
+                );
+              }
 
-                    return ListView.separated(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      itemCount: docs.length,
-                      separatorBuilder: (_, _) =>
-                          Divider(height: 1, color: scheme.outlineVariant),
+              return CustomScrollView(
+                slivers: <Widget>[
+                  SliverToBoxAdapter(child: _header(products.length)),
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(14, 0, 14, 24),
+                    sliver: SliverGrid.builder(
+                      itemCount: products.length,
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            mainAxisSpacing: 10,
+                            crossAxisSpacing: 10,
+                          ),
                       itemBuilder: (BuildContext context, int index) {
-                        final document = docs[index];
-
-                        final product = document.data();
-
-                        final String listingId =
-                            (product['listingId'] ?? document.id).toString();
-
-                        final String title =
-                            (product['title'] ?? product['name'] ?? 'Product')
-                                .toString();
-
-                        final String description =
-                            (product['description'] ?? '').toString();
-
-                        final dynamic rawMedia = product['media'];
-
-                        String imageUrl =
-                            (product['thumbnailUrl'] ??
-                                    product['imageUrl'] ??
-                                    '')
-                                .toString();
-
-                        if (imageUrl.trim().isEmpty &&
-                            rawMedia is List &&
-                            rawMedia.isNotEmpty &&
-                            rawMedia.first is Map) {
-                          final Map<String, dynamic> firstMedia =
-                              Map<String, dynamic>.from(rawMedia.first as Map);
-                          imageUrl =
-                              (firstMedia['thumbnailUrl'] ??
-                                      firstMedia['url'] ??
-                                      '')
-                                  .toString();
-                        }
-
-                        final dynamic rawPrice = product['price'];
-
-                        final String price = rawPrice == null
-                            ? ''
-                            : rawPrice.toString();
-
-                        return ListTile(
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                          leading: ClipRRect(
-                            borderRadius: BorderRadius.circular(13),
-                            child: Container(
-                              width: 66,
-                              height: 66,
-                              color: scheme.surfaceContainerHighest,
-                              child: imageUrl.trim().isNotEmpty
-                                  ? Image.network(imageUrl, fit: BoxFit.cover)
-                                  : const MarketplaceBrandIcon(
-                                      size: 26,
-                                    ),
-                            ),
-                          ),
-                          title: Text(
-                            title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: scheme.onSurface,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: <Widget>[
-                              if (description.trim().isNotEmpty)
-                                Text(
-                                  description,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: scheme.onSurfaceVariant,
-                                  ),
-                                ),
-
-                              if (price.isNotEmpty)
-                                Text(
-                                  'EGP $price',
-                                  style: const TextStyle(
-                                    color: _blue,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                            ],
-                          ),
-                          onTap: () {
-                            Navigator.push<void>(
-                              context,
-                              MaterialPageRoute<void>(
-                                builder: (_) => MarketplaceListingDetailsScreen(
-                                  listingId: listingId,
-                                ),
-                              ),
-                            );
-                          },
-                        );
+                        return _tile(products[index]);
                       },
-                    );
-                  },
-            ),
-          ),
-        ],
+                    ),
+                  ),
+                ],
+              );
+            },
       ),
     );
   }

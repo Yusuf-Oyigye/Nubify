@@ -17,9 +17,23 @@ class NubifyChatStyle {
   static const Color violet = Color(0xFF6C5CE7);
 
   // Read receipts are green. The bright one sits on the
-  // coloured bubbles, the deeper one on plain surfaces.
-  static const Color readGreen = Color(0xFF4ADE80);
+  // sky blue bubbles (with tickShadow so it stands out),
+  // the deeper one on plain surfaces.
+  static const Color readGreen = Color(0xFF00E676);
   static const Color readGreenOnSurface = Color(0xFF22C55E);
+
+  static const List<Shadow> tickShadow = <Shadow>[
+    Shadow(color: Color(0x99003A66), blurRadius: 3),
+  ];
+
+  // Navy blue: the selected Messages / Groups / Calls tab.
+  static const Color navy = Color(0xFF14286B);
+
+  static const LinearGradient navyGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: <Color>[Color(0xFF1F3A8F), navy],
+  );
 
   static const Color online = Color(0xFF22C55E);
   static const Color danger = Color(0xFFFF4D67);
@@ -31,13 +45,13 @@ class NubifyChatStyle {
     colors: <Color>[sky, royal, violet],
   );
 
-  // Your own messages: navy blue.
-  static const Color navy = Color(0xFF14286B);
+  // Your own messages: sky blue.
+  static const Color skyDeep = Color(0xFF0B8BDD);
 
   static const LinearGradient outgoing = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: <Color>[Color(0xFF1F3A8F), navy],
+    colors: <Color>[Color(0xFF2EB4F5), skyDeep],
   );
 
   static bool isDark(BuildContext context) =>
@@ -67,7 +81,7 @@ class NubifyChatStyle {
           : Border.all(color: Colors.white.withValues(alpha: 0.06)),
       boxShadow: <BoxShadow>[
         BoxShadow(
-          color: (mine ? navy : Colors.black).withValues(
+          color: (mine ? skyDeep : Colors.black).withValues(
             alpha: dark ? 0.30 : 0.16,
           ),
           blurRadius: 12,
@@ -233,7 +247,17 @@ class _DotPatternPainter extends CustomPainter {
 }
 
 //===================================================
-// AVATAR WITH OPTIONAL GRADIENT RING
+// STORY RING
+//
+// No ring unless the person has a story that is less
+// than 24 hours old: blue while it is new to you, grey
+// once you have watched it.
+//===================================================
+
+enum NubifyStoryRing { none, unviewed, viewed }
+
+//===================================================
+// CHAT AVATAR
 //===================================================
 
 class NubifyChatAvatar extends StatelessWidget {
@@ -241,23 +265,33 @@ class NubifyChatAvatar extends StatelessWidget {
     super.key,
     required this.photoUrl,
     this.radius = 27,
-    this.ring = false,
+    this.story = NubifyStoryRing.none,
+    this.online = false,
     this.group = false,
   });
 
   final String photoUrl;
   final double radius;
 
-  // A sky-to-violet ring, e.g. for unread chats.
-  final bool ring;
+  final NubifyStoryRing story;
+
+  // A green dot at the bottom right while they are online.
+  final bool online;
   final bool group;
+
+  static const LinearGradient _storyBlue = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: <Color>[NubifyChatStyle.sky, NubifyChatStyle.royal],
+  );
 
   @override
   Widget build(BuildContext context) {
     final bool dark = NubifyChatStyle.isDark(context);
     final String url = photoUrl.trim();
+    final Color background = Theme.of(context).scaffoldBackgroundColor;
 
-    final Widget avatar = CircleAvatar(
+    final Widget photo = CircleAvatar(
       radius: radius,
       backgroundColor: dark ? const Color(0xFF1E2A3A) : const Color(0xFFE7F0FB),
       backgroundImage: url.isNotEmpty ? CachedNetworkImageProvider(url) : null,
@@ -270,25 +304,58 @@ class NubifyChatAvatar extends StatelessWidget {
           : null,
     );
 
-    return Container(
+    final bool hasStory = story != NubifyStoryRing.none;
+
+    // The ring space is always kept, so photos line up
+    // whether or not a ring is showing.
+    final Widget avatar = Container(
       padding: const EdgeInsets.all(2.4),
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        gradient: ring ? NubifyChatStyle.brand : null,
-        color: ring
-            ? null
-            : (dark
-                  ? Colors.white.withValues(alpha: 0.08)
-                  : const Color(0xFFDDE6F2)),
+        gradient: story == NubifyStoryRing.unviewed ? _storyBlue : null,
+        color: story == NubifyStoryRing.viewed
+            ? (dark
+                  ? Colors.white.withValues(alpha: 0.30)
+                  : const Color(0xFFB4BFCD))
+            : null,
       ),
       child: Container(
         padding: const EdgeInsets.all(2),
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: Theme.of(context).scaffoldBackgroundColor,
+          color: hasStory ? background : null,
         ),
-        child: avatar,
+        child: photo,
       ),
+    );
+
+    if (!online) {
+      return avatar;
+    }
+
+    final double dot = (radius * 0.5).clamp(10, 16).toDouble();
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: <Widget>[
+        avatar,
+        Positioned(
+          right: 2,
+          bottom: 2,
+          child: Semantics(
+            label: 'Online',
+            child: Container(
+              width: dot,
+              height: dot,
+              decoration: BoxDecoration(
+                color: NubifyChatStyle.online,
+                shape: BoxShape.circle,
+                border: Border.all(color: background, width: 2),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
