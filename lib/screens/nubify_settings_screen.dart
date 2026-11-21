@@ -68,6 +68,28 @@ class NubifySettingsScreen extends StatelessWidget {
           const SizedBox(height: 13),
 
           //=========================================
+          // ABOUT THE APP
+          //=========================================
+
+          _SettingsLink(
+            label: 'About the App',
+            icon: Icons.info_outline_rounded,
+            color: nubifySky,
+
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute<void>(
+                  builder: (_) =>
+                  const NubifyAboutAppScreen(),
+                ),
+              );
+            },
+          ),
+
+          const SizedBox(height: 11),
+
+          //=========================================
           // TERMS AND CONDITIONS
           //=========================================
 

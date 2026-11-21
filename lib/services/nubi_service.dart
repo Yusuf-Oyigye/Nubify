@@ -119,7 +119,7 @@ class NubiService {
   }) {
     return call('nubiAsk', {
       'question': question,
-      if (sourceId != null) 'sourceId': sourceId,
+      'sourceId': ?sourceId,
       'section': section,
     });
   }

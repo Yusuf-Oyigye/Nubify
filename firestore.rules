@@ -2145,7 +2145,67 @@ match /calls/{callId} {
           allow create, update, delete: if isSignedIn() &&
               request.auth.token.get('marketplaceOwner', false) == true;
         }
+    //===================================================
+    // NUB HUDDLES
+    //
+    // Huddles, roles and speaker requests are changed
+    // only by the Huddle backend functions. People in a
+    // Huddle can chat and invite others directly.
+    //===================================================
 
+    match /huddles/{huddleId} {
+
+      function huddleDoc() {
+        return get(/databases/$(database)/documents/huddles/$(huddleId));
+      }
+
+      function inHuddle() {
+        return exists(/databases/$(database)/documents/huddles/$(huddleId)/participants/$(request.auth.uid));
+      }
+
+      function huddleRole() {
+        return get(/databases/$(database)/documents/huddles/$(huddleId)/participants/$(request.auth.uid)).data.role;
+      }
+
+      allow read: if isSignedIn();
+      allow write: if false;
+
+      match /participants/{uid} {
+        allow read: if isSignedIn();
+        allow write: if false;
+      }
+
+      match /chat/{messageId} {
+        allow read: if isSignedIn() && inHuddle();
+
+        allow create: if isSignedIn() &&
+            inHuddle() &&
+            huddleDoc().data.status == 'live' &&
+            huddleDoc().data.chatEnabled == true &&
+            request.resource.data.uid == request.auth.uid &&
+            request.resource.data.text is string &&
+            request.resource.data.text.size() > 0 &&
+            request.resource.data.text.size() <= 500;
+
+        allow delete: if isSignedIn() &&
+            (resource.data.uid == request.auth.uid ||
+              (inHuddle() && huddleRole() in ['host', 'cohost']));
+
+        allow update: if false;
+      }
+
+      match /invites/{invitedUid} {
+        allow read: if isSignedIn() &&
+            (request.auth.uid == invitedUid || inHuddle());
+
+        allow create, update: if isSignedIn() &&
+            inHuddle() &&
+            invitedUid != request.auth.uid &&
+            request.resource.data.invitedBy == request.auth.uid;
+
+        allow delete: if false;
+      }
+    }
     //===================================================
     // STORIES
     //===================================================

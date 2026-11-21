@@ -13,6 +13,7 @@ import 'user_connections_screen.dart';
 import '../widgets/nubify_menu_components.dart';
 import 'about_developer_screen.dart';
 import 'explore_nub_screen.dart';
+import 'huddles/huddles_screen.dart';
 
 //===================================================
 // NUBIFY — PREMIUM MENU SCREEN
@@ -841,7 +842,7 @@ class _MenuScreenState extends State<MenuScreen> {
         'NUB Huddles',
         Symbols.podcasts_rounded,
         NubifyPalette.purple,
-        () => _unavailable('NUB Huddles'),
+            () => _push(const HuddlesScreen()),
         picture: 'assets/menu_icons/studio_microphone_3d.png',
       ),
 
@@ -854,7 +855,7 @@ class _MenuScreenState extends State<MenuScreen> {
 
       // Games will live here later.
       _MenuItem(
-        'Games',
+        'Game Hub',
         Symbols.stadia_controller_rounded,
         NubifyPalette.sapphire,
         () => _unavailable('Games'),
@@ -1013,17 +1014,18 @@ class _MenuScreenState extends State<MenuScreen> {
   Widget _aboutSection() {
     final items = <_MenuItem>[
       _MenuItem(
-        'About the App',
-        Symbols.info_rounded,
-        nubifySky,
-        () => _push(const NubifyAboutAppScreen()),
-      ),
-
-      _MenuItem(
         'About the Developer',
         Symbols.person_pin_circle_rounded,
         NubifyPalette.violet,
             () => _push(const AboutDeveloperScreen()),
+      ),
+
+      _MenuItem(
+        'About the App',
+        Symbols.info_rounded,
+        nubifySky,
+        () => _push(const NubifyAboutAppScreen()),
+
       ),
 
       _MenuItem(

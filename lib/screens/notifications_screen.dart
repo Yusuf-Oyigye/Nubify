@@ -9,6 +9,7 @@ import '../utils/nubify_time.dart';
 import 'comment_screen.dart';
 import 'nubi/nubi_mindrush_screen.dart';
 import 'story_viewer_screen.dart';
+import 'huddles/huddle_launcher.dart';
 
 //===================================================
 // NOTIFICATIONS SCREEN
@@ -210,6 +211,19 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       return;
     }
 
+    //===================================================
+    // NUB HUDDLES
+    //===================================================
+
+    if (type.startsWith('huddle')) {
+      final String huddleId = (data['huddleId'] ?? '').toString().trim();
+
+      if (huddleId.isNotEmpty) {
+        await openHuddle(context, huddleId);
+      }
+
+      return;
+    }
 
     //===================================================
     // STORY
@@ -872,6 +886,9 @@ class _NotificationTile extends StatelessWidget {
       case 'marketplaceReportDismissed':
         return Icons.rule_rounded;
 
+      case 'huddleInvite':
+      case 'huddleStarted':
+        return Icons.graphic_eq_rounded;
       default:
         return Icons.notifications_rounded;
     }

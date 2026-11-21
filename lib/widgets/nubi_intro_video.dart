@@ -114,7 +114,7 @@ class _NubiIntroVideoState extends State<NubiIntroVideo>
         !_covered &&
         _visible &&
         !reducedMotion &&
-        TickerMode.of(context);
+        TickerMode.valuesOf(context).enabled;
 
     if (shouldPlay) {
       unawaited(_playSafely(player, operation));

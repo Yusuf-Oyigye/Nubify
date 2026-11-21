@@ -17,6 +17,7 @@ import '../services/chat_badge_service.dart';
 import '../services/notification_service.dart';
 import '../widgets/marketplace_brand_icon.dart';
 import '../widgets/nubify_count_badge.dart';
+import '../widgets/huddle_mini_bar.dart';
 
 //===================================================
 // MOBILE SCREEN LAYOUT
@@ -486,7 +487,12 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
       //===================================================
       // PAGE
       //===================================================
-      body: _pages[_page],
+      body: Column(
+        children: <Widget>[
+          Expanded(child: _pages[_page]),
+          const HuddleMiniBar(),
+        ],
+      ),
 
       //===================================================
       // BOTTOM NAVIGATION

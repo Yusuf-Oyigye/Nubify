@@ -15,6 +15,7 @@ import '../screens/nubuzz_screen.dart';
 import '../services/group_chat_service.dart';
 
 import '../utils/link_detector.dart';
+import '../screens/huddles/huddle_launcher.dart';
 
 //===================================================
 // NUBIFY LINK ROUTER
@@ -135,6 +136,15 @@ class NubifyLinkRouter {
           builder: (_) => GroupChatScreen(groupId: parts[1]),
         ),
       );
+
+      return;
+    }
+    //===================================================
+    // HUDDLE
+    //===================================================
+
+    if (type == 'huddle' && parts.length >= 2) {
+      await openHuddle(context, parts[1]);
 
       return;
     }

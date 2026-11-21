@@ -782,7 +782,9 @@ class _NubiTutorScreenState
 
   Future<void> _answerCheckpoint(int choice) async {
     if (_busy || widget.sourceId == null ||
-        _feedback != null) return;
+        _feedback != null) {
+      return;
+    }
 
     setState(() => _busy = true);
 

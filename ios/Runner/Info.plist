@@ -69,12 +69,14 @@
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
 	<key>NSPhotoLibraryUsageDescription</key>
-    <string>Photo Library Usage</string</>
-    <key>NSCameraUsageDescription</key>
-    <string>Camera Usage</string</>
-    <key>NSMicrophoneUsageDescription</key>
-    <string>Mic Usage</string</>
-    <key>NSVideoUsageDescription</key>
-    <string>Video Usage</string</>
+	<string>Nubify uses your photos so you can share them.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Nubify uses your camera for photos, video calls and Huddles.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Nubify uses your microphone for voice messages, calls and speaking in Huddles.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>audio</string>
+	</array>
 </dict>
 </plist>
