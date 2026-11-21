@@ -842,6 +842,7 @@ class _MenuScreenState extends State<MenuScreen> {
         Symbols.podcasts_rounded,
         NubifyPalette.purple,
         () => _unavailable('NUB Huddles'),
+        picture: 'assets/menu_icons/studio_microphone_3d.png',
       ),
 
       _MenuItem(
@@ -904,6 +905,7 @@ class _MenuScreenState extends State<MenuScreen> {
         Symbols.location_city_rounded,
         NubifyPalette.indigo,
             () => _push(const NubUniversityScreen()),
+        picture: 'assets/menu_icons/school_3d.png',
       ),
 
       _MenuItem(
