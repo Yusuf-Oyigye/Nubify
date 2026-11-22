@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import '../../../utils/profile/username_rules.dart';
 
 import 'audio_call_screen.dart';
 import '../../profile/profile_screen.dart';
@@ -32,7 +33,7 @@ class _NewCallScreenState extends State<NewCallScreen> {
   }
 
   void _onSearchChanged() {
-    final String next = _searchController.text.trim().toLowerCase();
+    final String next = UsernameRules.searchKey(_searchController.text);
     if (!mounted || next == _search) {
       return;
     }

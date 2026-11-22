@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import '../../utils/profile/username_rules.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -168,7 +169,7 @@ class _InvitePickerState extends State<_InvitePicker> {
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
             child: TextField(
               onChanged: (value) =>
-                  setState(() => _search = value.trim().toLowerCase()),
+                  setState(() => _search = UsernameRules.searchKey(value)),
               decoration: InputDecoration(
                 hintText: 'Search people and groups',
                 prefixIcon: const Icon(Icons.search_rounded),

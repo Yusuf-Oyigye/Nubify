@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import '../../utils/profile/username_rules.dart';
 
 import 'conversation_screen.dart';
 import '../../widgets/common/search_highlight_text.dart';
@@ -73,10 +74,7 @@ class _NewChatScreenState
 
         setState(() {
           _search =
-              _searchController
-                  .text
-                  .trim()
-                  .toLowerCase();
+              UsernameRules.searchKey(_searchController.text);
         });
       },
     );

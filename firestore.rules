@@ -638,6 +638,50 @@ match /calls/{callId} {
     }
 
     //===================================================
+    // USERNAMES
+    //
+    // usernames/{lowercase} is the lock that owns a name.
+    // A profile may only use a username whose lock belongs
+    // to the same user, created in the same write.
+    // Rules: 3-20 chars, a-z 0-9 . _, starts with a letter,
+    // no "..", no "__", does not end with ".".
+    //===================================================
+
+    function nubifyValidUsernameKey(name) {
+      return name is string &&
+          name.matches('^[a-z][a-z0-9._]{2,19}$') &&
+          !name.matches('.*[.][.].*') &&
+          !name.matches('.*__.*') &&
+          !name.matches('.*[.]$');
+    }
+
+    function nubifyUsernameUnchanged() {
+      return request.resource.data.get('username', '') ==
+              resource.data.get('username', '') &&
+          request.resource.data.get('usernameLower', '') ==
+              resource.data.get('usernameLower', '');
+    }
+
+    function nubifyHoldsUsername(uid) {
+      let name = request.resource.data.get('usernameLower', '');
+      return nubifyValidUsernameKey(name) &&
+          request.resource.data.get('username', '') is string &&
+          request.resource.data.get('username', '').lower() == name &&
+          existsAfter(/databases/$(database)/documents/usernames/$(name)) &&
+          getAfter(/databases/$(database)/documents/usernames/$(name)).data.uid == uid;
+    }
+
+    // Changing name: the old lock (if it was yours) must be
+    // released in the same write, so no one hoards names.
+    function nubifyReleasedOldUsername(uid) {
+      let old = resource.data.get('usernameLower', '');
+      return old == '' ||
+          old == request.resource.data.get('usernameLower', '') ||
+          !existsAfter(/databases/$(database)/documents/usernames/$(old)) ||
+          getAfter(/databases/$(database)/documents/usernames/$(old)).data.uid != uid;
+    }
+
+    //===================================================
     // MARKETPLACE SECURITY HELPERS
     //===================================================
 
@@ -1785,9 +1829,11 @@ match /calls/{callId} {
       // SIGNUP
       //===================================================
 
+      // The profile is created together with its username lock.
       allow create: if isCurrentUser(
         uid
-      );
+      ) &&
+          nubifyHoldsUsername(uid);
 
       //===================================================
       // PROFILE OWNER CAN UPDATE OWN PROFILE.
@@ -1799,8 +1845,17 @@ match /calls/{callId} {
 
       allow update: if isSignedIn() &&
           (
-            request.auth.uid ==
-                uid
+            (
+              request.auth.uid ==
+                  uid &&
+              (
+                nubifyUsernameUnchanged() ||
+                (
+                  nubifyHoldsUsername(uid) &&
+                  nubifyReleasedOldUsername(uid)
+                )
+              )
+            )
 
             ||
 
@@ -1991,6 +2046,42 @@ match /calls/{callId} {
     //===================================================
     // PRIVATE USER CONTACT DATA
     //===================================================
+
+    //===================================================
+    // USERNAME LOCKS
+    //
+    // Anyone can check if a name is free, even before
+    // signing in. A lock can only be created for yourself,
+    // for a valid name, together with your profile pointing
+    // at it; and only released when your profile moved to
+    // another name or was deleted. Locks never change.
+    //===================================================
+
+    match /usernames/{name} {
+
+      allow get: if true;
+
+      allow list: if false;
+
+      allow create: if isSignedIn() &&
+          nubifyValidUsernameKey(name) &&
+          request.resource.data.keys().hasOnly(['uid', 'username', 'createdAt']) &&
+          request.resource.data.uid == request.auth.uid &&
+          request.resource.data.username is string &&
+          request.resource.data.username.lower() == name &&
+          request.resource.data.createdAt == request.time &&
+          existsAfter(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+          getAfter(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('usernameLower', '') == name;
+
+      allow delete: if isSignedIn() &&
+          resource.data.uid == request.auth.uid &&
+          (
+            !existsAfter(/databases/$(database)/documents/users/$(request.auth.uid)) ||
+            getAfter(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('usernameLower', '') != name
+          );
+
+      allow update: if false;
+    }
 
     match /userPrivate/{uid} {
 

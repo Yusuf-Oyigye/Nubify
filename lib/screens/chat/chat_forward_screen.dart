@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import '../../utils/profile/username_rules.dart';
 
 import '../../models/chat/chat_group.dart';
 import '../../models/chat/chat_message.dart';
@@ -121,7 +122,7 @@ class _ChatForwardScreenState extends State<ChatForwardScreen> {
       }
 
       setState(() {
-        _search = _searchController.text.trim().toLowerCase();
+        _search = UsernameRules.searchKey(_searchController.text);
       });
     });
   }

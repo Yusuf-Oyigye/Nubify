@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import '../../utils/profile/username_rules.dart';
 
 import '../../models/stories/story.dart';
 
@@ -412,7 +413,7 @@ class _StoryPeoplePickerScreenState
                     ) {
                   setState(() {
                     _search =
-                        value;
+                        UsernameRules.searchKey(value);
                   });
                 },
 

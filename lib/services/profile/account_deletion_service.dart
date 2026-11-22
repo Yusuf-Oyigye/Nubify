@@ -60,10 +60,37 @@ class AccountDeletionService {
     }
 
     //===================================================
-    // 4. DELETE PUBLIC PROFILE
+    // 4. DELETE PUBLIC PROFILE + FREE THE USERNAME
+    //
+    // Both in one write, so the username lock is released
+    // together with the profile.
     //===================================================
 
-    await _firestore.collection('users').doc(uid).delete();
+    final DocumentReference<Map<String, dynamic>> profileRef = _firestore
+        .collection('users')
+        .doc(uid);
+
+    final String usernameLower =
+        ((await profileRef.get()).data()?['usernameLower'] ?? '').toString();
+
+    final WriteBatch batch = _firestore.batch()..delete(profileRef);
+
+    if (usernameLower.isNotEmpty && !usernameLower.contains('/')) {
+      try {
+        final DocumentSnapshot<Map<String, dynamic>> lock = await _firestore
+            .collection('usernames')
+            .doc(usernameLower)
+            .get();
+
+        if (lock.exists && lock.data()?['uid'] == uid) {
+          batch.delete(lock.reference);
+        }
+      } on FirebaseException {
+        // Username rules not deployed yet: there is no lock.
+      }
+    }
+
+    await batch.commit();
 
     //===================================================
     // 5. DELETE THE LOGIN ITSELF

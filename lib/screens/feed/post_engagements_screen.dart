@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import '../../utils/profile/username_rules.dart';
 
 import '../../models/feed/post.dart';
 import '../../services/feed/repost_service.dart';
@@ -493,7 +494,7 @@ class _RepostedByTile extends StatelessWidget {
               fullName.isNotEmpty
                   ? fullName
                   : username.isNotEmpty
-                  ? username
+                  ? UsernameRules.at(username)
                   : 'Nubify User',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,

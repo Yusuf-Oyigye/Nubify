@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import '../../utils/profile/username_rules.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
@@ -850,8 +851,8 @@ class _CreatePostScreenState
                                   .isNotEmpty
                                   ? user[
                               'fullName']
-                                  : user[
-                              'username'],
+                                  : UsernameRules.at(
+                              user['username'].toString()),
                             ),
 
                             subtitle:

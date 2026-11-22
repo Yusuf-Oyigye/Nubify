@@ -1575,3 +1575,6 @@ Object.assign(exports, require("./nubi_learning"));
 
 //MINDRUSH BACKEND
 Object.assign(exports, require("./nubi_mindrush"));
+
+//USERNAMES (sync, release, daily backfill)
+Object.assign(exports, require("./usernames"));

@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import '../../utils/profile/username_rules.dart';
 
 import '../../services/stories/story_service.dart';
 import '../../utils/common/nubify_time.dart';
@@ -222,7 +223,7 @@ class StoryViewersScreen
                           : username
                           .trim()
                           .isNotEmpty
-                          ? username
+                          ? UsernameRules.at(username)
                           : 'Nubify user',
                     ),
 

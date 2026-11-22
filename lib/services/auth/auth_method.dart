@@ -1,12 +1,15 @@
-import 'dart:typed_data';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 
 import '../../models/profile/user.dart' as model;
 import '../../utils/common/egyptian_phone.dart';
+import '../../utils/common/email_check.dart';
+import '../../utils/profile/username_rules.dart';
+import '../../widgets/profile/nubify_avatar.dart';
 
 import '../common/storage_methods.dart';
+import '../profile/username_service.dart';
 
 //===================================================
 // AUTH METHODS
@@ -16,6 +19,8 @@ class AuthMethods {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  final UsernameService _usernames = UsernameService();
 
   //===================================================
   // GET CURRENT USER
@@ -32,7 +37,8 @@ class AuthMethods {
   // systems. A network/rules failure can create the Auth
   // account before users/{uid} is saved. This method repairs
   // that partial signup without overwriting an existing
-  // profile.
+  // profile. The repaired profile gets a valid, free
+  // username and its lock, like a normal signup.
   //===================================================
 
   Future<model.User> ensureCurrentUserProfile({
@@ -52,6 +58,7 @@ class AuthMethods {
     final DocumentReference<Map<String, dynamic>> userRef = _firestore
         .collection('users')
         .doc(currentUser.uid);
+
     final DocumentSnapshot<Map<String, dynamic>> existing = await userRef.get();
 
     if (existing.exists && existing.data() != null) {
@@ -59,19 +66,25 @@ class AuthMethods {
     }
 
     final String email = (currentUser.email ?? '').trim();
+
     final String emailName = email.contains('@')
         ? email.substring(0, email.indexOf('@')).trim()
         : '';
-    final String cleanUsername = _firstNonEmpty(<String?>[
-      username,
-      emailName,
-      'user_${currentUser.uid.substring(0, 6)}',
-    ]);
+
+    final String requested = username?.trim() ?? '';
+    final String cleanUsername = UsernameRules.isValid(requested)
+        ? UsernameRules.clean(requested)
+        : await _usernames.freeUsernameFrom(
+            requested.isNotEmpty ? requested : emailName,
+            uid: currentUser.uid,
+          );
+
     final String cleanFullName = _firstNonEmpty(<String?>[
       fullName,
       currentUser.displayName,
       cleanUsername,
     ]);
+
     final String cleanPhotoUrl = _firstNonEmpty(<String?>[
       photoUrl,
       currentUser.photoURL,
@@ -91,18 +104,7 @@ class AuthMethods {
       pinnedPostIds: const <String>[],
     );
 
-    await _firestore.runTransaction<void>((Transaction transaction) async {
-      final DocumentSnapshot<Map<String, dynamic>> latest = await transaction
-          .get(userRef);
-
-      if (!latest.exists) {
-        transaction.set(userRef, <String, dynamic>{
-          ...repairedUser.toJson(),
-          'createdAt': FieldValue.serverTimestamp(),
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
-      }
-    });
+    await _createProfile(userRef, repairedUser);
 
     final DocumentSnapshot<Map<String, dynamic>> repaired = await userRef.get();
 
@@ -111,6 +113,56 @@ class AuthMethods {
     }
 
     return model.User.fromSnap(repaired);
+  }
+
+  //===================================================
+  // CREATE PROFILE + CLAIM USERNAME (ONE TRANSACTION)
+  //
+  // Throws UsernameTakenException if someone claimed the
+  // name first. Never overwrites an existing profile.
+  //===================================================
+
+  Future<void> _createProfile(
+    DocumentReference<Map<String, dynamic>> userRef,
+    model.User user,
+  ) async {
+    final Map<String, dynamic> data = <String, dynamic>{
+      ...user.toJson(),
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+
+    try {
+      await _firestore.runTransaction<void>((Transaction transaction) async {
+        final DocumentSnapshot<Map<String, dynamic>> latest = await transaction
+            .get(userRef);
+
+        if (latest.exists) return;
+
+        await _usernames.claimInTransaction(
+          transaction,
+          uid: user.uid,
+          username: user.username,
+        );
+
+        transaction.set(userRef, data);
+      });
+    } on FirebaseException catch (error) {
+      if (error.code != 'permission-denied') rethrow;
+
+      // The username rules are not deployed yet, so the lock
+      // collection cannot be written. Save the profile the
+      // old way; the lock is claimed at the next login after
+      // the rules are deployed.
+      debugPrint('Username lock unavailable, saving profile only: $error');
+
+      await _firestore.runTransaction<void>((Transaction transaction) async {
+        final DocumentSnapshot<Map<String, dynamic>> latest = await transaction
+            .get(userRef);
+
+        if (!latest.exists) transaction.set(userRef, data);
+      });
+    }
   }
 
   String _firstNonEmpty(List<String?> values) {
@@ -127,6 +179,10 @@ class AuthMethods {
 
   //===================================================
   // SIGN UP
+  //
+  // Returns 'success' or a message for the user. The
+  // username messages start with UsernameRules texts so
+  // the signup screen can send people back to that step.
   //===================================================
 
   Future<String> signUpUser({
@@ -138,107 +194,148 @@ class AuthMethods {
     required String phone,
     required String hobbies,
     required String favoriteQuote,
+    required String gender,
     Uint8List? file,
   }) async {
     String res = 'Some error occurred';
+    UserCredential? cred;
 
     try {
       final String cleanEmail = email.trim();
 
-      final String cleanUsername = username.trim();
+      final String cleanUsername = UsernameRules.clean(username);
 
       final String cleanFullName = fullName.trim();
 
       final String cleanFaculty = faculty.trim();
 
-      final String? phoneE164 = EgyptianPhone.normalize(phone);
+      // The phone number is optional; when given it must be
+      // a valid Egyptian mobile number.
+      final String cleanPhone = phone.trim();
+
+      final String? phoneE164 = cleanPhone.isEmpty
+          ? ''
+          : EgyptianPhone.normalize(cleanPhone);
 
       if (cleanEmail.isEmpty ||
           password.isEmpty ||
           cleanUsername.isEmpty ||
           cleanFullName.isEmpty ||
-          cleanFaculty.isEmpty ||
-          phoneE164 == null) {
+          cleanFaculty.isEmpty) {
         return 'Please fill all required fields';
+      }
+
+      final String? emailError = EmailCheck.validateFormat(cleanEmail);
+
+      if (emailError != null) {
+        return emailError;
+      }
+
+      if (phoneE164 == null) {
+        return 'Enter a valid Egyptian number beginning 010, 011, 012, or 015';
+      }
+
+      if (!NubifyGender.isValid(gender)) {
+        return 'Please choose male or female';
+      }
+
+      final String? usernameError = UsernameRules.validate(cleanUsername);
+
+      if (usernameError != null) {
+        return usernameError;
       }
 
       if (password.length < 6) {
         return 'Password should be at least 6 characters';
       }
 
-      final UserCredential cred = await _auth.createUserWithEmailAndPassword(
-        email: cleanEmail,
+      // Quick check before making the account.
+      final UsernameCheck early = await _usernames.check(cleanUsername);
 
+      if (early.isTaken) {
+        return UsernameRules.taken;
+      }
+
+      cred = await _auth.createUserWithEmailAndPassword(
+        email: cleanEmail,
         password: password,
       );
 
+      final String uid = cred.user!.uid;
+
       await cred.user!.updateDisplayName(cleanFullName);
 
-      // Save the public profile immediately. Optional photo upload and private
-      // contact storage happen afterwards, so either one failing cannot leave
-      // a valid Auth account without users/{uid}.
-      await ensureCurrentUserProfile(
-        username: cleanUsername,
-        fullName: cleanFullName,
-        faculty: cleanFaculty,
-        hobbies: hobbies,
-        favoriteQuote: favoriteQuote,
-      );
-
-      String photoUrl = '';
-
-      if (file != null) {
-        photoUrl = await StorageMethods().uploadImageToStorage(
-          'profilePics',
-          file,
-          false,
-        );
-      }
+      // Signed in now: also check profiles from before the
+      // lock collection existed.
+      await _usernames.ensureAvailable(cleanUsername, uid: uid);
 
       final model.User user = model.User(
         username: cleanUsername,
-
         fullName: cleanFullName,
-
-        uid: cred.user!.uid,
-
+        uid: uid,
         email: cleanEmail,
-
         faculty: cleanFaculty,
-
         hobbies: hobbies.trim(),
-
         favoriteQuote: favoriteQuote.trim(),
-
         followers: const <String>[],
-
         following: const <String>[],
-
         pinnedPostIds: const <String>[],
-
-        photoUrl: photoUrl,
+        photoUrl: '',
+        gender: gender,
       );
 
       final DocumentReference<Map<String, dynamic>> publicUser = _firestore
           .collection('users')
-          .doc(cred.user!.uid);
-      final DocumentReference<Map<String, dynamic>> privateUser = _firestore
-          .collection('userPrivate')
-          .doc(cred.user!.uid);
+          .doc(uid);
 
-      await publicUser.set(<String, dynamic>{
-        ...user.toJson(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-      await privateUser.set(<String, dynamic>{
-        'uid': cred.user!.uid,
+      // Profile and username lock are saved together, so the
+      // username is claimed atomically.
+      await _createProfile(publicUser, user);
+
+      //===================================================
+      // PROFILE PICTURE
+      //
+      // The chosen photo, or the faculty-coloured avatar
+      // when none was chosen. A failed upload never undoes
+      // the account; the picture can be added later.
+      //===================================================
+
+      try {
+        final Uint8List picture =
+            file ??
+            await NubifyAvatarPainter.renderPng(
+              female: gender == NubifyGender.female,
+              color: NubifyAvatarColors.forFaculty(cleanFaculty),
+            );
+
+        final String photoUrl = await StorageMethods().uploadImageToStorage(
+          'profilePics',
+          picture,
+          false,
+        );
+
+        await publicUser.update(<String, dynamic>{
+          'photoUrl': photoUrl,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      } catch (error) {
+        debugPrint('Profile picture not saved: $error');
+      }
+
+      await _firestore.collection('userPrivate').doc(uid).set(<String, dynamic>{
+        'uid': uid,
         'phoneE164': phoneE164,
-        'allowMarketplaceCalls': true,
+        'allowMarketplaceCalls': phoneE164.isNotEmpty,
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
       res = 'success';
+    } on UsernameTakenException {
+      // Someone claimed the name a moment earlier: remove
+      // the new login so the person can pick another name.
+      await _deleteUnfinishedAccount(cred);
+      res = UsernameRules.taken;
     } on FirebaseAuthException catch (e) {
       if (e.code == 'email-already-in-use') {
         res = 'Email already in use';
@@ -254,6 +351,15 @@ class AuthMethods {
     }
 
     return res;
+  }
+
+  Future<void> _deleteUnfinishedAccount(UserCredential? cred) async {
+    try {
+      await cred?.user?.delete();
+    } catch (error) {
+      debugPrint('Could not remove the unfinished account: $error');
+      await _auth.signOut();
+    }
   }
 
   //===================================================
@@ -273,11 +379,14 @@ class AuthMethods {
 
       await _auth.signInWithEmailAndPassword(
         email: email.trim(),
-
         password: password,
       );
 
       await ensureCurrentUserProfile();
+
+      // People who joined before usernames were locked get a
+      // lock for their current username now. Never blocks login.
+      await _usernames.claimMyCurrentUsername();
 
       res = 'success';
     } on FirebaseAuthException catch (e) {

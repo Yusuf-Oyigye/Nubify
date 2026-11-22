@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../utils/profile/username_rules.dart';
 
 class CommentWidget extends StatelessWidget {
   final String username;
@@ -73,7 +74,7 @@ class CommentWidget extends StatelessWidget {
                       child: Text(
                         fullName.isNotEmpty
                             ? fullName
-                            : username,
+                            : UsernameRules.at(username),
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
@@ -295,7 +296,7 @@ class ReplyWidget extends StatelessWidget {
                         child: Text(
                           fullName.isNotEmpty
                               ? fullName
-                              : username,
+                              : UsernameRules.at(username),
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 13,

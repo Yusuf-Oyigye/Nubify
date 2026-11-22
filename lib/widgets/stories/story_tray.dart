@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import '../../utils/profile/username_rules.dart';
 
 import '../../models/stories/story.dart';
 import '../../screens/stories/create_story_screen.dart';
@@ -717,7 +718,7 @@ class _StoryTrayState extends State<StoryTray> {
               group.owner.username
                   .trim()
                   .isNotEmpty
-                  ? group.owner.username
+                  ? UsernameRules.at(group.owner.username)
                   : group.owner.displayName,
               maxLines:
               1,

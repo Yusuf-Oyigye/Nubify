@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import '../../../utils/profile/username_rules.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../services/chat/chat_media_service.dart';
@@ -109,9 +110,7 @@ class _CreateGroupScreenState
 
         setState(() {
           _search =
-              _searchController.text
-                  .trim()
-                  .toLowerCase();
+              UsernameRules.searchKey(_searchController.text);
         });
       },
     );

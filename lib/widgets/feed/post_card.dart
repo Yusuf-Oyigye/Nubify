@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import '../../utils/profile/username_rules.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -2823,7 +2824,7 @@ class _PostCardState extends State<PostCard> {
                 Text(
                   widget.post.fullName.isNotEmpty
                       ? widget.post.fullName
-                      : widget.post.username,
+                      : UsernameRules.at(widget.post.username),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(

@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import '../../../utils/profile/username_rules.dart';
 
 import '../../../models/chat/chat_group.dart';
 import '../../../services/chat/group_chat_service.dart';
@@ -78,9 +79,7 @@ class _AddGroupMembersScreenState
 
         setState(() {
           _search =
-              _searchController.text
-                  .trim()
-                  .toLowerCase();
+              UsernameRules.searchKey(_searchController.text);
         });
       },
     );
@@ -484,7 +483,7 @@ class _AddGroupMembersScreenState
                           Text(
                             fullName.trim().isNotEmpty
                                 ? fullName
-                                : username,
+                                : UsernameRules.at(username),
                             style:
                             const TextStyle(
                               color:

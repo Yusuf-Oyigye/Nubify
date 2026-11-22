@@ -4,6 +4,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import '../../utils/profile/username_rules.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:video_player/video_player.dart';
@@ -5465,7 +5466,7 @@ class _StoryRepliesTab extends StatelessWidget {
                       fullName.isNotEmpty
                           ? fullName
                           : username.isNotEmpty
-                          ? username
+                          ? UsernameRules.at(username)
                           : 'Nubify User',
                       style: const TextStyle(
                         color: Colors.white,

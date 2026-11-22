@@ -10,7 +10,9 @@ import '../../services/profile/private_profile_service.dart';
 import '../../utils/common/egyptian_phone.dart';
 import '../../utils/faculties/faculty_catalog.dart';
 import '../../utils/common/utils.dart';
+import '../../utils/profile/username_rules.dart';
 import '../../widgets/faculties/faculty_selector.dart';
+import '../../widgets/profile/username_field.dart';
 
 //===================================================
 // EDIT PROFILE SCREEN
@@ -51,6 +53,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final TextEditingController _fullNameController = TextEditingController();
 
   final TextEditingController _usernameController = TextEditingController();
+
+  // The username when the screen opened. Unchanged old names
+  // are kept even if they break today's rules.
+  String _originalUsername = '';
 
   final TextEditingController _facultyController = TextEditingController();
 
@@ -123,6 +129,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       _fullNameController.text = (data['fullName'] ?? '').toString();
 
       _usernameController.text = (data['username'] ?? '').toString();
+
+      _originalUsername = _usernameController.text;
 
       _facultyController.text = (data['faculty'] ?? '').toString().trim();
       _selectedFacultyId = NubifyFacultyCatalog.selectionIdFor(
@@ -283,6 +291,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     if (username.isEmpty) {
       _showMessage('Please enter your username.');
+
+      return;
+    }
+
+    final bool usernameChanged =
+        UsernameRules.normalize(username) !=
+        UsernameRules.normalize(_originalUsername);
+
+    final String? usernameError = UsernameRules.validate(username);
+
+    if (usernameChanged && usernameError != null) {
+      _showMessage(usernameError);
 
       return;
     }
@@ -901,12 +921,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   //===================================================
                   // USERNAME
                   //===================================================
-                  _field(
+                  UsernameField(
                     controller: _usernameController,
-
-                    label: 'Username',
-
-                    icon: Icons.alternate_email_rounded,
+                    currentUid: FirebaseAuth.instance.currentUser?.uid,
                   ),
 
                   const SizedBox(height: 14),

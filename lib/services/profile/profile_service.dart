@@ -1,11 +1,12 @@
-import 'dart:typed_data';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 
 import '../../models/feed/post.dart';
+import '../../utils/profile/username_rules.dart';
 import '../common/storage_methods.dart';
 import '../notifications/notification_service.dart';
+import 'username_service.dart';
 
 //===================================================
 // PROFILE SERVICE
@@ -19,6 +20,8 @@ class ProfileService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  final UsernameService _usernames = UsernameService();
 
   //===================================================
   // NOTIFICATION SERVICE
@@ -434,61 +437,21 @@ class ProfileService {
   // USERNAME AVAILABLE
   //===================================================
 
+  // Lock checks and old-profile scan live in UsernameService.
   Future<bool> isUsernameAvailable({
     required String username,
     required String currentUid,
   }) async {
-    final String normalized = username.trim().toLowerCase();
-
-    if (normalized.isEmpty) {
+    if (UsernameRules.normalize(username).isEmpty) {
       return false;
     }
 
-    //===================================================
-    // CHECK USERS WITH usernameLower
-    //===================================================
-
-    final QuerySnapshot<Map<String, dynamic>> direct = await _firestore
-        .collection('users')
-        .where('usernameLower', isEqualTo: normalized)
-        .limit(2)
-        .get();
-
-    if (direct.docs.any(
-      (QueryDocumentSnapshot<Map<String, dynamic>> doc) => doc.id != currentUid,
-    )) {
-      return false;
-    }
-
-    if (direct.docs.isNotEmpty) {
+    try {
+      await _usernames.ensureAvailable(username, uid: currentUid);
       return true;
+    } on UsernameTakenException {
+      return false;
     }
-
-    //===================================================
-    // OLD USERS WITHOUT usernameLower
-    //===================================================
-
-    final QuerySnapshot<Map<String, dynamic>> fallback = await _firestore
-        .collection('users')
-        .get();
-
-    for (final QueryDocumentSnapshot<Map<String, dynamic>> doc
-        in fallback.docs) {
-      if (doc.id == currentUid) {
-        continue;
-      }
-
-      final String existing = (doc.data()['username'] ?? '')
-          .toString()
-          .trim()
-          .toLowerCase();
-
-      if (existing == normalized) {
-        return false;
-      }
-    }
-
-    return true;
   }
 
   //===================================================
@@ -516,7 +479,7 @@ class ProfileService {
 
     final String cleanFullName = fullName.trim();
 
-    final String cleanUsername = username.trim();
+    final String cleanUsername = UsernameRules.clean(username);
 
     final String cleanFaculty = faculty.trim();
 
@@ -536,17 +499,39 @@ class ProfileService {
 
     //===================================================
     // CHECK USERNAME
+    //
+    // Only a changed username is checked; an unchanged one
+    // is kept as it is.
     //===================================================
 
-    final bool available = await isUsernameAvailable(
-      username: cleanUsername,
+    final DocumentReference<Map<String, dynamic>> userRef = _firestore
+        .collection('users')
+        .doc(authUser.uid);
 
-      currentUid: authUser.uid,
-    );
+    final Map<String, dynamic> current =
+        (await userRef.get()).data() ?? <String, dynamic>{};
 
-    if (!available) {
-      throw Exception('That username is already taken.');
+    final String currentUsername = (current['username'] ?? '').toString();
+
+    final String previousLower = (current['usernameLower'] ?? currentUsername)
+        .toString()
+        .trim()
+        .toLowerCase();
+
+    final bool usernameChanged = cleanUsername != currentUsername.trim();
+
+    if (usernameChanged) {
+      final String? usernameError = UsernameRules.validate(cleanUsername);
+
+      if (usernameError != null) {
+        throw Exception(usernameError);
+      }
+
+      if (UsernameRules.normalize(cleanUsername) != previousLower) {
+        await _usernames.ensureAvailable(cleanUsername, uid: authUser.uid);
+      }
     }
+
     //===================================================
     // CHANGE OR REMOVE PROFILE PICTURE
     //===================================================
@@ -569,10 +554,6 @@ class ProfileService {
     final Map<String, dynamic> update = <String, dynamic>{
       'fullName': cleanFullName,
 
-      'username': cleanUsername,
-
-      'usernameLower': cleanUsername.toLowerCase(),
-
       'faculty': cleanFaculty,
 
       'hobbies': cleanHobbies,
@@ -582,15 +563,46 @@ class ProfileService {
       'updatedAt': FieldValue.serverTimestamp(),
     };
 
+    if (usernameChanged) {
+      update['username'] = cleanUsername;
+
+      update['usernameLower'] = UsernameRules.normalize(cleanUsername);
+    }
+
     if (photoUrl != null) {
       update['photoUrl'] = photoUrl;
     }
 
     //===================================================
     // UPDATE USER DOCUMENT
+    //
+    // A new username is claimed and the old one released in
+    // the same transaction as the profile update, so two
+    // people can never end up with the same name.
     //===================================================
 
-    await _firestore.collection('users').doc(authUser.uid).update(update);
+    if (!usernameChanged) {
+      await userRef.update(update);
+    } else {
+      try {
+        await _firestore.runTransaction<void>((Transaction transaction) async {
+          await _usernames.claimInTransaction(
+            transaction,
+            uid: authUser.uid,
+            username: cleanUsername,
+            previousLower: previousLower,
+          );
+
+          transaction.update(userRef, update);
+        });
+      } on FirebaseException catch (error) {
+        if (error.code != 'permission-denied') rethrow;
+
+        // Username rules not deployed yet: save without the lock.
+        debugPrint('Username lock unavailable, saving profile only: $error');
+        await userRef.update(update);
+      }
+    }
 
     //===================================================
     // UPDATE NAME / USERNAME / PHOTO

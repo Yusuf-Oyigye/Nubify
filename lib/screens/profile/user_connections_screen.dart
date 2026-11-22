@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import '../../utils/profile/username_rules.dart';
 
 import '../../services/profile/profile_service.dart';
 import 'profile_screen.dart';
@@ -72,7 +73,7 @@ class _ConnectionListState extends State<_ConnectionList> {
   }
 
   void _onSearchChanged() {
-    final String next = _searchController.text.trim().toLowerCase();
+    final String next = UsernameRules.searchKey(_searchController.text);
     if (next == _query || !mounted) {
       return;
     }
@@ -236,7 +237,7 @@ class _UserDirectoryScreenState extends State<UserDirectoryScreen> {
   }
 
   void _onSearchChanged() {
-    final String next = _searchController.text.trim().toLowerCase();
+    final String next = UsernameRules.searchKey(_searchController.text);
     if (next == _query || !mounted) {
       return;
     }

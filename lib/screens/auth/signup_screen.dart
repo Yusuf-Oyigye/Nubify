@@ -5,20 +5,28 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../services/auth/auth_method.dart';
+import '../../services/profile/username_service.dart';
 import '../../utils/common/egyptian_phone.dart';
+import '../../utils/common/email_check.dart';
 import '../../utils/faculties/faculty_catalog.dart';
 import '../../utils/common/utils.dart';
+import '../../utils/profile/username_rules.dart';
 import '../../widgets/auth/nubify_auth_style.dart';
 import '../../widgets/faculties/faculty_selector.dart';
+import '../../widgets/profile/nubify_avatar.dart';
+import '../../widgets/profile/username_field.dart';
 
 import 'login_screen.dart';
 
 //===================================================
 // SIGNUP SCREEN
 //
-// Nine short steps on the same blue & black look as the
-// login screen. Each step slides in on its own glass
-// card, with a segmented progress bar on top.
+// Five short steps on the blue & black look:
+// 1. Contact: email + optional Egyptian mobile
+// 2. About you: full name, username, male or female
+// 3. Campus life: faculty, hobbies, favourite quote
+// 4. Password
+// 5. Profile picture (photo, or a faculty avatar)
 //===================================================
 
 class SignupScreen extends StatefulWidget {
@@ -33,12 +41,21 @@ class SignupScreen extends StatefulWidget {
 //===================================================
 
 class _SignupScreenState extends State<SignupScreen> {
-  static const int _stepCount = 9;
+  static const int _stepCount = 5;
+
+  static const int _contactStep = 0;
+  static const int _aboutStep = 1;
+  static const int _campusStep = 2;
+  static const int _passwordStep = 3;
+  static const int _pictureStep = 4;
 
   int _currentStep = 0;
 
   // True when moving back, so the card slides the other way.
   bool _goingBack = false;
+
+  // True while an async check (email domain, username) runs.
+  bool _checking = false;
 
   final TextEditingController _emailController = TextEditingController();
 
@@ -58,64 +75,54 @@ class _SignupScreenState extends State<SignupScreen> {
 
   final TextEditingController _quoteController = TextEditingController();
 
+  // "male" or "female".
+  String? _gender;
+
+  String? _emailError;
+
+  UsernameCheck _usernameStatus = UsernameCheck.empty;
+
   Uint8List? _image;
 
   bool _isLoading = false;
 
   //===================================================
-  // STEP TITLES
+  // STEP TEXT
   //===================================================
 
   final List<String> _stepTitles = const <String>[
-    'Your email',
-    'Your full name',
-    'Choose a username',
-    'Create a password',
-    'Your faculty',
-    'Your mobile number',
-    'Your hobbies',
-    'Favourite quote',
-    'Profile picture',
+    'How can we reach you?',
+    'Tell us about you',
+    'Your campus life',
+    'Secure your account',
+    'Your profile picture',
   ];
-
-  //===================================================
-  // STEP SUBTITLES
-  //===================================================
 
   final List<String> _stepSubtitles = const <String>[
-    'You will use it to log in.',
-    'This is how classmates will see you.',
-    'Your unique @name on Nubify.',
+    'Use an email you can open. Your number is optional.',
+    'Your name, your unique @username and who you are.',
+    'Pick your faculty and share a little about you.',
     'Use at least 6 characters.',
-    'Pick your faculty at NUB.',
-    'Only used to keep your account safe.',
-    'Optional: tell people what you love.',
-    'Optional: something that inspires you.',
-    'Optional: let people recognise you.',
+    'Add a photo, or keep your Nubify avatar.',
   ];
-
-  //===================================================
-  // STEP ICONS
-  //===================================================
 
   final List<IconData> _stepIcons = const <IconData>[
-    Icons.email_outlined,
+    Icons.mail_outline_rounded,
     Icons.badge_outlined,
-    Icons.alternate_email_rounded,
-    Icons.lock_outline_rounded,
     Icons.school_outlined,
-    Icons.phone_android_rounded,
-    Icons.interests_outlined,
-    Icons.format_quote_rounded,
+    Icons.lock_outline_rounded,
     Icons.add_a_photo_outlined,
   ];
+
+  String get _facultyForAvatar =>
+      _selectedFacultyId ?? _facultyController.text.trim();
 
   //===================================================
   // PICK IMAGE
   //===================================================
 
-  Future<void> _selectImage() async {
-    final Uint8List? image = await pickImage(ImageSource.gallery);
+  Future<void> _selectImage(ImageSource source) async {
+    final Uint8List? image = await pickImage(source);
 
     if (image == null || !mounted) {
       return;
@@ -130,68 +137,115 @@ class _SignupScreenState extends State<SignupScreen> {
   // NEXT
   //===================================================
 
-  void _nextStep() {
-    if (_currentStep == 0 && _emailController.text.trim().isEmpty) {
-      showSnackBar('Please enter your email', context);
+  Future<void> _nextStep() async {
+    if (_checking) return;
 
-      return;
+    switch (_currentStep) {
+      case _contactStep:
+        if (!await _contactIsValid()) return;
+      case _aboutStep:
+        if (!await _aboutIsValid()) return;
+      case _campusStep:
+        if (_selectedFacultyId == null) {
+          showSnackBar('Please choose your faculty', context);
+          return;
+        }
+        if (_facultyController.text.trim().isEmpty) {
+          showSnackBar('Please type your faculty', context);
+          return;
+        }
+      case _passwordStep:
+        final String password = _passwordController.text;
+        if (password.isEmpty) {
+          showSnackBar('Please enter your password', context);
+          return;
+        }
+        if (password.length < 6) {
+          showSnackBar('Password must be at least 6 characters', context);
+          return;
+        }
     }
 
-    if (_currentStep == 1 && _fullNameController.text.trim().isEmpty) {
-      showSnackBar('Please enter your full name', context);
-
-      return;
-    }
-
-    if (_currentStep == 2 && _usernameController.text.trim().isEmpty) {
-      showSnackBar('Please enter your username', context);
-
-      return;
-    }
-
-    if (_currentStep == 3) {
-      final String password = _passwordController.text;
-
-      if (password.isEmpty) {
-        showSnackBar('Please enter your password', context);
-
-        return;
-      }
-
-      if (password.length < 6) {
-        showSnackBar('Password must be at least 6 characters', context);
-
-        return;
-      }
-    }
-
-    if (_currentStep == 4) {
-      if (_selectedFacultyId == null) {
-        showSnackBar('Please choose your faculty', context);
-        return;
-      }
-
-      if (_facultyController.text.trim().isEmpty) {
-        showSnackBar('Please type your faculty', context);
-        return;
-      }
-    }
-
-    if (_currentStep == 5 && !EgyptianPhone.isValid(_phoneController.text)) {
-      showSnackBar(
-        'Enter a valid Egyptian number beginning 010, 011, 012, or 015',
-        context,
-      );
-
-      return;
-    }
+    if (!mounted) return;
 
     if (_currentStep < _stepCount - 1) {
+      FocusScope.of(context).unfocus();
       setState(() {
         _goingBack = false;
         _currentStep++;
       });
     }
+  }
+
+  Future<bool> _contactIsValid() async {
+    final String email = _emailController.text.trim();
+    final String? formatError = EmailCheck.validateFormat(email);
+
+    if (formatError != null) {
+      setState(() => _emailError = formatError);
+      return false;
+    }
+
+    final String phone = _phoneController.text.trim();
+    if (phone.isNotEmpty && !EgyptianPhone.isValid(phone)) {
+      showSnackBar(
+        'Enter a valid Egyptian number beginning 010, 011, 012, or 015, or leave it empty',
+        context,
+      );
+      return false;
+    }
+
+    setState(() {
+      _emailError = null;
+      _checking = true;
+    });
+
+    final String? domainError = await EmailCheck.validateDomain(email);
+
+    if (!mounted) return false;
+
+    setState(() {
+      _checking = false;
+      _emailError = domainError;
+    });
+
+    return domainError == null;
+  }
+
+  Future<bool> _aboutIsValid() async {
+    if (_fullNameController.text.trim().isEmpty) {
+      showSnackBar('Please enter your full name', context);
+      return false;
+    }
+
+    final String username = _usernameController.text;
+    final String? usernameError = UsernameRules.validate(username);
+
+    if (usernameError != null) {
+      showSnackBar(usernameError, context);
+      return false;
+    }
+
+    if (_gender == null) {
+      showSnackBar('Please choose male or female', context);
+      return false;
+    }
+
+    // Make sure the result is for the latest text.
+    setState(() => _checking = true);
+    final UsernameCheck result = await UsernameService().check(username);
+    if (!mounted) return false;
+    setState(() {
+      _checking = false;
+      _usernameStatus = result;
+    });
+
+    if (result.isTaken) {
+      showSnackBar(UsernameRules.taken, context);
+      return false;
+    }
+
+    return true;
   }
 
   void _selectFaculty(NubifyFaculty faculty) {
@@ -224,6 +278,13 @@ class _SignupScreenState extends State<SignupScreen> {
     });
   }
 
+  void _goToStep(int step) {
+    setState(() {
+      _goingBack = step < _currentStep;
+      _currentStep = step;
+    });
+  }
+
   //===================================================
   // SIGN UP
   //===================================================
@@ -242,7 +303,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
       password: _passwordController.text,
 
-      username: _usernameController.text.trim(),
+      username: _usernameController.text,
 
       fullName: _fullNameController.text.trim(),
 
@@ -253,6 +314,8 @@ class _SignupScreenState extends State<SignupScreen> {
       hobbies: _hobbiesController.text.trim(),
 
       favoriteQuote: _quoteController.text.trim(),
+
+      gender: _gender ?? '',
 
       file: _image,
     );
@@ -281,8 +344,17 @@ class _SignupScreenState extends State<SignupScreen> {
         context,
         MaterialPageRoute<void>(builder: (_) => const LoginScreen()),
       );
-    } else {
-      showSnackBar(res, context);
+      return;
+    }
+
+    showSnackBar(res, context);
+
+    // Send people back to the step that needs fixing.
+    final String lower = res.toLowerCase();
+    if (lower.contains('username')) {
+      _goToStep(_aboutStep);
+    } else if (lower.contains('email') || lower.contains('egyptian')) {
+      _goToStep(_contactStep);
     }
   }
 
@@ -306,7 +378,7 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   //===================================================
-  // INPUT FIELD
+  // SMALL PIECES
   //===================================================
 
   Widget _field({
@@ -318,6 +390,7 @@ class _SignupScreenState extends State<SignupScreen> {
     bool multiline = false,
     Iterable<String>? autofillHints,
     TextCapitalization textCapitalization = TextCapitalization.none,
+    TextInputAction? action,
   }) {
     return NubifyAuthField(
       controller: controller,
@@ -329,19 +402,225 @@ class _SignupScreenState extends State<SignupScreen> {
       textCapitalization: textCapitalization,
       textInputAction: multiline
           ? TextInputAction.newline
-          : TextInputAction.next,
-      onSubmitted: multiline ? null : (_) => _nextStep(),
+          : action ?? TextInputAction.next,
     );
   }
 
-  Widget _helper(String text) {
+  Widget _helper(String text, {Color color = NubifyAuthColors.muted}) {
     return Padding(
-      padding: const EdgeInsets.only(top: 10),
+      padding: const EdgeInsets.fromLTRB(6, 8, 6, 0),
       child: Text(
         text,
-        textAlign: TextAlign.center,
-        style: const TextStyle(color: NubifyAuthColors.muted, fontSize: 12),
+        style: TextStyle(
+          color: color,
+          fontSize: 12.5,
+          fontWeight: FontWeight.w600,
+        ),
       ),
+    );
+  }
+
+  Widget _label(String text) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 0, 4, 10),
+      child: Text(
+        text,
+        style: const TextStyle(
+          color: NubifyAuthColors.text,
+          fontSize: 14,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+
+  //===================================================
+  // GENDER CHOICE
+  //===================================================
+
+  Widget _genderOption(String value, String label) {
+    final bool selected = _gender == value;
+
+    return Expanded(
+      child: Semantics(
+        button: true,
+        selected: selected,
+        label: label,
+        child: GestureDetector(
+          onTap: () => setState(() => _gender = value),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOutCubic,
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              gradient: selected ? NubifyAuthColors.button : null,
+              color: selected ? null : NubifyAuthColors.glass,
+              border: Border.all(
+                color: selected
+                    ? Colors.white.withValues(alpha: 0.2)
+                    : NubifyAuthColors.glassEdge,
+              ),
+              boxShadow: selected
+                  ? <BoxShadow>[
+                      BoxShadow(
+                        color: NubifyAuthColors.royal.withValues(alpha: 0.45),
+                        blurRadius: 16,
+                        offset: const Offset(0, 6),
+                      ),
+                    ]
+                  : null,
+            ),
+            child: Column(
+              children: <Widget>[
+                ClipOval(
+                  child: NubifyAvatar(
+                    gender: value,
+                    faculty: _facultyForAvatar,
+                    size: 52,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: selected ? Colors.white : NubifyAuthColors.text,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  //===================================================
+  // PROFILE PICTURE STEP
+  //===================================================
+
+  Widget _pictureContent() {
+    final bool hasPhoto = _image != null;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Center(
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: <Widget>[
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: NubifyAuthColors.button,
+                  boxShadow: <BoxShadow>[
+                    BoxShadow(
+                      color: NubifyAuthColors.royal.withValues(alpha: 0.5),
+                      blurRadius: 28,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: ClipOval(
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 280),
+                    child: hasPhoto
+                        ? Image.memory(
+                            _image!,
+                            key: const ValueKey<String>('photo'),
+                            width: 136,
+                            height: 136,
+                            fit: BoxFit.cover,
+                          )
+                        : NubifyAvatar(
+                            key: const ValueKey<String>('avatar'),
+                            gender: _gender ?? NubifyGender.male,
+                            faculty: _facultyForAvatar,
+                            size: 136,
+                          ),
+                  ),
+                ),
+              ),
+              Positioned(
+                right: 2,
+                bottom: 2,
+                child: Semantics(
+                  button: true,
+                  label: 'Choose a photo from your gallery',
+                  child: GestureDetector(
+                    onTap: () => _selectImage(ImageSource.gallery),
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white,
+                        border: Border.all(
+                          color: NubifyAuthColors.black,
+                          width: 3,
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.edit_rounded,
+                        color: NubifyAuthColors.royal,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 14),
+
+        Text(
+          hasPhoto ? 'Looking good!' : 'Your Nubify avatar',
+          style: const TextStyle(
+            color: NubifyAuthColors.text,
+            fontWeight: FontWeight.w800,
+            fontSize: 15,
+          ),
+        ),
+
+        _helper(
+          hasPhoto
+              ? 'This photo will be your profile picture.'
+              : 'Coloured for your faculty. Add a photo, or keep this one.',
+        ),
+
+        const SizedBox(height: 18),
+
+        Row(
+          children: <Widget>[
+            Expanded(
+              child: NubifyAuthGhostButton(
+                onPressed: () => _selectImage(ImageSource.gallery),
+                icon: Icons.photo_library_outlined,
+                label: 'Gallery',
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: NubifyAuthGhostButton(
+                onPressed: () => _selectImage(ImageSource.camera),
+                icon: Icons.photo_camera_outlined,
+                label: 'Camera',
+              ),
+            ),
+          ],
+        ),
+
+        if (hasPhoto)
+          TextButton.icon(
+            onPressed: () => setState(() => _image = null),
+            icon: const Icon(Icons.face_rounded, size: 18),
+            label: const Text('Use my avatar instead'),
+          ),
+      ],
     );
   }
 
@@ -351,133 +630,127 @@ class _SignupScreenState extends State<SignupScreen> {
 
   Widget _getStepContent() {
     switch (_currentStep) {
-      case 0:
-        return _field(
-          controller: _emailController,
-          hintText: 'Email',
-          icon: Icons.email_outlined,
-          keyboardType: TextInputType.emailAddress,
-          autofillHints: const <String>[AutofillHints.email],
+      case _contactStep:
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            NubifyAuthField(
+              controller: _emailController,
+              label: 'Email',
+              hint: 'you@example.com',
+              icon: Icons.email_outlined,
+              keyboardType: TextInputType.emailAddress,
+              autofillHints: const <String>[AutofillHints.email],
+              textInputAction: TextInputAction.next,
+            ),
+            if (_emailError != null)
+              _helper(_emailError!, color: const Color(0xFFFF5C6C)),
+
+            const SizedBox(height: 14),
+
+            _field(
+              controller: _phoneController,
+              hintText: 'Mobile number',
+              icon: Icons.phone_android_rounded,
+              keyboardType: TextInputType.phone,
+              optional: true,
+              autofillHints: const <String>[AutofillHints.telephoneNumber],
+              action: TextInputAction.done,
+            ),
+            _helper(
+              '010, 011, 012, 015 or +20. Private — only used to keep your account safe.',
+            ),
+          ],
         );
 
-      case 1:
-        return _field(
-          controller: _fullNameController,
-          hintText: 'Full name',
-          icon: Icons.badge_outlined,
-          autofillHints: const <String>[AutofillHints.name],
-          textCapitalization: TextCapitalization.words,
+      case _aboutStep:
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            _field(
+              controller: _fullNameController,
+              hintText: 'Full name',
+              icon: Icons.badge_outlined,
+              autofillHints: const <String>[AutofillHints.name],
+              textCapitalization: TextCapitalization.words,
+            ),
+            _helper('Emojis are welcome in your name ✨'),
+
+            const SizedBox(height: 14),
+
+            UsernameField(
+              controller: _usernameController,
+              textInputAction: TextInputAction.done,
+              onChanged: (UsernameCheck status) {
+                if (status.isTaken != _usernameStatus.isTaken) {
+                  setState(() => _usernameStatus = status);
+                } else {
+                  _usernameStatus = status;
+                }
+              },
+            ),
+
+            const SizedBox(height: 18),
+
+            _label('I am'),
+            Row(
+              children: <Widget>[
+                _genderOption(NubifyGender.male, 'Male'),
+                const SizedBox(width: 12),
+                _genderOption(NubifyGender.female, 'Female'),
+              ],
+            ),
+          ],
         );
 
-      case 2:
-        return _field(
-          controller: _usernameController,
-          hintText: 'Username',
-          icon: Icons.alternate_email_rounded,
-          autofillHints: const <String>[AutofillHints.newUsername],
+      case _campusStep:
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            FacultySelectionField(
+              selectedId: _selectedFacultyId,
+              otherController: _facultyController,
+              onSelected: _selectFaculty,
+            ),
+
+            const SizedBox(height: 14),
+
+            _field(
+              controller: _hobbiesController,
+              hintText: 'Hobbies',
+              icon: Icons.interests_outlined,
+              optional: true,
+              multiline: true,
+            ),
+
+            const SizedBox(height: 14),
+
+            _field(
+              controller: _quoteController,
+              hintText: 'Favourite quote',
+              icon: Icons.format_quote_rounded,
+              optional: true,
+              multiline: true,
+            ),
+          ],
         );
 
-      case 3:
+      case _passwordStep:
         return NubifyAuthField(
           controller: _passwordController,
           label: 'Password',
           icon: Icons.lock_outline_rounded,
           isPassword: true,
           autofillHints: const <String>[AutofillHints.newPassword],
-          textInputAction: TextInputAction.next,
+          textInputAction: TextInputAction.done,
           onSubmitted: (_) => _nextStep(),
         );
 
-      case 4:
-        return FacultySelectionField(
-          selectedId: _selectedFacultyId,
-          otherController: _facultyController,
-          onSelected: _selectFaculty,
-        );
-
-      case 5:
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            _field(
-              controller: _phoneController,
-              hintText: 'Egyptian mobile number',
-              icon: Icons.phone_android_rounded,
-              keyboardType: TextInputType.phone,
-              autofillHints: const <String>[AutofillHints.telephoneNumber],
-            ),
-            _helper(
-              'Use 010, 011, 012, 015 or the equivalent +20 format. Your number stays private.',
-            ),
-          ],
-        );
-
-      case 6:
-        return _field(
-          controller: _hobbiesController,
-          hintText: 'Hobbies',
-          icon: Icons.interests_outlined,
-          optional: true,
-          multiline: true,
-        );
-
-      case 7:
-        return _field(
-          controller: _quoteController,
-          hintText: 'Favourite quote',
-          icon: Icons.format_quote_rounded,
-          optional: true,
-          multiline: true,
-        );
-
-      case 8:
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Semantics(
-              button: true,
-              label: _image == null
-                  ? 'Choose profile picture'
-                  : 'Change profile picture',
-              child: GestureDetector(
-                onTap: _selectImage,
-                child: Container(
-                  padding: const EdgeInsets.all(3),
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: NubifyAuthColors.button,
-                  ),
-                  child: CircleAvatar(
-                    radius: 60,
-                    backgroundColor: NubifyAuthColors.navy,
-                    backgroundImage: _image == null
-                        ? null
-                        : MemoryImage(_image!),
-                    child: _image == null
-                        ? const Icon(
-                            Icons.person_rounded,
-                            size: 60,
-                            color: NubifyAuthColors.muted,
-                          )
-                        : null,
-                  ),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            NubifyAuthGhostButton(
-              onPressed: _selectImage,
-              icon: Icons.add_a_photo_outlined,
-              label: _image == null
-                  ? 'Choose profile picture'
-                  : 'Change picture',
-            ),
-
-            _helper('Optional — you can change it later from Edit Profile.'),
-          ],
-        );
+      case _pictureStep:
+        return _pictureContent();
 
       default:
         return const SizedBox.shrink();
@@ -494,7 +767,7 @@ class _SignupScreenState extends State<SignupScreen> {
       child: Row(
         children: <Widget>[
           for (int i = 0; i < _stepCount; i++) ...<Widget>[
-            if (i > 0) const SizedBox(width: 5),
+            if (i > 0) const SizedBox(width: 6),
             Expanded(
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 350),
@@ -521,7 +794,8 @@ class _SignupScreenState extends State<SignupScreen> {
     final NubifyFaculty? selectedFaculty = NubifyFacultyCatalog.byId(
       _selectedFacultyId,
     );
-    final bool facultyIcon = _currentStep == 4 && selectedFaculty != null;
+    final bool facultyIcon =
+        _currentStep == _campusStep && selectedFaculty != null;
     final IconData currentIcon = facultyIcon
         ? selectedFaculty.icon
         : _stepIcons[_currentStep];
@@ -536,8 +810,8 @@ class _SignupScreenState extends State<SignupScreen> {
           Center(
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 300),
-              width: 64,
-              height: 64,
+              width: 60,
+              height: 60,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: facultyIcon ? null : NubifyAuthColors.button,
@@ -554,7 +828,7 @@ class _SignupScreenState extends State<SignupScreen> {
                   ),
                 ],
               ),
-              child: Icon(currentIcon, color: Colors.white, size: 30),
+              child: Icon(currentIcon, color: Colors.white, size: 28),
             ),
           ),
 
@@ -723,8 +997,14 @@ class _SignupScreenState extends State<SignupScreen> {
                               icon: lastStep
                                   ? Icons.person_add_alt_1_rounded
                                   : Icons.arrow_forward_rounded,
-                              loading: _isLoading,
-                              onPressed: lastStep ? _signUpUser : _nextStep,
+                              loading: _isLoading || _checking,
+                              onPressed:
+                                  _currentStep == _aboutStep &&
+                                      _usernameStatus.isTaken
+                                  ? null
+                                  : lastStep
+                                  ? _signUpUser
+                                  : _nextStep,
                             ),
                           ),
                         ],

@@ -14,6 +14,9 @@ class User {
   final String hobbies;
   final String favoriteQuote;
 
+  // "male" or "female" (empty for people who joined before).
+  final String gender;
+
   final List<String> followers;
   final List<String> following;
 
@@ -32,6 +35,7 @@ class User {
     required this.following,
     this.pinnedPostIds =
     const <String>[],
+    this.gender = '',
   });
 
   //===================================================
@@ -77,6 +81,9 @@ class User {
 
       'pinnedPostIds':
       pinnedPostIds,
+
+      'gender':
+      gender,
     };
   }
 
@@ -153,6 +160,11 @@ class User {
         'pinnedPostIds'] ??
             <String>[],
       ),
+
+      gender:
+      (snapshot['gender'] ??
+          '')
+          .toString(),
     );
   }
 }

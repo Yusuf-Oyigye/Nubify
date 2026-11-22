@@ -5,6 +5,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
+import '../../utils/profile/username_rules.dart';
 import 'package:flutter/services.dart';
 
 import '../../services/nubi/nubi_service.dart';
@@ -1137,7 +1138,7 @@ class _FriendPickerSheetState extends State<_FriendPickerSheet> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: TextField(
                 onChanged: (value) =>
-                    setState(() => _search = value.trim().toLowerCase()),
+                    setState(() => _search = UsernameRules.searchKey(value)),
                 decoration: InputDecoration(
                   hintText: 'Search followers and following',
                   prefixIcon: const Icon(Icons.search_rounded),
