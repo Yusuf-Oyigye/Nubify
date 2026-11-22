@@ -2,20 +2,23 @@ import 'dart:typed_data';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../services/auth/auth_method.dart';
-import '../../utils/common/color.dart';
 import '../../utils/common/egyptian_phone.dart';
 import '../../utils/faculties/faculty_catalog.dart';
 import '../../utils/common/utils.dart';
+import '../../widgets/auth/nubify_auth_style.dart';
 import '../../widgets/faculties/faculty_selector.dart';
 
 import 'login_screen.dart';
 
 //===================================================
 // SIGNUP SCREEN
+//
+// Nine short steps on the same blue & black look as the
+// login screen. Each step slides in on its own glass
+// card, with a segmented progress bar on top.
 //===================================================
 
 class SignupScreen extends StatefulWidget {
@@ -30,7 +33,12 @@ class SignupScreen extends StatefulWidget {
 //===================================================
 
 class _SignupScreenState extends State<SignupScreen> {
+  static const int _stepCount = 9;
+
   int _currentStep = 0;
+
+  // True when moving back, so the card slides the other way.
+  bool _goingBack = false;
 
   final TextEditingController _emailController = TextEditingController();
 
@@ -54,10 +62,6 @@ class _SignupScreenState extends State<SignupScreen> {
 
   bool _isLoading = false;
 
-  bool _obscurePassword = true;
-
-  static const Color _blue = Color(0xFF29B6F6);
-
   //===================================================
   // STEP TITLES
   //===================================================
@@ -72,6 +76,22 @@ class _SignupScreenState extends State<SignupScreen> {
     'Your hobbies',
     'Favourite quote',
     'Profile picture',
+  ];
+
+  //===================================================
+  // STEP SUBTITLES
+  //===================================================
+
+  final List<String> _stepSubtitles = const <String>[
+    'You will use it to log in.',
+    'This is how classmates will see you.',
+    'Your unique @name on Nubify.',
+    'Use at least 6 characters.',
+    'Pick your faculty at NUB.',
+    'Only used to keep your account safe.',
+    'Optional: tell people what you love.',
+    'Optional: something that inspires you.',
+    'Optional: let people recognise you.',
   ];
 
   //===================================================
@@ -166,8 +186,9 @@ class _SignupScreenState extends State<SignupScreen> {
       return;
     }
 
-    if (_currentStep < 8) {
+    if (_currentStep < _stepCount - 1) {
       setState(() {
+        _goingBack = false;
         _currentStep++;
       });
     }
@@ -198,6 +219,7 @@ class _SignupScreenState extends State<SignupScreen> {
     }
 
     setState(() {
+      _goingBack = true;
       _currentStep--;
     });
   }
@@ -265,6 +287,25 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   //===================================================
+  // GO TO LOGIN
+  //
+  // Back to the login screen we came from, or a fresh
+  // one if signup was opened directly.
+  //===================================================
+
+  void _openLogin() {
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+      return;
+    }
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute<void>(builder: (_) => const LoginScreen()),
+    );
+  }
+
+  //===================================================
   // INPUT FIELD
   //===================================================
 
@@ -275,26 +316,31 @@ class _SignupScreenState extends State<SignupScreen> {
     TextInputType keyboardType = TextInputType.text,
     bool optional = false,
     bool multiline = false,
+    Iterable<String>? autofillHints,
+    TextCapitalization textCapitalization = TextCapitalization.none,
   }) {
-    return TextField(
+    return NubifyAuthField(
       controller: controller,
-
-      keyboardType: keyboardType,
-
+      label: optional ? '$hintText (optional)' : hintText,
+      icon: icon,
+      keyboardType: multiline ? TextInputType.multiline : keyboardType,
       maxLines: multiline ? 3 : 1,
+      autofillHints: autofillHints,
+      textCapitalization: textCapitalization,
+      textInputAction: multiline
+          ? TextInputAction.newline
+          : TextInputAction.next,
+      onSubmitted: multiline ? null : (_) => _nextStep(),
+    );
+  }
 
-      decoration: InputDecoration(
-        hintText: hintText,
-
-        labelText: optional ? '$hintText (optional)' : hintText,
-
-        prefixIcon: Icon(icon, color: _blue),
-
-        border: const OutlineInputBorder(),
-
-        focusedBorder: const OutlineInputBorder(
-          borderSide: BorderSide(color: _blue, width: 1.5),
-        ),
+  Widget _helper(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: Text(
+        text,
+        textAlign: TextAlign.center,
+        style: const TextStyle(color: NubifyAuthColors.muted, fontSize: 12),
       ),
     );
   }
@@ -311,6 +357,7 @@ class _SignupScreenState extends State<SignupScreen> {
           hintText: 'Email',
           icon: Icons.email_outlined,
           keyboardType: TextInputType.emailAddress,
+          autofillHints: const <String>[AutofillHints.email],
         );
 
       case 1:
@@ -318,6 +365,8 @@ class _SignupScreenState extends State<SignupScreen> {
           controller: _fullNameController,
           hintText: 'Full name',
           icon: Icons.badge_outlined,
+          autofillHints: const <String>[AutofillHints.name],
+          textCapitalization: TextCapitalization.words,
         );
 
       case 2:
@@ -325,40 +374,18 @@ class _SignupScreenState extends State<SignupScreen> {
           controller: _usernameController,
           hintText: 'Username',
           icon: Icons.alternate_email_rounded,
+          autofillHints: const <String>[AutofillHints.newUsername],
         );
 
       case 3:
-        return TextField(
+        return NubifyAuthField(
           controller: _passwordController,
-
-          obscureText: _obscurePassword,
-
-          decoration: InputDecoration(
-            hintText: 'Password',
-
-            labelText: 'Password',
-
-            prefixIcon: const Icon(Icons.lock_outline_rounded, color: _blue),
-
-            border: const OutlineInputBorder(),
-
-            focusedBorder: const OutlineInputBorder(
-              borderSide: BorderSide(color: _blue, width: 1.5),
-            ),
-
-            suffixIcon: IconButton(
-              onPressed: () {
-                setState(() {
-                  _obscurePassword = !_obscurePassword;
-                });
-              },
-              icon: Icon(
-                _obscurePassword
-                    ? Icons.visibility_off_outlined
-                    : Icons.visibility_outlined,
-              ),
-            ),
-          ),
+          label: 'Password',
+          icon: Icons.lock_outline_rounded,
+          isPassword: true,
+          autofillHints: const <String>[AutofillHints.newPassword],
+          textInputAction: TextInputAction.next,
+          onSubmitted: (_) => _nextStep(),
         );
 
       case 4:
@@ -377,12 +404,10 @@ class _SignupScreenState extends State<SignupScreen> {
               hintText: 'Egyptian mobile number',
               icon: Icons.phone_android_rounded,
               keyboardType: TextInputType.phone,
+              autofillHints: const <String>[AutofillHints.telephoneNumber],
             ),
-            const SizedBox(height: 10),
-            Text(
+            _helper(
               'Use 010, 011, 012, 015 or the equivalent +20 format. Your number stays private.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
             ),
           ],
         );
@@ -409,41 +434,48 @@ class _SignupScreenState extends State<SignupScreen> {
         return Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            CircleAvatar(
-              radius: 62,
-
-              backgroundColor: _blue.withValues(alpha: 0.18),
-
-              backgroundImage: _image == null ? null : MemoryImage(_image!),
-
-              child: _image == null
-                  ? const Icon(
-                      Icons.person_rounded,
-                      size: 62,
-                      color: Colors.white70,
-                    )
-                  : null,
-            ),
-
-            const SizedBox(height: 14),
-
-            OutlinedButton.icon(
-              onPressed: _selectImage,
-
-              icon: const Icon(Icons.add_a_photo_outlined),
-
-              label: Text(
-                _image == null ? 'Choose profile picture' : 'Change picture',
+            Semantics(
+              button: true,
+              label: _image == null
+                  ? 'Choose profile picture'
+                  : 'Change profile picture',
+              child: GestureDetector(
+                onTap: _selectImage,
+                child: Container(
+                  padding: const EdgeInsets.all(3),
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: NubifyAuthColors.button,
+                  ),
+                  child: CircleAvatar(
+                    radius: 60,
+                    backgroundColor: NubifyAuthColors.navy,
+                    backgroundImage: _image == null
+                        ? null
+                        : MemoryImage(_image!),
+                    child: _image == null
+                        ? const Icon(
+                            Icons.person_rounded,
+                            size: 60,
+                            color: NubifyAuthColors.muted,
+                          )
+                        : null,
+                  ),
+                ),
               ),
             ),
 
-            const SizedBox(height: 8),
+            const SizedBox(height: 16),
 
-            Text(
-              'Optional — you can change it later from Edit Profile.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
+            NubifyAuthGhostButton(
+              onPressed: _selectImage,
+              icon: Icons.add_a_photo_outlined,
+              label: _image == null
+                  ? 'Choose profile picture'
+                  : 'Change picture',
             ),
+
+            _helper('Optional — you can change it later from Edit Profile.'),
           ],
         );
 
@@ -453,154 +485,270 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   //===================================================
+  // SEGMENTED PROGRESS
+  //===================================================
+
+  Widget _progress() {
+    return Semantics(
+      label: 'Step ${_currentStep + 1} of $_stepCount',
+      child: Row(
+        children: <Widget>[
+          for (int i = 0; i < _stepCount; i++) ...<Widget>[
+            if (i > 0) const SizedBox(width: 5),
+            Expanded(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 350),
+                curve: Curves.easeOutCubic,
+                height: 5,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(5),
+                  gradient: i <= _currentStep ? NubifyAuthColors.button : null,
+                  color: i <= _currentStep ? null : NubifyAuthColors.glass,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  //===================================================
+  // STEP CARD
+  //===================================================
+
+  Widget _stepCard() {
+    final NubifyFaculty? selectedFaculty = NubifyFacultyCatalog.byId(
+      _selectedFacultyId,
+    );
+    final bool facultyIcon = _currentStep == 4 && selectedFaculty != null;
+    final IconData currentIcon = facultyIcon
+        ? selectedFaculty.icon
+        : _stepIcons[_currentStep];
+
+    return NubifyAuthPanel(
+      key: ValueKey<int>(_currentStep),
+      padding: const EdgeInsets.fromLTRB(18, 22, 18, 20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Center(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: facultyIcon ? null : NubifyAuthColors.button,
+                color: facultyIcon ? selectedFaculty.color : null,
+                boxShadow: <BoxShadow>[
+                  BoxShadow(
+                    color:
+                        (facultyIcon
+                                ? selectedFaculty.color
+                                : NubifyAuthColors.royal)
+                            .withValues(alpha: 0.5),
+                    blurRadius: 22,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Icon(currentIcon, color: Colors.white, size: 30),
+            ),
+          ),
+
+          const SizedBox(height: 14),
+
+          Text(
+            _stepTitles[_currentStep],
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: NubifyAuthColors.text,
+              fontSize: 22,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -0.3,
+            ),
+          ),
+
+          const SizedBox(height: 4),
+
+          Text(
+            _stepSubtitles[_currentStep],
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: NubifyAuthColors.muted, fontSize: 13),
+          ),
+
+          const SizedBox(height: 20),
+
+          _getStepContent(),
+        ],
+      ),
+    );
+  }
+
+  //===================================================
   // BUILD
   //===================================================
 
   @override
   Widget build(BuildContext context) {
-    final double progress = (_currentStep + 1) / 9;
-    final NubifyFaculty? selectedFaculty = NubifyFacultyCatalog.byId(
-      _selectedFacultyId,
-    );
-    final IconData currentIcon = _currentStep == 4 && selectedFaculty != null
-        ? selectedFaculty.icon
-        : _stepIcons[_currentStep];
-    final Color currentIconColor = _currentStep == 4 && selectedFaculty != null
-        ? selectedFaculty.color
-        : _blue;
+    final bool lastStep = _currentStep == _stepCount - 1;
+    final bool reduceMotion = MediaQuery.of(context).disableAnimations;
 
-    return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 28),
-          child: Column(
-            children: <Widget>[
-              const SizedBox(height: 24),
-
-              SvgPicture.asset(
-                'assets/ic_nubify.svg',
-                colorFilter: const ColorFilter.mode(
-                  primaryColor,
-                  BlendMode.srcIn,
-                ),
-                height: 54,
-              ),
-
-              const SizedBox(height: 18),
-
-              ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: LinearProgressIndicator(
-                  value: progress,
-                  minHeight: 5,
-                  backgroundColor: Colors.white12,
-                  color: _blue,
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              Icon(currentIcon, color: currentIconColor, size: 34),
-
-              const SizedBox(height: 8),
-
-              Text(
-                _stepTitles[_currentStep],
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 21,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-
-              const SizedBox(height: 6),
-
-              Text(
-                'Step ${_currentStep + 1} of 9',
-                style: TextStyle(color: Colors.grey.shade500),
-              ),
-
-              const SizedBox(height: 24),
-
-              Expanded(
-                child: Center(
-                  child: SingleChildScrollView(child: _getStepContent()),
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              Row(
-                children: <Widget>[
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: _currentStep == 0 ? null : _previousStep,
-                      icon: const Icon(Icons.arrow_back_rounded),
-                      label: const Text('Previous'),
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size.fromHeight(48),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(width: 12),
-
-                  Expanded(
-                    child: FilledButton.icon(
-                      onPressed: _isLoading
-                          ? null
-                          : _currentStep == 8
-                          ? _signUpUser
-                          : _nextStep,
-
-                      icon: _isLoading
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
+    return NubifyAuthTheme(
+      child: Scaffold(
+        body: NubifyAuthBackground(
+          child: SafeArea(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 480),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 14, 20, 6),
+                  child: Column(
+                    children: <Widget>[
+                      //===================================================
+                      // HEADER
+                      //===================================================
+                      NubifyAuthEntrance(
+                        child: Row(
+                          children: <Widget>[
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Image.asset(
+                                NubifyAuthLogo.asset,
+                                width: 44,
+                                height: 58,
+                                fit: BoxFit.cover,
+                                semanticLabel: 'Nubify',
                               ),
-                            )
-                          : Icon(
-                              _currentStep == 8
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: <Widget>[
+                                  const Text(
+                                    'Join Nubify',
+                                    style: TextStyle(
+                                      color: NubifyAuthColors.text,
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Step ${_currentStep + 1} of $_stepCount',
+                                    style: const TextStyle(
+                                      color: NubifyAuthColors.muted,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      _progress(),
+
+                      const SizedBox(height: 18),
+
+                      //===================================================
+                      // STEP CARD
+                      //===================================================
+                      Expanded(
+                        // A little above centre looks more balanced.
+                        child: Align(
+                          alignment: const Alignment(0, -0.35),
+                          child: SingleChildScrollView(
+                            child: AnimatedSwitcher(
+                              duration: Duration(
+                                milliseconds: reduceMotion ? 0 : 320,
+                              ),
+                              switchInCurve: Curves.easeOutCubic,
+                              switchOutCurve: Curves.easeInCubic,
+                              transitionBuilder:
+                                  (Widget child, Animation<double> animation) {
+                                    final bool incoming =
+                                        child.key ==
+                                        ValueKey<int>(_currentStep);
+                                    final double from =
+                                        (incoming ? 0.25 : -0.25) *
+                                        (_goingBack ? -1 : 1);
+
+                                    return FadeTransition(
+                                      opacity: animation,
+                                      child: SlideTransition(
+                                        position: Tween<Offset>(
+                                          begin: Offset(from, 0),
+                                          end: Offset.zero,
+                                        ).animate(animation),
+                                        child: child,
+                                      ),
+                                    );
+                                  },
+                              child: _stepCard(),
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 14),
+
+                      //===================================================
+                      // BUTTONS
+                      //===================================================
+                      Row(
+                        children: <Widget>[
+                          Expanded(
+                            child: NubifyAuthGhostButton(
+                              onPressed: _currentStep == 0
+                                  ? null
+                                  : _previousStep,
+                              icon: Icons.arrow_back_rounded,
+                              label: 'Back',
+                            ),
+                          ),
+
+                          const SizedBox(width: 12),
+
+                          Expanded(
+                            flex: 2,
+                            child: NubifyAuthButton(
+                              label: lastStep ? 'Create account' : 'Next',
+                              icon: lastStep
                                   ? Icons.person_add_alt_1_rounded
                                   : Icons.arrow_forward_rounded,
+                              loading: _isLoading,
+                              onPressed: lastStep ? _signUpUser : _nextStep,
                             ),
-
-                      label: Text(_currentStep == 8 ? 'Sign Up' : 'Next'),
-
-                      style: FilledButton.styleFrom(
-                        backgroundColor: _blue,
-                        minimumSize: const Size.fromHeight(48),
+                          ),
+                        ],
                       ),
-                    ),
+
+                      Wrap(
+                        alignment: WrapAlignment.center,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: <Widget>[
+                          const Text(
+                            'Already have an account?',
+                            style: TextStyle(color: NubifyAuthColors.muted),
+                          ),
+                          TextButton(
+                            onPressed: _openLogin,
+                            child: const Text('Log in'),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
-
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  const Text('Already have an account?'),
-
-                  TextButton.icon(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute<void>(
-                          builder: (_) => const LoginScreen(),
-                        ),
-                      );
-                    },
-
-                    icon: const Icon(Icons.login_rounded, size: 18),
-
-                    label: const Text('Log in'),
-                  ),
-                ],
-              ),
-            ],
+            ),
           ),
         ),
       ),
