@@ -31,6 +31,8 @@ import 'models/stories/story.dart';
 import 'services/common/media_route_observer.dart';
 import 'widgets/chat/incoming_call_listener.dart';
 import 'widgets/links/nubify_deep_link_gate.dart';
+import 'widgets/common/system_nav_inset.dart';
+import 'widgets/auth/nubify_auth_style.dart';
 
 import 'package:firebase_app_check/firebase_app_check.dart';
 
@@ -606,6 +608,17 @@ class MyApp extends StatelessWidget {
                   // SELECTED THEME
                   themeMode:
                   appearance.mode,
+
+                  // KEEP EVERY SCREEN ABOVE THE
+                  // PHONE NAVIGATION BUTTONS
+                  // (dark under login and signup).
+                  builder: (_, Widget? child) =>
+                      NubifySystemNavInset(
+                        color: authenticatedUser == null
+                            ? NubifyAuthColors.black
+                            : null,
+                        child: child ?? const SizedBox.shrink(),
+                      ),
 
                   // EXISTING NAMED ROUTES
                   onGenerateRoute:
