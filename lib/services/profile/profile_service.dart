@@ -7,6 +7,7 @@ import '../../utils/profile/username_rules.dart';
 import '../common/storage_methods.dart';
 import '../notifications/notification_service.dart';
 import 'username_service.dart';
+import '../../widgets/profile/nubify_avatar.dart';
 
 //===================================================
 // PROFILE SERVICE
@@ -466,6 +467,10 @@ class ProfileService {
     required String favoriteQuote,
     Uint8List? newPhoto,
     bool removePhoto = false,
+    // NubifyAvatarStyle (male, female, hijab); null keeps it.
+    String? avatarStyle,
+    // True when newPhoto is the generated avatar.
+    bool newPhotoIsAvatar = false,
   }) async {
     final User? authUser = _auth.currentUser;
 
@@ -571,6 +576,18 @@ class ProfileService {
 
     if (photoUrl != null) {
       update['photoUrl'] = photoUrl;
+
+      update['avatarPhoto'] = newPhoto != null && newPhotoIsAvatar;
+    }
+
+    if (avatarStyle != null && NubifyAvatarStyle.isValid(avatarStyle)) {
+      update['avatarStyle'] = avatarStyle;
+
+      final String gender = NubifyAvatarStyle.genderFor(avatarStyle);
+
+      if (gender.isNotEmpty) {
+        update['gender'] = gender;
+      }
     }
 
     //===================================================
@@ -606,94 +623,111 @@ class ProfileService {
 
     //===================================================
     // UPDATE NAME / USERNAME / PHOTO
-    // ON EXISTING POSTS
+    // ON EXISTING POSTS AND STORIES
     //===================================================
 
-    final QuerySnapshot<Map<String, dynamic>> posts = await _firestore
-        .collection('posts')
-        .where('uid', isEqualTo: authUser.uid)
-        .get();
+    await _syncProfileCopies(authUser.uid, <String, dynamic>{
+      'fullName': cleanFullName,
+      'username': cleanUsername,
+      'photoUrl': ?photoUrl,
+    });
+  }
 
+  //===================================================
+  // SYNC PROFILE COPIES
+  //
+  // Posts and stories keep a copy of the author's name,
+  // username and photo; update those copies. (Comments,
+  // replies and tags are updated by the server function
+  // nubifyProfileSync.)
+  //===================================================
+
+  Future<void> _syncProfileCopies(
+    String uid,
+    Map<String, dynamic> fields,
+  ) async {
     WriteBatch batch = _firestore.batch();
 
     int operations = 0;
 
-    //===================================================
-    // COMMIT BATCH WHEN NEEDED
-    //===================================================
+    for (final String collection in <String>['posts', 'stories']) {
+      final QuerySnapshot<Map<String, dynamic>> docs = await _firestore
+          .collection(collection)
+          .where('uid', isEqualTo: uid)
+          .get();
 
-    Future<void> commitIfNeeded() async {
-      if (operations == 0) {
+      for (final QueryDocumentSnapshot<Map<String, dynamic>> doc in docs.docs) {
+        batch.update(doc.reference, fields);
+
+        operations++;
+
+        if (operations >= 400) {
+          await batch.commit();
+          batch = _firestore.batch();
+          operations = 0;
+        }
+      }
+    }
+
+    if (operations > 0) {
+      await batch.commit();
+    }
+  }
+
+  //===================================================
+  // MAKE SURE EVERYONE HAS A PICTURE
+  //
+  // Anyone without a profile picture gets their faculty
+  // avatar (male, female, hijab or neutral) saved as their
+  // photo, so it shows everywhere in the app. Runs when the
+  // app opens; does nothing when a picture already exists.
+  //===================================================
+
+  Future<void> ensureAvatarPhoto() async {
+    final User? authUser = _auth.currentUser;
+
+    if (authUser == null) {
+      return;
+    }
+
+    try {
+      final DocumentReference<Map<String, dynamic>> userRef = _firestore
+          .collection('users')
+          .doc(authUser.uid);
+
+      final Map<String, dynamic> data =
+          (await userRef.get()).data() ?? <String, dynamic>{};
+
+      if (data.isEmpty || (data['photoUrl'] ?? '').toString().trim().isNotEmpty) {
         return;
       }
 
-      await batch.commit();
+      final String style = NubifyAvatarStyle.fromProfile(data);
 
-      batch = _firestore.batch();
+      final Uint8List picture = await NubifyAvatarPainter.renderPng(
+        style: style,
+        color: NubifyAvatarColors.forFaculty((data['faculty'] ?? '').toString()),
+      );
 
-      operations = 0;
+      final String photoUrl = await StorageMethods().uploadImageToStorage(
+        'profilePics',
+        picture,
+        false,
+      );
+
+      await userRef.update(<String, dynamic>{
+        'photoUrl': photoUrl,
+        'avatarPhoto': true,
+        'avatarStyle': style,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      await _syncProfileCopies(authUser.uid, <String, dynamic>{
+        'photoUrl': photoUrl,
+      });
+    } catch (error) {
+      debugPrint('Avatar photo not added: $error');
     }
-
-    //===================================================
-    // UPDATE OLD POSTS
-    //===================================================
-
-    for (final QueryDocumentSnapshot<Map<String, dynamic>> post in posts.docs) {
-      final Map<String, dynamic> postUpdate = <String, dynamic>{
-        'fullName': cleanFullName,
-
-        'username': cleanUsername,
-      };
-
-      if (photoUrl != null) {
-        postUpdate['photoUrl'] = photoUrl;
-      }
-
-      batch.update(post.reference, postUpdate);
-
-      operations++;
-
-      if (operations >= 400) {
-        await commitIfNeeded();
-      }
-    }
-
-    //===================================================
-    // UPDATE NAME / USERNAME / PHOTO
-    // ON EXISTING STORIES
-    //===================================================
-
-    final QuerySnapshot<Map<String, dynamic>> stories = await _firestore
-        .collection('stories')
-        .where('uid', isEqualTo: authUser.uid)
-        .get();
-
-    for (final QueryDocumentSnapshot<Map<String, dynamic>> story
-        in stories.docs) {
-      final Map<String, dynamic> storyUpdate = <String, dynamic>{
-        'fullName': cleanFullName,
-
-        'username': cleanUsername,
-      };
-
-      if (photoUrl != null) {
-        storyUpdate['photoUrl'] = photoUrl;
-      }
-
-      batch.update(story.reference, storyUpdate);
-
-      operations++;
-
-      if (operations >= 400) {
-        await commitIfNeeded();
-      }
-    }
-
-    //===================================================
-    // COMMIT REMAINING OPERATIONS
-    //===================================================
-
-    await commitIfNeeded();
   }
 
   //===================================================

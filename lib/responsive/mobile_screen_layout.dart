@@ -15,6 +15,7 @@ import '../screens/nubuzz/nubuzz_screen.dart';
 import '../screens/profile/profile_screen.dart';
 import '../services/chat/chat_badge_service.dart';
 import '../services/notifications/notification_service.dart';
+import '../services/profile/profile_service.dart';
 import '../widgets/marketplace/marketplace_brand_icon.dart';
 import '../widgets/common/nubify_count_badge.dart';
 import '../widgets/huddles/huddle_mini_bar.dart';
@@ -90,6 +91,8 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
   @override
   void initState() {
     super.initState();
+    // People without a profile picture get their faculty avatar.
+    unawaited(ProfileService().ensureAvatarPhoto());
     _chatPendingSubscription = ChatBadgeService.instance
         .totalPendingStream()
         .listen((int count) {

@@ -12,6 +12,7 @@ import '../../utils/faculties/faculty_catalog.dart';
 import '../../utils/common/utils.dart';
 import '../../utils/profile/username_rules.dart';
 import '../../widgets/faculties/faculty_selector.dart';
+import '../../widgets/profile/nubify_avatar.dart';
 import '../../widgets/profile/username_field.dart';
 
 //===================================================
@@ -75,6 +76,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Uint8List? _newImage;
 
   String _currentPhotoUrl = '';
+
+  // Avatar shown when there is no photo: male, female,
+  // hijab, or neutral until the person picks one.
+  String _avatarStyle = NubifyAvatarStyle.neutral;
+
+  String _originalAvatarStyle = NubifyAvatarStyle.neutral;
+
+  String _originalFaculty = '';
+
+  // True when the current picture is the generated avatar.
+  bool _photoIsAvatar = false;
 
   bool _removePhoto = false;
 
@@ -142,6 +154,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       _quoteController.text = (data['favoriteQuote'] ?? '').toString();
 
       _currentPhotoUrl = (data['photoUrl'] ?? '').toString();
+
+      _avatarStyle = NubifyAvatarStyle.fromProfile(data);
+
+      _originalAvatarStyle = _avatarStyle;
+
+      _originalFaculty = _facultyController.text.trim();
+
+      _photoIsAvatar = data['avatarPhoto'] == true;
 
       final privateProfile = await _privateProfileService.getMine();
       _phoneController.text = privateProfile.phoneE164;
@@ -226,14 +246,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 enabled: hasPhoto,
 
                 leading: Icon(
-                  Icons.delete_outline_rounded,
+                  Icons.face_rounded,
 
-                  color: hasPhoto ? Colors.redAccent : null,
+                  color: hasPhoto ? _blue : null,
                 ),
 
-                title: const Text('Remove profile picture'),
+                title: const Text('Use my avatar instead'),
 
-                subtitle: const Text('Tap Save to apply this change'),
+                subtitle: const Text(
+                  'Your faculty avatar replaces the photo when you tap Save',
+                ),
 
                 onTap: !hasPhoto
                     ? null
@@ -335,6 +357,30 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     });
 
     try {
+      //===================================================
+      // AVATAR AS THE PICTURE
+      //
+      // No photo, photo removed, or the picture is still the
+      // avatar and the faculty or avatar style changed: draw
+      // the avatar and save it as the picture.
+      //===================================================
+
+      final bool avatarChanged =
+          _avatarStyle != _originalAvatarStyle || faculty != _originalFaculty;
+
+      final bool useAvatar =
+          _newImage == null &&
+          (_removePhoto ||
+              _currentPhotoUrl.trim().isEmpty ||
+              (_photoIsAvatar && avatarChanged));
+
+      final Uint8List? avatar = useAvatar
+          ? await NubifyAvatarPainter.renderPng(
+              style: _avatarStyle,
+              color: NubifyAvatarColors.forFaculty(faculty),
+            )
+          : null;
+
       await _profileService.updateProfile(
         fullName: fullName,
 
@@ -346,9 +392,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
         favoriteQuote: favoriteQuote,
 
-        newPhoto: _newImage,
+        newPhoto: _newImage ?? avatar,
 
-        removePhoto: _removePhoto,
+        newPhotoIsAvatar: avatar != null,
+
+        avatarStyle: _avatarStyle == NubifyAvatarStyle.neutral
+            ? null
+            : _avatarStyle,
       );
 
       if (phone.isEmpty) {
@@ -732,6 +782,94 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   // PROFILE PHOTO
   //===================================================
 
+  //===================================================
+  // AVATAR STYLE CHOICE
+  //
+  // Used when there is no photo. Changing it redraws the
+  // avatar if the picture is still the avatar.
+  //===================================================
+
+  Widget _buildAvatarChoice() {
+    const List<(String, String)> options = <(String, String)>[
+      (NubifyAvatarStyle.male, 'Male'),
+      (NubifyAvatarStyle.female, 'Female'),
+      (NubifyAvatarStyle.hijab, 'Hijab'),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          'Your avatar',
+          style: Theme.of(
+            context,
+          ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Shown in your faculty colour when you don\'t use a photo.',
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+            fontSize: 12.5,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: <Widget>[
+            for (final (String style, String label) in options) ...<Widget>[
+              if (style != NubifyAvatarStyle.male) const SizedBox(width: 10),
+              Expanded(
+                child: Semantics(
+                  button: true,
+                  selected: _avatarStyle == style,
+                  label: '$label avatar',
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: _saving
+                        ? null
+                        : () => setState(() => _avatarStyle = style),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        color: _avatarStyle == style
+                            ? _blue.withValues(alpha: 0.14)
+                            : Colors.transparent,
+                        border: Border.all(
+                          color: _avatarStyle == style
+                              ? _blue
+                              : Theme.of(context).colorScheme.outlineVariant,
+                          width: _avatarStyle == style ? 1.6 : 1,
+                        ),
+                      ),
+                      child: Column(
+                        children: <Widget>[
+                          ClipOval(
+                            child: NubifyAvatar(
+                              style: style,
+                              faculty: _facultyController.text,
+                              size: 44,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            label,
+                            style: const TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ],
+    );
+  }
+
   Widget _buildPhoto() {
     ImageProvider<Object>? imageProvider;
 
@@ -750,23 +888,22 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           // PROFILE IMAGE
           //===================================================
 
-          CircleAvatar(
-            radius: 58,
+          if (imageProvider == null)
+            ClipOval(
+              child: NubifyAvatar(
+                style: _avatarStyle,
+                faculty: _facultyController.text,
+                size: 116,
+              ),
+            )
+          else
+            CircleAvatar(
+              radius: 58,
 
-            backgroundColor: _blue.withValues(alpha: 0.20),
+              backgroundColor: _blue.withValues(alpha: 0.20),
 
-            backgroundImage: imageProvider,
-
-            child: imageProvider == null
-                ? const Icon(
-                    Icons.person_rounded,
-
-                    size: 58,
-
-                    color: Colors.white70,
-                  )
-                : null,
-          ),
+              backgroundImage: imageProvider,
+            ),
 
           //===================================================
           // CHANGE PHOTO BUTTON
@@ -903,7 +1040,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
                   _buildPhoto(),
 
-                  const SizedBox(height: 28),
+                  const SizedBox(height: 18),
+
+                  _buildAvatarChoice(),
+
+                  const SizedBox(height: 24),
 
                   //===================================================
                   // FULL NAME

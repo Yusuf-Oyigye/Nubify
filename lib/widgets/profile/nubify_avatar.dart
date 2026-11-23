@@ -8,10 +8,11 @@ import '../../utils/faculties/faculty_catalog.dart';
 //===================================================
 // NUBIFY AVATARS
 //
-// A male and a female avatar, coloured by faculty. New
-// students who skip the profile photo get one of these
-// (saved as their picture), so every faculty has its
-// own look across the app.
+// Faceless avatars coloured by faculty: male, female,
+// female with hijab, and a neutral one for people who
+// haven't picked yet. Anyone without a photo gets one
+// saved as their profile picture, so it shows across
+// the whole app (posts, comments, chats, stories…).
 //===================================================
 
 abstract final class NubifyGender {
@@ -19,6 +20,35 @@ abstract final class NubifyGender {
   static const String female = 'female';
 
   static bool isValid(String? value) => value == male || value == female;
+}
+
+abstract final class NubifyAvatarStyle {
+  static const String male = 'male';
+  static const String female = 'female';
+  static const String hijab = 'hijab';
+  static const String neutral = 'neutral';
+
+  static bool isValid(String? value) =>
+      value == male || value == female || value == hijab || value == neutral;
+
+  /// The gender that goes with a style ('' for neutral).
+  static String genderFor(String style) => switch (style) {
+    male => NubifyGender.male,
+    female || hijab => NubifyGender.female,
+    _ => '',
+  };
+
+  /// Best style for a stored profile: its chosen style,
+  /// else its gender, else neutral.
+  static String fromProfile(Map<String, dynamic> data) {
+    final String style = (data['avatarStyle'] ?? '').toString();
+    if (isValid(style)) return style;
+
+    final String gender = (data['gender'] ?? '').toString();
+    if (gender == NubifyGender.male) return male;
+    if (gender == NubifyGender.female) return female;
+    return neutral;
+  }
 }
 
 //===================================================
@@ -64,9 +94,10 @@ abstract final class NubifyAvatarColors {
 //===================================================
 
 class NubifyAvatarPainter extends CustomPainter {
-  const NubifyAvatarPainter({required this.female, required this.color});
+  const NubifyAvatarPainter({required this.style, required this.color});
 
-  final bool female;
+  /// One of [NubifyAvatarStyle].
+  final String style;
   final Color color;
 
   Color _shade(double amount) =>
@@ -80,6 +111,10 @@ class NubifyAvatarPainter extends CustomPainter {
     final double s = size.shortestSide;
     final Rect box = Offset.zero & Size(s, s);
     final Offset c = box.center;
+
+    final bool female = style == NubifyAvatarStyle.female;
+    final bool hijab = style == NubifyAvatarStyle.hijab;
+    final bool male = style == NubifyAvatarStyle.male;
 
     canvas.save();
     canvas.clipPath(Path()..addOval(box));
@@ -140,6 +175,69 @@ class NubifyAvatarPainter extends CustomPainter {
       );
     canvas.drawPath(body, top);
 
+    if (hijab) {
+      // The hijab covers the head and drapes onto the
+      // shoulders; only an empty face shows.
+      final Path scarf = Path()
+        ..moveTo(head.dx - headR * 1.32, head.dy + headR * 0.1)
+        ..cubicTo(
+          head.dx - headR * 1.32,
+          head.dy - headR * 1.55,
+          head.dx + headR * 1.32,
+          head.dy - headR * 1.55,
+          head.dx + headR * 1.32,
+          head.dy + headR * 0.1,
+        )
+        ..cubicTo(
+          head.dx + headR * 1.4,
+          head.dy + headR * 1.2,
+          head.dx + headR * 2.1,
+          s * 0.76,
+          head.dx + headR * 2.2,
+          s * 0.86,
+        )
+        ..lineTo(head.dx - headR * 2.2, s * 0.86)
+        ..cubicTo(
+          head.dx - headR * 2.1,
+          s * 0.76,
+          head.dx - headR * 1.4,
+          head.dy + headR * 1.2,
+          head.dx - headR * 1.32,
+          head.dy + headR * 0.1,
+        )
+        ..close();
+      canvas.drawPath(scarf, hair);
+
+      // Fold line under the face.
+      canvas.drawArc(
+        Rect.fromCenter(
+          center: Offset(head.dx, head.dy + headR * 0.55),
+          width: headR * 2.2,
+          height: headR * 1.6,
+        ),
+        0.35,
+        2.45,
+        false,
+        Paint()
+          ..color = _shade(0.7)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = s * 0.012,
+      );
+
+      // Empty face.
+      canvas.drawOval(
+        Rect.fromCenter(
+          center: Offset(head.dx, head.dy + headR * 0.08),
+          width: headR * 1.6,
+          height: headR * 1.9,
+        ),
+        skin,
+      );
+
+      canvas.restore();
+      return;
+    }
+
     // Collar in the faculty colour.
     final Path collar = Path()
       ..moveTo(c.dx - s * 0.09, s * 0.74)
@@ -164,33 +262,35 @@ class NubifyAvatarPainter extends CustomPainter {
     // Head.
     canvas.drawCircle(head, headR, skin);
 
-    // Hair on top.
-    canvas.save();
-    canvas.clipPath(
-      Path()..addOval(Rect.fromCircle(center: head, radius: headR * 1.08)),
-    );
-    if (female) {
-      final Path fringe = Path()
-        ..addOval(
-          Rect.fromCenter(
-            center: Offset(head.dx + headR * 0.15, head.dy - headR * 0.72),
-            width: headR * 2.6,
-            height: headR * 1.5,
-          ),
-        );
-      canvas.drawPath(fringe, hair);
-    } else {
-      final Path cap = Path()
-        ..addOval(
-          Rect.fromCenter(
-            center: Offset(head.dx, head.dy - headR * 0.78),
-            width: headR * 2.4,
-            height: headR * 1.25,
-          ),
-        );
-      canvas.drawPath(cap, hair);
+    // Hair on top (none for the neutral avatar).
+    if (male || female) {
+      canvas.save();
+      canvas.clipPath(
+        Path()..addOval(Rect.fromCircle(center: head, radius: headR * 1.08)),
+      );
+      if (female) {
+        final Path fringe = Path()
+          ..addOval(
+            Rect.fromCenter(
+              center: Offset(head.dx + headR * 0.15, head.dy - headR * 0.72),
+              width: headR * 2.6,
+              height: headR * 1.5,
+            ),
+          );
+        canvas.drawPath(fringe, hair);
+      } else {
+        final Path cap = Path()
+          ..addOval(
+            Rect.fromCenter(
+              center: Offset(head.dx, head.dy - headR * 0.78),
+              width: headR * 2.4,
+              height: headR * 1.25,
+            ),
+          );
+        canvas.drawPath(cap, hair);
+      }
+      canvas.restore();
     }
-    canvas.restore();
 
     if (female) {
       // Side locks framing the face.
@@ -217,7 +317,7 @@ class NubifyAvatarPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(NubifyAvatarPainter oldDelegate) =>
-      oldDelegate.female != female || oldDelegate.color != color;
+      oldDelegate.style != style || oldDelegate.color != color;
 
   //===================================================
   // SAVE AS A PICTURE
@@ -225,14 +325,14 @@ class NubifyAvatarPainter extends CustomPainter {
 
   /// The avatar as a PNG, e.g. to save as a profile photo.
   static Future<Uint8List> renderPng({
-    required bool female,
+    required String style,
     required Color color,
     int size = 512,
   }) async {
     final ui.PictureRecorder recorder = ui.PictureRecorder();
     final Canvas canvas = Canvas(recorder);
     NubifyAvatarPainter(
-      female: female,
+      style: style,
       color: color,
     ).paint(canvas, Size(size.toDouble(), size.toDouble()));
 
@@ -256,13 +356,13 @@ class NubifyAvatarPainter extends CustomPainter {
 class NubifyAvatar extends StatelessWidget {
   const NubifyAvatar({
     super.key,
-    required this.gender,
+    required this.style,
     required this.faculty,
     this.size = 120,
   });
 
-  /// [NubifyGender.male] or [NubifyGender.female].
-  final String gender;
+  /// One of [NubifyAvatarStyle].
+  final String style;
 
   /// Faculty id or name; empty uses the neutral blue.
   final String? faculty;
@@ -271,16 +371,19 @@ class NubifyAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool female = gender == NubifyGender.female;
-
     return Semantics(
       image: true,
-      label: female ? 'Female avatar' : 'Male avatar',
+      label: switch (style) {
+        NubifyAvatarStyle.male => 'Male avatar',
+        NubifyAvatarStyle.female => 'Female avatar',
+        NubifyAvatarStyle.hijab => 'Female avatar with hijab',
+        _ => 'Avatar',
+      },
       child: SizedBox.square(
         dimension: size,
         child: CustomPaint(
           painter: NubifyAvatarPainter(
-            female: female,
+            style: style,
             color: NubifyAvatarColors.forFaculty(faculty),
           ),
         ),

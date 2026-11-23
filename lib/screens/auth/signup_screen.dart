@@ -5,12 +5,14 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../services/auth/auth_method.dart';
+import '../../services/common/language_preference.dart';
 import '../../services/profile/username_service.dart';
 import '../../utils/common/egyptian_phone.dart';
 import '../../utils/common/email_check.dart';
 import '../../utils/faculties/faculty_catalog.dart';
 import '../../utils/common/utils.dart';
 import '../../utils/profile/username_rules.dart';
+import '../../widgets/auth/language_picker.dart';
 import '../../widgets/auth/nubify_auth_style.dart';
 import '../../widgets/faculties/faculty_selector.dart';
 import '../../widgets/profile/nubify_avatar.dart';
@@ -78,6 +80,15 @@ class _SignupScreenState extends State<SignupScreen> {
   // "male" or "female".
   String? _gender;
 
+  // Female students can pick a hijab avatar.
+  bool _hijab = false;
+
+  String _language = 'en';
+
+  String get _avatarStyle => _gender == NubifyGender.female
+      ? (_hijab ? NubifyAvatarStyle.hijab : NubifyAvatarStyle.female)
+      : NubifyAvatarStyle.male;
+
   String? _emailError;
 
   UsernameCheck _usernameStatus = UsernameCheck.empty;
@@ -85,6 +96,20 @@ class _SignupScreenState extends State<SignupScreen> {
   Uint8List? _image;
 
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    LanguagePreference.load().then((String code) {
+      if (mounted) setState(() => _language = code);
+    });
+  }
+
+  void _setLanguage(String code) {
+    setState(() => _language = code);
+    LanguagePreference.save(code);
+  }
 
   //===================================================
   // STEP TEXT
@@ -317,6 +342,10 @@ class _SignupScreenState extends State<SignupScreen> {
 
       gender: _gender ?? '',
 
+      avatarStyle: _avatarStyle,
+
+      languagePreference: _language,
+
       file: _image,
     );
 
@@ -438,6 +467,61 @@ class _SignupScreenState extends State<SignupScreen> {
   // GENDER CHOICE
   //===================================================
 
+  Widget _avatarChoice({required bool hijab, required String label}) {
+    final bool selected = _hijab == hijab;
+
+    return Expanded(
+      child: Semantics(
+        button: true,
+        selected: selected,
+        label: 'Avatar $label',
+        child: GestureDetector(
+          onTap: () => setState(() => _hijab = hijab),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 220),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              color: selected
+                  ? NubifyAuthColors.royal.withValues(alpha: 0.35)
+                  : NubifyAuthColors.glass,
+              border: Border.all(
+                color: selected
+                    ? NubifyAuthColors.sky
+                    : NubifyAuthColors.glassEdge,
+                width: selected ? 1.4 : 1,
+              ),
+            ),
+            child: Row(
+              children: <Widget>[
+                ClipOval(
+                  child: NubifyAvatar(
+                    style: hijab
+                        ? NubifyAvatarStyle.hijab
+                        : NubifyAvatarStyle.female,
+                    faculty: _facultyForAvatar,
+                    size: 34,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    label,
+                    style: const TextStyle(
+                      color: NubifyAuthColors.text,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _genderOption(String value, String label) {
     final bool selected = _gender == value;
 
@@ -475,7 +559,11 @@ class _SignupScreenState extends State<SignupScreen> {
               children: <Widget>[
                 ClipOval(
                   child: NubifyAvatar(
-                    gender: value,
+                    style: value == NubifyGender.female
+                        ? (_hijab
+                              ? NubifyAvatarStyle.hijab
+                              : NubifyAvatarStyle.female)
+                        : NubifyAvatarStyle.male,
                     faculty: _facultyForAvatar,
                     size: 52,
                   ),
@@ -536,7 +624,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           )
                         : NubifyAvatar(
                             key: const ValueKey<String>('avatar'),
-                            gender: _gender ?? NubifyGender.male,
+                            style: _avatarStyle,
                             faculty: _facultyForAvatar,
                             size: 136,
                           ),
@@ -635,6 +723,10 @@ class _SignupScreenState extends State<SignupScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
+            NubifyLanguagePicker(code: _language, onChanged: _setLanguage),
+
+            const SizedBox(height: 14),
+
             NubifyAuthField(
               controller: _emailController,
               label: 'Email',
@@ -659,7 +751,7 @@ class _SignupScreenState extends State<SignupScreen> {
               action: TextInputAction.done,
             ),
             _helper(
-              '010, 011, 012, 015 or +20. Private — only used to keep your account safe.',
+              "Starts with 010, 011, 012, 015 or +20, and stays private. If you don't have an Egyptian number, you can skip this.",
             ),
           ],
         );
@@ -702,6 +794,18 @@ class _SignupScreenState extends State<SignupScreen> {
                 _genderOption(NubifyGender.female, 'Female'),
               ],
             ),
+
+            if (_gender == NubifyGender.female) ...<Widget>[
+              const SizedBox(height: 16),
+              _label('My avatar'),
+              Row(
+                children: <Widget>[
+                  _avatarChoice(hijab: false, label: 'With hair'),
+                  const SizedBox(width: 12),
+                  _avatarChoice(hijab: true, label: 'With hijab'),
+                ],
+              ),
+            ],
           ],
         );
 

@@ -7,9 +7,9 @@
 // transaction and Firestore rules enforce them. These
 // functions do the work the app cannot do alone:
 //
-// 1. nubifyUsernameSync: after a username change, update
-//    every copy of it (posts, stories, comments,
-//    replies, tags). The UID never changes.
+// 1. nubifyProfileSync: after a username, name or photo
+//    change, update every copy of it (posts, stories,
+//    comments, replies, tags). The UID never changes.
 // 2. nubifyUsernameRelease: free the name when a
 //    profile is deleted.
 // 3. nubifyUsernameBackfill: once a day, give people who
@@ -43,10 +43,18 @@ function isValidUsername(lower) {
 }
 
 //===================================================
-// 1. KEEP USERNAME COPIES IN SYNC
+// 1. KEEP PROFILE COPIES IN SYNC
+//
+// Posts, stories, comments and replies keep a copy of
+// the author's username, full name and photo; tags keep
+// username and photo. When any of those change on the
+// profile (new username, new name, new photo or avatar),
+// every copy is updated.
 //===================================================
 
-exports.nubifyUsernameSync = onDocumentUpdated(
+const SYNCED_FIELDS = ["username", "fullName", "photoUrl"];
+
+exports.nubifyProfileSync = onDocumentUpdated(
   {
     document: "users/{uid}",
     region: REGION,
@@ -57,9 +65,15 @@ exports.nubifyUsernameSync = onDocumentUpdated(
     const before = event.data?.before?.data() || {};
     const after = event.data?.after?.data() || {};
     const uid = event.params.uid;
-    const username = String(after.username || "").trim();
 
-    if (!username || before.username === after.username) return;
+    const changes = {};
+    for (const field of SYNCED_FIELDS) {
+      if (typeof after[field] === "string" && after[field] !== before[field]) {
+        changes[field] = after[field];
+      }
+    }
+
+    if (Object.keys(changes).length === 0) return;
 
     const writer = db().bulkWriter();
     let updated = 0;
@@ -75,41 +89,53 @@ exports.nubifyUsernameSync = onDocumentUpdated(
     for (const query of owned) {
       const snapshot = await query.get();
       for (const doc of snapshot.docs) {
-        if (doc.get("username") === username) continue;
-        writer.update(doc.ref, {username}).catch(logWriteError);
+        const stale = Object.entries(changes)
+            .some(([field, value]) => doc.get(field) !== value);
+        if (!stale) continue;
+        writer.update(doc.ref, changes).catch(logWriteError);
         updated++;
       }
     }
 
     // Tags: posts and stories this user is tagged in.
-    for (const name of ["posts", "stories"]) {
-      const tagged = await db()
-          .collection(name)
-          .where("taggedUserIds", "array-contains", uid)
-          .get();
+    const tagChanges = {};
+    if ("username" in changes) tagChanges.username = changes.username;
+    if ("photoUrl" in changes) tagChanges.photoUrl = changes.photoUrl;
 
-      for (const doc of tagged.docs) {
-        const tags = doc.get("taggedUsers");
-        if (!Array.isArray(tags)) continue;
+    if (Object.keys(tagChanges).length > 0) {
+      for (const name of ["posts", "stories"]) {
+        const tagged = await db()
+            .collection(name)
+            .where("taggedUserIds", "array-contains", uid)
+            .get();
 
-        let changed = false;
-        const next = tags.map((tag) => {
-          if (tag && tag.uid === uid && tag.username !== username) {
-            changed = true;
-            return {...tag, username};
+        for (const doc of tagged.docs) {
+          const tags = doc.get("taggedUsers");
+          if (!Array.isArray(tags)) continue;
+
+          let changed = false;
+          const next = tags.map((tag) => {
+            if (tag && tag.uid === uid) {
+              changed = true;
+              return {...tag, ...tagChanges};
+            }
+            return tag;
+          });
+
+          if (changed) {
+            writer.update(doc.ref, {taggedUsers: next}).catch(logWriteError);
+            updated++;
           }
-          return tag;
-        });
-
-        if (changed) {
-          writer.update(doc.ref, {taggedUsers: next}).catch(logWriteError);
-          updated++;
         }
       }
     }
 
     await writer.close();
-    logger.info("Username synced", {uid, username, updated});
+    logger.info("Profile copies synced", {
+      uid,
+      fields: Object.keys(changes),
+      updated,
+    });
   },
 );
 

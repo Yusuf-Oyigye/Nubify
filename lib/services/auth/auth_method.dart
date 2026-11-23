@@ -124,10 +124,12 @@ class AuthMethods {
 
   Future<void> _createProfile(
     DocumentReference<Map<String, dynamic>> userRef,
-    model.User user,
-  ) async {
+    model.User user, {
+    Map<String, dynamic> extra = const <String, dynamic>{},
+  }) async {
     final Map<String, dynamic> data = <String, dynamic>{
       ...user.toJson(),
+      ...extra,
       'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     };
@@ -195,6 +197,9 @@ class AuthMethods {
     required String hobbies,
     required String favoriteQuote,
     required String gender,
+    // NubifyAvatarStyle: male, female or hijab.
+    required String avatarStyle,
+    required String languagePreference,
     Uint8List? file,
   }) async {
     String res = 'Some error occurred';
@@ -235,7 +240,8 @@ class AuthMethods {
         return 'Enter a valid Egyptian number beginning 010, 011, 012, or 015';
       }
 
-      if (!NubifyGender.isValid(gender)) {
+      if (!NubifyGender.isValid(gender) ||
+          NubifyAvatarStyle.genderFor(avatarStyle) != gender) {
         return 'Please choose male or female';
       }
 
@@ -290,21 +296,28 @@ class AuthMethods {
 
       // Profile and username lock are saved together, so the
       // username is claimed atomically.
-      await _createProfile(publicUser, user);
+      await _createProfile(
+        publicUser,
+        user,
+        extra: <String, dynamic>{
+          'avatarStyle': avatarStyle,
+          'languagePreference': languagePreference,
+        },
+      );
 
       //===================================================
       // PROFILE PICTURE
       //
       // The chosen photo, or the faculty-coloured avatar
       // when none was chosen. A failed upload never undoes
-      // the account; the picture can be added later.
+      // the account; the app adds the avatar later instead.
       //===================================================
 
       try {
         final Uint8List picture =
             file ??
             await NubifyAvatarPainter.renderPng(
-              female: gender == NubifyGender.female,
+              style: avatarStyle,
               color: NubifyAvatarColors.forFaculty(cleanFaculty),
             );
 
@@ -316,6 +329,9 @@ class AuthMethods {
 
         await publicUser.update(<String, dynamic>{
           'photoUrl': photoUrl,
+          // True when the picture is the generated avatar, so it
+          // can be redrawn if the faculty or avatar changes.
+          'avatarPhoto': file == null,
           'updatedAt': FieldValue.serverTimestamp(),
         });
       } catch (error) {

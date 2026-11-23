@@ -67,7 +67,7 @@ firebase deploy --only firestore:rules
 ```
 
 ```bash
-firebase deploy --only functions:nubifyUsernameSync,functions:nubifyUsernameRelease,functions:nubifyUsernameBackfill
+firebase deploy --only functions:nubifyProfileSync,functions:nubifyUsernameRelease,functions:nubifyUsernameBackfill
 ```
 
 After deploying:
@@ -77,11 +77,30 @@ After deploying:
 2. People whose old username breaks the new rules keep it until they change it in
    Edit Profile; the new rules apply to every new or changed username.
 
-## Faculty avatar colours
+## Faculty avatars
 
-Change the colours in `NubifyAvatarColors.byFacultyId` in
-`lib/widgets/profile/nubify_avatar.dart`. New students who skip the photo get the
-avatar saved as their profile picture, so a colour change applies to new signups.
+- Faceless avatars in each faculty's colour: **male**, **female**, **female with
+  hijab**, and **neutral** (no hair) for older accounts that never chose.
+- Signup: students pick Male or Female; female students also pick "With hair"
+  or "With hijab". Saved as `gender` and `avatarStyle` on `users/{uid}`.
+- Anyone without a profile picture gets their avatar saved as their photo
+  (`avatarPhoto: true`): at signup, or the next time they open the app
+  (`ProfileService.ensureAvatarPhoto`). Every screen shows the profile photo, so
+  the avatar appears everywhere: posts, comments, chats, stories and search.
+- Edit Profile: choose Male, Female or Hijab; "Use my avatar instead" swaps a
+  photo for the avatar. If the picture is still the avatar, changing faculty or
+  style redraws it.
+- Old copies of the photo in posts and stories are updated by the app; copies in
+  comments, replies and tags by `nubifyProfileSync` once functions are deployed.
+- Colours: `NubifyAvatarColors.byFacultyId` in `lib/widgets/profile/nubify_avatar.dart`.
+
+## Language preference
+
+Login (globe button, top right) and the first signup step let people choose
+English, Arabic, Hausa, Yoruba, Hindi or French. It is the same setting as
+Menu → Language (`lib/services/common/language_preference.dart`), saved on the
+phone and on `users/{uid}.languagePreference`. The app's text is not translated
+yet; this only records the choice.
 
 ## Test checklist
 

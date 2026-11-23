@@ -4,10 +4,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../services/auth/auth_method.dart';
+import '../../services/common/language_preference.dart';
 import '../../responsive/mobile_screen_layout.dart';
 import '../../responsive/responsive_layout_screen.dart';
 import '../../responsive/web_screen_layout.dart';
 import '../../utils/common/utils.dart';
+import '../../widgets/auth/language_picker.dart';
 import '../../widgets/auth/nubify_auth_style.dart';
 
 import 'signup_screen.dart';
@@ -38,6 +40,29 @@ class _LoginScreenState extends State<LoginScreen> {
 
   bool _isLoading = false;
 
+  String _language = 'en';
+
+  // Set when the language is changed here, so it is saved
+  // to the profile once logged in.
+  bool _languageChanged = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    LanguagePreference.load().then((String code) {
+      if (mounted) setState(() => _language = code);
+    });
+  }
+
+  void _setLanguage(String code) {
+    setState(() {
+      _language = code;
+      _languageChanged = true;
+    });
+    LanguagePreference.save(code);
+  }
+
   //===================================================
   // LOGIN
   //===================================================
@@ -63,6 +88,11 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     if (res == 'success') {
+      if (_languageChanged) {
+        await LanguagePreference.save(_language);
+        if (!mounted) return;
+      }
+
       Navigator.of(context).pushReplacement(
         MaterialPageRoute<void>(
           builder: (_) => const ResponsiveLayout(
@@ -154,6 +184,17 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: AutofillGroup(
                     child: Column(
                       children: <Widget>[
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: NubifyLanguagePicker(
+                            code: _language,
+                            onChanged: _setLanguage,
+                            compact: true,
+                          ),
+                        ),
+
+                        const SizedBox(height: 8),
+
                         NubifyAuthLogo(width: logoWidth),
 
                         const SizedBox(height: 28),
@@ -202,7 +243,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   controller: _emailController,
                                   label: 'Email',
                                   hint: 'you@example.com',
-                                  icon: Icons.alternate_email_rounded,
+                                  icon: Icons.email_outlined,
                                   keyboardType: TextInputType.emailAddress,
                                   textInputAction: TextInputAction.next,
                                   autofillHints: const <String>[
