@@ -7,7 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../services/auth/auth_method.dart';
 import '../../services/common/language_preference.dart';
 import '../../services/profile/username_service.dart';
-import '../../utils/auth/signup_text.dart';
+import '../../utils/auth/auth_text.dart';
 import '../../utils/common/egyptian_phone.dart';
 import '../../utils/common/email_check.dart';
 import '../../utils/faculties/faculty_catalog.dart';
@@ -100,7 +100,7 @@ class _SignupScreenState extends State<SignupScreen> {
   String _t(
     String english, [
     Map<String, Object> values = const <String, Object>{},
-  ]) => SignupText.tr(_language, english, values);
+  ]) => AuthText.tr(_language, english, values);
 
   String? _emailError;
 
@@ -970,7 +970,7 @@ class _SignupScreenState extends State<SignupScreen> {
   Widget build(BuildContext context) {
     final bool lastStep = _currentStep == _stepCount - 1;
     final bool reduceMotion = MediaQuery.of(context).disableAnimations;
-    final bool rtl = SignupText.isRtl(_language);
+    final bool rtl = AuthText.isRtl(_language);
 
     return Directionality(
       // Arabic reads right to left.

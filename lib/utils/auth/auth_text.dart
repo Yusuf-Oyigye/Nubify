@@ -1,16 +1,18 @@
 //===================================================
-// SIGNUP TEXT IN EVERY LANGUAGE
+// LOGIN AND SIGNUP TEXT IN EVERY LANGUAGE
 //
-// The signup steps show in the language picked on the
-// first step. The English text is the key; anything not
-// translated here stays in English (e.g. server errors).
+// Login shows in the language picked on its language
+// button; the signup steps in the one picked on their
+// first step (the same saved choice). The English text is
+// the key; anything not translated here stays in English
+// (e.g. unusual server errors).
 //
 // Arabic and French are complete. Hausa, Yoruba and Hindi
 // are good first versions: a native speaker should read
 // them once and fix any wording here.
 //===================================================
 
-abstract final class SignupText {
+abstract final class AuthText {
   /// Arabic reads right to left.
   static bool isRtl(String code) => code == 'ar';
 
@@ -111,6 +113,25 @@ abstract final class SignupText {
       'Your email must contain "@".': 'يجب أن يحتوي بريدك الإلكتروني على "@".',
       'This email address does not look right. Please check it.':
           'يبدو أن عنوان البريد الإلكتروني غير صحيح. يرجى التحقق منه.',
+      // Login
+      'Welcome back': 'مرحبًا بعودتك',
+      'Log in to your campus, your people, your vibe.':
+          'سجّل الدخول إلى جامعتك وأصدقائك وأجوائك.',
+      'Forgot password?': 'نسيت كلمة المرور؟',
+      'New to Nubify?': 'جديد على Nubify؟',
+      'Create an account': 'أنشئ حسابًا',
+      'Please enter your email first': 'يرجى إدخال بريدك الإلكتروني أولاً',
+      'A password reset link has been sent to your email.':
+          'تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني.',
+      'Unable to send password reset email.':
+          'تعذر إرسال رسالة إعادة تعيين كلمة المرور.',
+      'Please enter all the fields': 'يرجى ملء جميع الحقول',
+      'Invalid email address': 'عنوان البريد الإلكتروني غير صالح',
+      'Incorrect email or password':
+          'البريد الإلكتروني أو كلمة المرور غير صحيحة',
+      'User not found': 'المستخدم غير موجود',
+      'Login failed': 'فشل تسجيل الدخول',
+      'Some error occurred': 'حدث خطأ ما',
     },
 
     //=============================================
@@ -196,6 +217,24 @@ abstract final class SignupText {
       'Your email must contain "@".': 'Votre e-mail doit contenir « @ ».',
       'This email address does not look right. Please check it.':
           'Cette adresse e-mail ne semble pas correcte. Veuillez la vérifier.',
+      // Login
+      'Welcome back': 'Bon retour',
+      'Log in to your campus, your people, your vibe.':
+          'Connectez-vous à votre campus, vos amis, votre ambiance.',
+      'Forgot password?': 'Mot de passe oublié ?',
+      'New to Nubify?': 'Nouveau sur Nubify ?',
+      'Create an account': 'Créer un compte',
+      'Please enter your email first': 'Veuillez d’abord saisir votre e-mail',
+      'A password reset link has been sent to your email.':
+          'Un lien de réinitialisation du mot de passe a été envoyé à votre e-mail.',
+      'Unable to send password reset email.':
+          'Impossible d’envoyer l’e-mail de réinitialisation.',
+      'Please enter all the fields': 'Veuillez remplir tous les champs',
+      'Invalid email address': 'Adresse e-mail invalide',
+      'Incorrect email or password': 'E-mail ou mot de passe incorrect',
+      'User not found': 'Utilisateur introuvable',
+      'Login failed': 'Échec de la connexion',
+      'Some error occurred': 'Une erreur s’est produite',
     },
 
     //=============================================
@@ -283,6 +322,25 @@ abstract final class SignupText {
       'Your email must contain "@".': 'Imel ɗinka dole ya ƙunshi "@".',
       'This email address does not look right. Please check it.':
           'Wannan adireshin imel bai yi daidai ba. Da fatan za ka duba shi.',
+      // Login
+      'Welcome back': 'Barka da dawowa',
+      'Log in to your campus, your people, your vibe.':
+          'Shiga jami’arka, mutanenka, da salonka.',
+      'Forgot password?': 'Ka manta kalmar sirri?',
+      'New to Nubify?': 'Sabo a Nubify?',
+      'Create an account': 'Ƙirƙiri asusu',
+      'Please enter your email first':
+          'Da fatan za ka fara shigar da imel ɗinka',
+      'A password reset link has been sent to your email.':
+          'An aika hanyar sake saita kalmar sirri zuwa imel ɗinka.',
+      'Unable to send password reset email.':
+          'Ba a iya aika imel ɗin sake saita kalmar sirri ba.',
+      'Please enter all the fields': 'Da fatan za ka cika duk wuraren',
+      'Invalid email address': 'Adireshin imel bai yi daidai ba',
+      'Incorrect email or password': 'Imel ko kalmar sirri ba daidai ba ne',
+      'User not found': 'Ba a sami mai amfani ba',
+      'Login failed': 'Shiga ya gaza',
+      'Some error occurred': 'An sami matsala',
     },
 
     //=============================================
@@ -367,6 +425,24 @@ abstract final class SignupText {
       'Your email must contain "@".': 'Ímeèlì rẹ gbọ́dọ̀ ní "@".',
       'This email address does not look right. Please check it.':
           'Àdírẹ́sì ímeèlì yìí kò dàbí pé ó tọ́. Jọ̀wọ́ ṣàyẹ̀wò rẹ̀.',
+      // Login
+      'Welcome back': 'Ẹ káàbọ̀ padà',
+      'Log in to your campus, your people, your vibe.':
+          'Wọlé sí ilé ẹ̀kọ́ rẹ, àwọn ènìyàn rẹ, àti ayọ̀ rẹ.',
+      'Forgot password?': 'Ṣé o gbàgbé ọ̀rọ̀ aṣínà?',
+      'New to Nubify?': 'Ṣé o jẹ́ tuntun lórí Nubify?',
+      'Create an account': 'Ṣẹ̀dá àkọọ́lẹ̀',
+      'Please enter your email first': 'Jọ̀wọ́ kọ́kọ́ tẹ ímeèlì rẹ',
+      'A password reset link has been sent to your email.':
+          'A ti fi ìjápọ̀ àtúntò ọ̀rọ̀ aṣínà ránṣẹ́ sí ímeèlì rẹ.',
+      'Unable to send password reset email.':
+          'A kò lè fi ímeèlì àtúntò ọ̀rọ̀ aṣínà ránṣẹ́.',
+      'Please enter all the fields': 'Jọ̀wọ́ kún gbogbo àwọn àyè',
+      'Invalid email address': 'Àdírẹ́sì ímeèlì kò tọ́',
+      'Incorrect email or password': 'Ímeèlì tàbí ọ̀rọ̀ aṣínà kò tọ́',
+      'User not found': 'A kò rí olùmúlò náà',
+      'Login failed': 'Wíwọlé kùnà',
+      'Some error occurred': 'Àṣìṣe kan ṣẹlẹ̀',
     },
 
     //=============================================
@@ -451,6 +527,24 @@ abstract final class SignupText {
       'Your email must contain "@".': 'आपके ईमेल में "@" होना चाहिए।',
       'This email address does not look right. Please check it.':
           'यह ईमेल पता सही नहीं लग रहा। कृपया इसे जाँच लें।',
+      // Login
+      'Welcome back': 'फिर से स्वागत है',
+      'Log in to your campus, your people, your vibe.':
+          'अपने कैंपस, अपने लोगों, अपने माहौल में लॉग इन करें।',
+      'Forgot password?': 'पासवर्ड भूल गए?',
+      'New to Nubify?': 'Nubify पर नए हैं?',
+      'Create an account': 'खाता बनाएँ',
+      'Please enter your email first': 'कृपया पहले अपना ईमेल डालें',
+      'A password reset link has been sent to your email.':
+          'पासवर्ड रीसेट लिंक आपके ईमेल पर भेज दिया गया है।',
+      'Unable to send password reset email.':
+          'पासवर्ड रीसेट ईमेल नहीं भेजा जा सका।',
+      'Please enter all the fields': 'कृपया सभी फ़ील्ड भरें',
+      'Invalid email address': 'अमान्य ईमेल पता',
+      'Incorrect email or password': 'ईमेल या पासवर्ड गलत है',
+      'User not found': 'उपयोगकर्ता नहीं मिला',
+      'Login failed': 'लॉग इन विफल रहा',
+      'Some error occurred': 'कोई त्रुटि हुई',
     },
   };
 }

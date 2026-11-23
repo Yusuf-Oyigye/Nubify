@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../../services/auth/auth_method.dart';
 import '../../services/common/language_preference.dart';
+import '../../utils/auth/auth_text.dart';
 import '../../responsive/mobile_screen_layout.dart';
 import '../../responsive/responsive_layout_screen.dart';
 import '../../responsive/web_screen_layout.dart';
@@ -55,6 +56,9 @@ class _LoginScreenState extends State<LoginScreen> {
     });
   }
 
+  /// [english] in the language chosen on this screen.
+  String _t(String english) => AuthText.tr(_language, english);
+
   void _setLanguage(String code) {
     setState(() {
       _language = code;
@@ -102,7 +106,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       );
     } else {
-      showSnackBar(res, context);
+      showSnackBar(_t(res), context);
     }
 
     if (mounted) {
@@ -120,7 +124,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final String email = _emailController.text.trim();
 
     if (email.isEmpty) {
-      showSnackBar('Please enter your email first', context);
+      showSnackBar(_t('Please enter your email first'), context);
 
       return;
     }
@@ -133,7 +137,7 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
       showSnackBar(
-        'A password reset link has been sent to your email.',
+        _t('A password reset link has been sent to your email.'),
         context,
       );
     } on FirebaseAuthException catch (error) {
@@ -142,7 +146,7 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
       showSnackBar(
-        error.message ?? 'Unable to send password reset email.',
+        error.message ?? _t('Unable to send password reset email.'),
         context,
       );
     }
@@ -152,10 +156,14 @@ class _LoginScreenState extends State<LoginScreen> {
   // SIGNUP
   //===================================================
 
-  void _navigateToSignup() {
-    Navigator.of(
+  Future<void> _navigateToSignup() async {
+    await Navigator.of(
       context,
     ).push(MaterialPageRoute<void>(builder: (_) => const SignupScreen()));
+
+    // Signup may have changed the language.
+    final String code = await LanguagePreference.load();
+    if (mounted && code != _language) setState(() => _language = code);
   }
 
   //===================================================
@@ -176,177 +184,189 @@ class _LoginScreenState extends State<LoginScreen> {
     // Where the logo starts: under the language pill.
     final double logoTop = safeTop + 12 + 40 + 6;
 
-    return NubifyAuthTheme(
-      child: Scaffold(
-        body: NubifyAuthBackground(
-          // The blue backdrop scrolls with the form, so the
-          // logo always sits on its matching blue.
-          child: SingleChildScrollView(
-            child: Stack(
-              children: <Widget>[
-                Positioned(
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  height: logoTop + logoHeight + 170,
-                  child: _LoginBackdrop(
-                    logoTop: logoTop,
-                    logoHeight: logoHeight,
+    return Directionality(
+      // Arabic reads right to left.
+      textDirection: AuthText.isRtl(_language)
+          ? TextDirection.rtl
+          : TextDirection.ltr,
+      child: NubifyAuthTheme(
+        child: Scaffold(
+          body: NubifyAuthBackground(
+            // The blue backdrop scrolls with the form, so the
+            // logo always sits on its matching blue.
+            child: SingleChildScrollView(
+              child: Stack(
+                children: <Widget>[
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: logoTop + logoHeight + 170,
+                    child: _LoginBackdrop(
+                      logoTop: logoTop,
+                      logoHeight: logoHeight,
+                    ),
                   ),
-                ),
-                SafeArea(
-                  child: Align(
-                    alignment: Alignment.topCenter,
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(22, 12, 22, 24),
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 440),
-                        child: AutofillGroup(
-                          child: Column(
-                            children: <Widget>[
-                              SizedBox(
-                                height: 40,
-                                child: Align(
-                                  alignment: Alignment.centerRight,
-                                  child: NubifyLanguagePicker(
-                                    code: _language,
-                                    onChanged: _setLanguage,
-                                    compact: true,
+                  SafeArea(
+                    child: Align(
+                      alignment: Alignment.topCenter,
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(22, 12, 22, 24),
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 440),
+                          child: AutofillGroup(
+                            child: Column(
+                              children: <Widget>[
+                                SizedBox(
+                                  height: 40,
+                                  child: Align(
+                                    alignment: AlignmentDirectional.centerEnd,
+                                    child: NubifyLanguagePicker(
+                                      code: _language,
+                                      onChanged: _setLanguage,
+                                      compact: true,
+                                    ),
                                   ),
                                 ),
-                              ),
 
-                              const SizedBox(height: 6),
+                                const SizedBox(height: 6),
 
-                              NubifyAuthEntrance(
-                                delay: const Duration(milliseconds: 100),
-                                child: _LoginHeroLogo(height: logoHeight),
-                              ),
-
-                              const SizedBox(height: 10),
-
-                              //===================================================
-                              // WELCOME
-                              //===================================================
-                              const NubifyAuthEntrance(
-                                delay: Duration(milliseconds: 250),
-                                child: Column(
-                                  children: <Widget>[
-                                    Text(
-                                      'Welcome back',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        color: NubifyAuthColors.text,
-                                        fontSize: 28,
-                                        fontWeight: FontWeight.w900,
-                                        letterSpacing: -0.4,
-                                      ),
-                                    ),
-                                    SizedBox(height: 6),
-                                    Text(
-                                      'Log in to your campus, your people, your vibe.',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        color: NubifyAuthColors.muted,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                  ],
+                                NubifyAuthEntrance(
+                                  delay: const Duration(milliseconds: 100),
+                                  child: _LoginHeroLogo(height: logoHeight),
                                 ),
-                              ),
 
-                              const SizedBox(height: 24),
+                                const SizedBox(height: 10),
 
-                              //===================================================
-                              // LOGIN PANEL
-                              //===================================================
-                              NubifyAuthEntrance(
-                                delay: const Duration(milliseconds: 400),
-                                child: NubifyAuthPanel(
+                                //===================================================
+                                // WELCOME
+                                //===================================================
+                                NubifyAuthEntrance(
+                                  delay: const Duration(milliseconds: 250),
                                   child: Column(
                                     children: <Widget>[
-                                      NubifyAuthField(
-                                        controller: _emailController,
-                                        label: 'Email',
-                                        hint: 'you@example.com',
-                                        icon: Icons.email_outlined,
-                                        keyboardType:
-                                            TextInputType.emailAddress,
-                                        textInputAction: TextInputAction.next,
-                                        autofillHints: const <String>[
-                                          AutofillHints.email,
-                                        ],
-                                      ),
-
-                                      const SizedBox(height: 14),
-
-                                      NubifyAuthField(
-                                        controller: _passwordController,
-                                        label: 'Password',
-                                        icon: Icons.lock_outline_rounded,
-                                        isPassword: true,
-                                        textInputAction: TextInputAction.done,
-                                        autofillHints: const <String>[
-                                          AutofillHints.password,
-                                        ],
-                                        onSubmitted: (_) {
-                                          _loginUser();
-                                        },
-                                      ),
-
-                                      Align(
-                                        alignment: Alignment.centerRight,
-                                        child: TextButton(
-                                          onPressed: _forgotPassword,
-                                          child: const Text('Forgot password?'),
+                                      Text(
+                                        _t('Welcome back'),
+                                        textAlign: TextAlign.center,
+                                        style: const TextStyle(
+                                          color: NubifyAuthColors.text,
+                                          fontSize: 28,
+                                          fontWeight: FontWeight.w900,
+                                          letterSpacing: -0.4,
                                         ),
                                       ),
-
-                                      const SizedBox(height: 4),
-
-                                      NubifyAuthButton(
-                                        label: 'Log in',
-                                        icon: Icons.arrow_forward_rounded,
-                                        loading: _isLoading,
-                                        onPressed: _loginUser,
+                                      const SizedBox(height: 6),
+                                      Text(
+                                        _t(
+                                          'Log in to your campus, your people, your vibe.',
+                                        ),
+                                        textAlign: TextAlign.center,
+                                        style: const TextStyle(
+                                          color: NubifyAuthColors.muted,
+                                          fontSize: 14,
+                                        ),
                                       ),
                                     ],
                                   ),
                                 ),
-                              ),
 
-                              const SizedBox(height: 22),
+                                const SizedBox(height: 24),
 
-                              //===================================================
-                              // SIGN UP
-                              //===================================================
-                              NubifyAuthEntrance(
-                                delay: const Duration(milliseconds: 550),
-                                child: Wrap(
-                                  alignment: WrapAlignment.center,
-                                  crossAxisAlignment: WrapCrossAlignment.center,
-                                  children: <Widget>[
-                                    const Text(
-                                      'New to Nubify?',
-                                      style: TextStyle(
-                                        color: NubifyAuthColors.muted,
-                                      ),
+                                //===================================================
+                                // LOGIN PANEL
+                                //===================================================
+                                NubifyAuthEntrance(
+                                  delay: const Duration(milliseconds: 400),
+                                  child: NubifyAuthPanel(
+                                    child: Column(
+                                      children: <Widget>[
+                                        NubifyAuthField(
+                                          controller: _emailController,
+                                          label: _t('Email'),
+                                          hint: 'you@example.com',
+                                          textDirection: TextDirection.ltr,
+                                          icon: Icons.email_outlined,
+                                          keyboardType:
+                                              TextInputType.emailAddress,
+                                          textInputAction: TextInputAction.next,
+                                          autofillHints: const <String>[
+                                            AutofillHints.email,
+                                          ],
+                                        ),
+
+                                        const SizedBox(height: 14),
+
+                                        NubifyAuthField(
+                                          controller: _passwordController,
+                                          label: _t('Password'),
+                                          icon: Icons.lock_outline_rounded,
+                                          isPassword: true,
+                                          textDirection: TextDirection.ltr,
+                                          textInputAction: TextInputAction.done,
+                                          autofillHints: const <String>[
+                                            AutofillHints.password,
+                                          ],
+                                          onSubmitted: (_) {
+                                            _loginUser();
+                                          },
+                                        ),
+
+                                        Align(
+                                          alignment:
+                                              AlignmentDirectional.centerEnd,
+                                          child: TextButton(
+                                            onPressed: _forgotPassword,
+                                            child: Text(_t('Forgot password?')),
+                                          ),
+                                        ),
+
+                                        const SizedBox(height: 4),
+
+                                        NubifyAuthButton(
+                                          label: _t('Log in'),
+                                          icon: Icons.arrow_forward_rounded,
+                                          loading: _isLoading,
+                                          onPressed: _loginUser,
+                                        ),
+                                      ],
                                     ),
-                                    TextButton(
-                                      onPressed: _navigateToSignup,
-                                      child: const Text('Create an account'),
-                                    ),
-                                  ],
+                                  ),
                                 ),
-                              ),
-                            ],
+
+                                const SizedBox(height: 22),
+
+                                //===================================================
+                                // SIGN UP
+                                //===================================================
+                                NubifyAuthEntrance(
+                                  delay: const Duration(milliseconds: 550),
+                                  child: Wrap(
+                                    alignment: WrapAlignment.center,
+                                    crossAxisAlignment:
+                                        WrapCrossAlignment.center,
+                                    children: <Widget>[
+                                      Text(
+                                        _t('New to Nubify?'),
+                                        style: const TextStyle(
+                                          color: NubifyAuthColors.muted,
+                                        ),
+                                      ),
+                                      TextButton(
+                                        onPressed: _navigateToSignup,
+                                        child: Text(_t('Create an account')),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
