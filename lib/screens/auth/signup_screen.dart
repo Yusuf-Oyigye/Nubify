@@ -936,7 +936,12 @@ class _SignupScreenState extends State<SignupScreen> {
           const SizedBox(height: 14),
 
           Text(
-            _t(_stepTitles[_currentStep]),
+            // The picture can be skipped, so say so.
+            _currentStep == _pictureStep
+                ? _t('{label} (optional)', <String, Object>{
+                    'label': _t(_stepTitles[_currentStep]),
+                  })
+                : _t(_stepTitles[_currentStep]),
             textAlign: TextAlign.center,
             style: TextStyle(
               color: _tone.text,
