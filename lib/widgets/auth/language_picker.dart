@@ -9,6 +9,7 @@ import 'nubify_auth_style.dart';
 // compact: a small globe pill for the login screen.
 // Otherwise a full-width row like a text field.
 // Tapping either opens the language list.
+// Every name shows in English and Arabic together.
 //===================================================
 
 class NubifyLanguagePicker extends StatelessWidget {
@@ -27,54 +28,77 @@ class NubifyLanguagePicker extends StatelessWidget {
     final String? picked = await showModalBottomSheet<String>(
       context: context,
       showDragHandle: true,
+      isScrollControlled: true,
       backgroundColor: NubifyAuthColors.night,
       builder: (BuildContext sheetContext) {
         return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              const Padding(
-                padding: EdgeInsets.fromLTRB(20, 0, 20, 8),
-                child: Row(
-                  children: <Widget>[
-                    Icon(Icons.translate_rounded, color: NubifyAuthColors.sky),
-                    SizedBox(width: 10),
-                    Text(
-                      'Choose your language',
-                      style: TextStyle(
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(20, 0, 20, 8),
+                  child: Row(
+                    children: <Widget>[
+                      Icon(
+                        Icons.translate_rounded,
+                        color: NubifyAuthColors.sky,
+                      ),
+                      SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Text(
+                              LanguagePreference.chooseTitle,
+                              style: TextStyle(
+                                color: NubifyAuthColors.text,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            Text(
+                              LanguagePreference.chooseTitleArabic,
+                              style: TextStyle(
+                                color: NubifyAuthColors.muted,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                for (final NubifyLanguage option in LanguagePreference.options)
+                  ListTile(
+                    onTap: () => Navigator.pop(sheetContext, option.code),
+                    title: Text(
+                      option.bilingual,
+                      style: const TextStyle(
                         color: NubifyAuthColors.text,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
-                  ],
-                ),
-              ),
-              for (final NubifyLanguage option in LanguagePreference.options)
-                ListTile(
-                  onTap: () => Navigator.pop(sheetContext, option.code),
-                  title: Text(
-                    option.label,
-                    style: const TextStyle(
-                      color: NubifyAuthColors.text,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    subtitle: option.extraNativeName == null
+                        ? null
+                        : Text(
+                            option.extraNativeName!,
+                            style: const TextStyle(
+                              color: NubifyAuthColors.muted,
+                            ),
+                          ),
+                    trailing: option.code == code
+                        ? const Icon(
+                            Icons.check_circle_rounded,
+                            color: NubifyAuthColors.sky,
+                          )
+                        : null,
                   ),
-                  subtitle: option.nativeName == option.label
-                      ? null
-                      : Text(
-                          option.nativeName,
-                          style: const TextStyle(color: NubifyAuthColors.muted),
-                        ),
-                  trailing: option.code == code
-                      ? const Icon(
-                          Icons.check_circle_rounded,
-                          color: NubifyAuthColors.sky,
-                        )
-                      : null,
-                ),
-              const SizedBox(height: 8),
-            ],
+                const SizedBox(height: 8),
+              ],
+            ),
           ),
         );
       },
@@ -112,7 +136,7 @@ class NubifyLanguagePicker extends StatelessWidget {
                   ),
                   const SizedBox(width: 6),
                   Text(
-                    language.label,
+                    language.bilingual,
                     style: const TextStyle(
                       color: NubifyAuthColors.text,
                       fontWeight: FontWeight.w700,
@@ -156,16 +180,14 @@ class NubifyLanguagePicker extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
                       const Text(
-                        'Language',
+                        LanguagePreference.title,
                         style: TextStyle(
                           color: NubifyAuthColors.muted,
                           fontSize: 12,
                         ),
                       ),
                       Text(
-                        language.nativeName == language.label
-                            ? language.label
-                            : '${language.label} · ${language.nativeName}',
+                        language.bilingual,
                         style: const TextStyle(
                           color: NubifyAuthColors.text,
                           fontSize: 15.5,

@@ -10,9 +10,11 @@ import '../faculties/nub_faculties_screen.dart';
 import 'honorary_recognition_screen.dart';
 import 'nubify_settings_screen.dart';
 import '../profile/user_connections_screen.dart';
+import '../../services/common/language_preference.dart';
 import '../../widgets/menu/nubify_menu_components.dart';
 import 'about_developer_screen.dart';
 import 'explore_nub_screen.dart';
+import 'nubify_support_screen.dart';
 import '../huddles/huddles_screen.dart';
 
 //===================================================
@@ -41,14 +43,8 @@ class MenuScreen extends StatefulWidget {
 class _MenuScreenState extends State<MenuScreen> {
   static const String _languagePreferenceKey = 'nubify_language_preference_v1';
 
-  static const List<_LanguageOption> _languages = <_LanguageOption>[
-    _LanguageOption('en', 'English'),
-    _LanguageOption('ar', 'Arabic'),
-    _LanguageOption('ha', 'Hausa'),
-    _LanguageOption('yo', 'Yoruba'),
-    _LanguageOption('hi', 'Hindi'),
-    _LanguageOption('fr', 'French'),
-  ];
+  // English + Arabic names, shared with login and signup.
+  static const List<NubifyLanguage> _languages = LanguagePreference.options;
 
   Stream<DocumentSnapshot<Map<String, dynamic>>>? _profileStream;
   final ScrollController _scrollController = ScrollController();
@@ -192,16 +188,29 @@ class _MenuScreenState extends State<MenuScreen> {
               children: <Widget>[
                 Padding(
                   padding: const EdgeInsets.fromLTRB(12, 2, 12, 10),
-                  child: Text(
-                    'Language preference',
-                    style: TextStyle(
-                      color: NubifyMenuColors.primaryText(sheetContext),
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        LanguagePreference.chooseTitle,
+                        style: TextStyle(
+                          color: NubifyMenuColors.primaryText(sheetContext),
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      Text(
+                        LanguagePreference.chooseTitleArabic,
+                        style: TextStyle(
+                          color: NubifyMenuColors.secondaryText(sheetContext),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                for (final _LanguageOption language in _languages)
+                for (final NubifyLanguage language in _languages)
                   ListTile(
                     onTap: () => Navigator.pop(sheetContext, language.code),
                     leading: NubifyIconTile(
@@ -214,7 +223,7 @@ class _MenuScreenState extends State<MenuScreen> {
                       iconSize: 21,
                     ),
                     title: Text(
-                      language.label,
+                      language.bilingual,
                       style: TextStyle(
                         color: NubifyMenuColors.primaryText(sheetContext),
                         fontWeight: language.code == _languageCode
@@ -222,6 +231,16 @@ class _MenuScreenState extends State<MenuScreen> {
                             : FontWeight.w600,
                       ),
                     ),
+                    subtitle: language.extraNativeName == null
+                        ? null
+                        : Text(
+                            language.extraNativeName!,
+                            style: TextStyle(
+                              color: NubifyMenuColors.secondaryText(
+                                sheetContext,
+                              ),
+                            ),
+                          ),
                     trailing: language.code == _languageCode
                         ? const Icon(
                             Icons.check_circle_rounded,
@@ -761,10 +780,7 @@ class _MenuScreenState extends State<MenuScreen> {
   }
 
   Widget _languagePreferenceCard({bool embedded = false}) {
-    final _LanguageOption selected = _languages.firstWhere(
-      (option) => option.code == _languageCode,
-      orElse: () => _languages.first,
-    );
+    final NubifyLanguage selected = LanguagePreference.byCode(_languageCode);
 
     return _PressScale(
       onTap: _chooseLanguage,
@@ -794,7 +810,7 @@ class _MenuScreenState extends State<MenuScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   Text(
-                    'Language preference',
+                    LanguagePreference.title,
                     style: TextStyle(
                       color: NubifyMenuColors.primaryText(context),
                       fontSize: 13.5,
@@ -803,7 +819,7 @@ class _MenuScreenState extends State<MenuScreen> {
                   ),
                   const SizedBox(height: 1),
                   Text(
-                    selected.label,
+                    selected.bilingual,
                     style: TextStyle(
                       color: NubifyMenuColors.secondaryText(context),
                       fontSize: 11.5,
@@ -1050,6 +1066,13 @@ class _MenuScreenState extends State<MenuScreen> {
       ),
 
       _MenuItem(
+        'Support',
+        Symbols.support_agent_rounded,
+        nubifySky,
+        () => _push(const NubifySupportScreen()),
+      ),
+
+      _MenuItem(
         'Log Out',
         Symbols.logout_rounded,
         NubifyPalette.crimson,
@@ -1165,13 +1188,6 @@ class _MenuItem {
 
   // 3D picture from assets/menu_icons/, shown instead of the icon.
   final String? picture;
-}
-
-class _LanguageOption {
-  const _LanguageOption(this.code, this.label);
-
-  final String code;
-  final String label;
 }
 
 //===================================================

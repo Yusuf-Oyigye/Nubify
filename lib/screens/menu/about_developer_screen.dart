@@ -10,6 +10,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../utils/common/nubify_contact.dart';
 import '../../utils/faculties/faculty_catalog.dart';
 import '../../widgets/menu/nubify_honor_widgets.dart';
 
@@ -38,9 +39,9 @@ class _Developer {
 
   // The story, one paragraph per item.
   static const List<String> story = [
-    'Yusuf Muhammad Oyigye, also known as Digitaldoc, is a student of the Faculty of '
-        'Medicine and Surgery with a strong interest in technology and a '
-        'passion for learning new things.',
+    'Yusuf Muhammad Oyigye, also known as Digitaldoc, is a Nigerian student '
+        'of the Faculty of Medicine and Surgery with a strong interest in tech '
+        'and a passion for learning new things.',
     'The idea behind Nubify came from different life experiences, personal '
         'observations and challenges encountered around campus. As a student, '
         'I started imagining how university life could become more connected, '
@@ -71,8 +72,7 @@ class _Developer {
         'passion, a personal journey and my little contribution to the '
         'community I belong to.',
     'I know there is still a long way to go, and Nubify has plenty of room to '
-        'grow and improve. But every great journey has a beginning, and this '
-        'is ours.',
+        'grow and improve.',
   ];
 
   static const String motto =
@@ -81,9 +81,12 @@ class _Developer {
   static const String signOff =
       'Built with passion. Driven by consistency. Inspired by community.';
 
-  // An empty value shows "Coming soon".
-  static const String whatsapp = ''; // https://wa.me/20XXXXXXXXXX
-  static const String gmail = ''; // yourname@gmail.com (address only)
+  // WhatsApp and Gmail come from NubifyContact
+  // (lib/utils/common/nubify_contact.dart).
+  static final String whatsapp = NubifyContact.whatsapp(
+    'Hello Digitaldoc 👋 I am reaching out from Nubify.',
+  ).toString();
+  static final String gmail = NubifyContact.email;
 }
 
 //===================================================
@@ -313,18 +316,22 @@ class AboutDeveloperScreen extends StatelessWidget {
 
   Widget _buildSocials(BuildContext context) {
     final List<_SocialLink> links = [
-      const _SocialLink(
+      _SocialLink(
         label: 'WhatsApp',
-        action: 'Chat with me',
-        logo: FaIcon(FontAwesomeIcons.whatsapp, color: Colors.white, size: 20),
+        action: NubifyContact.whatsappDisplay,
+        logo: const FaIcon(
+          FontAwesomeIcons.whatsapp,
+          color: Colors.white,
+          size: 20,
+        ),
         link: _Developer.whatsapp,
-        colors: [Color(0xFF25D366), Color(0xFF128C7E)],
+        colors: const [Color(0xFF25D366), Color(0xFF128C7E)],
       ),
       _SocialLink(
         label: 'Gmail',
-        action: 'Email me',
+        action: _Developer.gmail,
         logo: const Icon(Icons.mail_rounded, color: Colors.white, size: 21),
-        link: _Developer.gmail.isEmpty ? '' : 'mailto:${_Developer.gmail}',
+        link: NubifyContact.gmail(subject: 'Nubify').toString(),
         colors: const [Color(0xFFEA4335), Color(0xFFB31412)],
       ),
     ];
@@ -379,11 +386,16 @@ class AboutDeveloperScreen extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: NubifyHonorColors.muted(context),
-                          fontSize: 12,
+                          fontSize: 12.5,
                         ),
                       ),
                     ],
                   ),
+                ),
+                Icon(
+                  Icons.open_in_new_rounded,
+                  size: 18,
+                  color: NubifyHonorColors.muted(context),
                 ),
               ],
             ),
@@ -394,11 +406,24 @@ class AboutDeveloperScreen extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.only(top: 18),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Expanded(child: tile(links[0])),
-          const SizedBox(width: 12),
-          Expanded(child: tile(links[1])),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 0, 4, 12),
+            child: Text(
+              'For technical support, reports or suggestions, contact me via:',
+              style: TextStyle(
+                color: NubifyHonorColors.text(context),
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          // One under the other so the number and email show in full.
+          tile(links[0]),
+          const SizedBox(height: 10),
+          tile(links[1]),
         ],
       ),
     );

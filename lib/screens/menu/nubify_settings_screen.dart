@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../widgets/profile/delete_account_dialog.dart';
 import '../../widgets/menu/nubify_menu_components.dart';
 import 'nubify_information_screens.dart';
+import 'nubify_support_screen.dart';
 //===================================================
 // NUBIFY — PREMIUM SETTINGS SCREEN
 //===================================================
@@ -130,6 +131,26 @@ class NubifySettingsScreen extends StatelessWidget {
                   const NubifyLegalScreen(
                     type: NubifyLegalType.privacy,
                   ),
+                ),
+              );
+            },
+          ),
+
+          const SizedBox(height: 11),
+
+          //=========================================
+          // SUPPORT
+          //=========================================
+
+          _SettingsLink(
+            label: 'Support',
+            icon: Icons.support_agent_rounded,
+            color: nubifySky,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute<void>(
+                  builder: (_) => const NubifySupportScreen(),
                 ),
               );
             },

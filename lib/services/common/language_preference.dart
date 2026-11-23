@@ -12,11 +12,27 @@ import 'package:shared_preferences/shared_preferences.dart';
 //===================================================
 
 class NubifyLanguage {
-  const NubifyLanguage(this.code, this.label, this.nativeName);
+  const NubifyLanguage(this.code, this.label, this.arabicName, this.nativeName);
 
   final String code;
+
+  // English name, e.g. French.
   final String label;
+
+  // Arabic name, e.g. الفرنسية. Most NUB students read
+  // Arabic, so it always shows next to the English name.
+  final String arabicName;
+
+  // The language's own name, e.g. Français.
   final String nativeName;
+
+  /// English and Arabic together, e.g. "French · الفرنسية".
+  String get bilingual => '$label · $arabicName';
+
+  /// The language's own name when [bilingual] does not
+  /// already show it (Yorùbá, हिन्दी, Français).
+  String? get extraNativeName =>
+      nativeName == label || nativeName == arabicName ? null : nativeName;
 }
 
 abstract final class LanguagePreference {
@@ -24,13 +40,18 @@ abstract final class LanguagePreference {
   static const String storageKey = 'nubify_language_preference_v1';
 
   static const List<NubifyLanguage> options = <NubifyLanguage>[
-    NubifyLanguage('en', 'English', 'English'),
-    NubifyLanguage('ar', 'Arabic', 'العربية'),
-    NubifyLanguage('ha', 'Hausa', 'Hausa'),
-    NubifyLanguage('yo', 'Yoruba', 'Yorùbá'),
-    NubifyLanguage('hi', 'Hindi', 'हिन्दी'),
-    NubifyLanguage('fr', 'French', 'Français'),
+    NubifyLanguage('en', 'English', 'الإنجليزية', 'English'),
+    NubifyLanguage('ar', 'Arabic', 'العربية', 'العربية'),
+    NubifyLanguage('ha', 'Hausa', 'الهوسا', 'Hausa'),
+    NubifyLanguage('yo', 'Yoruba', 'اليوروبا', 'Yorùbá'),
+    NubifyLanguage('hi', 'Hindi', 'الهندية', 'हिन्दी'),
+    NubifyLanguage('fr', 'French', 'الفرنسية', 'Français'),
   ];
+
+  // Shared English + Arabic wording for the pickers.
+  static const String title = 'Language · اللغة';
+  static const String chooseTitle = 'Choose your language';
+  static const String chooseTitleArabic = 'اختر لغتك';
 
   static NubifyLanguage byCode(String code) => options.firstWhere(
     (NubifyLanguage option) => option.code == code,
