@@ -345,11 +345,11 @@ class StoryService {
     //===================================================
     // DURATION
     //
-    // VOICE = MAXIMUM 180 SEC = 3 MIN
+    // VOICE AND VIDEO = MAXIMUM 180 SEC = 3 MIN
     // OTHER STORY = MAXIMUM 60 SEC
     //===================================================
 
-    final int safeDuration = type == 'voice'
+    final int safeDuration = type == 'voice' || type == 'video'
         ? durationSeconds.clamp(3, 180).toInt()
         : durationSeconds.clamp(3, 60).toInt();
 

@@ -1686,14 +1686,16 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
   //===================================================
   // PICK VIDEO
   //
-  // VIDEO REMAINS 60 SEC.
-  // VOICE IS NOW 5 MIN.
+  // STORY VIDEO = MAXIMUM 3 MIN.
+  // LONGER GALLERY VIDEOS ARE REFUSED WITH A MESSAGE.
   //===================================================
+
+  static const int _maxVideoSeconds = 180;
 
   Future<void> _pickVideo(ImageSource source) async {
     final XFile? file = await _imagePicker.pickVideo(
       source: source,
-      maxDuration: const Duration(seconds: 60),
+      maxDuration: const Duration(seconds: _maxVideoSeconds),
     );
 
     if (file == null) {
@@ -1709,9 +1711,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
 
       await controller.initialize();
 
-      durationSeconds = controller.value.duration.inSeconds
-          .clamp(3, 60)
-          .toInt();
+      durationSeconds = controller.value.duration.inSeconds;
 
       await controller.dispose();
     } catch (_) {}
@@ -1719,6 +1719,16 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
     if (!mounted) {
       return;
     }
+
+    // One second of slack for rounding.
+    if (durationSeconds > _maxVideoSeconds + 1) {
+      _showMessage(
+        'Story videos can be up to 3 minutes. Please choose a shorter video.',
+      );
+      return;
+    }
+
+    durationSeconds = durationSeconds.clamp(3, _maxVideoSeconds).toInt();
 
     setState(() {
       _mode = 'media';

@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import '../../utils/profile/username_rules.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:video_player/video_player.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 
 class CreatePostScreen extends StatefulWidget {
@@ -191,15 +192,65 @@ class _CreatePostScreenState
   }
 
   // ============================================================
+  // VIDEO LENGTH
+  //
+  // FEED AND NUBUZZ VIDEOS = MAXIMUM 5 MIN.
+  // ============================================================
+
+  static const Duration _maxVideoLength =
+  Duration(minutes: 5);
+
+  Future<bool> _videoTooLong(XFile file) async {
+    final VideoPlayerController controller =
+    VideoPlayerController.file(
+      File(file.path),
+    );
+
+    try {
+      await controller.initialize();
+
+      // One second of slack for rounding.
+      return controller.value.duration >
+          _maxVideoLength + const Duration(seconds: 1);
+    } catch (_) {
+      // Length unknown: let the upload decide.
+      return false;
+    } finally {
+      await controller.dispose();
+    }
+  }
+
+  // ============================================================
   // SELECT MEDIA
   // ============================================================
 
   Future<void> _selectMedia() async {
     try {
-      final List<XFile> files =
+      final List<XFile> picked =
       await _imagePicker.pickMultipleMedia();
 
-      if (files.isEmpty) {
+      if (picked.isEmpty) {
+        return;
+      }
+
+      // Leave out videos longer than 5 minutes.
+      final List<XFile> files = <XFile>[];
+
+      for (final XFile file in picked) {
+        if (_isVideo(file) && await _videoTooLong(file)) {
+          continue;
+        }
+
+        files.add(file);
+      }
+
+      if (files.length < picked.length) {
+        _showMessage(
+          'Videos can be up to 5 minutes. Longer videos were left out.',
+        );
+      }
+
+      if (!mounted || files.isEmpty) {
         return;
       }
 
