@@ -117,10 +117,13 @@ class NubifyLanguagePicker extends StatelessWidget {
         button: true,
         label: 'Choose language. Current: ${language.label}',
         excludeSemantics: true,
+        // Solid dark so it stands out on the blue logo.
         child: Material(
-          color: NubifyAuthColors.glass,
-          shape: const StadiumBorder(
-            side: BorderSide(color: NubifyAuthColors.glassEdge),
+          color: NubifyAuthColors.black.withValues(alpha: 0.82),
+          elevation: 4,
+          shadowColor: Colors.black,
+          shape: StadiumBorder(
+            side: BorderSide(color: Colors.white.withValues(alpha: 0.22)),
           ),
           child: InkWell(
             customBorder: const StadiumBorder(),

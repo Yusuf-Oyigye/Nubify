@@ -10,6 +10,10 @@ import 'package:flutter/services.dart';
 // keeps every screen, sheet and dialog above the buttons.
 // The space under the buttons is painted in the app
 // background (or [color]) so they sit on a clean strip.
+//
+// A screen with its own background (login, signup) can
+// colour the strip while it is open with setColor and
+// clearColor; the one opened last wins.
 //===================================================
 
 class NubifySystemNavInset extends StatelessWidget {
@@ -20,10 +24,54 @@ class NubifySystemNavInset extends StatelessWidget {
   // Strip colour; the theme background when null.
   final Color? color;
 
+  // Screens asking for a strip colour, oldest first.
+  static final List<(Object, Color)> _requests = <(Object, Color)>[];
+
+  static final ValueNotifier<Color?> _requested = ValueNotifier<Color?>(null);
+
+  /// Colours the strip for [owner] until [clearColor].
+  /// Asking again keeps the owner's place in line.
+  static void setColor(Object owner, Color color) {
+    final int index = _requests.indexWhere(
+      ((Object, Color) request) => request.$1 == owner,
+    );
+
+    if (index == -1) {
+      _requests.add((owner, color));
+    } else {
+      _requests[index] = (owner, color);
+    }
+
+    _publish();
+  }
+
+  static void clearColor(Object owner) {
+    _requests.removeWhere(((Object, Color) request) => request.$1 == owner);
+    _publish();
+  }
+
+  static void _publish() {
+    // After the frame: the strip sits above every screen,
+    // so it must not change while a screen is building.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _requested.value = _requests.isEmpty ? null : _requests.last.$2;
+    });
+    WidgetsBinding.instance.scheduleFrame();
+  }
+
   @override
   Widget build(BuildContext context) {
+    return ValueListenableBuilder<Color?>(
+      valueListenable: _requested,
+      builder: (BuildContext context, Color? requested, Widget? _) {
+        return _strip(context, requested ?? color);
+      },
+    );
+  }
+
+  Widget _strip(BuildContext context, Color? stripColor) {
     final ThemeData theme = Theme.of(context);
-    final Color background = color ?? theme.scaffoldBackgroundColor;
+    final Color background = stripColor ?? theme.scaffoldBackgroundColor;
     final bool darkStrip =
         ThemeData.estimateBrightnessForColor(background) == Brightness.dark;
 

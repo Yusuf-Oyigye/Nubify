@@ -90,6 +90,12 @@ class _SignupScreenState extends State<SignupScreen> {
       ? NubifyAvatarStyle.female
       : NubifyAvatarStyle.male;
 
+  // Signup follows the phone: light when the phone is
+  // light, dark when it is dark.
+  Brightness get _brightness => MediaQuery.platformBrightnessOf(context);
+
+  NubifyAuthTone get _tone => NubifyAuthTone.forBrightness(_brightness);
+
   /// [english] in the language chosen on the first step.
   String _t(
     String english, [
@@ -129,7 +135,7 @@ class _SignupScreenState extends State<SignupScreen> {
     'Tell us about you',
     'Your campus life',
     'Secure your account',
-    'Your profile picture',
+    'Add your profile picture',
   ];
 
   final List<String> _stepSubtitles = const <String>[
@@ -452,13 +458,13 @@ class _SignupScreenState extends State<SignupScreen> {
     );
   }
 
-  Widget _helper(String text, {Color color = NubifyAuthColors.muted}) {
+  Widget _helper(String text, {Color? color}) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(6, 8, 6, 0),
       child: Text(
         text,
         style: TextStyle(
-          color: color,
+          color: color ?? _tone.muted,
           fontSize: 12.5,
           fontWeight: FontWeight.w600,
         ),
@@ -471,8 +477,8 @@ class _SignupScreenState extends State<SignupScreen> {
       padding: const EdgeInsets.fromLTRB(4, 0, 4, 10),
       child: Text(
         text,
-        style: const TextStyle(
-          color: NubifyAuthColors.text,
+        style: TextStyle(
+          color: _tone.text,
           fontSize: 14,
           fontWeight: FontWeight.w800,
         ),
@@ -501,13 +507,9 @@ class _SignupScreenState extends State<SignupScreen> {
           padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(18),
-            color: selected
-                ? NubifyAuthColors.royal.withValues(alpha: 0.35)
-                : NubifyAuthColors.glass,
+            color: selected ? _tone.selected : _tone.glass,
             border: Border.all(
-              color: selected
-                  ? NubifyAuthColors.sky
-                  : NubifyAuthColors.glassEdge,
+              color: selected ? _tone.accent : _tone.glassEdge,
               width: selected ? 1.4 : 1,
             ),
           ),
@@ -519,8 +521,8 @@ class _SignupScreenState extends State<SignupScreen> {
                   children: <Widget>[
                     Text(
                       option.nativeAndArabic,
-                      style: const TextStyle(
-                        color: NubifyAuthColors.text,
+                      style: TextStyle(
+                        color: _tone.text,
                         fontSize: 15.5,
                         fontWeight: FontWeight.w800,
                       ),
@@ -528,10 +530,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     if (option.englishUnder != null)
                       Text(
                         option.englishUnder!,
-                        style: const TextStyle(
-                          color: NubifyAuthColors.muted,
-                          fontSize: 12.5,
-                        ),
+                        style: TextStyle(color: _tone.muted, fontSize: 12.5),
                       ),
                   ],
                 ),
@@ -540,7 +539,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 selected
                     ? Icons.check_circle_rounded
                     : Icons.radio_button_unchecked_rounded,
-                color: selected ? NubifyAuthColors.sky : NubifyAuthColors.muted,
+                color: selected ? _tone.accent : _tone.muted,
               ),
             ],
           ),
@@ -570,11 +569,11 @@ class _SignupScreenState extends State<SignupScreen> {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(20),
               gradient: selected ? NubifyAuthColors.button : null,
-              color: selected ? null : NubifyAuthColors.glass,
+              color: selected ? null : _tone.glass,
               border: Border.all(
                 color: selected
                     ? Colors.white.withValues(alpha: 0.2)
-                    : NubifyAuthColors.glassEdge,
+                    : _tone.glassEdge,
               ),
               boxShadow: selected
                   ? <BoxShadow>[
@@ -591,7 +590,7 @@ class _SignupScreenState extends State<SignupScreen> {
               children: <Widget>[
                 Icon(
                   icon,
-                  color: selected ? Colors.white : NubifyAuthColors.sky,
+                  color: selected ? Colors.white : _tone.accent,
                   size: 22,
                 ),
                 const SizedBox(width: 8),
@@ -599,7 +598,7 @@ class _SignupScreenState extends State<SignupScreen> {
                   child: Text(
                     label,
                     style: TextStyle(
-                      color: selected ? Colors.white : NubifyAuthColors.text,
+                      color: selected ? Colors.white : _tone.text,
                       fontSize: 15,
                       fontWeight: FontWeight.w800,
                     ),
@@ -735,7 +734,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
             _field(
               controller: _phoneController,
-              hintText: 'Mobile number',
+              hintText: 'Egypt mobile number',
               icon: Icons.phone_android_rounded,
               keyboardType: TextInputType.phone,
               optional: true,
@@ -763,7 +762,6 @@ class _SignupScreenState extends State<SignupScreen> {
               autofillHints: const <String>[AutofillHints.name],
               textCapitalization: TextCapitalization.words,
             ),
-            _helper(_t('Emojis are welcome in your name ✨')),
 
             const SizedBox(height: 14),
 
@@ -879,7 +877,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(5),
                   gradient: i <= _currentStep ? NubifyAuthColors.button : null,
-                  color: i <= _currentStep ? null : NubifyAuthColors.glass,
+                  color: i <= _currentStep ? null : _tone.glass,
                 ),
               ),
             ),
@@ -940,8 +938,8 @@ class _SignupScreenState extends State<SignupScreen> {
           Text(
             _t(_stepTitles[_currentStep]),
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: NubifyAuthColors.text,
+            style: TextStyle(
+              color: _tone.text,
               fontSize: 22,
               fontWeight: FontWeight.w900,
               letterSpacing: -0.3,
@@ -953,7 +951,7 @@ class _SignupScreenState extends State<SignupScreen> {
           Text(
             _t(_stepSubtitles[_currentStep]),
             textAlign: TextAlign.center,
-            style: const TextStyle(color: NubifyAuthColors.muted, fontSize: 13),
+            style: TextStyle(color: _tone.muted, fontSize: 13),
           ),
 
           const SizedBox(height: 20),
@@ -978,6 +976,7 @@ class _SignupScreenState extends State<SignupScreen> {
       // Arabic reads right to left.
       textDirection: rtl ? TextDirection.rtl : TextDirection.ltr,
       child: NubifyAuthTheme(
+        brightness: _brightness,
         child: Scaffold(
           body: NubifyAuthBackground(
             child: SafeArea(
@@ -1011,16 +1010,16 @@ class _SignupScreenState extends State<SignupScreen> {
                                   children: <Widget>[
                                     Text(
                                       _t('Join Nubify'),
-                                      style: const TextStyle(
-                                        color: NubifyAuthColors.text,
+                                      style: TextStyle(
+                                        color: _tone.text,
                                         fontSize: 22,
                                         fontWeight: FontWeight.w900,
                                       ),
                                     ),
                                     Text(
                                       _stepLabel,
-                                      style: const TextStyle(
-                                        color: NubifyAuthColors.muted,
+                                      style: TextStyle(
+                                        color: _tone.muted,
                                         fontSize: 13,
                                         fontWeight: FontWeight.w600,
                                       ),
@@ -1129,9 +1128,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           children: <Widget>[
                             Text(
                               _t('Already have an account?'),
-                              style: const TextStyle(
-                                color: NubifyAuthColors.muted,
-                              ),
+                              style: TextStyle(color: _tone.muted),
                             ),
                             TextButton(
                               onPressed: _openLogin,

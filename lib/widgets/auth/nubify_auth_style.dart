@@ -1,6 +1,9 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+import '../common/system_nav_inset.dart';
 
 //===================================================
 // NUBIFY AUTH — PREMIUM BLUE & BLACK
@@ -10,6 +13,9 @@ import 'package:flutter/material.dart';
 // Nubify logo card, frosted glass panels, and fields and
 // buttons in mature royal blue. Every animation stops
 // when the phone asks for reduced motion.
+//
+// Login is always dark. Signup has a light version too
+// and follows the phone (see NubifyAuthTone).
 //===================================================
 
 class NubifyAuthColors {
@@ -36,83 +42,212 @@ class NubifyAuthColors {
   );
 }
 
+//===================================================
+// LIGHT AND DARK TONES
+//
+// The colours that change between light and dark. The
+// widgets below read them with NubifyAuthTone.of(context).
+//===================================================
+
+@immutable
+class NubifyAuthTone {
+  const NubifyAuthTone._({
+    required this.background,
+    required this.glowStrength,
+    required this.text,
+    required this.muted,
+    required this.accent,
+    required this.glass,
+    required this.glassEdge,
+    required this.selected,
+    required this.panel,
+    required this.panelShadow,
+  });
+
+  // Top, middle and bottom of the page.
+  final List<Color> background;
+
+  // How strong the drifting blue glows are.
+  final double glowStrength;
+
+  final Color text;
+  final Color muted;
+
+  // Links, field labels and focus rings.
+  final Color accent;
+
+  // Fill and edge of fields and outline buttons.
+  final Color glass;
+  final Color glassEdge;
+
+  // Fill of a chosen option (language, male/female).
+  final Color selected;
+
+  final List<Color> panel;
+  final Color panelShadow;
+
+  static const NubifyAuthTone dark = NubifyAuthTone._(
+    background: <Color>[
+      NubifyAuthColors.night,
+      NubifyAuthColors.black,
+      Color(0xFF02040A),
+    ],
+    glowStrength: 1,
+    text: NubifyAuthColors.text,
+    muted: NubifyAuthColors.muted,
+    accent: NubifyAuthColors.sky,
+    glass: NubifyAuthColors.glass,
+    glassEdge: NubifyAuthColors.glassEdge,
+    selected: Color(0x591546C9),
+    panel: <Color>[Color(0x13FFFFFF), Color(0x08FFFFFF)],
+    panelShadow: Color(0x73000000),
+  );
+
+  static const NubifyAuthTone light = NubifyAuthTone._(
+    background: <Color>[
+      Color(0xFFE6EEFF),
+      Color(0xFFF3F6FF),
+      Color(0xFFFFFFFF),
+    ],
+    glowStrength: 0.4,
+    text: Color(0xFF0B1A3D),
+    muted: Color(0xFF5A6B8C),
+    accent: NubifyAuthColors.royal,
+    glass: Color(0xFFF2F5FC),
+    glassEdge: Color(0xFFD5DEF0),
+    selected: Color(0x1F1546C9),
+    panel: <Color>[Color(0xF5FFFFFF), Color(0xEBF8FAFF)],
+    panelShadow: Color(0x1F0B1A3D),
+  );
+
+  static NubifyAuthTone forBrightness(Brightness brightness) =>
+      brightness == Brightness.light ? light : dark;
+
+  /// The tone of the NubifyAuthTheme above [context].
+  static NubifyAuthTone of(BuildContext context) =>
+      forBrightness(Theme.of(context).brightness);
+}
+
 bool _reduceMotion(BuildContext context) =>
     MediaQuery.maybeOf(context)?.disableAnimations ?? false;
 
 //===================================================
-// DARK THEME FOR THE AUTH SCREENS
+// THEME FOR THE AUTH SCREENS
 //
-// Keeps dropdowns, snack bars and text fields dark and
-// blue even when the app itself is in light mode.
+// Keeps dropdowns, snack bars and text fields in the
+// auth look whatever the app's own theme is. Dark by
+// default (login); signup passes the phone's brightness.
+// While open, it also colours the strip under the phone's
+// navigation buttons to match its background.
 //===================================================
 
-class NubifyAuthTheme extends StatelessWidget {
-  const NubifyAuthTheme({super.key, required this.child});
+class NubifyAuthTheme extends StatefulWidget {
+  const NubifyAuthTheme({
+    super.key,
+    required this.child,
+    this.brightness = Brightness.dark,
+  });
 
   final Widget child;
+  final Brightness brightness;
+
+  @override
+  State<NubifyAuthTheme> createState() => _NubifyAuthThemeState();
+}
+
+class _NubifyAuthThemeState extends State<NubifyAuthTheme> {
+  NubifyAuthTone get _tone => NubifyAuthTone.forBrightness(widget.brightness);
+
+  @override
+  void initState() {
+    super.initState();
+    NubifySystemNavInset.setColor(this, _tone.background.last);
+  }
+
+  @override
+  void didUpdateWidget(NubifyAuthTheme oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.brightness != widget.brightness) {
+      NubifySystemNavInset.setColor(this, _tone.background.last);
+    }
+  }
+
+  @override
+  void dispose() {
+    NubifySystemNavInset.clearColor(this);
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final NubifyAuthTone tone = _tone;
+    final bool dark = widget.brightness == Brightness.dark;
+
     final ThemeData base = ThemeData(
       useMaterial3: true,
-      brightness: Brightness.dark,
+      brightness: widget.brightness,
       colorScheme: ColorScheme.fromSeed(
         seedColor: NubifyAuthColors.royal,
-        brightness: Brightness.dark,
-        primary: NubifyAuthColors.sky,
-        surface: NubifyAuthColors.night,
+        brightness: widget.brightness,
+        primary: tone.accent,
+        surface: dark ? NubifyAuthColors.night : Colors.white,
       ),
-      scaffoldBackgroundColor: NubifyAuthColors.black,
+      scaffoldBackgroundColor: tone.background.last,
       fontFamily: Theme.of(context).textTheme.bodyMedium?.fontFamily,
     );
 
     final OutlineInputBorder border = OutlineInputBorder(
       borderRadius: BorderRadius.circular(18),
-      borderSide: const BorderSide(color: NubifyAuthColors.glassEdge),
+      borderSide: BorderSide(color: tone.glassEdge),
     );
 
-    return Theme(
-      data: base.copyWith(
-        inputDecorationTheme: InputDecorationTheme(
-          filled: true,
-          fillColor: NubifyAuthColors.glass,
-          hintStyle: const TextStyle(color: NubifyAuthColors.muted),
-          labelStyle: const TextStyle(color: NubifyAuthColors.muted),
-          floatingLabelStyle: const TextStyle(color: NubifyAuthColors.sky),
-          prefixIconColor: NubifyAuthColors.sky,
-          suffixIconColor: NubifyAuthColors.muted,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 16,
-          ),
-          border: border,
-          enabledBorder: border,
-          focusedBorder: border.copyWith(
-            borderSide: const BorderSide(
-              color: NubifyAuthColors.sky,
-              width: 1.4,
-            ),
-          ),
-        ),
-        snackBarTheme: const SnackBarThemeData(
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: NubifyAuthColors.navy,
-          contentTextStyle: TextStyle(color: NubifyAuthColors.text),
-        ),
-        textButtonTheme: TextButtonThemeData(
-          style: TextButton.styleFrom(
-            foregroundColor: NubifyAuthColors.sky,
-            // Keep the app font; only make the label bolder.
-            textStyle: base.textTheme.labelLarge?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
-        progressIndicatorTheme: const ProgressIndicatorThemeData(
-          color: NubifyAuthColors.sky,
-        ),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      // Light status bar icons on dark, dark icons on light.
+      value: SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: dark ? Brightness.light : Brightness.dark,
+        statusBarBrightness: widget.brightness,
       ),
-      child: child,
+      child: Theme(
+        data: base.copyWith(
+          inputDecorationTheme: InputDecorationTheme(
+            filled: true,
+            fillColor: tone.glass,
+            hintStyle: TextStyle(color: tone.muted),
+            labelStyle: TextStyle(color: tone.muted),
+            floatingLabelStyle: TextStyle(color: tone.accent),
+            prefixIconColor: tone.accent,
+            suffixIconColor: tone.muted,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
+            border: border,
+            enabledBorder: border,
+            focusedBorder: border.copyWith(
+              borderSide: BorderSide(color: tone.accent, width: 1.4),
+            ),
+          ),
+          snackBarTheme: const SnackBarThemeData(
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: NubifyAuthColors.navy,
+            contentTextStyle: TextStyle(color: NubifyAuthColors.text),
+          ),
+          textButtonTheme: TextButtonThemeData(
+            style: TextButton.styleFrom(
+              foregroundColor: tone.accent,
+              // Keep the app font; only make the label bolder.
+              textStyle: base.textTheme.labelLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          progressIndicatorTheme: ProgressIndicatorThemeData(
+            color: tone.accent,
+          ),
+        ),
+        child: widget.child,
+      ),
     );
   }
 }
@@ -157,6 +292,8 @@ class _NubifyAuthBackgroundState extends State<NubifyAuthBackground>
   }
 
   Widget _glow(Color color, double size, double alpha) {
+    alpha *= NubifyAuthTone.of(context).glowStrength;
+
     return IgnorePointer(
       child: Container(
         width: size,
@@ -177,15 +314,11 @@ class _NubifyAuthBackgroundState extends State<NubifyAuthBackground>
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: <Color>[
-            NubifyAuthColors.night,
-            NubifyAuthColors.black,
-            Color(0xFF02040A),
-          ],
+          colors: NubifyAuthTone.of(context).background,
         ),
       ),
       child: Stack(
@@ -474,6 +607,8 @@ class NubifyAuthPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final NubifyAuthTone tone = NubifyAuthTone.of(context);
+
     return Container(
       width: double.infinity,
       padding: padding,
@@ -482,15 +617,12 @@ class NubifyAuthPanel extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: <Color>[
-            Colors.white.withValues(alpha: 0.075),
-            Colors.white.withValues(alpha: 0.03),
-          ],
+          colors: tone.panel,
         ),
-        border: Border.all(color: NubifyAuthColors.glassEdge),
+        border: Border.all(color: tone.glassEdge),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.45),
+            color: tone.panelShadow,
             blurRadius: 30,
             offset: const Offset(0, 14),
           ),
@@ -557,8 +689,8 @@ class _NubifyAuthFieldState extends State<NubifyAuthField> {
       autofillHints: widget.autofillHints,
       textCapitalization: widget.textCapitalization,
       textDirection: widget.textDirection,
-      cursorColor: NubifyAuthColors.sky,
-      style: const TextStyle(color: NubifyAuthColors.text, fontSize: 15.5),
+      cursorColor: NubifyAuthTone.of(context).accent,
+      style: TextStyle(color: NubifyAuthTone.of(context).text, fontSize: 15.5),
       decoration: InputDecoration(
         labelText: widget.label,
         hintText: widget.hint,
@@ -687,6 +819,8 @@ class NubifyAuthGhostButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final NubifyAuthTone tone = NubifyAuthTone.of(context);
+
     return SizedBox(
       height: 56,
       child: OutlinedButton.icon(
@@ -694,12 +828,10 @@ class NubifyAuthGhostButton extends StatelessWidget {
         icon: Icon(icon, size: 20),
         label: Text(label),
         style: OutlinedButton.styleFrom(
-          foregroundColor: NubifyAuthColors.text,
-          disabledForegroundColor: NubifyAuthColors.muted.withValues(
-            alpha: 0.5,
-          ),
-          backgroundColor: NubifyAuthColors.glass,
-          side: const BorderSide(color: NubifyAuthColors.glassEdge),
+          foregroundColor: tone.text,
+          disabledForegroundColor: tone.muted.withValues(alpha: 0.5),
+          backgroundColor: tone.glass,
+          side: BorderSide(color: tone.glassEdge),
           textStyle: Theme.of(
             context,
           ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
