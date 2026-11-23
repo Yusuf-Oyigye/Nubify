@@ -83,6 +83,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   String _originalAvatarStyle = NubifyAvatarStyle.neutral;
 
+  // "male", "female" or '' (older profiles). Decides which
+  // default pictures are offered.
+  String _gender = '';
+
   String _originalFaculty = '';
 
   // True when the current picture is the generated avatar.
@@ -159,6 +163,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
       _originalAvatarStyle = _avatarStyle;
 
+      final String gender = (data['gender'] ?? '').toString();
+      _gender = NubifyGender.isValid(gender)
+          ? gender
+          : NubifyAvatarStyle.genderFor(_avatarStyle);
+
       _originalFaculty = _facultyController.text.trim();
 
       _photoIsAvatar = data['avatarPhoto'] == true;
@@ -216,8 +225,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   //===================================================
 
   Future<void> _showProfilePhotoOptions() async {
+    // A real photo (not the default picture) to remove.
     final bool hasPhoto =
-        _newImage != null || _currentPhotoUrl.trim().isNotEmpty;
+        _newImage != null ||
+        (_currentPhotoUrl.trim().isNotEmpty && !_photoIsAvatar);
 
     await showModalBottomSheet<void>(
       context: context,
@@ -246,15 +257,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 enabled: hasPhoto,
 
                 leading: Icon(
-                  Icons.face_rounded,
+                  Icons.no_photography_outlined,
 
                   color: hasPhoto ? _blue : null,
                 ),
 
-                title: const Text('Use my avatar instead'),
+                title: const Text('Remove photo'),
 
                 subtitle: const Text(
-                  'Your faculty avatar replaces the photo when you tap Save',
+                  'Then choose your default picture and tap Save',
                 ),
 
                 onTap: !hasPhoto
@@ -783,24 +794,42 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   //===================================================
 
   //===================================================
-  // AVATAR STYLE CHOICE
+  // DEFAULT PICTURE CHOICE
   //
-  // Used when there is no photo. Changing it redraws the
-  // avatar if the picture is still the avatar.
+  // Only shown when there is no real photo (none yet, or
+  // just removed). Women choose with hair or with hijab;
+  // men have one default; older profiles without a gender
+  // see all three. Changing it redraws the picture on Save.
   //===================================================
 
   Widget _buildAvatarChoice() {
-    const List<(String, String)> options = <(String, String)>[
-      (NubifyAvatarStyle.male, 'Male'),
-      (NubifyAvatarStyle.female, 'Female'),
-      (NubifyAvatarStyle.hijab, 'Hijab'),
-    ];
+    final bool noPhoto =
+        _newImage == null &&
+        (_currentPhotoUrl.trim().isEmpty || _photoIsAvatar);
+
+    final List<(String, String)> options = switch (_gender) {
+      NubifyGender.female => <(String, String)>[
+        (NubifyAvatarStyle.female, 'With hair'),
+        (NubifyAvatarStyle.hijab, 'With hijab'),
+      ],
+      NubifyGender.male => <(String, String)>[],
+      _ => <(String, String)>[
+        (NubifyAvatarStyle.male, 'Male'),
+        (NubifyAvatarStyle.female, 'Female'),
+        (NubifyAvatarStyle.hijab, 'With hijab'),
+      ],
+    };
+
+    if (!noPhoto || options.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
+        const SizedBox(height: 18),
         Text(
-          'Your avatar',
+          'Your default picture',
           style: Theme.of(
             context,
           ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
@@ -817,7 +846,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         Row(
           children: <Widget>[
             for (final (String style, String label) in options) ...<Widget>[
-              if (style != NubifyAvatarStyle.male) const SizedBox(width: 10),
+              if (style != options.first.$1) const SizedBox(width: 10),
               Expanded(
                 child: Semantics(
                   button: true,
@@ -1040,8 +1069,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
                   _buildPhoto(),
 
-                  const SizedBox(height: 18),
-
+                  // Default picture choice (adds its own space).
                   _buildAvatarChoice(),
 
                   const SizedBox(height: 24),

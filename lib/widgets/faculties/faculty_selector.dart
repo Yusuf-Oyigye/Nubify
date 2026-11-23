@@ -36,22 +36,28 @@ class FacultySelectionField extends StatelessWidget {
     required this.selectedId,
     required this.otherController,
     required this.onSelected,
+    this.translate,
   });
 
   final String? selectedId;
   final TextEditingController otherController;
   final ValueChanged<NubifyFaculty> onSelected;
 
+  /// Shows the labels in another language (signup).
+  /// English when null.
+  final String Function(String english)? translate;
+
   @override
   Widget build(BuildContext context) {
     final NubifyFaculty? selected = NubifyFacultyCatalog.byId(selectedId);
+    final String Function(String) tr = translate ?? (String english) => english;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         InputDecorator(
           decoration: InputDecoration(
-            labelText: 'Faculty',
+            labelText: tr('Faculty'),
             border: const OutlineInputBorder(),
             prefixIcon: selected == null
                 ? const Icon(Icons.school_outlined)
@@ -68,7 +74,7 @@ class FacultySelectionField extends StatelessWidget {
             child: DropdownButton<String>(
               value: selected?.id,
               isExpanded: true,
-              hint: const Text('Choose your faculty'),
+              hint: Text(tr('Choose your faculty')),
               icon: const Icon(Icons.keyboard_arrow_down_rounded),
               items: NubifyFacultyCatalog.all.map((NubifyFaculty faculty) {
                 return DropdownMenuItem<String>(
@@ -99,7 +105,7 @@ class FacultySelectionField extends StatelessWidget {
               selectedItemBuilder: (BuildContext context) {
                 return NubifyFacultyCatalog.all.map((NubifyFaculty faculty) {
                   return Align(
-                    alignment: Alignment.centerLeft,
+                    alignment: AlignmentDirectional.centerStart,
                     child: Text(
                       faculty.name,
                       maxLines: 2,
@@ -128,8 +134,8 @@ class FacultySelectionField extends StatelessWidget {
             controller: otherController,
             textCapitalization: TextCapitalization.words,
             decoration: InputDecoration(
-              labelText: 'Type your faculty',
-              hintText: 'Enter your faculty name',
+              labelText: tr('Type your faculty'),
+              hintText: tr('Enter your faculty name'),
               prefixIcon: Padding(
                 padding: const EdgeInsets.all(8),
                 child: FacultyIconBadge(

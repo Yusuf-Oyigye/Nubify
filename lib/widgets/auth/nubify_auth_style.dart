@@ -519,6 +519,7 @@ class NubifyAuthField extends StatefulWidget {
     this.maxLines = 1,
     this.autofillHints,
     this.textCapitalization = TextCapitalization.none,
+    this.textDirection,
   });
 
   final TextEditingController controller;
@@ -532,6 +533,10 @@ class NubifyAuthField extends StatefulWidget {
   final int maxLines;
   final Iterable<String>? autofillHints;
   final TextCapitalization textCapitalization;
+
+  // Typing direction, e.g. left to right for an email
+  // on an Arabic screen. Follows the screen when null.
+  final TextDirection? textDirection;
 
   @override
   State<NubifyAuthField> createState() => _NubifyAuthFieldState();
@@ -551,6 +556,7 @@ class _NubifyAuthFieldState extends State<NubifyAuthField> {
       maxLines: widget.isPassword ? 1 : widget.maxLines,
       autofillHints: widget.autofillHints,
       textCapitalization: widget.textCapitalization,
+      textDirection: widget.textDirection,
       cursorColor: NubifyAuthColors.sky,
       style: const TextStyle(color: NubifyAuthColors.text, fontSize: 15.5),
       decoration: InputDecoration(

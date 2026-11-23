@@ -7,12 +7,12 @@ import 'package:image_picker/image_picker.dart';
 import '../../services/auth/auth_method.dart';
 import '../../services/common/language_preference.dart';
 import '../../services/profile/username_service.dart';
+import '../../utils/auth/signup_text.dart';
 import '../../utils/common/egyptian_phone.dart';
 import '../../utils/common/email_check.dart';
 import '../../utils/faculties/faculty_catalog.dart';
 import '../../utils/common/utils.dart';
 import '../../utils/profile/username_rules.dart';
-import '../../widgets/auth/language_picker.dart';
 import '../../widgets/auth/nubify_auth_style.dart';
 import '../../widgets/faculties/faculty_selector.dart';
 import '../../widgets/profile/nubify_avatar.dart';
@@ -23,12 +23,13 @@ import 'login_screen.dart';
 //===================================================
 // SIGNUP SCREEN
 //
-// Five short steps on the blue & black look:
-// 1. Contact: email + optional Egyptian mobile
-// 2. About you: full name, username, male or female
-// 3. Campus life: faculty, hobbies, favourite quote
-// 4. Password
-// 5. Profile picture (photo, or a faculty avatar)
+// Six short steps on the blue & black look:
+// 1. Language (the next steps show in it)
+// 2. Contact: email + optional Egyptian mobile
+// 3. About you: full name, username, male or female
+// 4. Campus life: faculty, hobbies, favourite quote
+// 5. Password
+// 6. Profile picture (photo, or the default picture)
 //===================================================
 
 class SignupScreen extends StatefulWidget {
@@ -43,13 +44,14 @@ class SignupScreen extends StatefulWidget {
 //===================================================
 
 class _SignupScreenState extends State<SignupScreen> {
-  static const int _stepCount = 5;
+  static const int _stepCount = 6;
 
-  static const int _contactStep = 0;
-  static const int _aboutStep = 1;
-  static const int _campusStep = 2;
-  static const int _passwordStep = 3;
-  static const int _pictureStep = 4;
+  static const int _languageStep = 0;
+  static const int _contactStep = 1;
+  static const int _aboutStep = 2;
+  static const int _campusStep = 3;
+  static const int _passwordStep = 4;
+  static const int _pictureStep = 5;
 
   int _currentStep = 0;
 
@@ -77,17 +79,22 @@ class _SignupScreenState extends State<SignupScreen> {
 
   final TextEditingController _quoteController = TextEditingController();
 
-  // "male" or "female".
+  // "male" or "female". The hijab avatar is chosen later
+  // in Edit Profile, so signup does not pull people away
+  // from adding a real photo.
   String? _gender;
-
-  // Female students can pick a hijab avatar.
-  bool _hijab = false;
 
   String _language = 'en';
 
   String get _avatarStyle => _gender == NubifyGender.female
-      ? (_hijab ? NubifyAvatarStyle.hijab : NubifyAvatarStyle.female)
+      ? NubifyAvatarStyle.female
       : NubifyAvatarStyle.male;
+
+  /// [english] in the language chosen on the first step.
+  String _t(
+    String english, [
+    Map<String, Object> values = const <String, Object>{},
+  ]) => SignupText.tr(_language, english, values);
 
   String? _emailError;
 
@@ -115,7 +122,9 @@ class _SignupScreenState extends State<SignupScreen> {
   // STEP TEXT
   //===================================================
 
+  // English here; shown through _t in the chosen language.
   final List<String> _stepTitles = const <String>[
+    'Choose your language',
     'How can we reach you?',
     'Tell us about you',
     'Your campus life',
@@ -124,14 +133,16 @@ class _SignupScreenState extends State<SignupScreen> {
   ];
 
   final List<String> _stepSubtitles = const <String>[
+    'Nubify will show the next steps in this language.',
     'Use an email you can open. Your number is optional.',
     'Your name, your unique @username and who you are.',
     'Pick your faculty and share a little about you.',
     'Use at least 6 characters.',
-    'Add a photo, or keep your Nubify avatar.',
+    'Add a clear photo of yourself.',
   ];
 
   final List<IconData> _stepIcons = const <IconData>[
+    Icons.translate_rounded,
     Icons.mail_outline_rounded,
     Icons.badge_outlined,
     Icons.school_outlined,
@@ -172,21 +183,21 @@ class _SignupScreenState extends State<SignupScreen> {
         if (!await _aboutIsValid()) return;
       case _campusStep:
         if (_selectedFacultyId == null) {
-          showSnackBar('Please choose your faculty', context);
+          showSnackBar(_t('Please choose your faculty'), context);
           return;
         }
         if (_facultyController.text.trim().isEmpty) {
-          showSnackBar('Please type your faculty', context);
+          showSnackBar(_t('Please type your faculty'), context);
           return;
         }
       case _passwordStep:
         final String password = _passwordController.text;
         if (password.isEmpty) {
-          showSnackBar('Please enter your password', context);
+          showSnackBar(_t('Please enter your password'), context);
           return;
         }
         if (password.length < 6) {
-          showSnackBar('Password must be at least 6 characters', context);
+          showSnackBar(_t('Password must be at least 6 characters'), context);
           return;
         }
     }
@@ -214,7 +225,9 @@ class _SignupScreenState extends State<SignupScreen> {
     final String phone = _phoneController.text.trim();
     if (phone.isNotEmpty && !EgyptianPhone.isValid(phone)) {
       showSnackBar(
-        'Enter a valid Egyptian number beginning 010, 011, 012, or 015, or leave it empty',
+        _t(
+          'Enter a valid Egyptian number beginning 010, 011, 012, or 015, or leave it empty',
+        ),
         context,
       );
       return false;
@@ -239,7 +252,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
   Future<bool> _aboutIsValid() async {
     if (_fullNameController.text.trim().isEmpty) {
-      showSnackBar('Please enter your full name', context);
+      showSnackBar(_t('Please enter your full name'), context);
       return false;
     }
 
@@ -247,12 +260,12 @@ class _SignupScreenState extends State<SignupScreen> {
     final String? usernameError = UsernameRules.validate(username);
 
     if (usernameError != null) {
-      showSnackBar(usernameError, context);
+      showSnackBar(_t(usernameError), context);
       return false;
     }
 
     if (_gender == null) {
-      showSnackBar('Please choose male or female', context);
+      showSnackBar(_t('Please choose male or female'), context);
       return false;
     }
 
@@ -266,7 +279,7 @@ class _SignupScreenState extends State<SignupScreen> {
     });
 
     if (result.isTaken) {
-      showSnackBar(UsernameRules.taken, context);
+      showSnackBar(_t(UsernameRules.taken), context);
       return false;
     }
 
@@ -420,11 +433,15 @@ class _SignupScreenState extends State<SignupScreen> {
     Iterable<String>? autofillHints,
     TextCapitalization textCapitalization = TextCapitalization.none,
     TextInputAction? action,
+    TextDirection? textDirection,
   }) {
     return NubifyAuthField(
       controller: controller,
-      label: optional ? '$hintText (optional)' : hintText,
+      label: optional
+          ? _t('{label} (optional)', <String, Object>{'label': _t(hintText)})
+          : _t(hintText),
       icon: icon,
+      textDirection: textDirection,
       keyboardType: multiline ? TextInputType.multiline : keyboardType,
       maxLines: multiline ? 3 : 1,
       autofillHints: autofillHints,
@@ -464,65 +481,79 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   //===================================================
-  // GENDER CHOICE
+  // LANGUAGE CHOICE (FIRST STEP)
+  //
+  // Own name and Arabic in bold, English underneath.
+  // Tapping one switches the whole signup to it.
   //===================================================
 
-  Widget _avatarChoice({required bool hijab, required String label}) {
-    final bool selected = _hijab == hijab;
+  Widget _languageOption(NubifyLanguage option) {
+    final bool selected = _language == option.code;
 
-    return Expanded(
-      child: Semantics(
-        button: true,
-        selected: selected,
-        label: 'Avatar $label',
-        child: GestureDetector(
-          onTap: () => setState(() => _hijab = hijab),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 220),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: option.label,
+      child: GestureDetector(
+        onTap: () => _setLanguage(option.code),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            color: selected
+                ? NubifyAuthColors.royal.withValues(alpha: 0.35)
+                : NubifyAuthColors.glass,
+            border: Border.all(
               color: selected
-                  ? NubifyAuthColors.royal.withValues(alpha: 0.35)
-                  : NubifyAuthColors.glass,
-              border: Border.all(
-                color: selected
-                    ? NubifyAuthColors.sky
-                    : NubifyAuthColors.glassEdge,
-                width: selected ? 1.4 : 1,
-              ),
+                  ? NubifyAuthColors.sky
+                  : NubifyAuthColors.glassEdge,
+              width: selected ? 1.4 : 1,
             ),
-            child: Row(
-              children: <Widget>[
-                ClipOval(
-                  child: NubifyAvatar(
-                    style: hijab
-                        ? NubifyAvatarStyle.hijab
-                        : NubifyAvatarStyle.female,
-                    faculty: _facultyForAvatar,
-                    size: 34,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Flexible(
-                  child: Text(
-                    label,
-                    style: const TextStyle(
-                      color: NubifyAuthColors.text,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13,
+          ),
+          child: Row(
+            children: <Widget>[
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      option.nativeAndArabic,
+                      style: const TextStyle(
+                        color: NubifyAuthColors.text,
+                        fontSize: 15.5,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
-                  ),
+                    if (option.englishUnder != null)
+                      Text(
+                        option.englishUnder!,
+                        style: const TextStyle(
+                          color: NubifyAuthColors.muted,
+                          fontSize: 12.5,
+                        ),
+                      ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+              Icon(
+                selected
+                    ? Icons.check_circle_rounded
+                    : Icons.radio_button_unchecked_rounded,
+                color: selected ? NubifyAuthColors.sky : NubifyAuthColors.muted,
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _genderOption(String value, String label) {
+  //===================================================
+  // GENDER CHOICE
+  //===================================================
+
+  Widget _genderOption(String value, String label, IconData icon) {
     final bool selected = _gender == value;
 
     return Expanded(
@@ -535,7 +566,7 @@ class _SignupScreenState extends State<SignupScreen> {
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 220),
             curve: Curves.easeOutCubic,
-            padding: const EdgeInsets.symmetric(vertical: 12),
+            padding: const EdgeInsets.symmetric(vertical: 14),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(20),
               gradient: selected ? NubifyAuthColors.button : null,
@@ -555,25 +586,23 @@ class _SignupScreenState extends State<SignupScreen> {
                     ]
                   : null,
             ),
-            child: Column(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
-                ClipOval(
-                  child: NubifyAvatar(
-                    style: value == NubifyGender.female
-                        ? (_hijab
-                              ? NubifyAvatarStyle.hijab
-                              : NubifyAvatarStyle.female)
-                        : NubifyAvatarStyle.male,
-                    faculty: _facultyForAvatar,
-                    size: 52,
-                  ),
+                Icon(
+                  icon,
+                  color: selected ? Colors.white : NubifyAuthColors.sky,
+                  size: 22,
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  label,
-                  style: TextStyle(
-                    color: selected ? Colors.white : NubifyAuthColors.text,
-                    fontWeight: FontWeight.w800,
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      color: selected ? Colors.white : NubifyAuthColors.text,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
               ],
@@ -586,6 +615,9 @@ class _SignupScreenState extends State<SignupScreen> {
 
   //===================================================
   // PROFILE PICTURE STEP
+  //
+  // The default male or female picture until a photo is
+  // added; just Gallery and Camera underneath.
   //===================================================
 
   Widget _pictureContent() {
@@ -595,92 +627,42 @@ class _SignupScreenState extends State<SignupScreen> {
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
         Center(
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: <Widget>[
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: NubifyAuthColors.button,
-                  boxShadow: <BoxShadow>[
-                    BoxShadow(
-                      color: NubifyAuthColors.royal.withValues(alpha: 0.5),
-                      blurRadius: 28,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
+          child: Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: NubifyAuthColors.button,
+              boxShadow: <BoxShadow>[
+                BoxShadow(
+                  color: NubifyAuthColors.royal.withValues(alpha: 0.5),
+                  blurRadius: 28,
+                  offset: const Offset(0, 10),
                 ),
-                child: ClipOval(
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 280),
-                    child: hasPhoto
-                        ? Image.memory(
-                            _image!,
-                            key: const ValueKey<String>('photo'),
-                            width: 136,
-                            height: 136,
-                            fit: BoxFit.cover,
-                          )
-                        : NubifyAvatar(
-                            key: const ValueKey<String>('avatar'),
-                            style: _avatarStyle,
-                            faculty: _facultyForAvatar,
-                            size: 136,
-                          ),
-                  ),
-                ),
-              ),
-              Positioned(
-                right: 2,
-                bottom: 2,
-                child: Semantics(
-                  button: true,
-                  label: 'Choose a photo from your gallery',
-                  child: GestureDetector(
-                    onTap: () => _selectImage(ImageSource.gallery),
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white,
-                        border: Border.all(
-                          color: NubifyAuthColors.black,
-                          width: 3,
-                        ),
+              ],
+            ),
+            child: ClipOval(
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 280),
+                child: hasPhoto
+                    ? Image.memory(
+                        _image!,
+                        key: const ValueKey<String>('photo'),
+                        width: 136,
+                        height: 136,
+                        fit: BoxFit.cover,
+                      )
+                    : NubifyAvatar(
+                        key: const ValueKey<String>('avatar'),
+                        style: _avatarStyle,
+                        faculty: _facultyForAvatar,
+                        size: 136,
                       ),
-                      child: const Icon(
-                        Icons.edit_rounded,
-                        color: NubifyAuthColors.royal,
-                        size: 20,
-                      ),
-                    ),
-                  ),
-                ),
               ),
-            ],
+            ),
           ),
         ),
 
-        const SizedBox(height: 14),
-
-        Text(
-          hasPhoto ? 'Looking good!' : 'Your Nubify avatar',
-          style: const TextStyle(
-            color: NubifyAuthColors.text,
-            fontWeight: FontWeight.w800,
-            fontSize: 15,
-          ),
-        ),
-
-        _helper(
-          hasPhoto
-              ? 'This photo will be your profile picture.'
-              : 'Coloured for your faculty. Add a photo, or keep this one.',
-        ),
-
-        const SizedBox(height: 18),
+        const SizedBox(height: 22),
 
         Row(
           children: <Widget>[
@@ -688,7 +670,7 @@ class _SignupScreenState extends State<SignupScreen> {
               child: NubifyAuthGhostButton(
                 onPressed: () => _selectImage(ImageSource.gallery),
                 icon: Icons.photo_library_outlined,
-                label: 'Gallery',
+                label: _t('Gallery'),
               ),
             ),
             const SizedBox(width: 10),
@@ -696,7 +678,7 @@ class _SignupScreenState extends State<SignupScreen> {
               child: NubifyAuthGhostButton(
                 onPressed: () => _selectImage(ImageSource.camera),
                 icon: Icons.photo_camera_outlined,
-                label: 'Camera',
+                label: _t('Camera'),
               ),
             ),
           ],
@@ -705,8 +687,8 @@ class _SignupScreenState extends State<SignupScreen> {
         if (hasPhoto)
           TextButton.icon(
             onPressed: () => setState(() => _image = null),
-            icon: const Icon(Icons.face_rounded, size: 18),
-            label: const Text('Use my avatar instead'),
+            icon: const Icon(Icons.close_rounded, size: 18),
+            label: Text(_t('Remove photo')),
           ),
       ],
     );
@@ -718,26 +700,36 @@ class _SignupScreenState extends State<SignupScreen> {
 
   Widget _getStepContent() {
     switch (_currentStep) {
+      case _languageStep:
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            for (final NubifyLanguage option in LanguagePreference.options)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: _languageOption(option),
+              ),
+          ],
+        );
+
       case _contactStep:
         return Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            NubifyLanguagePicker(code: _language, onChanged: _setLanguage),
-
-            const SizedBox(height: 14),
-
             NubifyAuthField(
               controller: _emailController,
-              label: 'Email',
+              label: _t('Email'),
               hint: 'you@example.com',
               icon: Icons.email_outlined,
               keyboardType: TextInputType.emailAddress,
               autofillHints: const <String>[AutofillHints.email],
               textInputAction: TextInputAction.next,
+              textDirection: TextDirection.ltr,
             ),
             if (_emailError != null)
-              _helper(_emailError!, color: const Color(0xFFFF5C6C)),
+              _helper(_t(_emailError!), color: const Color(0xFFFF5C6C)),
 
             const SizedBox(height: 14),
 
@@ -749,9 +741,12 @@ class _SignupScreenState extends State<SignupScreen> {
               optional: true,
               autofillHints: const <String>[AutofillHints.telephoneNumber],
               action: TextInputAction.done,
+              textDirection: TextDirection.ltr,
             ),
             _helper(
-              "Starts with 010, 011, 012, 015 or +20, and stays private. If you don't have an Egyptian number, you can skip this.",
+              _t(
+                "Starts with 010, 011, 012, 015 or +20, and stays private. If you don't have an Egyptian number, you can skip this.",
+              ),
             ),
           ],
         );
@@ -768,13 +763,14 @@ class _SignupScreenState extends State<SignupScreen> {
               autofillHints: const <String>[AutofillHints.name],
               textCapitalization: TextCapitalization.words,
             ),
-            _helper('Emojis are welcome in your name ✨'),
+            _helper(_t('Emojis are welcome in your name ✨')),
 
             const SizedBox(height: 14),
 
             UsernameField(
               controller: _usernameController,
               textInputAction: TextInputAction.done,
+              translate: _t,
               onChanged: (UsernameCheck status) {
                 if (status.isTaken != _usernameStatus.isTaken) {
                   setState(() => _usernameStatus = status);
@@ -786,26 +782,22 @@ class _SignupScreenState extends State<SignupScreen> {
 
             const SizedBox(height: 18),
 
-            _label('I am'),
+            _label(_t('I am')),
             Row(
               children: <Widget>[
-                _genderOption(NubifyGender.male, 'Male'),
+                _genderOption(
+                  NubifyGender.male,
+                  _t('Male'),
+                  Icons.male_rounded,
+                ),
                 const SizedBox(width: 12),
-                _genderOption(NubifyGender.female, 'Female'),
+                _genderOption(
+                  NubifyGender.female,
+                  _t('Female'),
+                  Icons.female_rounded,
+                ),
               ],
             ),
-
-            if (_gender == NubifyGender.female) ...<Widget>[
-              const SizedBox(height: 16),
-              _label('My avatar'),
-              Row(
-                children: <Widget>[
-                  _avatarChoice(hijab: false, label: 'With hair'),
-                  const SizedBox(width: 12),
-                  _avatarChoice(hijab: true, label: 'With hijab'),
-                ],
-              ),
-            ],
           ],
         );
 
@@ -818,6 +810,7 @@ class _SignupScreenState extends State<SignupScreen> {
               selectedId: _selectedFacultyId,
               otherController: _facultyController,
               onSelected: _selectFaculty,
+              translate: _t,
             ),
 
             const SizedBox(height: 14),
@@ -845,9 +838,10 @@ class _SignupScreenState extends State<SignupScreen> {
       case _passwordStep:
         return NubifyAuthField(
           controller: _passwordController,
-          label: 'Password',
+          label: _t('Password'),
           icon: Icons.lock_outline_rounded,
           isPassword: true,
+          textDirection: TextDirection.ltr,
           autofillHints: const <String>[AutofillHints.newPassword],
           textInputAction: TextInputAction.done,
           onSubmitted: (_) => _nextStep(),
@@ -865,9 +859,14 @@ class _SignupScreenState extends State<SignupScreen> {
   // SEGMENTED PROGRESS
   //===================================================
 
+  String get _stepLabel => _t('Step {n} of {total}', <String, Object>{
+    'n': _currentStep + 1,
+    'total': _stepCount,
+  });
+
   Widget _progress() {
     return Semantics(
-      label: 'Step ${_currentStep + 1} of $_stepCount',
+      label: _stepLabel,
       child: Row(
         children: <Widget>[
           for (int i = 0; i < _stepCount; i++) ...<Widget>[
@@ -939,7 +938,7 @@ class _SignupScreenState extends State<SignupScreen> {
           const SizedBox(height: 14),
 
           Text(
-            _stepTitles[_currentStep],
+            _t(_stepTitles[_currentStep]),
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: NubifyAuthColors.text,
@@ -952,7 +951,7 @@ class _SignupScreenState extends State<SignupScreen> {
           const SizedBox(height: 4),
 
           Text(
-            _stepSubtitles[_currentStep],
+            _t(_stepSubtitles[_currentStep]),
             textAlign: TextAlign.center,
             style: const TextStyle(color: NubifyAuthColors.muted, fontSize: 13),
           ),
@@ -973,162 +972,175 @@ class _SignupScreenState extends State<SignupScreen> {
   Widget build(BuildContext context) {
     final bool lastStep = _currentStep == _stepCount - 1;
     final bool reduceMotion = MediaQuery.of(context).disableAnimations;
+    final bool rtl = SignupText.isRtl(_language);
 
-    return NubifyAuthTheme(
-      child: Scaffold(
-        body: NubifyAuthBackground(
-          child: SafeArea(
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 480),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 14, 20, 6),
-                  child: Column(
-                    children: <Widget>[
-                      //===================================================
-                      // HEADER
-                      //===================================================
-                      NubifyAuthEntrance(
-                        child: Row(
-                          children: <Widget>[
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: Image.asset(
-                                NubifyAuthLogo.asset,
-                                width: 44,
-                                height: 58,
-                                fit: BoxFit.cover,
-                                semanticLabel: 'Nubify',
+    return Directionality(
+      // Arabic reads right to left.
+      textDirection: rtl ? TextDirection.rtl : TextDirection.ltr,
+      child: NubifyAuthTheme(
+        child: Scaffold(
+          body: NubifyAuthBackground(
+            child: SafeArea(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 480),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 14, 20, 6),
+                    child: Column(
+                      children: <Widget>[
+                        //===================================================
+                        // HEADER
+                        //===================================================
+                        NubifyAuthEntrance(
+                          child: Row(
+                            children: <Widget>[
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: Image.asset(
+                                  NubifyAuthLogo.asset,
+                                  width: 44,
+                                  height: 58,
+                                  fit: BoxFit.cover,
+                                  semanticLabel: 'Nubify',
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: <Widget>[
+                                    Text(
+                                      _t('Join Nubify'),
+                                      style: const TextStyle(
+                                        color: NubifyAuthColors.text,
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.w900,
+                                      ),
+                                    ),
+                                    Text(
+                                      _stepLabel,
+                                      style: const TextStyle(
+                                        color: NubifyAuthColors.muted,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        _progress(),
+
+                        const SizedBox(height: 18),
+
+                        //===================================================
+                        // STEP CARD
+                        //===================================================
+                        Expanded(
+                          // A little above centre looks more balanced.
+                          child: Align(
+                            alignment: const Alignment(0, -0.35),
+                            child: SingleChildScrollView(
+                              child: AnimatedSwitcher(
+                                duration: Duration(
+                                  milliseconds: reduceMotion ? 0 : 320,
+                                ),
+                                switchInCurve: Curves.easeOutCubic,
+                                switchOutCurve: Curves.easeInCubic,
+                                transitionBuilder:
+                                    (
+                                      Widget child,
+                                      Animation<double> animation,
+                                    ) {
+                                      final bool incoming =
+                                          child.key ==
+                                          ValueKey<int>(_currentStep);
+                                      final double from =
+                                          (incoming ? 0.25 : -0.25) *
+                                          (_goingBack ? -1 : 1) *
+                                          (rtl ? -1 : 1);
+
+                                      return FadeTransition(
+                                        opacity: animation,
+                                        child: SlideTransition(
+                                          position: Tween<Offset>(
+                                            begin: Offset(from, 0),
+                                            end: Offset.zero,
+                                          ).animate(animation),
+                                          child: child,
+                                        ),
+                                      );
+                                    },
+                                child: _stepCard(),
                               ),
                             ),
-                            const SizedBox(width: 12),
+                          ),
+                        ),
+
+                        const SizedBox(height: 14),
+
+                        //===================================================
+                        // BUTTONS
+                        //===================================================
+                        Row(
+                          children: <Widget>[
                             Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: <Widget>[
-                                  const Text(
-                                    'Join Nubify',
-                                    style: TextStyle(
-                                      color: NubifyAuthColors.text,
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.w900,
-                                    ),
-                                  ),
-                                  Text(
-                                    'Step ${_currentStep + 1} of $_stepCount',
-                                    style: const TextStyle(
-                                      color: NubifyAuthColors.muted,
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
+                              child: NubifyAuthGhostButton(
+                                onPressed: _currentStep == 0
+                                    ? null
+                                    : _previousStep,
+                                icon: Icons.arrow_back_rounded,
+                                label: _t('Back'),
+                              ),
+                            ),
+
+                            const SizedBox(width: 12),
+
+                            Expanded(
+                              flex: 2,
+                              child: NubifyAuthButton(
+                                label: lastStep
+                                    ? _t('Create account')
+                                    : _t('Next'),
+                                icon: lastStep
+                                    ? Icons.person_add_alt_1_rounded
+                                    : Icons.arrow_forward_rounded,
+                                loading: _isLoading || _checking,
+                                onPressed:
+                                    _currentStep == _aboutStep &&
+                                        _usernameStatus.isTaken
+                                    ? null
+                                    : lastStep
+                                    ? _signUpUser
+                                    : _nextStep,
                               ),
                             ),
                           ],
                         ),
-                      ),
 
-                      const SizedBox(height: 16),
-
-                      _progress(),
-
-                      const SizedBox(height: 18),
-
-                      //===================================================
-                      // STEP CARD
-                      //===================================================
-                      Expanded(
-                        // A little above centre looks more balanced.
-                        child: Align(
-                          alignment: const Alignment(0, -0.35),
-                          child: SingleChildScrollView(
-                            child: AnimatedSwitcher(
-                              duration: Duration(
-                                milliseconds: reduceMotion ? 0 : 320,
+                        Wrap(
+                          alignment: WrapAlignment.center,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: <Widget>[
+                            Text(
+                              _t('Already have an account?'),
+                              style: const TextStyle(
+                                color: NubifyAuthColors.muted,
                               ),
-                              switchInCurve: Curves.easeOutCubic,
-                              switchOutCurve: Curves.easeInCubic,
-                              transitionBuilder:
-                                  (Widget child, Animation<double> animation) {
-                                    final bool incoming =
-                                        child.key ==
-                                        ValueKey<int>(_currentStep);
-                                    final double from =
-                                        (incoming ? 0.25 : -0.25) *
-                                        (_goingBack ? -1 : 1);
-
-                                    return FadeTransition(
-                                      opacity: animation,
-                                      child: SlideTransition(
-                                        position: Tween<Offset>(
-                                          begin: Offset(from, 0),
-                                          end: Offset.zero,
-                                        ).animate(animation),
-                                        child: child,
-                                      ),
-                                    );
-                                  },
-                              child: _stepCard(),
                             ),
-                          ),
+                            TextButton(
+                              onPressed: _openLogin,
+                              child: Text(_t('Log in')),
+                            ),
+                          ],
                         ),
-                      ),
-
-                      const SizedBox(height: 14),
-
-                      //===================================================
-                      // BUTTONS
-                      //===================================================
-                      Row(
-                        children: <Widget>[
-                          Expanded(
-                            child: NubifyAuthGhostButton(
-                              onPressed: _currentStep == 0
-                                  ? null
-                                  : _previousStep,
-                              icon: Icons.arrow_back_rounded,
-                              label: 'Back',
-                            ),
-                          ),
-
-                          const SizedBox(width: 12),
-
-                          Expanded(
-                            flex: 2,
-                            child: NubifyAuthButton(
-                              label: lastStep ? 'Create account' : 'Next',
-                              icon: lastStep
-                                  ? Icons.person_add_alt_1_rounded
-                                  : Icons.arrow_forward_rounded,
-                              loading: _isLoading || _checking,
-                              onPressed:
-                                  _currentStep == _aboutStep &&
-                                      _usernameStatus.isTaken
-                                  ? null
-                                  : lastStep
-                                  ? _signUpUser
-                                  : _nextStep,
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      Wrap(
-                        alignment: WrapAlignment.center,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: <Widget>[
-                          const Text(
-                            'Already have an account?',
-                            style: TextStyle(color: NubifyAuthColors.muted),
-                          ),
-                          TextButton(
-                            onPressed: _openLogin,
-                            child: const Text('Log in'),
-                          ),
-                        ],
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),

@@ -22,6 +22,7 @@ class UsernameField extends StatefulWidget {
     this.onChanged,
     this.textInputAction,
     this.onSubmitted,
+    this.translate,
   });
 
   final TextEditingController controller;
@@ -34,6 +35,10 @@ class UsernameField extends StatefulWidget {
 
   final TextInputAction? textInputAction;
   final ValueChanged<String>? onSubmitted;
+
+  /// Shows the label and messages in another language
+  /// (signup). English when null.
+  final String Function(String english)? translate;
 
   @override
   State<UsernameField> createState() => _UsernameFieldState();
@@ -130,12 +135,17 @@ class _UsernameFieldState extends State<UsernameField> {
       UsernameStatus.empty => (null, scheme.onSurfaceVariant),
     };
 
+    final String Function(String) tr =
+        widget.translate ?? (String english) => english;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
         TextField(
           controller: widget.controller,
+          // Usernames are English letters, even in Arabic.
+          textDirection: TextDirection.ltr,
           autocorrect: false,
           enableSuggestions: false,
           keyboardType: TextInputType.visiblePassword,
@@ -143,7 +153,7 @@ class _UsernameFieldState extends State<UsernameField> {
           onSubmitted: widget.onSubmitted,
           autofillHints: const <String>[AutofillHints.newUsername],
           decoration: InputDecoration(
-            labelText: 'Username',
+            labelText: tr('Username'),
             prefixIcon: const Icon(Icons.alternate_email_rounded),
             prefixText: '@',
             suffixIcon: _status.status == UsernameStatus.checking
@@ -168,7 +178,7 @@ class _UsernameFieldState extends State<UsernameField> {
                   child: Semantics(
                     liveRegion: true,
                     child: Text(
-                      _status.message,
+                      tr(_status.message),
                       style: TextStyle(
                         color: color,
                         fontSize: 12.5,
