@@ -3,6 +3,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../../utils/common/nubify_contact.dart';
 import '../../widgets/menu/nubify_menu_components.dart';
+import '../../l10n/nubify_text.dart';
 
 //===================================================
 // NUBIFY SUPPORT
@@ -122,7 +123,7 @@ class NubifySupportScreen extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
                 child: Text(
-                  'How would you like to reach us?',
+                  context.tr('How would you like to reach us?'),
                   style: TextStyle(
                     color: NubifyMenuColors.primaryText(context),
                     fontSize: 18,
@@ -137,8 +138,8 @@ class NubifySupportScreen extends StatelessWidget {
                   size: 24,
                 ),
                 color: _whatsappGreen,
-                title: 'WhatsApp',
-                subtitle: 'Fastest response',
+                title: context.tr('WhatsApp'),
+                subtitle: context.tr('Fastest response'),
                 detail: NubifyContact.whatsappDisplay,
                 onTap: () =>
                     _open(context, NubifyContact.whatsapp(message), 'WhatsApp'),
@@ -150,8 +151,8 @@ class NubifySupportScreen extends StatelessWidget {
                   size: 24,
                 ),
                 color: _gmailRed,
-                title: 'Gmail',
-                subtitle: 'Replies may take a little longer',
+                title: context.tr('Gmail'),
+                subtitle: context.tr('Replies may take a little longer'),
                 detail: NubifyContact.email,
                 onTap: () => _open(
                   context,
@@ -174,8 +175,8 @@ class NubifySupportScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return NubifyMenuPage(
-      title: 'Support',
-      subtitle: 'Help, problems and ideas.',
+      title: context.tr('Support'),
+      subtitle: context.tr('Help, problems and ideas.'),
       child: Container(
         padding: const EdgeInsets.fromLTRB(16, 16, 10, 10),
         decoration: BoxDecoration(
@@ -210,7 +211,7 @@ class NubifySupportScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
                       Text(
-                        'Nubify Support',
+                        context.tr('Nubify Support'),
                         style: TextStyle(
                           color: NubifyMenuColors.primaryText(context),
                           fontSize: 20,
@@ -219,7 +220,7 @@ class NubifySupportScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 3),
                       Text(
-                        "We're here to help you.",
+                        context.tr("We're here to help you."),
                         style: TextStyle(
                           color: NubifyMenuColors.secondaryText(context),
                         ),
@@ -240,10 +241,10 @@ class NubifySupportScreen extends StatelessWidget {
             //=========================================
             _SupportRow(
               icon: Icons.chat_bubble_outline_rounded,
-              title: 'Contact Support',
-              subtitle:
-                  'For a fast response, chat with me on WhatsApp. '
-                  'You can also email me.',
+              title: context.tr('Contact Support'),
+              subtitle: context.tr(
+                'For a fast response, chat with me on WhatsApp. You can also email me.',
+              ),
               onTap: () => _chooseApp(
                 context,
                 message: _supportMessage,
@@ -252,8 +253,8 @@ class NubifySupportScreen extends StatelessWidget {
             ),
             _SupportRow(
               icon: Icons.bug_report_outlined,
-              title: 'Report a Problem',
-              subtitle: 'Report bugs or technical issues.',
+              title: context.tr('Report a Problem'),
+              subtitle: context.tr('Report bugs or technical issues.'),
               onTap: () => _chooseApp(
                 context,
                 message: _problemMessage,
@@ -262,8 +263,8 @@ class NubifySupportScreen extends StatelessWidget {
             ),
             _SupportRow(
               icon: Icons.lightbulb_outline_rounded,
-              title: 'Suggest a Feature',
-              subtitle: 'Share ideas to improve Nubify.',
+              title: context.tr('Suggest a Feature'),
+              subtitle: context.tr('Share ideas to improve Nubify.'),
               onTap: () => _chooseApp(
                 context,
                 message: _ideaMessage,

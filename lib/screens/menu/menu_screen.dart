@@ -16,6 +16,7 @@ import 'about_developer_screen.dart';
 import 'explore_nub_screen.dart';
 import 'nubify_support_screen.dart';
 import '../huddles/huddles_screen.dart';
+import '../../l10n/nubify_text.dart';
 
 //===================================================
 // NUBIFY — PREMIUM MENU SCREEN
@@ -129,6 +130,8 @@ class _MenuScreenState extends State<MenuScreen> {
     }
 
     setState(() => _languageCode = languageCode);
+    // The profile may hold a newer choice (another phone).
+    AppLanguage.code.value = languageCode;
   }
 
   String _emailIdentity(String? email) {
@@ -147,6 +150,8 @@ class _MenuScreenState extends State<MenuScreen> {
 
     final String previous = _languageCode;
     setState(() => _languageCode = languageCode);
+    // Switch the whole app straight away.
+    AppLanguage.code.value = languageCode;
 
     try {
       final SharedPreferences preferences =
@@ -165,9 +170,12 @@ class _MenuScreenState extends State<MenuScreen> {
         return;
       }
       setState(() => _languageCode = previous);
+      AppLanguage.code.value = previous;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Could not save language preference. Please retry.'),
+        SnackBar(
+          content: Text(
+            context.tr('Could not save language preference. Please retry.'),
+          ),
         ),
       );
     }
@@ -296,7 +304,7 @@ class _MenuScreenState extends State<MenuScreen> {
               const SizedBox(height: 16),
 
               Text(
-                title,
+                context.tr(title),
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
@@ -307,7 +315,9 @@ class _MenuScreenState extends State<MenuScreen> {
               const SizedBox(height: 9),
 
               Text(
-                'This feature is not available in the current version of Nubify yet.',
+                context.tr(
+                  'This feature is not available in the current version of Nubify yet.',
+                ),
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: NubifyMenuColors.secondaryText(sheetContext),
@@ -338,18 +348,20 @@ class _MenuScreenState extends State<MenuScreen> {
 
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
 
-        title: const Row(
+        title: Row(
           children: [
             Icon(Icons.logout_rounded, color: NubifyPalette.crimson),
 
             SizedBox(width: 12),
 
-            Text('Log Out?'),
+            Text(context.tr('Log Out?')),
           ],
         ),
 
-        content: const Text(
-          'Are you sure you want to log out of your Nubify account?',
+        content: Text(
+          context.tr(
+            'Are you sure you want to log out of your Nubify account?',
+          ),
         ),
 
         actions: [
@@ -358,7 +370,7 @@ class _MenuScreenState extends State<MenuScreen> {
               Navigator.pop(dialogContext, false);
             },
 
-            child: const Text('Cancel'),
+            child: Text(context.tr('Cancel')),
           ),
 
           FilledButton(
@@ -371,7 +383,7 @@ class _MenuScreenState extends State<MenuScreen> {
               Navigator.pop(dialogContext, true);
             },
 
-            child: const Text('Log Out'),
+            child: Text(context.tr('Log Out')),
           ),
         ],
       ),
@@ -419,9 +431,11 @@ class _MenuScreenState extends State<MenuScreen> {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text(
-            'Unable to log out. Please check your connection and retry.',
+            context.tr(
+              'Unable to log out. Please check your connection and retry.',
+            ),
           ),
         ),
       );
@@ -462,7 +476,7 @@ class _MenuScreenState extends State<MenuScreen> {
                 //=====================================
 
                 Text(
-                  'Menu',
+                  context.tr('Menu'),
                   style: TextStyle(
                     color: NubifyMenuColors.primaryText(context),
                     fontSize: 27,
@@ -528,7 +542,7 @@ class _MenuScreenState extends State<MenuScreen> {
                 //=====================================
                 Center(
                   child: Text(
-                    'Nubify · Campus Social',
+                    context.tr('Nubify · Campus Social'),
                     style: TextStyle(
                       color: NubifyMenuColors.secondaryText(context),
                       fontSize: 12,
@@ -549,7 +563,7 @@ class _MenuScreenState extends State<MenuScreen> {
             child: ColoredBox(
               color: Colors.black.withValues(alpha: .35),
 
-              child: const Center(
+              child: Center(
                 child: Card(
                   child: Padding(
                     padding: EdgeInsets.symmetric(horizontal: 28, vertical: 20),
@@ -567,7 +581,7 @@ class _MenuScreenState extends State<MenuScreen> {
 
                         SizedBox(width: 16),
 
-                        Text('Signing out…'),
+                        Text(context.tr('Signing out…')),
                       ],
                     ),
                   ),
@@ -586,7 +600,7 @@ class _MenuScreenState extends State<MenuScreen> {
   Widget _sectionDividerHeading(String title) => Row(
     children: <Widget>[
       Text(
-        title,
+        context.tr(title),
         style: TextStyle(
           fontSize: 17,
           fontWeight: FontWeight.w900,
@@ -858,7 +872,7 @@ class _MenuScreenState extends State<MenuScreen> {
         'NUB Huddles',
         Symbols.podcasts_rounded,
         NubifyPalette.purple,
-            () => _push(const HuddlesScreen()),
+        () => _push(const HuddlesScreen()),
         picture: 'assets/menu_icons/studio_microphone_3d.png',
       ),
 
@@ -903,14 +917,14 @@ class _MenuScreenState extends State<MenuScreen> {
         'Faculties & Programmes',
         Symbols.school_rounded,
         NubifyPalette.amber,
-            () => _push(const NubFacultiesScreen()),
+        () => _push(const NubFacultiesScreen()),
       ),
 
       _MenuItem(
         'Explore NUB',
         Symbols.photo_library_rounded,
         NubifyPalette.teal,
-            () => _push(const ExploreNubScreen()),
+        () => _push(const ExploreNubScreen()),
         picture: 'assets/menu_icons/framed_picture_3d.png',
       ),
 
@@ -921,7 +935,7 @@ class _MenuScreenState extends State<MenuScreen> {
         'The University',
         Symbols.location_city_rounded,
         NubifyPalette.indigo,
-            () => _push(const NubUniversityScreen()),
+        () => _push(const NubUniversityScreen()),
         picture: 'assets/menu_icons/school_3d.png',
       ),
 
@@ -1000,7 +1014,7 @@ class _MenuScreenState extends State<MenuScreen> {
 
                       Expanded(
                         child: Text(
-                          item.title,
+                          context.tr(item.title),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
 
@@ -1033,7 +1047,7 @@ class _MenuScreenState extends State<MenuScreen> {
         'About the Developer',
         Symbols.person_pin_circle_rounded,
         NubifyPalette.violet,
-            () => _push(const AboutDeveloperScreen()),
+        () => _push(const AboutDeveloperScreen()),
       ),
 
       _MenuItem(
@@ -1041,7 +1055,6 @@ class _MenuScreenState extends State<MenuScreen> {
         Symbols.info_rounded,
         nubifySky,
         () => _push(const NubifyAboutAppScreen()),
-
       ),
 
       _MenuItem(
@@ -1141,7 +1154,7 @@ class _MenuScreenState extends State<MenuScreen> {
 
             Expanded(
               child: Text(
-                item.title,
+                context.tr(item.title),
 
                 style: TextStyle(
                   fontWeight: FontWeight.w600,

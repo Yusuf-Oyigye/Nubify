@@ -4,26 +4,24 @@ import '../../widgets/profile/delete_account_dialog.dart';
 import '../../widgets/menu/nubify_menu_components.dart';
 import 'nubify_information_screens.dart';
 import 'nubify_support_screen.dart';
+import '../../l10n/nubify_text.dart';
+
 //===================================================
 // NUBIFY — PREMIUM SETTINGS SCREEN
 //===================================================
 
 class NubifySettingsScreen extends StatelessWidget {
-  const NubifySettingsScreen({
-    super.key,
-  });
+  const NubifySettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return NubifyMenuPage(
-      title: 'Settings',
+      title: context.tr('Settings'),
 
-      subtitle:
-      'Personalize your Nubify experience.',
+      subtitle: context.tr('Personalize your Nubify experience.'),
 
       child: Column(
-        crossAxisAlignment:
-        CrossAxisAlignment.stretch,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
 
         children: [
           //=========================================
@@ -31,15 +29,12 @@ class NubifySettingsScreen extends StatelessWidget {
           //=========================================
 
           Text(
-            'Appearance',
+            context.tr('Appearance'),
 
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w800,
-              color:
-              NubifyMenuColors.primaryText(
-                context,
-              ),
+              color: NubifyMenuColors.primaryText(context),
             ),
           ),
 
@@ -52,17 +47,13 @@ class NubifySettingsScreen extends StatelessWidget {
           //=========================================
           // INFORMATION
           //=========================================
-
           Text(
-            'Information',
+            context.tr('Information'),
 
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w800,
-              color:
-              NubifyMenuColors.primaryText(
-                context,
-              ),
+              color: NubifyMenuColors.primaryText(context),
             ),
           ),
 
@@ -71,9 +62,8 @@ class NubifySettingsScreen extends StatelessWidget {
           //=========================================
           // ABOUT THE APP
           //=========================================
-
           _SettingsLink(
-            label: 'About the App',
+            label: context.tr('About the App'),
             icon: Icons.info_outline_rounded,
             color: nubifySky,
 
@@ -81,8 +71,7 @@ class NubifySettingsScreen extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute<void>(
-                  builder: (_) =>
-                  const NubifyAboutAppScreen(),
+                  builder: (_) => const NubifyAboutAppScreen(),
                 ),
               );
             },
@@ -93,9 +82,8 @@ class NubifySettingsScreen extends StatelessWidget {
           //=========================================
           // TERMS AND CONDITIONS
           //=========================================
-
           _SettingsLink(
-            label: 'Terms and Conditions',
+            label: context.tr('Terms and Conditions'),
             icon: Icons.gavel_outlined,
             color: NubifyPalette.teal,
 
@@ -104,9 +92,7 @@ class NubifySettingsScreen extends StatelessWidget {
                 context,
                 MaterialPageRoute<void>(
                   builder: (_) =>
-                  const NubifyLegalScreen(
-                    type: NubifyLegalType.terms,
-                  ),
+                      const NubifyLegalScreen(type: NubifyLegalType.terms),
                 ),
               );
             },
@@ -117,9 +103,8 @@ class NubifySettingsScreen extends StatelessWidget {
           //=========================================
           // PRIVACY POLICY
           //=========================================
-
           _SettingsLink(
-            label: 'Privacy Policy',
+            label: context.tr('Privacy Policy'),
             icon: Icons.shield_outlined,
             color: NubifyPalette.emerald,
 
@@ -128,9 +113,7 @@ class NubifySettingsScreen extends StatelessWidget {
                 context,
                 MaterialPageRoute<void>(
                   builder: (_) =>
-                  const NubifyLegalScreen(
-                    type: NubifyLegalType.privacy,
-                  ),
+                      const NubifyLegalScreen(type: NubifyLegalType.privacy),
                 ),
               );
             },
@@ -141,9 +124,8 @@ class NubifySettingsScreen extends StatelessWidget {
           //=========================================
           // SUPPORT
           //=========================================
-
           _SettingsLink(
-            label: 'Support',
+            label: context.tr('Support'),
             icon: Icons.support_agent_rounded,
             color: nubifySky,
             onTap: () {
@@ -161,17 +143,13 @@ class NubifySettingsScreen extends StatelessWidget {
           //=========================================
           // ACCOUNT
           //=========================================
-
           Text(
-            'Account',
+            context.tr('Account'),
 
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w800,
-              color:
-              NubifyMenuColors.primaryText(
-                context,
-              ),
+              color: NubifyMenuColors.primaryText(context),
             ),
           ),
 
@@ -180,9 +158,8 @@ class NubifySettingsScreen extends StatelessWidget {
           //=========================================
           // DELETE ACCOUNT
           //=========================================
-
           _SettingsLink(
-            label: 'Delete Account',
+            label: context.tr('Delete Account'),
             icon: Icons.delete_forever_outlined,
             color: NubifyPalette.crimson,
 
@@ -218,24 +195,19 @@ class _SettingsLink extends StatelessWidget {
     return Material(
       color: NubifyMenuColors.surface(context),
 
-      borderRadius:
-      BorderRadius.circular(19),
+      borderRadius: BorderRadius.circular(19),
 
       child: InkWell(
         onTap: onTap,
 
-        borderRadius:
-        BorderRadius.circular(19),
+        borderRadius: BorderRadius.circular(19),
 
         child: Padding(
           padding: const EdgeInsets.all(13),
 
           child: Row(
             children: [
-              NubifyIconTile(
-                icon: icon,
-                color: color,
-              ),
+              NubifyIconTile(icon: icon, color: color),
 
               const SizedBox(width: 13),
 
@@ -244,10 +216,7 @@ class _SettingsLink extends StatelessWidget {
                   label,
 
                   style: TextStyle(
-                    color:
-                    NubifyMenuColors.primaryText(
-                      context,
-                    ),
+                    color: NubifyMenuColors.primaryText(context),
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                   ),
@@ -256,10 +225,7 @@ class _SettingsLink extends StatelessWidget {
 
               Icon(
                 Icons.chevron_right_rounded,
-                color:
-                NubifyMenuColors.secondaryText(
-                  context,
-                ),
+                color: NubifyMenuColors.secondaryText(context),
               ),
             ],
           ),

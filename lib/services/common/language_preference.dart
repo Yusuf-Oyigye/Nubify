@@ -41,6 +41,22 @@ class NubifyLanguage {
       nativeName == label ? label : '$nativeName ($label)';
 }
 
+//===================================================
+// THE APP'S LANGUAGE RIGHT NOW
+//
+// The whole app shows in this language (main.dart sets
+// it as the app locale). LanguagePreference.save changes
+// it, so picking a language on login, signup or Menu
+// switches every screen straight away.
+//===================================================
+
+abstract final class AppLanguage {
+  static final ValueNotifier<String> code = ValueNotifier<String>('en');
+
+  /// Arabic reads right to left.
+  static bool get isRtl => code.value == 'ar';
+}
+
 abstract final class LanguagePreference {
   // Same key the Menu screen uses.
   static const String storageKey = 'nubify_language_preference_v1';
@@ -77,9 +93,16 @@ abstract final class LanguagePreference {
     }
   }
 
-  /// Saves on this phone and, if signed in, on the profile.
+  /// Loads the saved language into [AppLanguage] (app start).
+  static Future<void> init() async {
+    AppLanguage.code.value = await load();
+  }
+
+  /// Switches the app to [code] and saves it on this phone
+  /// and, if signed in, on the profile.
   static Future<void> save(String code) async {
     final String clean = byCode(code).code;
+    AppLanguage.code.value = clean;
 
     try {
       final SharedPreferences preferences =

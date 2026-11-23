@@ -7,6 +7,7 @@ import '../../utils/profile/username_rules.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../../l10n/nubify_text.dart';
 import '../../models/feed/post.dart';
 import '../../screens/feed/comment_screen.dart';
 import '../../screens/feed/post_engagements_screen.dart';
@@ -15,7 +16,9 @@ import '../../services/chat/chat_sevice.dart';
 import '../../services/feed/like_service.dart';
 import '../../services/feed/post_actions_service.dart';
 import '../../services/feed/repost_service.dart';
+import '../../services/common/translation_service.dart';
 import '../../services/stories/story_service.dart';
+import '../../utils/common/language_guess.dart';
 import '../../utils/common/nubify_time.dart';
 import 'post_media_carousel.dart';
 import '../../screens/chat/chat_forward_screen.dart';
@@ -125,6 +128,21 @@ class _PostCardState extends State<PostCard> {
   bool _showHeartAnimation = false;
 
   String _caption = '';
+
+  //===================================================
+  // "TRANSLATE" BUTTON
+  //
+  // The caption in the reader's language, and the
+  // caption and language it was made for.
+  //===================================================
+
+  static const Color _translateBlue = Color(0xFF1D9BF0);
+
+  String? _translation;
+  String _translatedCaption = '';
+  String _translationLanguage = '';
+  bool _showTranslation = false;
+  bool _translating = false;
 
   bool _isDeleted = false;
 
@@ -2821,16 +2839,23 @@ class _PostCardState extends State<PostCard> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Text(
-                  widget.post.fullName.isNotEmpty
-                      ? widget.post.fullName
-                      : UsernameRules.at(widget.post.username),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
+                Row(
+                  children: <Widget>[
+                    Flexible(
+                      child: Text(
+                        widget.post.fullName.isNotEmpty
+                            ? widget.post.fullName
+                            : UsernameRules.at(widget.post.username),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                    _buildTranslateLink(),
+                  ],
                 ),
 
                 const SizedBox(height: 2),
@@ -2885,6 +2910,99 @@ class _PostCardState extends State<PostCard> {
   // POST CAPTION + UNIVERSAL LINK PREVIEW
   //===================================================
 
+  String get _readerLanguage => Localizations.localeOf(context).languageCode;
+
+  bool _translationShown(String language) =>
+      _showTranslation &&
+      _translation != null &&
+      _translationLanguage == language &&
+      _translatedCaption == _caption;
+
+  Future<void> _toggleTranslation() async {
+    final String language = _readerLanguage;
+
+    if (_translationShown(language)) {
+      setState(() => _showTranslation = false);
+      return;
+    }
+
+    if (_translation != null &&
+        _translationLanguage == language &&
+        _translatedCaption == _caption) {
+      setState(() => _showTranslation = true);
+      return;
+    }
+
+    if (_translating) return;
+    setState(() => _translating = true);
+
+    final String caption = _caption;
+
+    try {
+      final String translation = await TranslationService.instance.translate(
+        caption.trim(),
+        language,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _translation = translation;
+        _translatedCaption = caption;
+        _translationLanguage = language;
+        _showTranslation = true;
+      });
+    } catch (error) {
+      debugPrint('Translate failed: $error');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(context.tr('Could not translate. Please try again.')),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _translating = false);
+    }
+  }
+
+  // Blue, in the reader's own language, only on posts
+  // that are not already in it.
+  Widget _buildTranslateLink() {
+    final String language = _readerLanguage;
+
+    if (!LanguageGuess.shouldOffer(_caption, language)) {
+      return const SizedBox.shrink();
+    }
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: _toggleTranslation,
+      child: Padding(
+        padding: const EdgeInsetsDirectional.only(start: 8, top: 1),
+        child: _translating
+            ? const SizedBox.square(
+                dimension: 14,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: _translateBlue,
+                ),
+              )
+            : Text(
+                context.tr(
+                  _translationShown(language) ? 'Show original' : 'Translate',
+                ),
+                style: const TextStyle(
+                  color: _translateBlue,
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+      ),
+    );
+  }
+
   Widget _buildCaption() {
     if (_caption.trim().isEmpty) {
       return const SizedBox.shrink();
@@ -2894,7 +3012,9 @@ class _PostCardState extends State<PostCard> {
       padding: const EdgeInsets.only(top: 12, bottom: 10),
 
       child: UniversalLinkText(
-        text: _caption,
+        text: _translationShown(_readerLanguage)
+            ? _translation!
+            : _caption,
 
         style: const TextStyle(fontSize: 16, height: 1.4),
 

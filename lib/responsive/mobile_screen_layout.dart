@@ -19,6 +19,7 @@ import '../services/profile/profile_service.dart';
 import '../widgets/marketplace/marketplace_brand_icon.dart';
 import '../widgets/common/nubify_count_badge.dart';
 import '../widgets/huddles/huddle_mini_bar.dart';
+import '../l10n/nubify_text.dart';
 
 //===================================================
 // MOBILE SCREEN LAYOUT
@@ -305,7 +306,7 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
                     ),
             ),
 
-            const Text('Profile', style: TextStyle(fontSize: 9)),
+            Text(context.tr('Profile'), style: TextStyle(fontSize: 9)),
           ],
         ),
       ),
@@ -342,11 +343,10 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
 
               title: _page == 1
                   // Shrinks to fit beside the top-bar icons on small phones.
-                  ? const FittedBox(
+                  ? FittedBox(
                       fit: BoxFit.scaleDown,
                       alignment: Alignment.centerLeft,
-                      child: Text(
-                        'NUBintelligence',
+                      child: Text(context.tr('NUBintelligence'),
                         maxLines: 1,
                         style: TextStyle(
                           fontSize: 25,
@@ -355,20 +355,18 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
                         ),
                       ),
                     )
-                  : const Column(
+                  : Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(
-                          'Nubify',
+                        Text(context.tr('Nubify'),
                           style: TextStyle(
                             fontSize: 26,
                             fontWeight: FontWeight.bold,
                             color: Color(0xFF29B6F6),
                           ),
                         ),
-                        Text(
-                          'Campus Social',
+                        Text(context.tr('Campus Social'),
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
@@ -402,7 +400,7 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
                           // larger than the 24px outline icons beside it.
                           size: 26,
                         ),
-                        const Text('Market', style: TextStyle(fontSize: 9)),
+                        Text(context.tr('Market'), style: TextStyle(fontSize: 9)),
                       ],
                     ),
                   ),
@@ -432,7 +430,7 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
                             size: 22,
                           ),
                         ),
-                        const Text('Chat', style: TextStyle(fontSize: 9)),
+                        Text(context.tr('Chat'), style: TextStyle(fontSize: 9)),
                       ],
                     ),
                   ),
@@ -469,8 +467,7 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
                             },
                           ),
                         ),
-                        const Text(
-                          'Notifications',
+                        Text(context.tr('Notifications'),
                           style: TextStyle(fontSize: 8),
                         ),
                       ],
@@ -505,9 +502,9 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
         onTap: onPageChanged,
         type: BottomNavigationBarType.fixed,
         items: <BottomNavigationBarItem>[
-          const BottomNavigationBarItem(
+          BottomNavigationBarItem(
             icon: Icon(Icons.home_rounded),
-            label: 'Home',
+            label: context.tr('Home'),
           ),
 
           BottomNavigationBarItem(
@@ -519,7 +516,7 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
                 return const Icon(Icons.smart_toy_outlined);
               },
             ),
-            label: 'NUBi',
+            label: context.tr('NUBi'),
           ),
 
           BottomNavigationBarItem(
@@ -531,7 +528,7 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
                 return const Icon(Icons.play_circle_outline);
               },
             ),
-            label: 'NUBuzz',
+            label: context.tr('NUBuzz'),
           ),
 
           BottomNavigationBarItem(
@@ -543,12 +540,12 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
                 return const Icon(Icons.language);
               },
             ),
-            label: 'EGP Arabic',
+            label: context.tr('EGP Arabic'),
           ),
 
-          const BottomNavigationBarItem(
+          BottomNavigationBarItem(
             icon: Icon(Icons.grid_view_rounded),
-            label: 'Menu',
+            label: context.tr('Menu'),
           ),
         ],
       ),

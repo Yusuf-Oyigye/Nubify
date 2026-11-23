@@ -33,6 +33,8 @@ import 'widgets/chat/incoming_call_listener.dart';
 import 'widgets/links/nubify_deep_link_gate.dart';
 import 'widgets/common/system_nav_inset.dart';
 import 'widgets/auth/nubify_auth_style.dart';
+import 'l10n/nubify_text.dart';
+import 'services/common/language_preference.dart';
 
 import 'package:firebase_app_check/firebase_app_check.dart';
 
@@ -74,6 +76,9 @@ Future<void> main() async {
           : const AppleAppAttestProvider(),
     );
   }
+
+  // The saved language, so the first screen already uses it.
+  await LanguagePreference.init();
 
   runApp(const MyApp());
 }
@@ -575,7 +580,11 @@ class MyApp extends StatelessWidget {
                 create: (_) =>
                     UserProvider(),
 
-                child: MaterialApp(
+                // Rebuilds with the new locale when the
+                // language changes (screens keep their place).
+                child: ValueListenableBuilder<String>(
+                  valueListenable: AppLanguage.code,
+                  builder: (_, String language, _) => MaterialApp(
                   //=================================
                   // IMPORTANT:
                   // A different authentication
@@ -608,6 +617,11 @@ class MyApp extends StatelessWidget {
                   // SELECTED THEME
                   themeMode:
                   appearance.mode,
+
+                  // APP LANGUAGE (Arabic = right to left)
+                  locale: Locale(language),
+                  supportedLocales: NubifyText.supportedLocales,
+                  localizationsDelegates: NubifyText.delegates,
 
                   // KEEP EVERY SCREEN ABOVE THE
                   // PHONE NAVIGATION BUTTONS
@@ -669,6 +683,7 @@ class MyApp extends StatelessWidget {
 
                         : _homeLayout(),
                   ),
+                ),
                 ),
               );
             },
