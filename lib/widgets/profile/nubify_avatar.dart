@@ -30,17 +30,17 @@ abstract final class NubifyGender {
 
 abstract final class NubifyAvatarColors {
   static const Map<String, Color> byFacultyId = <String, Color>{
-    'medicine': Color(0xFFE05252),
-    'oral_dental_medicine': Color(0xFF12A7B8),
-    'pharmacy': Color(0xFF2EAD70),
-    'engineering': Color(0xFFF28C28),
-    'computer_science': Color(0xFF536DFE),
+    'medicine': Color(0xFF29B6F6),
+    'oral_dental_medicine': Color(0xFF2EAD70),
+    'pharmacy': Color(0xFFC6539B),
+    'engineering': Color(0xFF607D8B),
+    'computer_science': Color(0xFFC62828),
     'business_administration': Color(0xFFD59B18),
-    'mass_communication_languages': Color(0xFFC6539B),
-    'physical_therapy': Color(0xFF00897B),
+    'mass_communication_languages': Color(0xFF14286B),
+    'physical_therapy': Color(0xFF12A7B8),
     'fine_arts': Color(0xFF8E5AD7),
     'nursing': Color(0xFFE76F8A),
-    'other': Color(0xFF607D8B),
+    'other': Color(0xFF37474F),
   };
 
   /// Before a faculty is chosen.
