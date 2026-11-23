@@ -29,6 +29,11 @@ class NubifyLanguage {
   /// English and Arabic together, e.g. "French · الفرنسية".
   String get bilingual => '$label · $arabicName';
 
+  /// Own name with English in brackets, e.g.
+  /// "Français (French)". Used by the Menu.
+  String get nativeWithEnglish =>
+      nativeName == label ? label : '$nativeName ($label)';
+
   /// The language's own name when [bilingual] does not
   /// already show it (Yorùbá, हिन्दी, Français).
   String? get extraNativeName =>

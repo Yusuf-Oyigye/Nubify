@@ -7,9 +7,10 @@ import '../../widgets/menu/nubify_menu_components.dart';
 //===================================================
 // NUBIFY SUPPORT
 //
-// Contact Support: WhatsApp (fast) or Gmail (slower).
-// Report a Problem and Suggest a Feature: WhatsApp,
-// with a ready-made message that suits each one.
+// Contact Support, Report a Problem and Suggest a
+// Feature each let the student pick WhatsApp (fast) or
+// Gmail (slower), with a ready-made message that suits
+// each one.
 //===================================================
 
 class NubifySupportScreen extends StatelessWidget {
@@ -58,7 +59,11 @@ class NubifySupportScreen extends StatelessWidget {
     }
   }
 
-  Future<void> _contactSupport(BuildContext context) async {
+  Future<void> _chooseApp(
+    BuildContext context, {
+    required String message,
+    required String subject,
+  }) async {
     await showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
@@ -135,11 +140,8 @@ class NubifySupportScreen extends StatelessWidget {
                 title: 'WhatsApp',
                 subtitle: 'Fastest response',
                 detail: NubifyContact.whatsappDisplay,
-                onTap: () => _open(
-                  context,
-                  NubifyContact.whatsapp(_supportMessage),
-                  'WhatsApp',
-                ),
+                onTap: () =>
+                    _open(context, NubifyContact.whatsapp(message), 'WhatsApp'),
               ),
               option(
                 logo: const Icon(
@@ -153,10 +155,7 @@ class NubifySupportScreen extends StatelessWidget {
                 detail: NubifyContact.email,
                 onTap: () => _open(
                   context,
-                  NubifyContact.gmail(
-                    subject: 'Nubify support request',
-                    body: _supportMessage,
-                  ),
+                  NubifyContact.gmail(subject: subject, body: message),
                   'your email app',
                 ),
               ),
@@ -245,50 +244,30 @@ class NubifySupportScreen extends StatelessWidget {
               subtitle:
                   'For a fast response, chat with me on WhatsApp. '
                   'You can also email me.',
-              onTap: () => _contactSupport(context),
+              onTap: () => _chooseApp(
+                context,
+                message: _supportMessage,
+                subject: 'Nubify support request',
+              ),
             ),
             _SupportRow(
               icon: Icons.bug_report_outlined,
               title: 'Report a Problem',
-              subtitle: 'Report bugs or technical issues on WhatsApp.',
-              onTap: () => _open(
+              subtitle: 'Report bugs or technical issues.',
+              onTap: () => _chooseApp(
                 context,
-                NubifyContact.whatsapp(_problemMessage),
-                'WhatsApp',
+                message: _problemMessage,
+                subject: 'Nubify problem report',
               ),
             ),
             _SupportRow(
               icon: Icons.lightbulb_outline_rounded,
               title: 'Suggest a Feature',
-              subtitle: 'Share ideas to improve Nubify on WhatsApp.',
-              onTap: () => _open(
+              subtitle: 'Share ideas to improve Nubify.',
+              onTap: () => _chooseApp(
                 context,
-                NubifyContact.whatsapp(_ideaMessage),
-                'WhatsApp',
-              ),
-            ),
-
-            Padding(
-              padding: const EdgeInsets.fromLTRB(4, 10, 8, 6),
-              child: Row(
-                children: <Widget>[
-                  const FaIcon(
-                    FontAwesomeIcons.whatsapp,
-                    color: _whatsappGreen,
-                    size: 16,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'WhatsApp ${NubifyContact.whatsappDisplay} · '
-                      '${NubifyContact.email}',
-                      style: TextStyle(
-                        color: NubifyMenuColors.secondaryText(context),
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                ],
+                message: _ideaMessage,
+                subject: 'Nubify feature idea',
               ),
             ),
           ],

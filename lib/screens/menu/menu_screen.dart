@@ -43,7 +43,7 @@ class MenuScreen extends StatefulWidget {
 class _MenuScreenState extends State<MenuScreen> {
   static const String _languagePreferenceKey = 'nubify_language_preference_v1';
 
-  // English + Arabic names, shared with login and signup.
+  // Shared with login and signup.
   static const List<NubifyLanguage> _languages = LanguagePreference.options;
 
   Stream<DocumentSnapshot<Map<String, dynamic>>>? _profileStream;
@@ -223,7 +223,7 @@ class _MenuScreenState extends State<MenuScreen> {
                       iconSize: 21,
                     ),
                     title: Text(
-                      language.bilingual,
+                      language.nativeWithEnglish,
                       style: TextStyle(
                         color: NubifyMenuColors.primaryText(sheetContext),
                         fontWeight: language.code == _languageCode
@@ -231,16 +231,6 @@ class _MenuScreenState extends State<MenuScreen> {
                             : FontWeight.w600,
                       ),
                     ),
-                    subtitle: language.extraNativeName == null
-                        ? null
-                        : Text(
-                            language.extraNativeName!,
-                            style: TextStyle(
-                              color: NubifyMenuColors.secondaryText(
-                                sheetContext,
-                              ),
-                            ),
-                          ),
                     trailing: language.code == _languageCode
                         ? const Icon(
                             Icons.check_circle_rounded,
@@ -819,7 +809,7 @@ class _MenuScreenState extends State<MenuScreen> {
                   ),
                   const SizedBox(height: 1),
                   Text(
-                    selected.bilingual,
+                    selected.nativeWithEnglish,
                     style: TextStyle(
                       color: NubifyMenuColors.secondaryText(context),
                       fontSize: 11.5,
