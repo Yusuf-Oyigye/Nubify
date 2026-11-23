@@ -223,14 +223,24 @@ class _MenuScreenState extends State<MenuScreen> {
                       iconSize: 21,
                     ),
                     title: Text(
-                      language.nativeWithEnglish,
+                      language.nativeAndArabic,
                       style: TextStyle(
                         color: NubifyMenuColors.primaryText(sheetContext),
                         fontWeight: language.code == _languageCode
                             ? FontWeight.w800
-                            : FontWeight.w600,
+                            : FontWeight.w700,
                       ),
                     ),
+                    subtitle: language.englishUnder == null
+                        ? null
+                        : Text(
+                            language.englishUnder!,
+                            style: TextStyle(
+                              color: NubifyMenuColors.secondaryText(
+                                sheetContext,
+                              ),
+                            ),
+                          ),
                     trailing: language.code == _languageCode
                         ? const Icon(
                             Icons.check_circle_rounded,

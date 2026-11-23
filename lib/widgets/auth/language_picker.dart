@@ -76,16 +76,16 @@ class NubifyLanguagePicker extends StatelessWidget {
                   ListTile(
                     onTap: () => Navigator.pop(sheetContext, option.code),
                     title: Text(
-                      option.bilingual,
+                      option.nativeAndArabic,
                       style: const TextStyle(
                         color: NubifyAuthColors.text,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    subtitle: option.extraNativeName == null
+                    subtitle: option.englishUnder == null
                         ? null
                         : Text(
-                            option.extraNativeName!,
+                            option.englishUnder!,
                             style: const TextStyle(
                               color: NubifyAuthColors.muted,
                             ),
@@ -191,7 +191,7 @@ class NubifyLanguagePicker extends StatelessWidget {
                       const SizedBox(height: 2),
                       // The current choice, small underneath.
                       Text(
-                        language.bilingual,
+                        language.nativeAndArabic,
                         style: const TextStyle(
                           color: NubifyAuthColors.muted,
                           fontSize: 12.5,

@@ -20,24 +20,25 @@ class NubifyLanguage {
   final String label;
 
   // Arabic name, e.g. الفرنسية. Most NUB students read
-  // Arabic, so it always shows next to the English name.
+  // Arabic, so it always shows next to the own name.
   final String arabicName;
 
   // The language's own name, e.g. Français.
   final String nativeName;
 
-  /// English and Arabic together, e.g. "French · الفرنسية".
-  String get bilingual => '$label · $arabicName';
+  /// The bold line in the language lists: own name, then
+  /// Arabic, e.g. "Français · الفرنسية" ("العربية" alone).
+  String get nativeAndArabic =>
+      nativeName == arabicName ? nativeName : '$nativeName · $arabicName';
+
+  /// The English name under the bold line, when the bold
+  /// line does not already show it.
+  String? get englishUnder => nativeName == label ? null : label;
 
   /// Own name with English in brackets, e.g.
-  /// "Français (French)". Used by the Menu.
+  /// "Français (French)". Used on the Menu card.
   String get nativeWithEnglish =>
       nativeName == label ? label : '$nativeName ($label)';
-
-  /// The language's own name when [bilingual] does not
-  /// already show it (Yorùbá, हिन्दी, Français).
-  String? get extraNativeName =>
-      nativeName == label || nativeName == arabicName ? null : nativeName;
 }
 
 abstract final class LanguagePreference {
