@@ -55,6 +55,7 @@ abstract final class LanguagePreference {
 
   // Shared English + Arabic wording for the pickers.
   static const String title = 'Language · اللغة';
+  static const String chooseLanguage = 'Choose language · اختر اللغة';
   static const String chooseTitle = 'Choose your language';
   static const String chooseTitleArabic = 'اختر لغتك';
 

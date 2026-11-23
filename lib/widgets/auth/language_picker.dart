@@ -8,7 +8,8 @@ import 'nubify_auth_style.dart';
 //
 // compact: a small globe pill for the login screen.
 // Otherwise a full-width row like a text field.
-// Tapping either opens the language list.
+// Both say "Choose language" in English and Arabic;
+// tapping opens the list with English ticked by default.
 // Every name shows in English and Arabic together.
 //===================================================
 
@@ -114,7 +115,7 @@ class NubifyLanguagePicker extends StatelessWidget {
     if (compact) {
       return Semantics(
         button: true,
-        label: 'Language: ${language.label}. Change language',
+        label: 'Choose language. Current: ${language.label}',
         excludeSemantics: true,
         child: Material(
           color: NubifyAuthColors.glass,
@@ -135,9 +136,9 @@ class NubifyLanguagePicker extends StatelessWidget {
                     size: 18,
                   ),
                   const SizedBox(width: 6),
-                  Text(
-                    language.bilingual,
-                    style: const TextStyle(
+                  const Text(
+                    LanguagePreference.chooseLanguage,
+                    style: TextStyle(
                       color: NubifyAuthColors.text,
                       fontWeight: FontWeight.w700,
                       fontSize: 13,
@@ -158,7 +159,7 @@ class NubifyLanguagePicker extends StatelessWidget {
 
     return Semantics(
       button: true,
-      label: 'Language: ${language.label}. Change language',
+      label: 'Choose language. Current: ${language.label}',
       excludeSemantics: true,
       child: Material(
         color: NubifyAuthColors.glass,
@@ -180,18 +181,20 @@ class NubifyLanguagePicker extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
                       const Text(
-                        LanguagePreference.title,
+                        LanguagePreference.chooseLanguage,
                         style: TextStyle(
-                          color: NubifyAuthColors.muted,
-                          fontSize: 12,
-                        ),
-                      ),
-                      Text(
-                        language.bilingual,
-                        style: const TextStyle(
                           color: NubifyAuthColors.text,
                           fontSize: 15.5,
                           fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      // The current choice, small underneath.
+                      Text(
+                        language.bilingual,
+                        style: const TextStyle(
+                          color: NubifyAuthColors.muted,
+                          fontSize: 12.5,
                         ),
                       ),
                     ],
