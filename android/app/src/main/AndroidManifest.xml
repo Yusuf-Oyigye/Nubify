@@ -117,6 +117,19 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+
+        <!-- Phone notifications: the Nubify logo and blue next to
+             the app name, and the pop-up channel (same id as
+             push_notifications.dart and functions/push.js). -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_stat_nubify" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/nubify_notification" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="nubify_alerts" />
         <!-- NUB Huddles: keeps screen sharing running -->
         <service
             android:name="de.julianassmann.flutter_background.IsolateHolderService"

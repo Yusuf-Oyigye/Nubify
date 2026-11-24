@@ -10,6 +10,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:video_player/video_player.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 import '../../l10n/nubify_text.dart';
+import '../../services/notifications/notification_service.dart';
 
 class CreatePostScreen extends StatefulWidget {
   const CreatePostScreen({super.key});
@@ -750,6 +751,25 @@ class _CreatePostScreenState
       await postRef.set(
         postData,
       );
+
+      // ----------------------------------------------------------
+      // TELL EVERYONE TAGGED (a failure must not stop the post)
+      // ----------------------------------------------------------
+
+      final NotificationService notifications =
+      NotificationService();
+
+      for (final String taggedId in _taggedUserIds.toSet()) {
+        notifications
+            .notifyTag(
+          taggedUserId: taggedId,
+          postId: postId,
+        )
+            .catchError((Object error) {
+          debugPrint('Tag notification error: $error');
+        });
+      }
+
       if (!mounted) {
         return;
       }

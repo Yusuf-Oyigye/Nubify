@@ -17,6 +17,7 @@ import 'explore_nub_screen.dart';
 import 'nubify_support_screen.dart';
 import '../huddles/huddles_screen.dart';
 import '../../l10n/nubify_text.dart';
+import '../../services/notifications/push_notifications.dart';
 
 //===================================================
 // NUBIFY — PREMIUM MENU SCREEN
@@ -412,6 +413,10 @@ class _MenuScreenState extends State<MenuScreen> {
       // MaterialApp and display the existing LoginScreen.
       //
       // The previous Navigator stack is discarded.
+
+      // This phone stops getting this account's
+      // notifications first (needs the session).
+      await PushNotifications.instance.stop();
 
       await FirebaseAuth.instance.signOut();
     }

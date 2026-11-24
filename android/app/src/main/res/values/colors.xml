@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The blue of the Nubify logo (app icon background). -->
+    <color name="ic_launcher_background">#023892</color>
+
+    <!-- Nubify blue for the logo and name on notifications. -->
+    <color name="nubify_notification">#1546C9</color>
+</resources>

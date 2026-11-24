@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
+import '../notifications/push_notifications.dart';
+
 //===================================================
 // NUBIFY — ACCOUNT DELETION SERVICE
 //===================================================
@@ -57,6 +59,14 @@ class AccountDeletionService {
 
     if (privateDoc.exists) {
       await privateRef.delete();
+    }
+
+    // No more phone notifications for this account.
+    await PushNotifications.instance.stop();
+    try {
+      await _firestore.collection('pushTokens').doc(uid).delete();
+    } on FirebaseException {
+      // Phone notification rules not deployed yet.
     }
 
     //===================================================

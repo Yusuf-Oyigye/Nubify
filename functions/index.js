@@ -1579,3 +1579,6 @@ Object.assign(exports, require("./nubi_mindrush"));
 //USERNAMES (profile sync, release, daily backfill)
 Object.assign(exports, require("./usernames"));
 
+//PHONE NOTIFICATIONS (pop-ups for notifications, chats, groups)
+Object.assign(exports, require("./push"));
+

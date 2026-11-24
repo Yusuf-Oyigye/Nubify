@@ -16,7 +16,12 @@ import '../huddles/huddle_launcher.dart';
 //===================================================
 
 class NotificationsScreen extends StatefulWidget {
-  const NotificationsScreen({super.key});
+  const NotificationsScreen({super.key, this.openNotificationId = ''});
+
+  // Set when a phone notification was tapped: that
+  // notification opens straight away (back returns
+  // to the list).
+  final String openNotificationId;
 
   @override
   State<NotificationsScreen> createState() => _NotificationsScreenState();
@@ -62,6 +67,35 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     super.initState();
 
     _notificationsStream = _notificationService.getNotifications();
+
+    if (widget.openNotificationId.trim().isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _openFromPhone());
+    }
+  }
+
+  //===================================================
+  // OPEN A TAPPED PHONE NOTIFICATION
+  //===================================================
+
+  Future<void> _openFromPhone() async {
+    final String notificationId = widget.openNotificationId.trim();
+
+    try {
+      final DocumentSnapshot<Map<String, dynamic>> snapshot = await _firestore
+          .collection('notifications')
+          .doc(notificationId)
+          .get();
+
+      final Map<String, dynamic>? data = snapshot.data();
+
+      if (!mounted || data == null) {
+        return;
+      }
+
+      await _openNotification(notificationId: notificationId, data: data);
+    } catch (_) {
+      _showMessage('Unable to open this notification.');
+    }
   }
 
   //===================================================

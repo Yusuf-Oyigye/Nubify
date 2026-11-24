@@ -35,6 +35,7 @@ import '../../utils/chat/nubify_call_display.dart';
 import '../../widgets/chat/chat_call_event_bubble.dart';
 import '../../widgets/chat/nubify_chat_style.dart';
 import '../../widgets/chat/chat_story_avatar.dart';
+import '../../services/notifications/push_notifications.dart';
 
 //===============================
 // IS ONLINE
@@ -276,6 +277,10 @@ class _ConversationScreenState extends State<ConversationScreen> {
   @override
   void initState() {
     super.initState();
+
+    // No phone pop-ups for this chat while it is open.
+    PushNotifications.openChatId = _conversationId;
+
     _messagesStream = _chatService.getMessages(widget.otherUserId);
 
     _activityStream = _privacyService.mutualActivityStream(widget.otherUserId);
@@ -2354,6 +2359,10 @@ class _ConversationScreenState extends State<ConversationScreen> {
 
   @override
   void dispose() {
+    if (PushNotifications.openChatId == _conversationId) {
+      PushNotifications.openChatId = null;
+    }
+
     _typingTimer?.cancel();
 
     _presenceService.setTyping(conversationId: _conversationId, typing: false);

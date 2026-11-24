@@ -30,6 +30,7 @@ import 'services/common/nubify_appearance_controller.dart';
 import 'models/stories/story.dart';
 import 'services/common/media_route_observer.dart';
 import 'widgets/chat/incoming_call_listener.dart';
+import 'widgets/notifications/nubify_push_gate.dart';
 import 'widgets/links/nubify_deep_link_gate.dart';
 import 'widgets/common/system_nav_inset.dart';
 import 'widgets/auth/nubify_auth_style.dart';
@@ -102,13 +103,17 @@ class MyApp extends StatelessWidget {
   //===================================================
 
   Widget _homeLayout() {
-    return const IncomingCallListener(
-      child: ResponsiveLayout(
-        mobileScreenLayout:
-        MobileScreenLayout(),
+    // NubifyPushGate: phone notifications (pop-ups, and
+    // opening what a tapped one is about).
+    return const NubifyPushGate(
+      child: IncomingCallListener(
+        child: ResponsiveLayout(
+          mobileScreenLayout:
+          MobileScreenLayout(),
 
-        webScreenLayout:
-        WebScreenLayout(),
+          webScreenLayout:
+          WebScreenLayout(),
+        ),
       ),
     );
   }

@@ -9,6 +9,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../models/stories/story.dart';
 import '../../models/stories/story_drawing.dart';
+import '../notifications/notification_service.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 
@@ -28,6 +29,23 @@ class StoryService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   final FirebaseStorage _storage = FirebaseStorage.instance;
+
+  final NotificationService _notifications = NotificationService();
+
+  //===================================================
+  // NOTIFY
+  //
+  // Story likes, replies, tags and reshares. A failed
+  // notification must never undo the action itself.
+  //===================================================
+
+  void _notify(Future<void> notification) {
+    unawaited(
+      notification.catchError((Object error) {
+        debugPrint('Story notification error: $error');
+      }),
+    );
+  }
 
   //===================================================
   // CURRENT USER ID
@@ -516,6 +534,16 @@ class StoryService {
       await storyRef.set(storyData);
     }
 
+    // Tell everyone tagged in the story.
+    for (final String taggedId in taggedIds.toSet()) {
+      _notify(
+        _notifications.notifyStoryTag(
+          taggedUserId: taggedId,
+          storyId: storyRef.id,
+        ),
+      );
+    }
+
     return storyRef.id;
   }
   //============================
@@ -719,7 +747,9 @@ class StoryService {
         .collection('stories')
         .doc(story.storyId);
 
-    return _firestore.runTransaction<bool>((Transaction transaction) async {
+    final bool nowLiked = await _firestore.runTransaction<bool>((
+      Transaction transaction,
+    ) async {
       final DocumentSnapshot<Map<String, dynamic>> snapshot = await transaction
           .get(storyRef);
 
@@ -762,6 +792,17 @@ class StoryService {
 
       return true;
     });
+
+    if (nowLiked) {
+      _notify(
+        _notifications.notifyStoryLike(
+          storyOwnerId: story.uid,
+          storyId: story.storyId,
+        ),
+      );
+    }
+
+    return nowLiked;
   }
 
   //===================================================
@@ -814,6 +855,13 @@ class StoryService {
 
     await _firestore.collection('stories').doc(story.storyId).update(
       <String, dynamic>{'replyCount': FieldValue.increment(1)},
+    );
+
+    _notify(
+      _notifications.notifyStoryReply(
+        storyOwnerId: story.uid,
+        storyId: story.storyId,
+      ),
     );
   }
 
@@ -978,6 +1026,15 @@ class StoryService {
     } catch (error) {
       debugPrint('Story reshare count error: $error');
     }
+
+    // Opens the reshared story, so the owner sees who
+    // shared it.
+    _notify(
+      _notifications.notifyStoryReshare(
+        storyOwnerId: source.uid,
+        storyId: storyId,
+      ),
+    );
 
     return storyId;
   }

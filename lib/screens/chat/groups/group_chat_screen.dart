@@ -22,6 +22,7 @@ import '../chat_forward_screen.dart';
 import '../../../widgets/common/full_photo_viewer.dart';
 import '../../../widgets/links/universal_link_composer_preview.dart';
 import '../../../widgets/chat/nubify_chat_style.dart';
+import '../../../services/notifications/push_notifications.dart';
 
 //===============================
 // GROUP CHAT SCREEN
@@ -131,6 +132,9 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
   @override
   void initState() {
     super.initState();
+
+    // No phone pop-ups for this group while it is open.
+    PushNotifications.openChatId = widget.groupId;
 
     _markSeen();
   }
@@ -1481,6 +1485,10 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
 
   @override
   void dispose() {
+    if (PushNotifications.openChatId == widget.groupId) {
+      PushNotifications.openChatId = null;
+    }
+
     _messageController.dispose();
 
     super.dispose();

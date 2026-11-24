@@ -53,3 +53,6 @@ skills-lock.json
 # Local backup copies of Firebase Functions source
 functions/*.backup
 functions/*.backup-*
+
+# Preview written by tool/icons/make_icons_test.dart
+tool/icons/preview.png

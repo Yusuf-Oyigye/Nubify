@@ -2083,6 +2083,30 @@ match /calls/{callId} {
       allow update: if false;
     }
 
+    //===================================================
+    // PHONE NOTIFICATIONS
+    //
+    // pushTokens/{uid}: the phones (push addresses) of one
+    // person, with each phone's app language. PRIVATE:
+    // only the owner. The server (functions/push.js) reads
+    // them to send notifications.
+    //===================================================
+
+    match /pushTokens/{uid} {
+
+      allow get, delete: if isCurrentUser(uid);
+
+      allow list: if false;
+
+      allow create, update: if isCurrentUser(uid) &&
+          request.resource.data.keys().hasOnly([
+            'tokens',
+            'updatedAt'
+          ]) &&
+          request.resource.data.tokens is map &&
+          request.resource.data.tokens.size() <= 30;
+    }
+
     match /userPrivate/{uid} {
 
       allow get: if isOwner(uid);
