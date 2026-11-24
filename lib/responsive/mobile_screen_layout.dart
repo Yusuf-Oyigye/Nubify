@@ -540,7 +540,7 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
                 return const Icon(Icons.language);
               },
             ),
-            label: context.tr('EGP Arabic'),
+            label: context.tr('EGY Arabic'),
           ),
 
           BottomNavigationBarItem(

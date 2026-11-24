@@ -18,6 +18,7 @@ import '../../services/stories/story_service.dart';
 import '../../utils/common/nubify_time.dart';
 import '../../screens/chat/chat_forward_screen.dart';
 import '../links/universal_link_text.dart';
+import '../common/translatable_text.dart';
 
 //===================================================
 // NUBUZZ CARD
@@ -2009,21 +2010,18 @@ class _NubuzzCardState extends State<NubuzzCard>
         if (_caption.trim().isNotEmpty) ...<Widget>[
           const SizedBox(height: 9),
 
-          UniversalLinkText(
+          TranslatableText(
             text: _caption,
-
-            compactPreview: true,
-
-            maxLines: 3,
-
-            overflow: TextOverflow.ellipsis,
-
-            style: const TextStyle(
-              color: Colors.white,
-
-              fontSize: 14,
-
-              height: 1.35,
+            builder: (String shown) => UniversalLinkText(
+              text: shown,
+              compactPreview: true,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                height: 1.35,
+              ),
             ),
           ),
         ],

@@ -185,10 +185,13 @@ class _MenuScreenState extends State<MenuScreen> {
     final String? selected = await showModalBottomSheet<String>(
       context: context,
       showDragHandle: true,
+      // Six languages with two lines each are taller than
+      // the default sheet: let it grow and scroll.
+      isScrollControlled: true,
       backgroundColor: NubifyMenuColors.surface(context),
       builder: (sheetContext) {
         return SafeArea(
-          child: Padding(
+          child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(12, 2, 12, 18),
             child: Column(
               mainAxisSize: MainAxisSize.min,

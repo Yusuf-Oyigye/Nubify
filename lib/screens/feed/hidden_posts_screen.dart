@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../models/feed/post.dart';
 import '../../services/feed/post_actions_service.dart';
 import '../../widgets/feed/post_card.dart';
+import '../../l10n/nubify_text.dart';
 
 //===================================================
 // HIDDEN POSTS SCREEN
@@ -153,12 +154,11 @@ class _HiddenPostsScreenState
     //===================================================
 
     if (_uid.isEmpty) {
-      return const Scaffold(
+      return Scaffold(
         body:
         Center(
           child:
-          Text(
-            'Please log in to view hidden posts.',
+          Text(context.tr('Please log in to view hidden posts.'),
           ),
         ),
       );
@@ -173,13 +173,12 @@ class _HiddenPostsScreenState
         appBar:
         AppBar(
           title:
-          const Text(
-            'Hidden Posts',
+          Text(context.tr('Hidden Posts'),
           ),
         ),
 
         body:
-        const Center(
+        Center(
           child:
           Padding(
             padding:
@@ -188,8 +187,7 @@ class _HiddenPostsScreenState
             ),
 
             child:
-            Text(
-              'Hidden posts are private.',
+            Text(context.tr('Hidden posts are private.'),
 
               textAlign:
               TextAlign.center,
@@ -219,8 +217,7 @@ class _HiddenPostsScreenState
       appBar:
       AppBar(
         title:
-        const Text(
-          'Hidden Posts',
+        Text(context.tr('Hidden Posts'),
 
           style:
           TextStyle(
@@ -269,7 +266,7 @@ class _HiddenPostsScreenState
                   .error_outline,
 
               title:
-              'Unable to load hidden posts',
+              context.tr('Unable to load hidden posts'),
 
               subtitle:
               '${snapshot.error}',
@@ -289,16 +286,16 @@ class _HiddenPostsScreenState
           //===================================================
 
           if (references.isEmpty) {
-            return const _HiddenEmptyState(
+            return _HiddenEmptyState(
               icon:
               Icons
                   .visibility_outlined,
 
               title:
-              'No hidden posts',
+              context.tr('No hidden posts'),
 
               subtitle:
-              'Posts you hide will appear here so you can unhide them later.',
+              context.tr('Posts you hide will appear here so you can unhide them later.'),
             );
           }
 
@@ -553,13 +550,11 @@ class _DeletedHiddenReference
       ),
 
       title:
-      const Text(
-        'This post was deleted',
+      Text(context.tr('This post was deleted'),
       ),
 
       subtitle:
-      const Text(
-        'Remove the old hidden-post reference.',
+      Text(context.tr('Remove the old hidden-post reference.'),
       ),
 
       trailing:
@@ -586,8 +581,7 @@ class _DeletedHiddenReference
         },
 
         child:
-        const Text(
-          'Remove',
+        Text(context.tr('Remove'),
         ),
       ),
     );
@@ -620,13 +614,11 @@ class _StaleHiddenReference
       ),
 
       title:
-      const Text(
-        'Post is already visible',
+      Text(context.tr('Post is already visible'),
       ),
 
       subtitle:
-      const Text(
-        'Cleaning old Hidden Posts reference.',
+      Text(context.tr('Cleaning old Hidden Posts reference.'),
       ),
 
       trailing:
@@ -653,8 +645,7 @@ class _StaleHiddenReference
         },
 
         child:
-        const Text(
-          'Remove',
+        Text(context.tr('Remove'),
         ),
       ),
     );

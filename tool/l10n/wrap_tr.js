@@ -8,6 +8,7 @@ const path = require("path");
 
 const root = process.cwd();
 const files = process.argv.slice(2);
+const messageHelpers = ["_showMessage", "showSnackBar", "_showSnack", "_showSnackBar", "_showError", "_toast"];
 const named = ["label", "tooltip", "hintText", "labelText", "helperText", "title", "subtitle", "semanticLabel"];
 
 function ok(str) {
@@ -40,6 +41,16 @@ for (const rel of files) {
       if (!ok(str)) return m;
       count++;
       return `${n}:${sp}context.tr('${str}')${tail}`;
+    });
+  }
+
+  // First argument of message helpers: _showMessage('x'), showSnackBar('x', ...)
+  for (const fn of messageHelpers) {
+    const re = new RegExp(`\\b${fn}\\((\\s*)'((?:[^'\\\\\\n]|\\\\.)*)'(\\s*[,)])`, "g");
+    s = s.replace(re, (m, sp, str, tail) => {
+      if (!ok(str)) return m;
+      count++;
+      return `${fn}(${sp}context.tr('${str}')${tail}`;
     });
   }
 

@@ -9,6 +9,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:video_player/video_player.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
+import '../../l10n/nubify_text.dart';
 
 class CreatePostScreen extends StatefulWidget {
   const CreatePostScreen({super.key});
@@ -244,9 +245,11 @@ class _CreatePostScreenState
         files.add(file);
       }
 
+      if (!mounted) return;
+
       if (files.length < picked.length) {
         _showMessage(
-          'Videos can be up to 5 minutes. Longer videos were left out.',
+          context.tr('Videos can be up to 5 minutes. Longer videos were left out.'),
         );
       }
 
@@ -272,7 +275,7 @@ class _CreatePostScreenState
       );
 
       _showMessage(
-        'Unable to select media.',
+        context.tr('Unable to select media.'),
       );
     }
   }
@@ -301,7 +304,7 @@ class _CreatePostScreenState
 
     if (question.isEmpty) {
       _showMessage(
-        'Please enter a poll question.',
+        context.tr('Please enter a poll question.'),
       );
 
       return false;
@@ -310,7 +313,7 @@ class _CreatePostScreenState
     if (_pollOptionControllers.length <
         _minPollOptions) {
       _showMessage(
-        'A poll needs at least 2 options.',
+        context.tr('A poll needs at least 2 options.'),
       );
 
       return false;
@@ -329,7 +332,7 @@ class _CreatePostScreenState
 
     if (options.length < 2) {
       _showMessage(
-        'Please enter at least 2 poll options.',
+        context.tr('Please enter at least 2 poll options.'),
       );
 
       return false;
@@ -346,7 +349,7 @@ class _CreatePostScreenState
     if (uniqueOptions.length !=
         options.length) {
       _showMessage(
-        'Poll options must be different.',
+        context.tr('Poll options must be different.'),
       );
 
       return false;
@@ -585,7 +588,7 @@ class _CreatePostScreenState
 
     if (user == null) {
       _showMessage(
-        'Please log in first.',
+        context.tr('Please log in first.'),
       );
 
       return;
@@ -602,7 +605,7 @@ class _CreatePostScreenState
         _selectedMedia.isEmpty &&
         !_createPoll) {
       _showMessage(
-        'Write something or add media.',
+        context.tr('Write something or add media.'),
       );
 
       return;
@@ -769,7 +772,7 @@ class _CreatePostScreenState
       }
 
       _showMessage(
-        'Unable to create post.',
+        context.tr('Unable to create post.'),
       );
     } finally {
       if (mounted) {
@@ -841,8 +844,7 @@ class _CreatePostScreenState
                       height: 12,
                     ),
 
-                    const Text(
-                      'Tag People',
+                    Text(context.tr('Tag People'),
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight:
@@ -979,8 +981,7 @@ class _CreatePostScreenState
                             );
                           },
                           child:
-                          const Text(
-                            'Done',
+                          Text(context.tr('Done'),
                           ),
                         ),
                       ),
@@ -1131,8 +1132,7 @@ class _CreatePostScreenState
                         ),
                       ),
                       child:
-                      const Text(
-                        'VIDEO',
+                      Text(context.tr('VIDEO'),
                         style:
                         TextStyle(
                           color:
@@ -1235,9 +1235,8 @@ class _CreatePostScreenState
                 width: 8,
               ),
 
-              const Expanded(
-                child: Text(
-                  'Poll',
+              Expanded(
+                child: Text(context.tr('Poll'),
                   style: TextStyle(
                     fontSize: 17,
                     fontWeight:
@@ -1275,7 +1274,7 @@ class _CreatePostScreenState
             decoration:
             InputDecoration(
               hintText:
-              'Ask a question...',
+              context.tr('Ask a question...'),
               border:
               OutlineInputBorder(
                 borderRadius:
@@ -1397,8 +1396,7 @@ class _CreatePostScreenState
                 width: 7,
               ),
 
-              Text(
-                'Voting lasts 24 hours',
+              Text(context.tr('Voting lasts 24 hours'),
                 style:
                 TextStyle(
                   color:
@@ -1440,8 +1438,7 @@ class _CreatePostScreenState
           },
         ),
 
-        title: const Text(
-          'Create Post',
+        title: Text(context.tr('Create Post'),
           style: TextStyle(
             fontWeight:
             FontWeight.bold,
@@ -1469,8 +1466,7 @@ class _CreatePostScreenState
                   strokeWidth: 2,
                 ),
               )
-                  : const Text(
-                'Post',
+                  : Text(context.tr('Post'),
                 style:
                 TextStyle(
                   color:
@@ -1525,7 +1521,7 @@ class _CreatePostScreenState
                       decoration:
                       InputDecoration(
                         hintText:
-                        'What is happening on campus?',
+                        context.tr('What is happening on campus?'),
 
                         hintStyle:
                         TextStyle(
@@ -1584,7 +1580,7 @@ class _CreatePostScreenState
                         ),
 
                         child:
-                        const Row(
+                        Row(
                           children: [
                             Icon(
                               Icons
@@ -1601,8 +1597,7 @@ class _CreatePostScreenState
 
                             Expanded(
                               child:
-                              Text(
-                                'This single video will also appear in NUBuzz.',
+                              Text(context.tr('This single video will also appear in NUBuzz.'),
                                 style:
                                 TextStyle(
                                   fontWeight:
@@ -1681,8 +1676,7 @@ class _CreatePostScreenState
                           width: 5,
                         ),
 
-                        const Text(
-                          'Photo/Video',
+                        Text(context.tr('Photo/Video'),
                           style:
                           TextStyle(
                             color:
@@ -1732,8 +1726,7 @@ class _CreatePostScreenState
                           width: 5,
                         ),
 
-                        const Text(
-                          'Tag People',
+                        Text(context.tr('Tag People'),
                           style:
                           TextStyle(
                             color:
@@ -1791,8 +1784,7 @@ class _CreatePostScreenState
                           width: 5,
                         ),
 
-                        Text(
-                          'Poll',
+                        Text(context.tr('Poll'),
 
                           style:
                           TextStyle(

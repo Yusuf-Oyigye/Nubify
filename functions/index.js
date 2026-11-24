@@ -1579,5 +1579,3 @@ Object.assign(exports, require("./nubi_mindrush"));
 //USERNAMES (profile sync, release, daily backfill)
 Object.assign(exports, require("./usernames"));
 
-//TRANSLATE BUTTON ON POSTS
-Object.assign(exports, require("./translate"));

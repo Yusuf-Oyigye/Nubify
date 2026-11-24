@@ -12,6 +12,8 @@ import '../../services/feed/comment_service.dart';
 import '../../utils/common/nubify_time.dart';
 import '../../widgets/feed/post_card.dart';
 import '../../widgets/links/universal_link_text.dart';
+import '../../widgets/common/translatable_text.dart';
+import '../../l10n/nubify_text.dart';
 
 //===================================================
 // COMMENTS SCREEN
@@ -286,7 +288,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
         );
 
         if (mounted) {
-          _showMessage('You commented on this post.');
+          _showMessage(context.tr('You commented on this post.'));
         }
       }
     } catch (error) {
@@ -425,10 +427,9 @@ class _CommentsScreenState extends State<CommentsScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              const Padding(
+              Padding(
                 padding: EdgeInsets.only(bottom: 8),
-                child: Text(
-                  'Add a picture',
+                child: Text(context.tr('Add a picture'),
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ),
@@ -438,7 +439,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
                   Icons.photo_library_outlined,
                   color: Color(0xFF29B6F6),
                 ),
-                title: const Text('Choose from gallery'),
+                title: Text(context.tr('Choose from gallery')),
                 onTap: () async {
                   Navigator.pop(sheetContext);
 
@@ -451,7 +452,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
                   Icons.camera_alt_outlined,
                   color: Color(0xFF29B6F6),
                 ),
-                title: const Text('Take a picture'),
+                title: Text(context.tr('Take a picture')),
                 onTap: () async {
                   Navigator.pop(sheetContext);
 
@@ -465,8 +466,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
                     Icons.delete_outline_rounded,
                     color: Colors.redAccent,
                   ),
-                  title: const Text(
-                    'Remove selected picture',
+                  title: Text(context.tr('Remove selected picture'),
                     style: TextStyle(color: Colors.redAccent),
                   ),
                   onTap: () {
@@ -557,7 +557,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
     final User? user = _auth.currentUser;
 
     if (user == null || user.uid != ownerUid) {
-      _showMessage('You can only edit your own comment.');
+      _showMessage(context.tr('You can only edit your own comment.'));
 
       return;
     }
@@ -568,7 +568,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: const Text('Edit Comment'),
+          title: Text(context.tr('Edit Comment')),
           content: TextFormField(
             initialValue: currentText,
             autofocus: true,
@@ -577,8 +577,8 @@ class _CommentsScreenState extends State<CommentsScreen> {
             onChanged: (String value) {
               editedText = value;
             },
-            decoration: const InputDecoration(
-              hintText: 'Edit your comment...',
+            decoration: InputDecoration(
+              hintText: context.tr('Edit your comment...'),
               border: OutlineInputBorder(),
             ),
           ),
@@ -587,7 +587,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
               onPressed: () {
                 Navigator.pop(dialogContext);
               },
-              child: const Text('Cancel'),
+              child: Text(context.tr('Cancel')),
             ),
 
             FilledButton(
@@ -600,7 +600,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
 
                 Navigator.pop(dialogContext, value);
               },
-              child: const Text('Save'),
+              child: Text(context.tr('Save')),
             ),
           ],
         );
@@ -634,13 +634,13 @@ class _CommentsScreenState extends State<CommentsScreen> {
       );
 
       if (mounted) {
-        _showMessage('Comment updated.');
+        _showMessage(context.tr('Comment updated.'));
       }
     } catch (error) {
       debugPrint('Edit comment error: $error');
 
       if (mounted) {
-        _showMessage('Unable to edit comment.');
+        _showMessage(context.tr('Unable to edit comment.'));
       }
     }
   }
@@ -656,7 +656,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
     final User? user = _auth.currentUser;
 
     if (user == null || user.uid != ownerUid) {
-      _showMessage('You can only delete your own comment.');
+      _showMessage(context.tr('You can only delete your own comment.'));
 
       return;
     }
@@ -665,16 +665,15 @@ class _CommentsScreenState extends State<CommentsScreen> {
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: const Text('Delete Comment?'),
-          content: const Text(
-            'This comment and its replies will be permanently deleted.',
+          title: Text(context.tr('Delete Comment?')),
+          content: Text(context.tr('This comment and its replies will be permanently deleted.'),
           ),
           actions: <Widget>[
             TextButton(
               onPressed: () {
                 Navigator.pop(dialogContext, false);
               },
-              child: const Text('Cancel'),
+              child: Text(context.tr('Cancel')),
             ),
 
             FilledButton(
@@ -682,7 +681,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
               onPressed: () {
                 Navigator.pop(dialogContext, true);
               },
-              child: const Text('Delete'),
+              child: Text(context.tr('Delete')),
             ),
           ],
         );
@@ -768,12 +767,12 @@ class _CommentsScreenState extends State<CommentsScreen> {
         _cancelReply();
       }
 
-      _showMessage('Comment deleted.');
+      _showMessage(context.tr('Comment deleted.'));
     } catch (error) {
       debugPrint('Delete comment error: $error');
 
       if (mounted) {
-        _showMessage('Unable to delete comment.');
+        _showMessage(context.tr('Unable to delete comment.'));
       }
     }
   }
@@ -826,7 +825,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
             children: <Widget>[
               ListTile(
                 leading: const Icon(Icons.edit_outlined),
-                title: const Text('Edit Comment'),
+                title: Text(context.tr('Edit Comment')),
                 onTap: () {
                   Navigator.pop(sheetContext);
 
@@ -840,8 +839,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
 
               ListTile(
                 leading: const Icon(Icons.delete_outline, color: Colors.red),
-                title: const Text(
-                  'Delete Comment',
+                title: Text(context.tr('Delete Comment'),
                   style: TextStyle(color: Colors.red),
                 ),
                 onTap: () {
@@ -1001,12 +999,13 @@ class _CommentsScreenState extends State<CommentsScreen> {
                     // COMMENT TEXT
                     //===================================================
                     if (text.trim().isNotEmpty)
-                      UniversalLinkText(
+                      TranslatableText(
                         text: text,
-
-                        compactPreview: true,
-
-                        style: const TextStyle(fontSize: 15),
+                        builder: (String shown) => UniversalLinkText(
+                          text: shown,
+                          compactPreview: true,
+                          style: const TextStyle(fontSize: 15),
+                        ),
                       ),
 
                     //===================================================
@@ -1056,8 +1055,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
                               username: username,
                             );
                           },
-                          child: Text(
-                            'Reply',
+                          child: Text(context.tr('Reply'),
                             style: TextStyle(
                               color: Colors.grey.shade700,
                               fontWeight: FontWeight.bold,
@@ -1172,8 +1170,8 @@ class _CommentsScreenState extends State<CommentsScreen> {
                             commentSnapshot,
                           ) {
                             if (commentSnapshot.hasError) {
-                              return const Center(
-                                child: Text('Unable to load comments.'),
+                              return Center(
+                                child: Text(context.tr('Unable to load comments.')),
                               );
                             }
 
@@ -1230,10 +1228,9 @@ class _CommentsScreenState extends State<CommentsScreen> {
                                             'Comment post parse error: $error',
                                           );
 
-                                          return const Padding(
+                                          return Padding(
                                             padding: EdgeInsets.all(16),
-                                            child: Text(
-                                              'Unable to display the original post.',
+                                            child: Text(context.tr('Unable to display the original post.'),
                                               textAlign: TextAlign.center,
                                             ),
                                           );
@@ -1263,9 +1260,8 @@ class _CommentsScreenState extends State<CommentsScreen> {
                                     ),
                                     child: Row(
                                       children: <Widget>[
-                                        const Expanded(
-                                          child: Text(
-                                            'Comments',
+                                        Expanded(
+                                          child: Text(context.tr('Comments'),
                                             style: TextStyle(
                                               fontSize: 22,
                                               fontWeight: FontWeight.bold,
@@ -1288,7 +1284,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
                                   // COMMENTS
                                   //===================================================
                                   if (comments.isEmpty)
-                                    const Padding(
+                                    Padding(
                                       padding: EdgeInsets.symmetric(
                                         horizontal: 20,
                                         vertical: 35,
@@ -1301,15 +1297,13 @@ class _CommentsScreenState extends State<CommentsScreen> {
                                             color: Colors.grey,
                                           ),
                                           SizedBox(height: 10),
-                                          Text(
-                                            'No comments yet.',
+                                          Text(context.tr('No comments yet.'),
                                             style: TextStyle(
                                               fontWeight: FontWeight.bold,
                                             ),
                                           ),
                                           SizedBox(height: 4),
-                                          Text(
-                                            'Be the first to comment.',
+                                          Text(context.tr('Be the first to comment.'),
                                             style: TextStyle(
                                               color: Colors.grey,
                                             ),
@@ -1431,7 +1425,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
                   //===================================================
 
                   IconButton(
-                    tooltip: 'Add picture',
+                    tooltip: context.tr('Add picture'),
                     onPressed: _isSending ? null : _showCommentImageOptions,
                     icon: Icon(
                       _selectedCommentImage != null
@@ -1575,13 +1569,12 @@ class _CommentNetworkImage extends StatelessWidget {
                     height: 150,
                     alignment: Alignment.center,
                     color: Colors.grey.withValues(alpha: 0.12),
-                    child: const Column(
+                    child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: <Widget>[
                         Icon(Icons.broken_image_outlined, color: Colors.grey),
                         SizedBox(height: 5),
-                        Text(
-                          'Unable to load picture',
+                        Text(context.tr('Unable to load picture'),
                           style: TextStyle(color: Colors.grey, fontSize: 11),
                         ),
                       ],
@@ -1625,9 +1618,8 @@ class _CommentImageViewer extends StatelessWidget {
                         Object error,
                         StackTrace? stackTrace,
                       ) {
-                        return const Center(
-                          child: Text(
-                            'Unable to load picture',
+                        return Center(
+                          child: Text(context.tr('Unable to load picture'),
                             style: TextStyle(color: Colors.white70),
                           ),
                         );
@@ -2161,7 +2153,7 @@ class _RepliesSectionState extends State<_RepliesSection> {
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: const Text('Edit Reply'),
+          title: Text(context.tr('Edit Reply')),
           content: TextFormField(
             initialValue: currentText,
             autofocus: true,
@@ -2170,8 +2162,8 @@ class _RepliesSectionState extends State<_RepliesSection> {
             onChanged: (String value) {
               editedText = value;
             },
-            decoration: const InputDecoration(
-              hintText: 'Edit your reply...',
+            decoration: InputDecoration(
+              hintText: context.tr('Edit your reply...'),
               border: OutlineInputBorder(),
             ),
           ),
@@ -2180,7 +2172,7 @@ class _RepliesSectionState extends State<_RepliesSection> {
               onPressed: () {
                 Navigator.pop(dialogContext);
               },
-              child: const Text('Cancel'),
+              child: Text(context.tr('Cancel')),
             ),
 
             FilledButton(
@@ -2193,7 +2185,7 @@ class _RepliesSectionState extends State<_RepliesSection> {
 
                 Navigator.pop(dialogContext, value);
               },
-              child: const Text('Save'),
+              child: Text(context.tr('Save')),
             ),
           ],
         );
@@ -2227,13 +2219,13 @@ class _RepliesSectionState extends State<_RepliesSection> {
       );
 
       if (mounted) {
-        _showMessage('Reply updated.');
+        _showMessage(context.tr('Reply updated.'));
       }
     } catch (error) {
       debugPrint('Edit reply error: $error');
 
       if (mounted) {
-        _showMessage('Unable to edit reply.');
+        _showMessage(context.tr('Unable to edit reply.'));
       }
     }
   }
@@ -2256,14 +2248,14 @@ class _RepliesSectionState extends State<_RepliesSection> {
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: const Text('Delete Reply?'),
-          content: const Text('This reply will be permanently deleted.'),
+          title: Text(context.tr('Delete Reply?')),
+          content: Text(context.tr('This reply will be permanently deleted.')),
           actions: <Widget>[
             TextButton(
               onPressed: () {
                 Navigator.pop(dialogContext, false);
               },
-              child: const Text('Cancel'),
+              child: Text(context.tr('Cancel')),
             ),
 
             FilledButton(
@@ -2271,7 +2263,7 @@ class _RepliesSectionState extends State<_RepliesSection> {
               onPressed: () {
                 Navigator.pop(dialogContext, true);
               },
-              child: const Text('Delete'),
+              child: Text(context.tr('Delete')),
             ),
           ],
         );
@@ -2312,13 +2304,13 @@ class _RepliesSectionState extends State<_RepliesSection> {
       }
 
       if (mounted) {
-        _showMessage('Reply deleted.');
+        _showMessage(context.tr('Reply deleted.'));
       }
     } catch (error) {
       debugPrint('Delete reply error: $error');
 
       if (mounted) {
-        _showMessage('Unable to delete reply.');
+        _showMessage(context.tr('Unable to delete reply.'));
       }
     }
   }
@@ -2399,7 +2391,7 @@ class _RepliesSectionState extends State<_RepliesSection> {
             children: <Widget>[
               ListTile(
                 leading: const Icon(Icons.edit_outlined),
-                title: const Text('Edit Reply'),
+                title: Text(context.tr('Edit Reply')),
                 onTap: () {
                   Navigator.pop(sheetContext);
 
@@ -2413,8 +2405,7 @@ class _RepliesSectionState extends State<_RepliesSection> {
 
               ListTile(
                 leading: const Icon(Icons.delete_outline, color: Colors.red),
-                title: const Text(
-                  'Delete Reply',
+                title: Text(context.tr('Delete Reply'),
                   style: TextStyle(color: Colors.red),
                 ),
                 onTap: () {
@@ -2650,8 +2641,7 @@ class _RepliesSectionState extends State<_RepliesSection> {
                           });
                         },
 
-                        child: Text(
-                          'View more replies',
+                        child: Text(context.tr('View more replies'),
 
                           style: TextStyle(
                             color: Colors.grey.shade700,
@@ -2884,12 +2874,13 @@ class _RepliesSectionState extends State<_RepliesSection> {
                         // REPLY TEXT
                         // ===================================================
                         if (text.trim().isNotEmpty)
-                          UniversalLinkText(
+                          TranslatableText(
                             text: text,
-
-                            compactPreview: true,
-
-                            style: const TextStyle(fontSize: 14),
+                            builder: (String shown) => UniversalLinkText(
+                              text: shown,
+                              compactPreview: true,
+                              style: const TextStyle(fontSize: 14),
+                            ),
                           ),
                         //===================================================
                         // REPLY IMAGE
@@ -2954,8 +2945,7 @@ class _RepliesSectionState extends State<_RepliesSection> {
                                 widget.onReply(replyId, username);
                               },
 
-                              child: Text(
-                                'Reply',
+                              child: Text(context.tr('Reply'),
 
                                 style: TextStyle(
                                   color: Colors.grey.shade700,

@@ -6,6 +6,7 @@ import '../../models/feed/post.dart';
 import '../../services/feed/repost_service.dart';
 import '../../utils/common/nubify_time.dart';
 import '../../widgets/feed/post_card.dart';
+import '../../l10n/nubify_text.dart';
 
 //===================================================
 // POST ENGAGEMENTS SCREEN
@@ -164,8 +165,7 @@ class _PostEngagementsScreenState extends State<PostEngagementsScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Post Engagements',
+        title: Text(context.tr('Post Engagements'),
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         bottom: PreferredSize(
@@ -179,13 +179,13 @@ class _PostEngagementsScreenState extends State<PostEngagementsScreen>
             tabs: <Widget>[
               _EngagementTabTitle(
                 stream: _quotesStream,
-                label: 'Quotes',
+                label: context.tr('Quotes'),
                 icon: Icons.edit_outlined,
               ),
 
               _EngagementTabTitle(
                 stream: _repostedByStream,
-                label: 'Reposted by',
+                label: context.tr('Reposted by'),
                 icon: Icons.repeat_rounded,
               ),
             ],

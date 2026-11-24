@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 
+import '../common/translatable_text.dart';
 import '../links/universal_link_text.dart';
 
 //===================================================
 // CHAT LINK TEXT
+//
+// Every chat and group message. Messages in another
+// language get the blue "Translate" link.
 //===================================================
 
 class ChatLinkText
@@ -25,18 +29,21 @@ class ChatLinkText
   Widget build(
       BuildContext context,
       ) {
-    return UniversalLinkText(
-      text:
-      text,
+    return TranslatableText(
+      text: text,
+      builder: (String shown) => UniversalLinkText(
+        text:
+        shown,
 
-      style:
-      style,
+        style:
+        style,
 
-      showPreview:
-      showPreview,
+        showPreview:
+        showPreview,
 
-      compactPreview:
-      true,
+        compactPreview:
+        true,
+      ),
     );
   }
 }

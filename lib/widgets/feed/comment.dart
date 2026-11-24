@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:nubify/widgets/links/universal_link_text.dart';
 import '../../utils/profile/username_rules.dart';
+import '../../l10n/nubify_text.dart';
+import '../../widgets/common/translatable_text.dart';
 
 class CommentWidget extends StatelessWidget {
   final String username;
@@ -114,6 +117,14 @@ class CommentWidget extends StatelessWidget {
                 ),
 
                 const SizedBox(height: 6),
+                TranslatableText(
+                  text: text,
+                  builder: (String shown) => UniversalLinkText(
+                    text: shown,
+                    compactPreview: true,
+                    style: const TextStyle(fontSize: 15),
+                  ),
+                ),
 
                 // ====================================================
                 // TIME + LIKE + REPLY
@@ -162,8 +173,7 @@ class CommentWidget extends StatelessWidget {
 
                     GestureDetector(
                       onTap: onReply,
-                      child: Text(
-                        'Reply',
+                      child: Text(context.tr('Reply'),
                         style: TextStyle(
                           color: Colors.grey.shade700,
                           fontWeight: FontWeight.w600,
@@ -172,6 +182,14 @@ class CommentWidget extends StatelessWidget {
                       ),
                     ),
                   ],
+                ),
+                TranslatableText(
+                  text: text,
+                  builder: (String shown) => UniversalLinkText(
+                    text: shown,
+                    compactPreview: true,
+                    style: const TextStyle(fontSize: 14),
+                  ),
                 ),
 
                 // ====================================================
@@ -390,8 +408,7 @@ class ReplyWidget extends StatelessWidget {
 
                       GestureDetector(
                         onTap: onReply,
-                        child: Text(
-                          'Reply',
+                        child: Text(context.tr('Reply'),
                           style: TextStyle(
                             color: Colors.grey.shade700,
                             fontWeight: FontWeight.w600,

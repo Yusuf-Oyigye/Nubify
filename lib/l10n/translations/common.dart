@@ -6,6 +6,10 @@ const Map<String, Map<String, String>> commonTranslations =
       'ar': <String, String>{
         'Translate': 'ترجمة',
         'Show original': 'عرض الأصل',
+        'Downloading the language for translation (about 30 MB)…':
+        'جارٍ تنزيل اللغة للترجمة (حوالي 30 ميجابايت)…',
+        'This language cannot be translated on your phone yet.':
+        'لا يمكن ترجمة هذه اللغة على هاتفك بعد.',
         'Could not translate. Please try again.':
             'تعذرت الترجمة. يرجى المحاولة مرة أخرى.',
         'Home': 'الرئيسية',
@@ -14,7 +18,7 @@ const Map<String, Map<String, String>> commonTranslations =
         'Market': 'السوق',
         'Chat': 'الدردشة',
         'Notifications': 'الإشعارات',
-        'EGP Arabic': 'العامية المصرية',
+        'EGY Arabic': 'العامية المصرية',
         'Cancel': 'إلغاء',
         'Settings': 'الإعدادات',
         'Support': 'الدعم',
@@ -25,6 +29,10 @@ const Map<String, Map<String, String>> commonTranslations =
       'fr': <String, String>{
         'Translate': 'Traduire',
         'Show original': 'Voir l’original',
+        'Downloading the language for translation (about 30 MB)…':
+        'Téléchargement de la langue pour la traduction (environ 30 Mo)…',
+        'This language cannot be translated on your phone yet.':
+        'Cette langue ne peut pas encore être traduite sur votre téléphone.',
         'Could not translate. Please try again.':
             'Traduction impossible. Veuillez réessayer.',
         'Home': 'Accueil',
@@ -33,7 +41,7 @@ const Map<String, Map<String, String>> commonTranslations =
         'Market': 'Marché',
         'Chat': 'Discussion',
         'Notifications': 'Notifications',
-        'EGP Arabic': 'Arabe égyptien',
+        'EGY Arabic': 'Arabe égyptien',
         'Cancel': 'Annuler',
         'Settings': 'Paramètres',
         'Support': 'Assistance',
@@ -52,7 +60,7 @@ const Map<String, Map<String, String>> commonTranslations =
         'Market': 'Kasuwa',
         'Chat': 'Hira',
         'Notifications': 'Sanarwa',
-        'EGP Arabic': 'Larabcin Masar',
+        'EGY Arabic': 'Larabcin Masar',
         'Cancel': 'Soke',
         'Settings': 'Saituna',
         'Support': 'Taimako',
@@ -71,7 +79,7 @@ const Map<String, Map<String, String>> commonTranslations =
         'Market': 'Ọjà',
         'Chat': 'Ìjíròrò',
         'Notifications': 'Ìkéde',
-        'EGP Arabic': 'Lárúbáwá Íjíbítì',
+        'EGY Arabic': 'Lárúbáwá Íjíbítì',
         'Cancel': 'Fagilé',
         'Settings': 'Ètò',
         'Support': 'Ìrànlọ́wọ́',
@@ -82,6 +90,10 @@ const Map<String, Map<String, String>> commonTranslations =
       'hi': <String, String>{
         'Translate': 'अनुवाद करें',
         'Show original': 'मूल दिखाएँ',
+        'Downloading the language for translation (about 30 MB)…':
+        'अनुवाद के लिए भाषा डाउनलोड हो रही है (लगभग 30 MB)…',
+        'This language cannot be translated on your phone yet.':
+        'यह भाषा अभी आपके फ़ोन पर अनुवाद नहीं की जा सकती।',
         'Could not translate. Please try again.':
             'अनुवाद नहीं हो सका। कृपया फिर से कोशिश करें।',
         'Home': 'होम',
@@ -90,7 +102,7 @@ const Map<String, Map<String, String>> commonTranslations =
         'Market': 'बाज़ार',
         'Chat': 'चैट',
         'Notifications': 'सूचनाएँ',
-        'EGP Arabic': 'मिस्री अरबी',
+        'EGY Arabic': 'मिस्री अरबी',
         'Cancel': 'रद्द करें',
         'Settings': 'सेटिंग्स',
         'Support': 'सहायता',

@@ -18,6 +18,7 @@ import '../stories/story_archive_screen.dart';
 import 'user_connections_screen.dart';
 import '../../widgets/profile/report_user_dialog.dart';
 import '../../widgets/links/universal_link_text.dart';
+import '../../widgets/common/translatable_text.dart';
 import '../../widgets/profile/nubify_profile_grid.dart';
 import '../../widgets/profile/profile_vertical_feed.dart';
 
@@ -1078,8 +1079,10 @@ class _ProfileScreenState extends State<ProfileScreen>
           if (favoriteQuote.isNotEmpty) ...<Widget>[
             const SizedBox(height: 12),
 
-            UniversalLinkText(
+            TranslatableText(
               text: favoriteQuote,
+              builder: (String shown) => UniversalLinkText(
+              text: shown,
 
               compactPreview: true,
 
@@ -1128,6 +1131,7 @@ class _ProfileScreenState extends State<ProfileScreen>
 
                 decoration: TextDecoration.none,
               ),
+            ),
             ),
           ],
 

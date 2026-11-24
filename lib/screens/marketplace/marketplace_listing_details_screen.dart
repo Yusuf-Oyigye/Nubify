@@ -18,6 +18,7 @@ import '../../widgets/marketplace/marketplace_more_from_seller.dart';
 import '../chat/conversation_screen.dart';
 import 'create_marketplace_listing_screen.dart';
 import 'marketplace_seller_store_screen.dart';
+import '../../widgets/common/translatable_text.dart';
 import '../profile/profile_screen.dart';
 
 class MarketplaceListingDetailsScreen extends StatefulWidget {
@@ -573,12 +574,15 @@ class _MarketplaceListingDetailsScreenState
                         ),
                       ),
                       const SizedBox(height: 9),
-                      Text(
-                        listing.description,
-                        style: TextStyle(
-                          color: MarketplaceTheme.mutedText(context),
-                          fontSize: 16,
-                          height: 1.55,
+                      TranslatableText(
+                        text: listing.description,
+                        builder: (String shown) => Text(
+                          shown,
+                          style: TextStyle(
+                            color: MarketplaceTheme.mutedText(context),
+                            fontSize: 16,
+                            height: 1.55,
+                          ),
                         ),
                       ),
                     ],

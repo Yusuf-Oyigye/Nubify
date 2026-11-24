@@ -22,6 +22,7 @@ import '../../utils/common/language_guess.dart';
 import '../../utils/common/nubify_time.dart';
 import 'post_media_carousel.dart';
 import '../../screens/chat/chat_forward_screen.dart';
+import '../common/translatable_text.dart';
 import '../links/universal_link_text.dart';
 
 //===================================================
@@ -465,7 +466,7 @@ class _PostCardState extends State<PostCard> {
     final User? user = _auth.currentUser;
 
     if (user == null) {
-      _showMessage('Please log in to like this post.');
+      _showMessage(context.tr('Please log in to like this post.'));
 
       return;
     }
@@ -513,7 +514,7 @@ class _PostCardState extends State<PostCard> {
               _likeCount = oldCount;
             });
 
-            _showMessage('Unable to update like.');
+            _showMessage(context.tr('Unable to update like.'));
           })
           .whenComplete(() {
             _likeActionLocked = false;
@@ -692,7 +693,7 @@ class _PostCardState extends State<PostCard> {
     final User? user = _auth.currentUser;
 
     if (user == null) {
-      _showMessage('Please log in to save posts.');
+      _showMessage(context.tr('Please log in to save posts.'));
 
       return;
     }
@@ -715,7 +716,7 @@ class _PostCardState extends State<PostCard> {
           _isSaved = false;
         });
 
-        _showMessage('Post unsaved.');
+        _showMessage(context.tr('Post unsaved.'));
       } else {
         await ref.set(<String, dynamic>{
           'postId': widget.post.postId,
@@ -730,12 +731,12 @@ class _PostCardState extends State<PostCard> {
           _isSaved = true;
         });
 
-        _showMessage('Post saved.');
+        _showMessage(context.tr('Post saved.'));
       }
     } catch (error) {
       debugPrint('Save post error: $error');
 
-      _showMessage('Unable to update saved post.');
+      _showMessage(context.tr('Unable to update saved post.'));
     }
   }
 
@@ -747,13 +748,13 @@ class _PostCardState extends State<PostCard> {
     final User? user = _auth.currentUser;
 
     if (user == null) {
-      _showMessage('Please log in first.');
+      _showMessage(context.tr('Please log in first.'));
 
       return;
     }
 
     if (user.uid != widget.post.uid) {
-      _showMessage('Only the owner of this post can hide it.');
+      _showMessage(context.tr('Only the owner of this post can hide it.'));
 
       return;
     }
@@ -773,7 +774,7 @@ class _PostCardState extends State<PostCard> {
         }
       });
 
-      _showMessage('Post hidden from everyone.');
+      _showMessage(context.tr('Post hidden from everyone.'));
     } catch (error) {
       debugPrint('Hide post error: $error');
 
@@ -789,13 +790,13 @@ class _PostCardState extends State<PostCard> {
     final User? user = _auth.currentUser;
 
     if (user == null) {
-      _showMessage('Please log in first.');
+      _showMessage(context.tr('Please log in first.'));
 
       return;
     }
 
     if (user.uid != widget.post.uid) {
-      _showMessage('Only the owner of this post can unhide it.');
+      _showMessage(context.tr('Only the owner of this post can unhide it.'));
 
       return;
     }
@@ -813,7 +814,7 @@ class _PostCardState extends State<PostCard> {
         _isDeleted = false;
       });
 
-      _showMessage('Post is visible again.');
+      _showMessage(context.tr('Post is visible again.'));
     } catch (error) {
       debugPrint('Unhide post error: $error');
 
@@ -834,7 +835,7 @@ class _PostCardState extends State<PostCard> {
       return;
     }
 
-    _showMessage('Post link copied.');
+    _showMessage(context.tr('Post link copied.'));
   }
 
   //===================================================
@@ -855,7 +856,7 @@ class _PostCardState extends State<PostCard> {
       await SharePlus.instance.share(
         ShareParams(
           text: shareText,
-          title: 'Share post',
+          title: context.tr('Share post'),
           subject: 'Post from Nubify',
         ),
       );
@@ -869,7 +870,7 @@ class _PostCardState extends State<PostCard> {
       debugPrint('Share post error: $error');
 
       if (mounted) {
-        _showMessage('Unable to share this post.');
+        _showMessage(context.tr('Unable to share this post.'));
       }
     }
   }
@@ -891,8 +892,7 @@ class _PostCardState extends State<PostCard> {
             children: <Widget>[
               const SizedBox(height: 6),
 
-              const Text(
-                'Share',
+              Text(context.tr('Share'),
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
 
@@ -903,8 +903,8 @@ class _PostCardState extends State<PostCard> {
               //===================================================
               ListTile(
                 leading: const Icon(Icons.add_to_photos_outlined),
-                title: const Text('Share to Story'),
-                subtitle: const Text('Add this post to your Nubify Story'),
+                title: Text(context.tr('Share to Story')),
+                subtitle: Text(context.tr('Add this post to your Nubify Story')),
                 onTap: () async {
                   Navigator.pop(sheetContext);
 
@@ -917,8 +917,8 @@ class _PostCardState extends State<PostCard> {
               //===================================================
               ListTile(
                 leading: const Icon(Icons.send_outlined),
-                title: const Text('Send to chat'),
-                subtitle: const Text('Choose a Nubify user'),
+                title: Text(context.tr('Send to chat')),
+                subtitle: Text(context.tr('Choose a Nubify user')),
                 onTap: () {
                   Navigator.pop(sheetContext);
 
@@ -958,7 +958,7 @@ class _PostCardState extends State<PostCard> {
     final User? user = _auth.currentUser;
 
     if (user == null) {
-      _showMessage('Please log in to share this post to your Story.');
+      _showMessage(context.tr('Please log in to share this post to your Story.'));
 
       return;
     }
@@ -992,7 +992,7 @@ class _PostCardState extends State<PostCard> {
       return;
     }
 
-    _showMessage('Added to your Story.');
+    _showMessage(context.tr('Added to your Story.'));
   }
 
   //===================================================
@@ -1001,7 +1001,7 @@ class _PostCardState extends State<PostCard> {
 
   Future<void> _showPostChatPicker() async {
     if (_auth.currentUser == null) {
-      _showMessage('Please log in to send this post.');
+      _showMessage(context.tr('Please log in to send this post.'));
 
       return;
     }
@@ -1053,7 +1053,8 @@ class _PostCardState extends State<PostCard> {
 
     await _incrementShareCount();
 
-    _showMessage('Post sent.');
+    if (!mounted) return;
+    _showMessage(context.tr('Post sent.'));
   }
   //===================================================
   // OPEN REPOST / QUOTE ENGAGEMENTS
@@ -1089,8 +1090,7 @@ class _PostCardState extends State<PostCard> {
             children: <Widget>[
               const SizedBox(height: 6),
 
-              const Text(
-                'Repost',
+              Text(context.tr('Repost'),
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
 
@@ -1101,8 +1101,8 @@ class _PostCardState extends State<PostCard> {
               //===================================================
               ListTile(
                 leading: const Icon(Icons.repeat),
-                title: const Text('Repost'),
-                subtitle: const Text('Share without adding anything'),
+                title: Text(context.tr('Repost')),
+                subtitle: Text(context.tr('Share without adding anything')),
                 onTap: () async {
                   Navigator.pop(sheetContext);
 
@@ -1115,8 +1115,8 @@ class _PostCardState extends State<PostCard> {
               //===================================================
               ListTile(
                 leading: const Icon(Icons.format_quote),
-                title: const Text('Quote Repost'),
-                subtitle: const Text('Repost and add your own message'),
+                title: Text(context.tr('Quote Repost')),
+                subtitle: Text(context.tr('Repost and add your own message')),
                 onTap: () {
                   Navigator.pop(sheetContext);
 
@@ -1131,8 +1131,8 @@ class _PostCardState extends State<PostCard> {
               //===================================================
               ListTile(
                 leading: const Icon(Icons.people_alt_outlined),
-                title: const Text('View reposts and quotes'),
-                subtitle: const Text('See who reposted and who added a quote'),
+                title: Text(context.tr('View reposts and quotes')),
+                subtitle: Text(context.tr('See who reposted and who added a quote')),
                 onTap: () async {
                   Navigator.pop(sheetContext);
 
@@ -1159,7 +1159,7 @@ class _PostCardState extends State<PostCard> {
     final User? user = _auth.currentUser;
 
     if (user == null) {
-      _showMessage('Please log in to repost.');
+      _showMessage(context.tr('Please log in to repost.'));
 
       return;
     }
@@ -1175,7 +1175,7 @@ class _PostCardState extends State<PostCard> {
 
       if (alreadyReposted) {
         if (mounted) {
-          _showMessage('You already reposted this post.');
+          _showMessage(context.tr('You already reposted this post.'));
         }
 
         return;
@@ -1198,7 +1198,7 @@ class _PostCardState extends State<PostCard> {
 
       widget.onNewPostCreated?.call(newRepostId);
 
-      _showMessage('Reposted.');
+      _showMessage(context.tr('Reposted.'));
     } catch (error) {
       debugPrint('Repost error: $error');
 
@@ -1209,12 +1209,12 @@ class _PostCardState extends State<PostCard> {
       final String message = error.toString();
 
       if (message.contains('ALREADY_REPOSTED')) {
-        _showMessage('You already reposted this post.');
+        _showMessage(context.tr('You already reposted this post.'));
 
         return;
       }
 
-      _showMessage('Unable to repost.');
+      _showMessage(context.tr('Unable to repost.'));
     }
   }
   //===================================================
@@ -1230,7 +1230,7 @@ class _PostCardState extends State<PostCard> {
     final User? user = _auth.currentUser;
 
     if (user == null) {
-      _showMessage('Please log in to repost.');
+      _showMessage(context.tr('Please log in to repost.'));
 
       return;
     }
@@ -1246,7 +1246,7 @@ class _PostCardState extends State<PostCard> {
 
       if (alreadyQuoteReposted) {
         if (mounted) {
-          _showMessage('You already quote reposted this post.');
+          _showMessage(context.tr('You already quote reposted this post.'));
         }
 
         return;
@@ -1269,7 +1269,7 @@ class _PostCardState extends State<PostCard> {
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: const Text('Quote Repost'),
+          title: Text(context.tr('Quote Repost')),
           content: TextField(
             autofocus: true,
             maxLines: 5,
@@ -1278,8 +1278,8 @@ class _PostCardState extends State<PostCard> {
             onChanged: (String value) {
               text = value;
             },
-            decoration: const InputDecoration(
-              hintText: 'Add your message...',
+            decoration: InputDecoration(
+              hintText: context.tr('Add your message...'),
               border: OutlineInputBorder(),
             ),
           ),
@@ -1288,14 +1288,14 @@ class _PostCardState extends State<PostCard> {
               onPressed: () {
                 Navigator.pop(dialogContext);
               },
-              child: const Text('Cancel'),
+              child: Text(context.tr('Cancel')),
             ),
 
             FilledButton(
               onPressed: () {
                 Navigator.pop(dialogContext, text.trim());
               },
-              child: const Text('Repost'),
+              child: Text(context.tr('Repost')),
             ),
           ],
         );
@@ -1326,7 +1326,7 @@ class _PostCardState extends State<PostCard> {
 
       widget.onNewPostCreated?.call(newQuoteRepostId);
 
-      _showMessage('Quote reposted.');
+      _showMessage(context.tr('Quote reposted.'));
     } catch (error) {
       debugPrint('Quote repost error: $error');
 
@@ -1337,12 +1337,12 @@ class _PostCardState extends State<PostCard> {
       final String message = error.toString();
 
       if (message.contains('ALREADY_QUOTE_REPOSTED')) {
-        _showMessage('You already quote reposted this post.');
+        _showMessage(context.tr('You already quote reposted this post.'));
 
         return;
       }
 
-      _showMessage('Unable to quote repost.');
+      _showMessage(context.tr('Unable to quote repost.'));
     }
   }
 
@@ -1354,7 +1354,7 @@ class _PostCardState extends State<PostCard> {
     final User? user = _auth.currentUser;
 
     if (user == null || user.uid != widget.post.uid) {
-      _showMessage('Only the owner can edit this post.');
+      _showMessage(context.tr('Only the owner can edit this post.'));
 
       return;
     }
@@ -1365,7 +1365,7 @@ class _PostCardState extends State<PostCard> {
 
     if (widget.post.isRepost) {
       if (widget.post.repostType != 'quote') {
-        _showMessage('A normal repost has no text to edit.');
+        _showMessage(context.tr('A normal repost has no text to edit.'));
 
         return;
       }
@@ -1376,7 +1376,7 @@ class _PostCardState extends State<PostCard> {
         context: context,
         builder: (BuildContext dialogContext) {
           return AlertDialog(
-            title: const Text('Edit Quote Repost'),
+            title: Text(context.tr('Edit Quote Repost')),
             content: TextFormField(
               initialValue: widget.post.repostText,
               maxLines: 6,
@@ -1386,8 +1386,8 @@ class _PostCardState extends State<PostCard> {
               onChanged: (String value) {
                 editedQuote = value;
               },
-              decoration: const InputDecoration(
-                hintText: 'Add your message...',
+              decoration: InputDecoration(
+                hintText: context.tr('Add your message...'),
                 border: OutlineInputBorder(),
               ),
             ),
@@ -1396,13 +1396,13 @@ class _PostCardState extends State<PostCard> {
                 onPressed: () {
                   Navigator.of(dialogContext).pop();
                 },
-                child: const Text('Cancel'),
+                child: Text(context.tr('Cancel')),
               ),
               FilledButton(
                 onPressed: () {
                   Navigator.of(dialogContext).pop(editedQuote.trim());
                 },
-                child: const Text('Save'),
+                child: Text(context.tr('Save')),
               ),
             ],
           );
@@ -1433,11 +1433,11 @@ class _PostCardState extends State<PostCard> {
           _caption = newQuote;
         });
 
-        _showMessage('Quote repost updated.');
+        _showMessage(context.tr('Quote repost updated.'));
       } catch (error) {
         debugPrint('Edit quote repost error: $error');
 
-        _showMessage('Unable to edit this quote repost.');
+        _showMessage(context.tr('Unable to edit this quote repost.'));
       }
 
       return;
@@ -1453,7 +1453,7 @@ class _PostCardState extends State<PostCard> {
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: const Text('Edit Post'),
+          title: Text(context.tr('Edit Post')),
           content: TextFormField(
             initialValue: _caption,
             maxLines: 6,
@@ -1463,8 +1463,8 @@ class _PostCardState extends State<PostCard> {
             onChanged: (String value) {
               editedCaption = value;
             },
-            decoration: const InputDecoration(
-              hintText: 'Write a caption...',
+            decoration: InputDecoration(
+              hintText: context.tr('Write a caption...'),
               border: OutlineInputBorder(),
             ),
           ),
@@ -1473,13 +1473,13 @@ class _PostCardState extends State<PostCard> {
               onPressed: () {
                 Navigator.of(dialogContext).pop();
               },
-              child: const Text('Cancel'),
+              child: Text(context.tr('Cancel')),
             ),
             FilledButton(
               onPressed: () {
                 Navigator.of(dialogContext).pop(editedCaption.trim());
               },
-              child: const Text('Save'),
+              child: Text(context.tr('Save')),
             ),
           ],
         );
@@ -1508,11 +1508,11 @@ class _PostCardState extends State<PostCard> {
         _caption = newCaption;
       });
 
-      _showMessage('Post updated.');
+      _showMessage(context.tr('Post updated.'));
     } catch (error) {
       debugPrint('Edit post error: $error');
 
-      _showMessage('Unable to edit this post.');
+      _showMessage(context.tr('Unable to edit this post.'));
     }
   }
 
@@ -1524,7 +1524,7 @@ class _PostCardState extends State<PostCard> {
     final User? user = _auth.currentUser;
 
     if (user == null || user.uid != widget.post.uid) {
-      _showMessage('Only the owner can delete this post.');
+      _showMessage(context.tr('Only the owner can delete this post.'));
 
       return;
     }
@@ -1533,23 +1533,22 @@ class _PostCardState extends State<PostCard> {
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: const Text('Delete Post?'),
-          content: const Text(
-            'This post will be permanently deleted. This action cannot be undone.',
+          title: Text(context.tr('Delete Post?')),
+          content: Text(context.tr('This post will be permanently deleted. This action cannot be undone.'),
           ),
           actions: <Widget>[
             TextButton(
               onPressed: () {
                 Navigator.of(dialogContext).pop(false);
               },
-              child: const Text('Cancel'),
+              child: Text(context.tr('Cancel')),
             ),
             FilledButton(
               style: FilledButton.styleFrom(backgroundColor: Colors.red),
               onPressed: () {
                 Navigator.of(dialogContext).pop(true);
               },
-              child: const Text('Delete'),
+              child: Text(context.tr('Delete')),
             ),
           ],
         );
@@ -1575,11 +1574,11 @@ class _PostCardState extends State<PostCard> {
         _isDeleted = true;
       });
 
-      _showMessage('Post deleted.');
+      _showMessage(context.tr('Post deleted.'));
     } catch (error) {
       debugPrint('Delete post error: $error');
 
-      _showMessage('Unable to delete this post.');
+      _showMessage(context.tr('Unable to delete this post.'));
     }
   }
 
@@ -1591,13 +1590,13 @@ class _PostCardState extends State<PostCard> {
     final User? user = _auth.currentUser;
 
     if (user == null) {
-      _showMessage('Please log in to report a post.');
+      _showMessage(context.tr('Please log in to report a post.'));
 
       return;
     }
 
     if (user.uid == widget.post.uid) {
-      _showMessage('You cannot report your own post.');
+      _showMessage(context.tr('You cannot report your own post.'));
 
       return;
     }
@@ -1617,7 +1616,7 @@ class _PostCardState extends State<PostCard> {
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: const Text('Report Post'),
+          title: Text(context.tr('Report Post')),
           content: SizedBox(
             width: double.maxFinite,
             child: ListView.separated(
@@ -1657,11 +1656,11 @@ class _PostCardState extends State<PostCard> {
         return;
       }
 
-      _showMessage('Report submitted. Thank you.');
+      _showMessage(context.tr('Report submitted. Thank you.'));
     } catch (error) {
       debugPrint('Report post error: $error');
 
-      _showMessage('Unable to submit report.');
+      _showMessage(context.tr('Unable to submit report.'));
     }
   }
 
@@ -1673,13 +1672,13 @@ class _PostCardState extends State<PostCard> {
     final User? user = _auth.currentUser;
 
     if (user == null) {
-      _showMessage('Please log in first.');
+      _showMessage(context.tr('Please log in first.'));
 
       return;
     }
 
     if (user.uid == widget.post.uid) {
-      _showMessage('You cannot block yourself.');
+      _showMessage(context.tr('You cannot block yourself.'));
 
       return;
     }
@@ -1688,7 +1687,7 @@ class _PostCardState extends State<PostCard> {
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: const Text('Block User?'),
+          title: Text(context.tr('Block User?')),
           content: Text(
             'You will no longer see posts from @${widget.post.username}.',
           ),
@@ -1697,14 +1696,14 @@ class _PostCardState extends State<PostCard> {
               onPressed: () {
                 Navigator.of(dialogContext).pop(false);
               },
-              child: const Text('Cancel'),
+              child: Text(context.tr('Cancel')),
             ),
             FilledButton(
               style: FilledButton.styleFrom(backgroundColor: Colors.red),
               onPressed: () {
                 Navigator.of(dialogContext).pop(true);
               },
-              child: const Text('Block'),
+              child: Text(context.tr('Block')),
             ),
           ],
         );
@@ -1734,11 +1733,11 @@ class _PostCardState extends State<PostCard> {
         _isDeleted = true;
       });
 
-      _showMessage('User blocked.');
+      _showMessage(context.tr('User blocked.'));
     } catch (error) {
       debugPrint('Block user error: $error');
 
-      _showMessage('Unable to block user.');
+      _showMessage(context.tr('Unable to block user.'));
     }
   }
 
@@ -1862,9 +1861,8 @@ class _PostCardState extends State<PostCard> {
                 //===================================================
                 ListTile(
                   leading: const Icon(Icons.share_outlined),
-                  title: const Text('Share to other apps'),
-                  subtitle: const Text(
-                    'WhatsApp, Instagram, Telegram and more',
+                  title: Text(context.tr('Share to other apps')),
+                  subtitle: Text(context.tr('WhatsApp, Instagram, Telegram and more'),
                   ),
                   onTap: () {
                     closeThen(_sharePost);
@@ -1876,7 +1874,7 @@ class _PostCardState extends State<PostCard> {
                 //===================================================
                 ListTile(
                   leading: const Icon(Icons.link),
-                  title: const Text('Copy Link'),
+                  title: Text(context.tr('Copy Link')),
                   onTap: () {
                     closeThen(_copyPostLink);
                   },
@@ -1911,7 +1909,7 @@ class _PostCardState extends State<PostCard> {
                 if (!isOwner)
                   ListTile(
                     leading: const Icon(Icons.flag_outlined),
-                    title: const Text('Report'),
+                    title: Text(context.tr('Report')),
                     onTap: () {
                       closeThen(_reportPost);
                     },
@@ -1923,7 +1921,7 @@ class _PostCardState extends State<PostCard> {
                 if (!isOwner)
                   ListTile(
                     leading: const Icon(Icons.block_outlined),
-                    title: const Text('Block User'),
+                    title: Text(context.tr('Block User')),
                     onTap: () {
                       closeThen(_blockUser);
                     },
@@ -1950,7 +1948,7 @@ class _PostCardState extends State<PostCard> {
                             ? 'Unpin Post from Profile'
                             : 'Pin Post to Profile',
                       ),
-                      subtitle: const Text('You can pin up to 3 posts.'),
+                      subtitle: Text(context.tr('You can pin up to 3 posts.')),
                       onTap: () {
                         closeThen(_togglePinOnProfile);
                       },
@@ -1961,7 +1959,7 @@ class _PostCardState extends State<PostCard> {
                   //===================================================
                   ListTile(
                     leading: const Icon(Icons.edit_outlined),
-                    title: const Text('Edit Post'),
+                    title: Text(context.tr('Edit Post')),
                     onTap: () {
                       closeThen(_editPost);
                     },
@@ -1975,8 +1973,7 @@ class _PostCardState extends State<PostCard> {
                       Icons.delete_outline,
                       color: Colors.red,
                     ),
-                    title: const Text(
-                      'Delete Post',
+                    title: Text(context.tr('Delete Post'),
                       style: TextStyle(color: Colors.red),
                     ),
                     onTap: () {
@@ -2278,7 +2275,7 @@ class _PostCardState extends State<PostCard> {
     final User? user = _auth.currentUser;
 
     if (user == null) {
-      _showMessage('Please log in to vote.');
+      _showMessage(context.tr('Please log in to vote.'));
 
       return;
     }
@@ -2409,7 +2406,7 @@ class _PostCardState extends State<PostCard> {
         });
       });
 
-      _showMessage('Vote submitted successfully.');
+      _showMessage(context.tr('Vote submitted successfully.'));
     } catch (error) {
       debugPrint('Poll vote error: $error');
 
@@ -2423,16 +2420,16 @@ class _PostCardState extends State<PostCard> {
         await _loadPoll();
 
         if (mounted) {
-          _showMessage('You have already voted. Your vote cannot be changed.');
+          _showMessage(context.tr('You have already voted. Your vote cannot be changed.'));
         }
       } else if (message.contains('Voting has ended')) {
         await _loadPoll();
 
         if (mounted) {
-          _showMessage('Voting has ended.');
+          _showMessage(context.tr('Voting has ended.'));
         }
       } else {
-        _showMessage('Unable to submit your vote.');
+        _showMessage(context.tr('Unable to submit your vote.'));
       }
     } finally {
       if (mounted) {
@@ -2594,8 +2591,7 @@ class _PostCardState extends State<PostCard> {
 
               const SizedBox(width: 8),
 
-              const Text(
-                'Poll',
+              Text(context.tr('Poll'),
                 style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
               ),
 
@@ -2733,8 +2729,7 @@ class _PostCardState extends State<PostCard> {
                                   color: const Color(0xFF29B6F6),
                                   borderRadius: BorderRadius.circular(20),
                                 ),
-                                child: const Text(
-                                  'WINS',
+                                child: Text(context.tr('WINS'),
                                   style: TextStyle(
                                     color: Color(0xFF06141B),
                                     fontSize: 10,
@@ -2777,8 +2772,7 @@ class _PostCardState extends State<PostCard> {
           if (!_hasVoted && !_pollClosed && !_isVoting)
             Padding(
               padding: const EdgeInsets.only(top: 5),
-              child: Text(
-                'Tap an option to vote',
+              child: Text(context.tr('Tap an option to vote'),
                 style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
               ),
             ),
@@ -2789,8 +2783,7 @@ class _PostCardState extends State<PostCard> {
           if (_hasVoted)
             Padding(
               padding: const EdgeInsets.only(top: 5),
-              child: Text(
-                'You have already voted. Your vote cannot be changed.',
+              child: Text(context.tr('You have already voted. Your vote cannot be changed.'),
                 style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
               ),
             ),
@@ -2935,13 +2928,18 @@ class _PostCardState extends State<PostCard> {
 
     if (_translating) return;
     setState(() => _translating = true);
-
     final String caption = _caption;
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    final String downloading = context.tr(
+      'Downloading the language for translation (about 30 MB)…',
+    );
 
     try {
       final String translation = await TranslationService.instance.translate(
         caption.trim(),
         language,
+        onDownload: () =>
+            messenger.showSnackBar(SnackBar(content: Text(downloading))),
       );
 
       if (!mounted) return;
@@ -2972,7 +2970,9 @@ class _PostCardState extends State<PostCard> {
   Widget _buildTranslateLink() {
     final String language = _readerLanguage;
 
-    if (!LanguageGuess.shouldOffer(_caption, language)) {
+    if (!TranslationService.canTranslateInto(language) ||
+        !TranslationService.canTranslateFrom(LanguageGuess.of(_caption)) ||
+        !LanguageGuess.shouldOffer(_caption, language)) {
       return const SizedBox.shrink();
     }
 
@@ -3044,11 +3044,10 @@ class _PostCardState extends State<PostCard> {
             mainAxisSize: MainAxisSize.min,
 
             children: <Widget>[
-              const Padding(
+              Padding(
                 padding: EdgeInsets.all(14),
 
-                child: Text(
-                  'Tagged users',
+                child: Text(context.tr('Tagged users'),
 
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
@@ -3177,7 +3176,7 @@ class _PostCardState extends State<PostCard> {
           // ===================================================
           if (widget.post.taggedUsers.isNotEmpty)
             IconButton(
-              tooltip: 'Tagged users',
+              tooltip: context.tr('Tagged users'),
 
               onPressed: _showTaggedUsers,
 
@@ -3428,21 +3427,24 @@ class _PostCardState extends State<PostCard> {
                 if (quote && quoteText.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
-                    child: UniversalLinkText(
+                    child: TranslatableText(
                       text: quoteText,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        height: 1.4,
-                        fontWeight: FontWeight.w500,
+                      builder: (String shown) => UniversalLinkText(
+                        text: shown,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          height: 1.4,
+                          fontWeight: FontWeight.w500,
+                        ),
+
+                        // The quoted post is embedded below, so skip the
+                        // separate link preview card.
+                        showPreview: false,
+
+                        // Same as normal posts: short preview in the feed,
+                        // full text on the post's own page.
+                        collapsedMaxLines: widget.inCommentsScreen ? null : 5,
                       ),
-
-                      // The quoted post is embedded below, so skip the
-                      // separate link preview card.
-                      showPreview: false,
-
-                      // Same as normal posts: short preview in the feed,
-                      // full text on the post's own page.
-                      collapsedMaxLines: widget.inCommentsScreen ? null : 5,
                     ),
                   ),
 
@@ -3704,9 +3706,12 @@ class _PostCardState extends State<PostCard> {
                     referenced.caption.trim().isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-                    child: Text(
-                      referenced.caption.trim(),
-                      style: const TextStyle(fontSize: 15, height: 1.35),
+                    child: TranslatableText(
+                      text: referenced.caption.trim(),
+                      builder: (String shown) => Text(
+                        shown,
+                        style: const TextStyle(fontSize: 15, height: 1.35),
+                      ),
                     ),
                   ),
 
@@ -3716,12 +3721,15 @@ class _PostCardState extends State<PostCard> {
                 if (referenced.isQuoteRepost && quoteText.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-                    child: Text(
-                      quoteText,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        height: 1.35,
-                        fontWeight: FontWeight.w500,
+                    child: TranslatableText(
+                      text: quoteText,
+                      builder: (String shown) => Text(
+                        shown,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          height: 1.35,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
                   ),
@@ -3769,8 +3777,7 @@ class _PostCardState extends State<PostCard> {
                         ),
                         const SizedBox(width: 5),
                         Expanded(
-                          child: Text(
-                            'Tap this repost to continue to its parent post.',
+                          child: Text(context.tr('Tap this repost to continue to its parent post.'),
                             style: TextStyle(
                               color: Colors.grey.shade600,
                               fontSize: 12,
@@ -3785,8 +3792,7 @@ class _PostCardState extends State<PostCard> {
                     depth >= 6)
                   Padding(
                     padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
-                    child: Text(
-                      'Tap this repost to continue the repost chain.',
+                    child: Text(context.tr('Tap this repost to continue the repost chain.'),
                       style: TextStyle(
                         color: Colors.grey.shade600,
                         fontSize: 12,
@@ -4102,8 +4108,7 @@ class _PostCardState extends State<PostCard> {
                         color: const Color(0xFF29B6F6),
                         borderRadius: BorderRadius.circular(18),
                       ),
-                      child: const Text(
-                        'WINS',
+                      child: Text(context.tr('WINS'),
                         style: TextStyle(
                           color: Color(0xFF06141B),
                           fontSize: 9,
@@ -4195,7 +4200,7 @@ class _PostCardState extends State<PostCard> {
     final User? user = _auth.currentUser;
 
     if (user == null) {
-      _showMessage('Please log in to vote.');
+      _showMessage(context.tr('Please log in to vote.'));
       return;
     }
 
@@ -4272,16 +4277,18 @@ class _PostCardState extends State<PostCard> {
         transaction.update(postRef, <String, dynamic>{'poll': poll});
       });
 
-      _showMessage('Vote submitted successfully.');
+      if (!mounted) return;
+      _showMessage(context.tr('Vote submitted successfully.'));
     } catch (error) {
+      if (!mounted) return;
       final String message = error.toString();
 
       if (message.contains('ALREADY_VOTED')) {
-        _showMessage('You have already voted. Your vote cannot be changed.');
+        _showMessage(context.tr('You have already voted. Your vote cannot be changed.'));
       } else if (message.contains('Voting has ended')) {
-        _showMessage('Voting has ended.');
+        _showMessage(context.tr('Voting has ended.'));
       } else {
-        _showMessage('Unable to submit your vote.');
+        _showMessage(context.tr('Unable to submit your vote.'));
       }
     } finally {
       if (mounted) {
@@ -4424,14 +4431,13 @@ class _PostCardState extends State<PostCard> {
 
           const SizedBox(width: 7),
 
-          const Expanded(
-            child: Text(
-              'Hidden from Home and profile visitors',
+          Expanded(
+            child: Text(context.tr('Hidden from Home and profile visitors'),
               style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
             ),
           ),
 
-          TextButton(onPressed: _unhidePost, child: const Text('Unhide')),
+          TextButton(onPressed: _unhidePost, child: Text(context.tr('Unhide'))),
         ],
       ),
     );
