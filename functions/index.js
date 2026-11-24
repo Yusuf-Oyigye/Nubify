@@ -1569,12 +1569,18 @@ Object.assign(
 );
 
 //======================================================
-//NUBi BACKEND
+//NUBi BACKEND (and MindRush)
+//
+// Needs the GEMINI_API_KEY secret. Until it is set,
+// functions/.env has NUBIFY_WITHOUT_NUBI=1 so deploys
+// leave NUBi out; delete that line after setting the key.
 //=======================================================
-Object.assign(exports, require("./nubi_learning"));
+if (process.env.NUBIFY_WITHOUT_NUBI !== "1") {
+  Object.assign(exports, require("./nubi_learning"));
 
-//MINDRUSH BACKEND
-Object.assign(exports, require("./nubi_mindrush"));
+  //MINDRUSH BACKEND
+  Object.assign(exports, require("./nubi_mindrush"));
+}
 
 //USERNAMES (profile sync, release, daily backfill)
 Object.assign(exports, require("./usernames"));
