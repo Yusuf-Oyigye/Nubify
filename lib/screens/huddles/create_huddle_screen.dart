@@ -6,6 +6,7 @@ import '../../services/huddles/huddle_session.dart';
 import '../../widgets/huddles/huddle_ui.dart';
 import 'huddle_launcher.dart';
 import 'huddle_room_screen.dart';
+import '../../l10n/nubify_text.dart';
 
 //===================================================
 // NUB HUDDLES — START A HUDDLE
@@ -54,7 +55,7 @@ class _CreateHuddleScreenState extends State<CreateHuddleScreen> {
   Future<void> _start() async {
     final String title = _title.text.trim();
     if (title.length < 3) {
-      _snack('Give your Huddle a title.');
+      _snack(context.tr('Give your Huddle a title.'));
       return;
     }
 
@@ -105,7 +106,7 @@ class _CreateHuddleScreenState extends State<CreateHuddleScreen> {
       if (mounted) {
         setState(() => _starting = false);
         _snack(
-          HuddleSession.instance.endMessage ?? 'Could not start the Huddle.',
+          HuddleSession.instance.endMessage ?? context.tr('Could not start the Huddle.'),
         );
       }
     }
@@ -130,7 +131,7 @@ class _CreateHuddleScreenState extends State<CreateHuddleScreen> {
     );
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Start a Huddle')),
+      appBar: AppBar(title: Text(context.tr('Start a Huddle'))),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(18, 8, 18, 28),
@@ -139,7 +140,7 @@ class _CreateHuddleScreenState extends State<CreateHuddleScreen> {
               controller: _title,
               maxLength: 80,
               textCapitalization: TextCapitalization.sentences,
-              decoration: field('Title', 'e.g. Anatomy revision session'),
+              decoration: field(context.tr('Title'), context.tr('e.g. Anatomy revision session')),
             ),
             TextField(
               controller: _description,
@@ -148,19 +149,19 @@ class _CreateHuddleScreenState extends State<CreateHuddleScreen> {
               maxLines: 4,
               textCapitalization: TextCapitalization.sentences,
               decoration: field(
-                'Description (optional)',
-                'What will you talk about?',
+                context.tr('Description (optional)'),
+                context.tr('What will you talk about?'),
               ),
             ),
             const SizedBox(height: 6),
-            _Title('Topic (optional)', colors),
+            _Title(context.tr('Topic (optional)'), colors),
             Wrap(
               spacing: 8,
               runSpacing: 8,
               children: [
                 for (final String topic in _topics)
                   ChoiceChip(
-                    label: Text(topic),
+                    label: Text(context.tr(topic)),
                     selected: _topic == topic,
                     onSelected: (on) =>
                         setState(() => _topic = on ? topic : ''),
@@ -168,18 +169,18 @@ class _CreateHuddleScreenState extends State<CreateHuddleScreen> {
               ],
             ),
             const SizedBox(height: 20),
-            _Title('How do you want to start?', colors),
+            _Title(context.tr('How do you want to start?'), colors),
             SegmentedButton<bool>(
-              segments: const [
+              segments: [
                 ButtonSegment<bool>(
                   value: false,
                   icon: Icon(Icons.mic_rounded),
-                  label: Text('Audio only'),
+                  label: Text(context.tr('Audio only')),
                 ),
                 ButtonSegment<bool>(
                   value: true,
                   icon: Icon(Icons.videocam_rounded),
-                  label: Text('Audio + video'),
+                  label: Text(context.tr('Audio + video')),
                 ),
               ],
               selected: {_withVideo},
@@ -187,12 +188,11 @@ class _CreateHuddleScreenState extends State<CreateHuddleScreen> {
                   setState(() => _withVideo = value.first),
             ),
             const SizedBox(height: 6),
-            Text(
-              'You can turn on video or share your screen any time during the Huddle.',
+            Text(context.tr('You can turn on video or share your screen any time during the Huddle.'),
               style: TextStyle(color: colors.onSurfaceVariant, fontSize: 12.5),
             ),
             const SizedBox(height: 20),
-            _Title('Who can join', colors),
+            _Title(context.tr('Who can join'), colors),
             RadioGroup<HuddlePrivacy>(
               groupValue: _privacy,
               onChanged: (value) =>
@@ -209,30 +209,30 @@ class _CreateHuddleScreenState extends State<CreateHuddleScreen> {
               ),
             ),
             const SizedBox(height: 8),
-            _Title('In the Huddle', colors),
+            _Title(context.tr('In the Huddle'), colors),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               value: _speakerRequests,
               onChanged: (v) => setState(() => _speakerRequests = v),
-              title: const Text('Listeners can raise their hand to speak'),
+              title: Text(context.tr('Listeners can raise their hand to speak')),
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               value: _cameras,
               onChanged: (v) => setState(() => _cameras = v),
-              title: const Text('Speakers can use their camera'),
+              title: Text(context.tr('Speakers can use their camera')),
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               value: _screenShare,
               onChanged: (v) => setState(() => _screenShare = v),
-              title: const Text('Speakers can share their screen'),
+              title: Text(context.tr('Speakers can share their screen')),
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               value: _chat,
               onChanged: (v) => setState(() => _chat = v),
-              title: const Text('Live chat'),
+              title: Text(context.tr('Live chat')),
             ),
             const SizedBox(height: 16),
             FilledButton.icon(
@@ -249,7 +249,7 @@ class _CreateHuddleScreenState extends State<CreateHuddleScreen> {
               )
                   : const Icon(Icons.graphic_eq_rounded),
               label: Text(
-                _starting ? 'Starting…' : 'Start Huddle',
+                _starting ? context.tr('Starting…') : context.tr('Start Huddle'),
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
@@ -257,8 +257,7 @@ class _CreateHuddleScreenState extends State<CreateHuddleScreen> {
               ),
             ),
             const SizedBox(height: 10),
-            Text(
-              'Huddles are never recorded.',
+            Text(context.tr('Huddles are never recorded.'),
               textAlign: TextAlign.center,
               style: TextStyle(color: colors.onSurfaceVariant, fontSize: 12.5),
             ),

@@ -10,6 +10,7 @@ import 'package:flutter/services.dart';
 
 import '../../services/nubi/nubi_service.dart';
 import 'nubi_learning_screens.dart';
+import '../../l10n/nubify_text.dart';
 
 // ===========================================
 // MINDRUSH LOOK
@@ -30,7 +31,7 @@ const int _maxPlayers = 5;
 
 String _friendlyError(Object error) {
   if (error is FirebaseFunctionsException) {
-    return error.message ?? 'Something went wrong. Please try again.';
+    return error.message ?? NubifyText.tr('Something went wrong. Please try again.');
   }
   return error.toString().replaceFirst('Bad state: ', '');
 }
@@ -171,7 +172,7 @@ class _NubiMindrushScreenState extends State<NubiMindrushScreen> {
     final String code = _roomCode.text.trim();
 
     if (code.isEmpty) {
-      _message('Enter a room code.');
+      _message(context.tr('Enter a room code.'));
       return;
     }
 
@@ -337,12 +338,11 @@ class _NubiMindrushScreenState extends State<NubiMindrushScreen> {
             ),
           ),
           const SizedBox(width: 14),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Text(
-                  'Battle your friends',
+                Text(context.tr('Battle your friends'),
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 19,
@@ -350,8 +350,7 @@ class _NubiMindrushScreenState extends State<NubiMindrushScreen> {
                   ),
                 ),
                 SizedBox(height: 2),
-                Text(
-                  'Quiz battles on your lectures. Fastest brain wins XP.',
+                Text(context.tr('Quiz battles on your lectures. Fastest brain wins XP.'),
                   style: TextStyle(color: Colors.white, fontSize: 12.5),
                 ),
               ],
@@ -381,12 +380,12 @@ class _NubiMindrushScreenState extends State<NubiMindrushScreen> {
         if (docs.isEmpty) {
           return Row(
             children: <Widget>[
-              const Expanded(
-                child: Text('Add a lecture to My Deck first.'),
+              Expanded(
+                child: Text(context.tr('Add a lecture to My Deck first.')),
               ),
               TextButton(
                 onPressed: () => nubiOpen(context, const NubiDeckScreen()),
-                child: const Text('Open My Deck'),
+                child: Text(context.tr('Open My Deck')),
               ),
             ],
           );
@@ -435,7 +434,7 @@ class _NubiMindrushScreenState extends State<NubiMindrushScreen> {
                         ),
                         const Spacer(),
                         Text(
-                          (doc.data()['title'] ?? 'Lecture').toString(),
+                          (doc.data()['title'] ?? context.tr('Lecture')).toString(),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
@@ -520,15 +519,15 @@ class _NubiMindrushScreenState extends State<NubiMindrushScreen> {
         option(
           value: 'friends',
           icon: Icons.lock_rounded,
-          title: 'Friends only',
-          subtitle: 'People you invite or share the code with',
+          title: context.tr('Friends only'),
+          subtitle: context.tr('People you invite or share the code with'),
         ),
         const SizedBox(width: 10),
         option(
           value: 'public',
           icon: Icons.public_rounded,
-          title: 'Public',
-          subtitle: 'Any student can find it and join',
+          title: context.tr('Public'),
+          subtitle: context.tr('Any student can find it and join'),
         ),
       ],
     );
@@ -560,7 +559,7 @@ class _NubiMindrushScreenState extends State<NubiMindrushScreen> {
           onPressed: _pickFriends,
           icon: const Icon(Icons.person_add_alt_1_rounded),
           label: Text(
-            _invited.isEmpty ? 'Choose friends' : 'Change friends',
+            _invited.isEmpty ? context.tr('Choose friends') : context.tr('Change friends'),
           ),
           style: OutlinedButton.styleFrom(
             foregroundColor: _rushViolet,
@@ -582,48 +581,49 @@ class _NubiMindrushScreenState extends State<NubiMindrushScreen> {
       children: <Widget>[
         _step(
           1,
-          'Pick a lecture',
-          'Questions come from this lecture',
+          context.tr('Pick a lecture'),
+          context.tr('Questions come from this lecture'),
           _lecturePicker(),
         ),
         _step(
           2,
-          'Who can join?',
-          'Keep it to friends or open it to everyone',
+          context.tr('Who can join?'),
+          context.tr('Keep it to friends or open it to everyone'),
           _whoCanJoin(),
         ),
         _step(
           3,
-          'Invite friends',
-          'From people you follow or who follow you '
-              '(up to ${_maxPlayers - 1})',
+          context.tr('Invite friends'),
+          context.tr('From people you follow or who follow you (up to {count})', {
+            'count': _maxPlayers - 1,
+          }),
           _inviteSection(),
         ),
         _step(
           4,
-          'Battle rules',
-          'Game mode, questions and time to answer',
+          context.tr('Battle rules'),
+          context.tr('Game mode, questions and time to answer'),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               _choiceChips<String>(
                 values: const <String>['classic', 'exam'],
                 selected: _mode,
-                label: (v) => v == 'classic' ? 'Classic' : 'Exam mode',
+                label: (v) => v == 'classic' ? context.tr('Classic') : context.tr('Exam mode'),
                 onSelected: (v) => setState(() => _mode = v),
               ),
               const SizedBox(height: 10),
               _choiceChips<int>(
                 values: const <int>[3, 5],
                 selected: _perPlayer,
-                label: (v) => '$v questions each',
+                label: (v) => context.tr('{v} questions each', {'v': v}),
                 onSelected: (v) => setState(() => _perPlayer = v),
               ),
               const SizedBox(height: 10),
               _choiceChips<int>(
                 values: const <int>[15, 20, 30],
                 selected: _answerSeconds,
-                label: (v) => '${v}s to answer',
+                label: (v) => context.tr('{v}s to answer', {'v': v}),
                 onSelected: (v) => setState(() => _answerSeconds = v),
               ),
             ],
@@ -670,10 +670,10 @@ class _NubiMindrushScreenState extends State<NubiMindrushScreen> {
                       const SizedBox(width: 8),
                       Text(
                         _lectureId == null
-                            ? 'Pick a lecture to start'
+                            ? context.tr('Pick a lecture to start')
                             : _visibility == 'public'
-                            ? 'Create public battle'
-                            : 'Create battle',
+                            ? context.tr('Create public battle')
+                            : context.tr('Create battle'),
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w900,
@@ -742,7 +742,7 @@ class _NubiMindrushScreenState extends State<NubiMindrushScreen> {
                   ),
                 ),
                 Text(
-                  (room['lectureTitle'] ?? 'Lecture battle').toString(),
+                  (room['lectureTitle'] ?? context.tr('Lecture battle')).toString(),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(color: scheme.onSurfaceVariant),
@@ -780,7 +780,7 @@ class _NubiMindrushScreenState extends State<NubiMindrushScreen> {
                 borderRadius: BorderRadius.circular(14),
               ),
             ),
-            child: Text(joined ? 'Open' : full ? 'Full' : 'Join'),
+            child: Text(joined ? context.tr('Open') : full ? context.tr('Full') : context.tr('Join')),
           ),
         ],
       ),
@@ -796,9 +796,9 @@ class _NubiMindrushScreenState extends State<NubiMindrushScreen> {
       stream: stream,
       builder: (context, snapshot) {
         if (snapshot.hasError) {
-          return const Padding(
+          return Padding(
             padding: EdgeInsets.only(bottom: 10),
-            child: Text('Could not load battles right now.'),
+            child: Text(context.tr('Could not load battles right now.')),
           );
         }
 
@@ -850,21 +850,23 @@ class _NubiMindrushScreenState extends State<NubiMindrushScreen> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
       children: <Widget>[
-        _sectionLabel('Invites for you', Icons.mail_rounded),
+        _sectionLabel(context.tr('Invites for you'), Icons.mail_rounded),
         _roomList(
           stream: _invites,
-          empty: 'No invites yet. When a friend invites you, it shows here.',
-          reason: (room) => '${room['hostName'] ?? 'A friend'} invited you',
+          empty: context.tr('No invites yet. When a friend invites you, it shows here.'),
+          reason: (room) => context.tr('{name} invited you', {
+            'name': room['hostName'] ?? context.tr('A friend'),
+          }),
         ),
         const SizedBox(height: 6),
-        _sectionLabel('Public battles', Icons.public_rounded),
+        _sectionLabel(context.tr('Public battles'), Icons.public_rounded),
         _roomList(
           stream: _publicRooms,
-          empty: 'No public battles open right now. Create one!',
+          empty: context.tr('No public battles open right now. Create one!'),
           reason: (room) => '${room['hostName'] ?? 'A student'}\'s battle',
         ),
         const SizedBox(height: 6),
-        _sectionLabel('Have a room code?', Icons.key_rounded),
+        _sectionLabel(context.tr('Have a room code?'), Icons.key_rounded),
         Container(
           padding: const EdgeInsets.all(12),
           decoration: _card(context),
@@ -875,14 +877,14 @@ class _NubiMindrushScreenState extends State<NubiMindrushScreen> {
                   controller: _roomCode,
                   textInputAction: TextInputAction.go,
                   onSubmitted: (_) => _joinWithCode(),
-                  decoration: const InputDecoration(
-                    hintText: 'Paste the room code',
+                  decoration: InputDecoration(
+                    hintText: context.tr('Paste the room code'),
                     border: InputBorder.none,
                   ),
                 ),
               ),
               IconButton(
-                tooltip: 'Paste',
+                tooltip: context.tr('Paste'),
                 icon: const Icon(Icons.content_paste_rounded),
                 onPressed: () async {
                   final ClipboardData? data = await Clipboard.getData(
@@ -898,7 +900,7 @@ class _NubiMindrushScreenState extends State<NubiMindrushScreen> {
                   backgroundColor: _rushNavy,
                   foregroundColor: Colors.white,
                 ),
-                child: const Text('Join'),
+                child: Text(context.tr('Join')),
               ),
             ],
           ),
@@ -919,8 +921,7 @@ class _NubiMindrushScreenState extends State<NubiMindrushScreen> {
       length: 2,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text(
-            'MindRush',
+          title: Text(context.tr('MindRush'),
             style: TextStyle(fontWeight: FontWeight.w900),
           ),
         ),
@@ -944,7 +945,7 @@ class _NubiMindrushScreenState extends State<NubiMindrushScreen> {
                 dividerColor: Colors.transparent,
                 labelColor: Colors.white,
                 labelStyle: const TextStyle(fontWeight: FontWeight.w800),
-                tabs: const <Widget>[
+                tabs: <Widget>[
                   Tab(
                     height: 38,
 
@@ -953,7 +954,7 @@ class _NubiMindrushScreenState extends State<NubiMindrushScreen> {
                       children: <Widget>[
                         Icon(Icons.add_circle_rounded, size: 18),
                         SizedBox(width: 6),
-                        Text('Create'),
+                        Text(context.tr('Create')),
                       ],
                     ),
                   ),
@@ -964,7 +965,7 @@ class _NubiMindrushScreenState extends State<NubiMindrushScreen> {
                       children: <Widget>[
                         Icon(Icons.sports_esports_rounded, size: 18),
                         SizedBox(width: 6),
-                        Text('Join'),
+                        Text(context.tr('Join')),
                       ],
                     ),
                   ),
@@ -1066,14 +1067,14 @@ class _FriendPickerSheetState extends State<_FriendPickerSheet> {
                 ? fullName
                 : username.isNotEmpty
                 ? username
-                : 'Nubify student',
+                : NubifyText.tr('Nubify student'),
             username: username,
             photoUrl: (user['photoUrl'] ?? '').toString(),
             relation: both
-                ? 'Friends'
+                ? NubifyText.tr('Friends')
                 : followers.contains(doc.id)
-                ? 'Follows you'
-                : 'You follow',
+                ? NubifyText.tr('Follows you')
+                : NubifyText.tr('You follow'),
           ),
         );
       }
@@ -1094,8 +1095,8 @@ class _FriendPickerSheetState extends State<_FriendPickerSheet> {
         _selected[friend.uid] = friend;
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('A battle holds 5 players, so pick up to 4.'),
+          SnackBar(
+            content: Text(context.tr('A battle holds 5 players, so pick up to 4.')),
           ),
         );
       }
@@ -1115,9 +1116,8 @@ class _FriendPickerSheetState extends State<_FriendPickerSheet> {
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
               child: Row(
                 children: <Widget>[
-                  const Expanded(
-                    child: Text(
-                      'Invite friends',
+                  Expanded(
+                    child: Text(context.tr('Invite friends'),
                       style: TextStyle(
                         fontWeight: FontWeight.w900,
                         fontSize: 18,
@@ -1140,7 +1140,7 @@ class _FriendPickerSheetState extends State<_FriendPickerSheet> {
                 onChanged: (value) =>
                     setState(() => _search = UsernameRules.searchKey(value)),
                 decoration: InputDecoration(
-                  hintText: 'Search followers and following',
+                  hintText: context.tr('Search followers and following'),
                   prefixIcon: const Icon(Icons.search_rounded),
                   filled: true,
                   border: OutlineInputBorder(
@@ -1156,8 +1156,8 @@ class _FriendPickerSheetState extends State<_FriendPickerSheet> {
                 future: _friends,
                 builder: (context, snapshot) {
                   if (snapshot.hasError) {
-                    return const Center(
-                      child: Text('Could not load your friends.'),
+                    return Center(
+                      child: Text(context.tr('Could not load your friends.')),
                     );
                   }
 
@@ -1180,8 +1180,8 @@ class _FriendPickerSheetState extends State<_FriendPickerSheet> {
                         padding: const EdgeInsets.all(24),
                         child: Text(
                           snapshot.data!.isEmpty
-                              ? 'Follow some students first, then you can invite them here.'
-                              : 'No one matches that search.',
+                              ? context.tr('Follow some students first, then you can invite them here.')
+                              : context.tr('No one matches that search.'),
                           textAlign: TextAlign.center,
                         ),
                       ),
@@ -1238,9 +1238,13 @@ class _FriendPickerSheetState extends State<_FriendPickerSheet> {
                   ),
                   child: Text(
                     _selected.isEmpty
-                        ? 'Done'
-                        : 'Invite ${_selected.length} '
-                              '${_selected.length == 1 ? 'friend' : 'friends'}',
+                        ? context.tr('Done')
+                        : context.tr(
+                            _selected.length == 1
+                                ? 'Invite {count} friend'
+                                : 'Invite {count} friends',
+                            {'count': _selected.length},
+                          ),
                     style: const TextStyle(fontWeight: FontWeight.w800),
                   ),
                 ),
@@ -1353,8 +1357,8 @@ class _NubiMindrushRoomScreenState
           name == 'nubiAnswerRoom') {
         _message(
           result['correct'] == true
-              ? 'Correct! +${result['earned'] ?? 0} XP'
-              : 'Incorrect. Steal available!',
+              ? context.tr('Correct! +{xp} XP', {'xp': result['earned'] ?? 0})
+              : context.tr('Incorrect. Steal available!'),
         );
       }
     } catch (error) {
@@ -1402,7 +1406,7 @@ class _NubiMindrushRoomScreenState
               (result['removeOption'] as num).toInt();
         });
       } else {
-        _message('10 extra seconds granted.');
+        _message(context.tr('10 extra seconds granted.'));
       }
     } catch (error) {
       if (mounted) _message(error);
@@ -1419,17 +1423,17 @@ class _NubiMindrushRoomScreenState
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('MindRush Battle'),
+        title: Text(context.tr('MindRush Battle')),
         actions: [
           IconButton(
             icon: const Icon(Icons.copy_rounded),
-            tooltip: 'Copy room code',
+            tooltip: context.tr('Copy room code'),
             onPressed: () async {
               await Clipboard.setData(
                 ClipboardData(text: widget.roomId),
               );
               if (context.mounted) {
-                _message('Room code copied.');
+                _message(context.tr('Room code copied.'));
               }
             },
           ),
@@ -1447,8 +1451,8 @@ class _NubiMindrushRoomScreenState
           final room = snapshot.data!.data();
 
           if (room == null) {
-            return const Center(
-              child: Text('Room unavailable.'),
+            return Center(
+              child: Text(context.tr('Room unavailable.')),
             );
           }
 
@@ -1484,7 +1488,7 @@ class _NubiMindrushRoomScreenState
             padding: const EdgeInsets.all(16),
             children: [
               Text(
-                'Room: ${widget.roomId}',
+                context.tr('Room: {roomId}', {'roomId': widget.roomId}),
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
                 ),
@@ -1493,7 +1497,7 @@ class _NubiMindrushRoomScreenState
               const SizedBox(height: 12),
 
               Text(
-                'Players: ${players.length}',
+                context.tr('Players: {count}', {'count': players.length}),
                 style: Theme.of(context)
                     .textTheme.titleMedium,
               ),
@@ -1505,8 +1509,8 @@ class _NubiMindrushRoomScreenState
                   ),
                   title: Text(
                     player == NubiService.uid
-                        ? 'You'
-                        : 'Student ${player.substring(0, player.length > 7 ? 7 : player.length)}',
+                        ? context.tr('You')
+                        : context.tr('Student {count}', {'count': player.substring(0, player.length > 7 ? 7 : player.length)}),
                   ),
                   trailing: Text(
                     '${scores[player] ?? 0} pts',
@@ -1516,9 +1520,8 @@ class _NubiMindrushRoomScreenState
               const Divider(),
 
               if (status == 'waiting') ...[
-                const Text(
-                  'Share the room code with friends. '
-                      'At least two players must join.',
+                Text(context.tr('Share the room code with friends. '
+                      'At least two players must join.'),
                 ),
 
                 const SizedBox(height: 14),
@@ -1530,22 +1533,24 @@ class _NubiMindrushRoomScreenState
                         : () => _call(
                       'nubiStartRoom', {},
                     ),
-                    child: const Text('Start Battle'),
+                    child: Text(context.tr('Start Battle')),
                   ),
               ],
 
               if (status == 'preparing')
-                const Column(
+                Column(
                   children: [
                     CircularProgressIndicator(),
                     SizedBox(height: 14),
-                    Text('Preparing academic questions...'),
+                    Text(context.tr('Preparing academic questions...')),
                   ],
                 ),
 
               if (status == 'running') ...[
                 Text(
-                  'Round ${((room['roundIndex'] ?? 0) as num).toInt() + 1}',
+                  context.tr('Round {number}', {
+                    'number': ((room['roundIndex'] ?? 0) as num).toInt() + 1,
+                  }),
                   style: const TextStyle(
                     fontWeight: FontWeight.w800,
                   ),
@@ -1558,8 +1563,8 @@ class _NubiMindrushRoomScreenState
                       ? '⚡ STEAL AVAILABLE'
                       : room['turnUid'] ==
                       NubiService.uid
-                      ? 'YOUR TURN'
-                      : 'Another student’s turn',
+                      ? context.tr('YOUR TURN')
+                      : context.tr('Another student’s turn'),
                   style: const TextStyle(
                     fontSize: 20,
                     color: Color(0xFFD97706),
@@ -1569,7 +1574,7 @@ class _NubiMindrushRoomScreenState
                 const SizedBox(height: 8),
 
                 Text(
-                  'Time left: ${secondsLeft < 0 ? 0 : secondsLeft}s',
+                  context.tr('Time left: {secondsLeft}s', {'secondsLeft': secondsLeft < 0 ? 0 : secondsLeft}),
                 ),
 
                 const SizedBox(height: 18),
@@ -1622,13 +1627,13 @@ class _NubiMindrushRoomScreenState
                         onPressed: _busy
                             ? null
                             : () => _powerUp('hint'),
-                        child: const Text('Hint'),
+                        child: Text(context.tr('Hint')),
                       ),
                       OutlinedButton(
                         onPressed: _busy
                             ? null
                             : () => _powerUp('extraTime'),
-                        child: const Text('+10 Seconds'),
+                        child: Text(context.tr('+10 Seconds')),
                       ),
                     ],
                   ),
@@ -1641,8 +1646,7 @@ class _NubiMindrushRoomScreenState
                   color: Color(0xFFD97706),
                 ),
                 const SizedBox(height: 12),
-                const Text(
-                  'Battle Finished!',
+                Text(context.tr('Battle Finished!'),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 24,
@@ -1653,7 +1657,7 @@ class _NubiMindrushRoomScreenState
                 FilledButton(
                   onPressed: () =>
                       Navigator.pop(context),
-                  child: const Text('Finish'),
+                  child: Text(context.tr('Finish')),
                 ),
               ],
 

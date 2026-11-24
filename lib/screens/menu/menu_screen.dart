@@ -428,7 +428,7 @@ class _MenuScreenState extends State<MenuScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(error.message ?? 'Unable to log out. Please retry.'),
+          content: Text(error.message ?? context.tr('Unable to log out. Please retry.')),
         ),
       );
     }
@@ -651,7 +651,7 @@ class _MenuScreenState extends State<MenuScreen> {
             .firstWhere(
               (String value) =>
                   value.isNotEmpty && value.toLowerCase() != 'nubify member',
-              orElse: () => 'Your profile',
+              orElse: () => context.tr('Your profile'),
             );
 
         final username =
@@ -773,7 +773,7 @@ class _MenuScreenState extends State<MenuScreen> {
                       Text(
                         username.isNotEmpty
                             ? '@$username'
-                            : 'View your profile',
+                            : context.tr('View your profile'),
 
                         style: TextStyle(
                           color: NubifyMenuColors.secondaryText(context),

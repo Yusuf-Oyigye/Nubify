@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../models/faculties/nub_faculty.dart';
 import '../../widgets/menu/nubify_menu_components.dart';
+import '../../l10n/nubify_text.dart';
 
 //===================================================
 // NUB — SINGLE FACULTY SCREEN
@@ -54,7 +55,7 @@ class NubFacultyDetailScreen extends StatelessWidget {
               expandedTitleScale: 1.45,
 
               title: Text(
-                faculty.shortName,
+                context.tr(faculty.shortName),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
@@ -116,12 +117,12 @@ class NubFacultyDetailScreen extends StatelessWidget {
                     children: [
                       _Pill(
                         icon: faculty.field.icon,
-                        label: faculty.field.label,
+                        label: context.tr(faculty.field.label),
                         color: faculty.color,
                       ),
                       _Pill(
                         icon: faculty.icon,
-                        label: 'Faculty ${faculty.number} of ${nubFaculties.length}',
+                        label: context.tr('Faculty {number} of {count}', {'number': faculty.number, 'count': nubFaculties.length}),
                         color: NubifyPalette.slate,
                       ),
                     ],
@@ -142,7 +143,7 @@ class NubFacultyDetailScreen extends StatelessWidget {
                   const SizedBox(height: 6),
 
                   Text(
-                    faculty.name,
+                    context.tr(faculty.name),
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w800,
@@ -153,7 +154,7 @@ class NubFacultyDetailScreen extends StatelessWidget {
                   const SizedBox(height: 8),
 
                   Text(
-                    faculty.tagline,
+                    context.tr(faculty.tagline),
                     style: TextStyle(
                       fontSize: 14.5,
                       height: 1.5,
@@ -168,11 +169,11 @@ class NubFacultyDetailScreen extends StatelessWidget {
                   //=================================
                   _Section(
                     icon: Icons.auto_stories_outlined,
-                    title: 'About the faculty',
+                    title: context.tr('About the faculty'),
                     color: faculty.color,
 
                     child: Text(
-                      faculty.about,
+                      context.tr(faculty.about),
                       style: TextStyle(
                         fontSize: 14.5,
                         height: 1.75,
@@ -188,7 +189,7 @@ class NubFacultyDetailScreen extends StatelessWidget {
                   //=================================
                   _Section(
                     icon: Icons.menu_book_rounded,
-                    title: "What you'll study",
+                    title: context.tr("What you'll study"),
                     color: faculty.color,
 
                     child: Wrap(
@@ -215,7 +216,7 @@ class NubFacultyDetailScreen extends StatelessWidget {
                             ),
 
                             child: Text(
-                              subject,
+                              context.tr(subject),
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
@@ -234,7 +235,7 @@ class NubFacultyDetailScreen extends StatelessWidget {
                   //=================================
                   _Section(
                     icon: Icons.rocket_launch_outlined,
-                    title: 'Graduate pathways',
+                    title: context.tr('Graduate pathways'),
                     color: faculty.color,
 
                     child: Column(
@@ -255,7 +256,7 @@ class NubFacultyDetailScreen extends StatelessWidget {
 
                                 Expanded(
                                   child: Text(
-                                    pathway,
+                                    context.tr(pathway),
                                     style: TextStyle(
                                       fontSize: 14.5,
                                       fontWeight: FontWeight.w600,
@@ -447,8 +448,7 @@ class _NextFacultyCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
 
                   children: [
-                    Text(
-                      'NEXT FACULTY',
+                    Text(context.tr('NEXT FACULTY'),
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: .75),
                         fontSize: 11,
@@ -460,7 +460,7 @@ class _NextFacultyCard extends StatelessWidget {
                     const SizedBox(height: 4),
 
                     Text(
-                      faculty.shortName,
+                      context.tr(faculty.shortName),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(

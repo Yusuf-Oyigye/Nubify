@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../widgets/menu/nubify_honor_widgets.dart';
+import '../../l10n/nubify_text.dart';
 
 //===================================================
 // BUILT-IN CAMPUS PHOTOS — EDIT ONLY THIS LIST
@@ -217,7 +218,7 @@ class _ExploreNubScreenState extends State<ExploreNubScreen> {
 
     await _run(
           () => _ExploreStore.add(bytes, photo.name, name.trim()),
-      'Photo added to Explore NUB',
+      NubifyText.tr('Photo added to Explore NUB'),
     );
   }
 
@@ -225,25 +226,25 @@ class _ExploreNubScreenState extends State<ExploreNubScreen> {
     final bool? remove = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Remove this photo?'),
+        title: Text(context.tr('Remove this photo?')),
         content: Text(
-          '"${place.name}" will be removed from Explore NUB for everyone.',
+          context.tr('"{name}" will be removed from Explore NUB for everyone.', {'name': place.name}),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancel'),
+            child: Text(context.tr('Cancel')),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Remove'),
+            child: Text(context.tr('Remove')),
           ),
         ],
       ),
     );
 
     if (remove == true) {
-      await _run(() => _ExploreStore.remove(place), 'Photo removed');
+      await _run(() => _ExploreStore.remove(place), NubifyText.tr('Photo removed'));
     }
   }
 
@@ -257,11 +258,11 @@ class _ExploreNubScreenState extends State<ExploreNubScreen> {
     } on FirebaseException catch (error) {
       message = error.code == 'permission-denied' ||
           error.code == 'unauthorized'
-          ? 'Adding photos is not switched on yet. '
-          'Publish the new Firebase rules first.'
-          : 'Something went wrong. Please try again.';
+          ? NubifyText.tr('Adding photos is not switched on yet. '
+          'Publish the new Firebase rules first.')
+          : NubifyText.tr('Something went wrong. Please try again.');
     } catch (_) {
-      message = 'Something went wrong. Please try again.';
+      message = NubifyText.tr('Something went wrong. Please try again.');
     }
 
     if (!mounted) {
@@ -303,8 +304,7 @@ class _ExploreNubScreenState extends State<ExploreNubScreen> {
           backgroundColor: NubifyHonorColors.gold,
           foregroundColor: NubifyHonorColors.ink,
           icon: const Icon(Icons.add_a_photo_rounded),
-          label: const Text(
-            'Add photo',
+          label: Text(context.tr('Add photo'),
             style: TextStyle(fontWeight: FontWeight.w700),
           ),
         )
@@ -436,7 +436,7 @@ class _ExploreNubScreenState extends State<ExploreNubScreen> {
                 padding: const EdgeInsets.fromLTRB(10, 6, 18, 22),
                 child: Column(
                   children: [
-                    const NubifyHeaderBar(title: 'Explore NUB'),
+                    NubifyHeaderBar(title: context.tr('Explore NUB')),
                     const SizedBox(height: 14),
                     NubifyReveal(
                       child: Padding(
@@ -471,12 +471,11 @@ class _ExploreNubScreenState extends State<ExploreNubScreen> {
                               ),
                             ),
                             const SizedBox(width: 14),
-                            const Expanded(
+                            Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    'Our campus',
+                                  Text(context.tr('Our campus'),
                                     style: TextStyle(
                                       color: Colors.white,
                                       fontSize: 21,
@@ -485,9 +484,8 @@ class _ExploreNubScreenState extends State<ExploreNubScreen> {
                                     ),
                                   ),
                                   SizedBox(height: 4),
-                                  Text(
-                                    'Discover the places that make NUB '
-                                        'home. Tap a photo to see it in full.',
+                                  Text(context.tr('Discover the places that make NUB '
+                                        'home. Tap a photo to see it in full.'),
                                     style: TextStyle(
                                       color: Colors.white70,
                                       fontSize: 13.5,
@@ -526,12 +524,12 @@ class _ExploreNubScreenState extends State<ExploreNubScreen> {
       onChanged: (value) => setState(() => _query = value),
       textInputAction: TextInputAction.search,
       decoration: InputDecoration(
-        hintText: 'Search places',
+        hintText: context.tr('Search places'),
         prefixIcon: const Icon(Icons.search_rounded),
         suffixIcon: _query.isEmpty
             ? null
             : IconButton(
-          tooltip: 'Clear',
+          tooltip: context.tr('Clear'),
           icon: const Icon(Icons.close_rounded),
           onPressed: () {
             _search.clear();
@@ -560,9 +558,9 @@ class _ExploreNubScreenState extends State<ExploreNubScreen> {
   Widget _buildEmpty({required bool nothingYet}) {
     final String message = nothingYet
         ? (_isOwner
-        ? 'Tap Add photo to share the first one.'
-        : 'Photos of our campus will appear here soon.')
-        : 'Try another name.';
+        ? context.tr('Tap Add photo to share the first one.')
+        : context.tr('Photos of our campus will appear here soon.'))
+        : context.tr('Try another name.');
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(32, 40, 32, 100),
@@ -584,7 +582,7 @@ class _ExploreNubScreenState extends State<ExploreNubScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            nothingYet ? 'No campus photos yet' : 'No place matches "$_query"',
+            nothingYet ? context.tr('No campus photos yet') : context.tr('No place matches "{query}"', {'query': _query}),
             textAlign: TextAlign.center,
             style: TextStyle(
               color: NubifyHonorColors.text(context),
@@ -718,8 +716,7 @@ class _PlaceCard extends StatelessWidget {
                         color: NubifyHonorColors.gold.withValues(alpha: .9),
                         borderRadius: BorderRadius.circular(20),
                       ),
-                      child: const Text(
-                        'CAMPUS HIGHLIGHT',
+                      child: Text(context.tr('CAMPUS HIGHLIGHT'),
                         style: TextStyle(
                           color: NubifyHonorColors.ink,
                           fontSize: 10.5,
@@ -830,7 +827,7 @@ class _PlaceViewerState extends State<_PlaceViewer> {
                 child: Row(
                   children: [
                     IconButton(
-                      tooltip: 'Close',
+                      tooltip: context.tr('Close'),
                       style: IconButton.styleFrom(
                         backgroundColor: Colors.white.withValues(alpha: .12),
                       ),
@@ -961,8 +958,7 @@ class _AddPlaceSheetState extends State<_AddPlaceSheet> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text(
-                'Add a campus photo',
+              Text(context.tr('Add a campus photo'),
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 14),
@@ -982,8 +978,8 @@ class _AddPlaceSheetState extends State<_AddPlaceSheet> {
                 textInputAction: TextInputAction.done,
                 onSubmitted: (_) => _submit(),
                 decoration: InputDecoration(
-                  labelText: 'Place name',
-                  hintText: 'e.g. Central Library',
+                  labelText: context.tr('Place name'),
+                  hintText: context.tr('e.g. Central Library'),
                   prefixIcon: const Icon(Icons.place_outlined),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
@@ -1002,8 +998,7 @@ class _AddPlaceSheetState extends State<_AddPlaceSheet> {
                   ),
                   onPressed: value.text.trim().isEmpty ? null : _submit,
                   icon: const Icon(Icons.cloud_upload_rounded),
-                  label: const Text(
-                    'Add to Explore NUB',
+                  label: Text(context.tr('Add to Explore NUB'),
                     style: TextStyle(fontWeight: FontWeight.w700),
                   ),
                 ),

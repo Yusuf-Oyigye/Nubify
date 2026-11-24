@@ -9,6 +9,7 @@ import '../../models/huddles/huddle.dart';
 import '../../services/chat/group_chat_service.dart';
 import '../../services/huddles/huddle_service.dart';
 import '../../widgets/huddles/huddle_ui.dart';
+import '../../l10n/nubify_text.dart';
 
 //===================================================
 // NUB HUDDLES — INVITE / SHARE
@@ -45,7 +46,7 @@ class HuddleInviteSheet {
               ),
               _option(
                 Icons.person_add_alt_1_rounded,
-                'Invite Nubify people & groups',
+                context.tr('Invite Nubify people & groups'),
                     () {
                   close();
                   Navigator.of(context).push(
@@ -55,16 +56,16 @@ class HuddleInviteSheet {
                   );
                 },
               ),
-              _option(Icons.link_rounded, 'Copy Huddle link', () async {
+              _option(Icons.link_rounded, context.tr('Copy Huddle link'), () async {
                 close();
                 await Clipboard.setData(ClipboardData(text: huddle.link));
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Huddle link copied')),
+                    SnackBar(content: Text(context.tr('Huddle link copied'))),
                   );
                 }
               }),
-              _option(Icons.ios_share_rounded, 'Share to other apps', () async {
+              _option(Icons.ios_share_rounded, context.tr('Share to other apps'), () async {
                 close();
                 await SharePlus.instance.share(
                   ShareParams(text: HuddleService.instance.inviteText(huddle)),
@@ -139,7 +140,12 @@ class _InvitePickerState extends State<_InvitePicker> {
       messenger.showSnackBar(
         SnackBar(
           content: Text(
-            'Invitation sent to $count ${count == 1 ? 'chat' : 'chats'}',
+            NubifyText.tr(
+              count == 1
+                  ? 'Invitation sent to {count} chat'
+                  : 'Invitation sent to {count} chats',
+              {'count': count},
+            ),
           ),
         ),
       );
@@ -148,7 +154,7 @@ class _InvitePickerState extends State<_InvitePicker> {
         setState(() => _sending = false);
       }
       messenger.showSnackBar(
-        const SnackBar(content: Text('Some invitations could not be sent.')),
+        SnackBar(content: Text(NubifyText.tr('Some invitations could not be sent.'))),
       );
     }
   }
@@ -162,7 +168,7 @@ class _InvitePickerState extends State<_InvitePicker> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Invite to Huddle'),
+        title: Text(context.tr('Invite to Huddle')),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(60),
           child: Padding(
@@ -171,7 +177,7 @@ class _InvitePickerState extends State<_InvitePicker> {
               onChanged: (value) =>
                   setState(() => _search = UsernameRules.searchKey(value)),
               decoration: InputDecoration(
-                hintText: 'Search people and groups',
+                hintText: context.tr('Search people and groups'),
                 prefixIcon: const Icon(Icons.search_rounded),
                 isDense: true,
                 border: OutlineInputBorder(
@@ -194,7 +200,7 @@ class _InvitePickerState extends State<_InvitePicker> {
           child: CircularProgressIndicator(strokeWidth: 2),
         )
             : const Icon(Icons.send_rounded),
-        label: Text('Send ($selected)'),
+        label: Text(context.tr('Send ({selected})', {'selected': selected})),
       ),
       body: ListView(
         padding: const EdgeInsets.only(bottom: 100),
@@ -212,7 +218,7 @@ class _InvitePickerState extends State<_InvitePicker> {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const _SectionTitle('Your groups'),
+                  _SectionTitle(context.tr('Your groups')),
                   for (final ChatGroup group in groups)
                     CheckboxListTile(
                       value: _groups.contains(group.groupId),
@@ -256,11 +262,11 @@ class _InvitePickerState extends State<_InvitePicker> {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const _SectionTitle('People'),
+                  _SectionTitle(context.tr('People')),
                   if (docs.isEmpty)
-                    const Padding(
+                    Padding(
                       padding: EdgeInsets.all(16),
-                      child: Text('Nobody found.'),
+                      child: Text(context.tr('Nobody found.')),
                     ),
                   for (final doc in docs)
                     CheckboxListTile(

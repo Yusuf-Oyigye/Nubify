@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import '../../models/links/link_preview.dart';
 import '../../services/links/nubify_link_router.dart';
 import '../marketplace/marketplace_brand_icon.dart';
+import '../../l10n/nubify_text.dart';
 
 //===================================================
 // UNIVERSAL LINK PREVIEW CARD
@@ -127,8 +128,8 @@ class UniversalLinkPreviewCard extends StatelessWidget {
     if (!context.mounted) return;
 
     ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-      const SnackBar(
-        content: Text('Link copied'),
+      SnackBar(
+        content: Text(context.tr('Link copied')),
         duration: Duration(seconds: 2),
       ),
     );
@@ -143,7 +144,7 @@ class UniversalLinkPreviewCard extends StatelessWidget {
         preview.statusText.trim().isNotEmpty &&
             preview.statusText.toLowerCase() != 'restricted'
         ? preview.statusText.trim()
-        : 'Content unavailable';
+        : NubifyText.tr('Content unavailable');
     return AspectRatio(
       aspectRatio: heroAspectRatio ?? (compact ? 1.65 : 16 / 9),
       child: Stack(
@@ -240,7 +241,7 @@ class UniversalLinkPreviewCard extends StatelessWidget {
       ),
       child: Center(
         child: expiredStory
-            ? const Column(
+            ? Column(
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
                   Icon(
@@ -249,8 +250,7 @@ class UniversalLinkPreviewCard extends StatelessWidget {
                     size: 43,
                   ),
                   SizedBox(height: 10),
-                  Text(
-                    'Story expired',
+                  Text(NubifyText.tr('Story expired'),
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: Colors.white,
@@ -307,7 +307,7 @@ class UniversalLinkPreviewCard extends StatelessWidget {
       return preview.domain.trim();
     }
 
-    return 'Link';
+    return NubifyText.tr('Link');
   }
 
   //===================================================
@@ -384,7 +384,7 @@ class UniversalLinkPreviewCard extends StatelessWidget {
                         if (onRemove != null)
                           IconButton(
                             visualDensity: VisualDensity.compact,
-                            tooltip: 'Remove preview',
+                            tooltip: context.tr('Remove preview'),
                             onPressed: onRemove,
                             icon: Icon(
                               Icons.close_rounded,
@@ -488,7 +488,7 @@ class UniversalLinkPreviewCard extends StatelessWidget {
                       ),
                       IconButton(
                         onPressed: () => _copyLink(context),
-                        tooltip: 'Copy link',
+                        tooltip: context.tr('Copy link'),
                         visualDensity: VisualDensity.compact,
                         icon: Icon(
                           Icons.copy_rounded,

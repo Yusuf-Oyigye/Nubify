@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../services/nubi/nubi_service.dart';
+import '../../l10n/nubify_text.dart';
 
 const nubiBlue = Color(0xFF29B6F6);
 
@@ -60,16 +61,16 @@ class NubiDeckScreen extends StatelessWidget {
       initialIndex: initialTab,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('My Deck'),
-          bottom: const TabBar(
+          title: Text(context.tr('My Deck')),
+          bottom: TabBar(
             isScrollable: true,
             tabs: [
-              Tab(text: 'All'),
-              Tab(text: 'Continue Learning'),
-              Tab(text: 'AI Sessions'),
-              Tab(text: 'Flashcards'),
-              Tab(text: 'MCQs'),
-              Tab(text: 'Completed'),
+              Tab(text: context.tr('All')),
+              Tab(text: context.tr('Continue Learning')),
+              Tab(text: context.tr('AI Sessions')),
+              Tab(text: context.tr('Flashcards')),
+              Tab(text: context.tr('MCQs')),
+              Tab(text: context.tr('Completed')),
             ],
           ),
         ),
@@ -129,7 +130,7 @@ class _AllTabState extends State<_AllTab> {
           builder: (context, sessionSnap) {
             if (sourceSnap.hasError || sessionSnap.hasError) {
               return nubiEmpty(
-                'Unable to read your deck.',
+                context.tr('Unable to read your deck.'),
               );
             }
 
@@ -155,8 +156,8 @@ class _AllTabState extends State<_AllTab> {
 
             if (items.isEmpty) {
               return nubiEmpty(
-                'Nothing here yet. Upload a lecture '
-                    'or ask NUBi a question to get started.',
+                context.tr('Nothing here yet. Upload a lecture '
+                    'or ask NUBi a question to get started.'),
               );
             }
 
@@ -191,7 +192,7 @@ class _SourcesTab extends StatelessWidget {
       builder: (context, snapshot) {
         if (snapshot.hasError) {
           return nubiEmpty(
-            'Unable to read your saved lectures.',
+            context.tr('Unable to read your saved lectures.'),
           );
         }
 
@@ -226,8 +227,8 @@ class _SourcesTab extends StatelessWidget {
 
         if (docs.isEmpty) {
           return nubiEmpty(
-            'No lectures here yet. Upload '
-                'a lecture from NUBi to get started.',
+            context.tr('No lectures here yet. Upload '
+                'a lecture from NUBi to get started.'),
           );
         }
 
@@ -258,22 +259,21 @@ class _SourceCard extends StatelessWidget {
     final approved = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Delete this lecture?'),
-        content: const Text(
-          'Associated AI sessions, generated '
+        title: Text(context.tr('Delete this lecture?')),
+        content: Text(context.tr('Associated AI sessions, generated '
               'flashcards and quizzes will be deleted. '
-              'Earned XP will remain in your history.',
+              'Earned XP will remain in your history.'),
         ),
         actions: [
           TextButton(
             onPressed: () =>
                 Navigator.pop(dialogContext, false),
-            child: const Text('Cancel'),
+            child: Text(context.tr('Cancel')),
           ),
           FilledButton(
             onPressed: () =>
                 Navigator.pop(dialogContext, true),
-            child: const Text('Delete'),
+            child: Text(context.tr('Delete')),
           ),
         ],
       ),
@@ -284,7 +284,7 @@ class _SourceCard extends StatelessWidget {
     try {
       await NubiService.deleteSource(sourceId);
       if (context.mounted) {
-        nubiMessage(context, 'Lecture deleted.');
+        nubiMessage(context, context.tr('Lecture deleted.'));
       }
     } catch (error) {
       if (context.mounted) {
@@ -300,7 +300,7 @@ class _SourceCard extends StatelessWidget {
     final count = await showDialog<int>(
       context: context,
       builder: (dialogContext) => SimpleDialog(
-        title: const Text('How many MCQs?'),
+        title: Text(context.tr('How many MCQs?')),
         children: [5, 7, 10, 12, 15]
             .map(
               (count) => SimpleDialogOption(
@@ -319,7 +319,7 @@ class _SourceCard extends StatelessWidget {
     try {
       nubiMessage(
         context,
-        'Generating $count questions...',
+        context.tr('Generating {count} questions...', {'count': count}),
       );
 
       final data = await NubiService.createQuiz(
@@ -348,7 +348,7 @@ class _SourceCard extends StatelessWidget {
     try {
       nubiMessage(
         context,
-        'Generating flashcards...',
+        context.tr('Generating flashcards...'),
       );
 
       final data =
@@ -387,10 +387,10 @@ class _SourceCard extends StatelessWidget {
           color: nubiBlue,
         ),
         title: Text(
-          (data['title'] ?? 'Lecture').toString(),
+          (data['title'] ?? context.tr('Lecture')).toString(),
         ),
         subtitle: Text(
-          '$completed/$total sections completed',
+          context.tr('{completed}/{total} sections completed', {'completed': completed, 'total': total}),
         ),
         onTap: () => nubiOpen(
           context,
@@ -406,18 +406,18 @@ class _SourceCard extends StatelessWidget {
               _delete(context, doc.id);
             }
           },
-          itemBuilder: (_) => const [
+          itemBuilder: (_) => [
             PopupMenuItem(
               value: 'quiz',
-              child: Text('Generate MCQs'),
+              child: Text(context.tr('Generate MCQs')),
             ),
             PopupMenuItem(
               value: 'cards',
-              child: Text('Generate Flashcards'),
+              child: Text(context.tr('Generate Flashcards')),
             ),
             PopupMenuItem(
               value: 'delete',
-              child: Text('Delete Lecture'),
+              child: Text(context.tr('Delete Lecture')),
             ),
           ],
         ),
@@ -450,7 +450,7 @@ class _SessionsTab extends StatelessWidget {
         final docs = snap.data!.docs;
 
         if (docs.isEmpty) {
-          return nubiEmpty('No AI sessions yet.');
+          return nubiEmpty(context.tr('No AI sessions yet.'));
         }
 
         return ListView(
@@ -482,7 +482,7 @@ class _SessionTile extends StatelessWidget {
     return ListTile(
       leading: const Icon(Icons.smart_toy_outlined),
       title: Text(
-        (data['title'] ?? 'NUBi Session')
+        (data['title'] ?? context.tr('NUBi Session'))
             .toString(),
       ),
       subtitle: Text(
@@ -527,8 +527,8 @@ class _DecksTab extends StatelessWidget {
 
         if (docs.isEmpty) {
           return nubiEmpty(
-            'No flashcards yet. Open a lecture '
-                'and choose Generate Flashcards.',
+            context.tr('No flashcards yet. Open a lecture '
+                'and choose Generate Flashcards.'),
           );
         }
 
@@ -539,11 +539,13 @@ class _DecksTab extends StatelessWidget {
               color: Color(0xFF14B8A6),
             ),
             title: Text(
-              (doc.data()['title'] ?? 'Deck')
+              (doc.data()['title'] ?? context.tr('Deck'))
                   .toString(),
             ),
             subtitle: Text(
-              '${(doc.data()['cards'] as List?)?.length ?? 0} cards',
+              context.tr('{count} cards', {
+                'count': (doc.data()['cards'] as List?)?.length ?? 0,
+              }),
             ),
             onTap: () => nubiOpen(
               context,
@@ -581,8 +583,8 @@ class _QuizzesTab extends StatelessWidget {
 
         if (docs.isEmpty) {
           return nubiEmpty(
-            'No quizzes yet. Generate MCQs '
-                'from one of your lectures.',
+            context.tr('No quizzes yet. Generate MCQs '
+                'from one of your lectures.'),
           );
         }
 
@@ -593,7 +595,7 @@ class _QuizzesTab extends StatelessWidget {
               color: Color(0xFF4338CA),
             ),
             title: Text(
-              (doc.data()['title'] ?? 'Quiz')
+              (doc.data()['title'] ?? context.tr('Quiz'))
                   .toString(),
             ),
             subtitle: Text(
@@ -839,8 +841,8 @@ class _NubiTutorScreenState
 
     return nubiPage(
       hasSource
-          ? (_source?['title'] ?? 'NUBi Tutor').toString()
-          : 'NUBi Tutor',
+          ? (_source?['title'] ?? context.tr('NUBi Tutor')).toString()
+          : context.tr('NUBi Tutor'),
       Column(
         children: [
           if (section != null)
@@ -853,7 +855,7 @@ class _NubiTutorScreenState
                   CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Section ${_sectionIndex + 1}/${sections.length}',
+                      context.tr('Section {sectionIndex}/{count}', {'sectionIndex': _sectionIndex + 1, 'count': sections.length}),
                       style: const TextStyle(
                         color: nubiBlue,
                         fontWeight: FontWeight.bold,
@@ -877,34 +879,33 @@ class _NubiTutorScreenState
                       children: [
                         TextButton(
                           onPressed: () => _askPreset(
-                            'Explain this section simply.',
+                            context.tr('Explain this section simply.'),
                           ),
-                          child: const Text('Simpler'),
+                          child: Text(context.tr('Simpler')),
                         ),
                         TextButton(
                           onPressed: () => _askPreset(
-                            'Explain this section in detail.',
+                            context.tr('Explain this section in detail.'),
                           ),
-                          child: const Text('In Detail'),
+                          child: Text(context.tr('In Detail')),
                         ),
                         TextButton(
                           onPressed: () => _askPreset(
-                            'Give a helpful example.',
+                            context.tr('Give a helpful example.'),
                           ),
-                          child: const Text('Example'),
+                          child: Text(context.tr('Example')),
                         ),
                         TextButton(
                           onPressed: () => _askPreset(
-                            'Explain the clinical application.',
+                            context.tr('Explain the clinical application.'),
                           ),
-                          child: const Text('Clinical'),
+                          child: Text(context.tr('Clinical')),
                         ),
                       ],
                     ),
                     FilledButton.tonal(
                       onPressed: _startCheckpoint,
-                      child: const Text(
-                        'Quick Knowledge Check',
+                      child: Text(context.tr('Quick Knowledge Check'),
                       ),
                     ),
                   ],
@@ -941,9 +942,9 @@ class _NubiTutorScreenState
                       ),
                     if (_feedback != null)
                       Text(
-                        '${_feedback!['correct'] == true ? 'Correct!' : 'Incorrect.'} '
+                        '${_feedback!['correct'] == true ? context.tr('Correct!') : context.tr('Incorrect.')} '
                             '${_feedback!['explanation'] ?? ''} '
-                            'XP: ${_feedback!['earned'] ?? 0}',
+                            '${context.tr('XP: {xp}', {'xp': _feedback!['earned'] ?? 0})}',
                       ),
                   ],
                 ),
@@ -960,14 +961,14 @@ class _NubiTutorScreenState
                     _sectionIndex - 1,
                     sections.length,
                   ),
-                  child: const Text('Previous'),
+                  child: Text(context.tr('Previous')),
                 ),
                 TextButton(
                   onPressed: () => _changeSection(
                     _sectionIndex + 1,
                     sections.length,
                   ),
-                  child: const Text('Next Section'),
+                  child: Text(context.tr('Next Section')),
                 ),
               ],
             ),
@@ -1008,7 +1009,7 @@ class _NubiTutorScreenState
               minLines: 1,
               maxLines: 4,
               decoration: InputDecoration(
-                hintText: 'Ask NUBi a question...',
+                hintText: context.tr('Ask NUBi a question...'),
                 border: const OutlineInputBorder(),
                 suffixIcon: IconButton(
                   icon: const Icon(Icons.send_rounded),
@@ -1087,7 +1088,7 @@ class _NubiQuizRunScreenState
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return nubiPage(
-            'MCQs',
+            context.tr('MCQs'),
             const Center(
               child: CircularProgressIndicator(),
             ),
@@ -1098,8 +1099,8 @@ class _NubiQuizRunScreenState
 
         if (data == null) {
           return nubiPage(
-            'MCQs',
-            nubiEmpty('Quiz not found.'),
+            context.tr('MCQs'),
+            nubiEmpty(context.tr('Quiz not found.')),
           );
         }
 
@@ -1108,14 +1109,14 @@ class _NubiQuizRunScreenState
 
         if (questions.isEmpty) {
           return nubiPage(
-            'MCQs',
-            nubiEmpty('No questions found.'),
+            context.tr('MCQs'),
+            nubiEmpty(context.tr('No questions found.')),
           );
         }
 
         if (_index >= questions.length) {
           return nubiPage(
-            'Quiz Results',
+            context.tr('Quiz Results'),
             Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -1127,13 +1128,13 @@ class _NubiQuizRunScreenState
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'Accuracy: ${(_correct * 100 / questions.length).round()}%',
+                    context.tr('Accuracy: {count}%', {'count': (_correct * 100 / questions.length).round()}),
                   ),
                   const SizedBox(height: 16),
                   FilledButton(
                     onPressed: () =>
                         Navigator.pop(context),
-                    child: const Text('Back to My Deck'),
+                    child: Text(context.tr('Back to My Deck')),
                   ),
                 ],
               ),
@@ -1149,12 +1150,12 @@ class _NubiQuizRunScreenState
             (question['options'] as List?) ?? [];
 
         return nubiPage(
-          'MCQs',
+          context.tr('MCQs'),
           ListView(
             padding: const EdgeInsets.all(18),
             children: [
               Text(
-                'Question ${_index + 1}/${questions.length}',
+                context.tr('Question {index}/{count}', {'index': _index + 1, 'count': questions.length}),
                 style: const TextStyle(
                   color: nubiBlue,
                 ),
@@ -1194,8 +1195,8 @@ class _NubiQuizRunScreenState
 
                 Text(
                   _feedback!['correct'] == true
-                      ? 'Correct!'
-                      : 'Incorrect',
+                      ? context.tr('Correct!')
+                      : context.tr('Incorrect'),
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                   ),
@@ -1209,7 +1210,7 @@ class _NubiQuizRunScreenState
                 ),
 
                 Text(
-                  'XP earned: ${_feedback!['earned'] ?? 0}',
+                  context.tr('XP earned: {xp}', {'xp': _feedback!['earned'] ?? 0}),
                 ),
 
                 const SizedBox(height: 16),
@@ -1223,8 +1224,8 @@ class _NubiQuizRunScreenState
                   },
                   child: Text(
                     _index + 1 == questions.length
-                        ? 'View Results'
-                        : 'Next Question',
+                        ? context.tr('View Results')
+                        : context.tr('Next Question'),
                   ),
                 ),
               ],
@@ -1300,7 +1301,7 @@ class _NubiFlashcardsRunScreenState
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return nubiPage(
-            'Flashcards',
+            context.tr('Flashcards'),
             const Center(
               child: CircularProgressIndicator(),
             ),
@@ -1313,7 +1314,7 @@ class _NubiFlashcardsRunScreenState
 
         if (_index >= cards.length) {
           return nubiPage(
-            'Flashcards',
+            context.tr('Flashcards'),
             Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -1324,13 +1325,12 @@ class _NubiFlashcardsRunScreenState
                     color: Color(0xFF10B981),
                   ),
                   const SizedBox(height: 12),
-                  const Text(
-                    'Review session complete!',
+                  Text(context.tr('Review session complete!'),
                   ),
                   FilledButton(
                     onPressed: () =>
                         Navigator.pop(context),
-                    child: const Text('Finish'),
+                    child: Text(context.tr('Finish')),
                   ),
                 ],
               ),
@@ -1343,13 +1343,13 @@ class _NubiFlashcardsRunScreenState
         );
 
         return nubiPage(
-          'Flashcards',
+          context.tr('Flashcards'),
           Column(
             children: [
               Padding(
                 padding: const EdgeInsets.all(14),
                 child: Text(
-                  'Card ${_index + 1}/${cards.length}',
+                  context.tr('Card {index}/{count}', {'index': _index + 1, 'count': cards.length}),
                 ),
               ),
 
@@ -1397,8 +1397,7 @@ class _NubiFlashcardsRunScreenState
               ),
 
               if (!_flipped)
-                const Text(
-                  'Tap the card to reveal the answer',
+                Text(context.tr('Tap the card to reveal the answer'),
                 ),
 
               if (_flipped)
@@ -1442,7 +1441,7 @@ class NubiProgressScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return nubiPage(
-      'My Progress',
+      context.tr('My Progress'),
       StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
         stream: NubiService.progress.snapshots(),
         builder: (context, snapshot) {
@@ -1458,29 +1457,28 @@ class NubiProgressScreen extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             children: [
               _progressTile(
-                'Lifetime NUBi XP',
+                context.tr('Lifetime NUBi XP'),
                 '${data['lifetime'] ?? 0}',
                 Icons.emoji_events_rounded,
               ),
               _progressTile(
-                'Today',
+                context.tr('Today'),
                 '${data['daily'] ?? 0}',
                 Icons.today_rounded,
               ),
               _progressTile(
-                'This Week',
+                context.tr('This Week'),
                 '${data['weekly'] ?? 0}',
                 Icons.calendar_view_week,
               ),
               _progressTile(
-                'This Month',
+                context.tr('This Month'),
                 '${data['monthly'] ?? 0}',
                 Icons.calendar_month,
               ),
               const SizedBox(height: 20),
-              const Text(
-                'XP is awarded by secure backend '
-                    'events, not directly by the app.',
+              Text(context.tr('XP is awarded by secure backend '
+                    'events, not directly by the app.'),
               ),
             ],
           );
@@ -1564,14 +1562,14 @@ class _NubiLeaderboardScreenState
             child: Column(
               children: [
                 SegmentedButton<String>(
-                  segments: const [
+                  segments: [
                     ButtonSegment(
                       value: 'My Faculty',
-                      label: Text('My Faculty'),
+                      label: Text(context.tr('My Faculty')),
                     ),
                     ButtonSegment(
                       value: 'University',
-                      label: Text('University'),
+                      label: Text(context.tr('University')),
                     ),
                   ],
                   selected: {_scope},
@@ -1594,7 +1592,7 @@ class _NubiLeaderboardScreenState
                     'All Time',
                   ].map((period) => DropdownMenuItem(
                     value: period,
-                    child: Text(period),
+                    child: Text(context.tr(period)),
                   )).toList(),
                   onChanged: (value) {
                     if (value != null) {
@@ -1614,8 +1612,8 @@ class _NubiLeaderboardScreenState
                       if (context.mounted) {
                         nubiMessage(
                           context,
-                          'Leaderboard visibility enabled. '
-                              'Faculty verification is required.',
+                          context.tr('Leaderboard visibility enabled. '
+                              'Faculty verification is required.'),
                         );
                       }
                     } catch (error) {
@@ -1624,8 +1622,7 @@ class _NubiLeaderboardScreenState
                       }
                     }
                   },
-                  child: const Text(
-                    'Opt in to public rankings',
+                  child: Text(context.tr('Opt in to public rankings'),
                   ),
                 ),
               ],
@@ -1656,8 +1653,8 @@ class _NubiLeaderboardScreenState
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
                   return nubiEmpty(
-                    'Could not load rankings. '
-                        'Check Firebase permissions.',
+                    context.tr('Could not load rankings. '
+                        'Check Firebase permissions.'),
                   );
                 }
 
@@ -1683,7 +1680,7 @@ class _NubiLeaderboardScreenState
 
                 if (docs.isEmpty) {
                   return nubiEmpty(
-                    'No verified rankings yet.',
+                    context.tr('No verified rankings yet.'),
                   );
                 }
 
@@ -1711,10 +1708,9 @@ class _NubiLeaderboardScreenState
                         isMe: rest[i].id == me,
                       ),
                     if (podium.any((doc) => doc.id == me))
-                      const Padding(
+                      Padding(
                         padding: EdgeInsets.only(top: 6),
-                        child: Text(
-                          'You are on the podium! Keep it up 🎉',
+                        child: Text(context.tr('You are on the podium! Keep it up 🎉'),
                           textAlign: TextAlign.center,
                           style: TextStyle(fontWeight: FontWeight.w800),
                         ),
@@ -1817,7 +1813,7 @@ _RankTier _rankTierFor(int rank) {
 }
 
 String _studentName(Map<String, dynamic> student) =>
-    (student['displayName'] ?? 'Student').toString();
+    (student['displayName'] ?? NubifyText.tr('Student')).toString();
 
 // ===========================================
 // PODIUM FOR THE TOP THREE
@@ -1895,7 +1891,7 @@ class _RankPodium extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4),
                   child: Text(
-                    tier.title,
+                    context.tr(tier.title),
                     maxLines: 2,
                     textAlign: TextAlign.center,
                     style: const TextStyle(

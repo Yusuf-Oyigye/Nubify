@@ -515,7 +515,7 @@ class _HiddenPostLoader
 
             child:
             Text(
-              'Unable to display hidden post:\n$error',
+              context.tr('Unable to display hidden post:\n{error}', {'error': error}),
             ),
           );
         }

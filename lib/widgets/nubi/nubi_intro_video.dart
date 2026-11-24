@@ -6,6 +6,7 @@ import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 import '../../services/common/media_route_observer.dart';
+import '../../l10n/nubify_text.dart';
 
 class NubiIntroVideo extends StatefulWidget {
   const NubiIntroVideo({super.key});
@@ -178,8 +179,8 @@ class _NubiIntroVideoState extends State<NubiIntroVideo>
                     color: const Color(0xFF12243B),
                     child: Text(
                       _failed
-                          ? 'Cannot load NUBi animation'
-                          : 'Add the original NUBi assets',
+                          ? context.tr('Cannot load NUBi animation')
+                          : context.tr('Add the original NUBi assets'),
                       style: const TextStyle(
                         color: Colors.white,
                       ),

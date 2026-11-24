@@ -9,6 +9,7 @@ import '../../widgets/huddles/huddle_mini_bar.dart';
 import '../../widgets/huddles/huddle_ui.dart';
 import 'create_huddle_screen.dart';
 import 'huddle_launcher.dart';
+import '../../l10n/nubify_text.dart';
 
 //===================================================
 // NUB HUDDLES — HOME (live now)
@@ -95,8 +96,7 @@ class _HuddlesScreenState extends State<HuddlesScreen> {
                       children: [
                         const HuddleLivePill(),
                         const SizedBox(width: 8),
-                        Text(
-                          'Live now',
+                        Text(context.tr('Live now'),
                           style: TextStyle(
                             color: colors.onSurface,
                             fontSize: 18,
@@ -108,12 +108,12 @@ class _HuddlesScreenState extends State<HuddlesScreen> {
                   ),
                 ),
                 if (snapshot.hasError)
-                  const SliverFillRemaining(
+                  SliverFillRemaining(
                     hasScrollBody: false,
                     child: _Empty(
                       icon: Icons.cloud_off_rounded,
-                      title: 'Could not load Huddles',
-                      text: 'Check your connection and try again.',
+                      title: context.tr('Could not load Huddles'),
+                      text: context.tr('Check your connection and try again.'),
                     ),
                   )
                 else if (!snapshot.hasData)
@@ -122,13 +122,13 @@ class _HuddlesScreenState extends State<HuddlesScreen> {
                     child: Center(child: CircularProgressIndicator()),
                   )
                 else if (huddles.isEmpty)
-                    const SliverFillRemaining(
+                    SliverFillRemaining(
                       hasScrollBody: false,
                       child: _Empty(
                         icon: Icons.graphic_eq_rounded,
-                        title: 'No live Huddles right now',
+                        title: context.tr('No live Huddles right now'),
                         text:
-                        'Start one for a study session, a club meeting or just to hang out.',
+                        context.tr('Start one for a study session, a club meeting or just to hang out.'),
                       ),
                     )
                   else
@@ -174,20 +174,19 @@ class _HuddlesScreenState extends State<HuddlesScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 IconButton(
-                  tooltip: 'Back',
+                  tooltip: context.tr('Back'),
                   onPressed: () => Navigator.of(context).maybePop(),
                   icon: const Icon(
                     Icons.arrow_back_rounded,
                     color: Colors.white,
                   ),
                 ),
-                const Padding(
+                Padding(
                   padding: EdgeInsets.only(left: 12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'NUB Huddles',
+                      Text(context.tr('NUB Huddles'),
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 26,
@@ -195,8 +194,7 @@ class _HuddlesScreenState extends State<HuddlesScreen> {
                         ),
                       ),
                       SizedBox(height: 6),
-                      Text(
-                        'Talk, listen, present and learn together, live.',
+                      Text(context.tr('Talk, listen, present and learn together, live.'),
                         style: TextStyle(color: Colors.white70, fontSize: 14.5),
                       ),
                     ],
@@ -218,8 +216,7 @@ class _HuddlesScreenState extends State<HuddlesScreen> {
                       ),
                     ),
                     icon: const Icon(Icons.add_rounded),
-                    label: const Text(
-                      'Start a Huddle',
+                    label: Text(context.tr('Start a Huddle'),
                       style: TextStyle(
                         fontSize: 15.5,
                         fontWeight: FontWeight.w800,
@@ -281,7 +278,7 @@ class HuddleCard extends StatelessWidget {
                     const SizedBox(width: 8),
                     Flexible(
                       child: Text(
-                        '#${huddle.topic}',
+                        '#${context.tr(huddle.topic)}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -338,8 +335,15 @@ class HuddleCard extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               Text(
-                '🎙️ ${huddle.listenerCount} listening · ${huddle.speakerCount} '
-                    '${huddle.speakerCount == 1 ? 'speaker' : 'speakers'}',
+                context.tr(
+                  huddle.speakerCount == 1
+                      ? '🎙️ {listeners} listening · {speakers} speaker'
+                      : '🎙️ {listeners} listening · {speakers} speakers',
+                  {
+                    'listeners': huddle.listenerCount,
+                    'speakers': huddle.speakerCount,
+                  },
+                ),
                 style: TextStyle(color: colors.onSurfaceVariant, fontSize: 13),
               ),
             ],

@@ -277,7 +277,9 @@ class _CommentsScreenState extends State<CommentsScreen> {
           final String target = (replyToUsername ?? '').trim();
 
           _showMessage(
-            target.isEmpty ? 'You posted a reply.' : 'You replied to @$target.',
+            target.isEmpty
+                ? context.tr('You posted a reply.')
+                : context.tr('You replied to @{name}.', {'name': target}),
           );
         }
       } else {
@@ -296,7 +298,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
         return;
       }
 
-      _showMessage('Could not send: $error');
+      _showMessage(context.tr('Could not send: {error}', {'error': error}));
     }
   }
 
@@ -405,7 +407,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
       _commentFocusNode.requestFocus();
     } catch (error) {
       if (mounted) {
-        _showMessage('Could not select picture: $error');
+        _showMessage(context.tr('Could not select picture: {error}', {'error': error}));
       }
     }
   }
@@ -894,7 +896,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
         ? fullName
         : username.isNotEmpty
         ? username
-        : 'Nubify User';
+        : context.tr('Nubify User');
 
     final bool isOwner =
         _auth.currentUser != null &&
@@ -1343,7 +1345,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
                 children: <Widget>[
                   Expanded(
                     child: Text(
-                      'Replying to @$_replyingToUsername',
+                      context.tr('Replying to @{replyingToUsername}', {'replyingToUsername': _replyingToUsername ?? ''}),
                       style: TextStyle(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                         fontSize: 13,
@@ -1447,8 +1449,8 @@ class _CommentsScreenState extends State<CommentsScreen> {
                       textInputAction: TextInputAction.newline,
                       decoration: InputDecoration(
                         hintText: _replyingToCommentId != null
-                            ? 'Write a reply...'
-                            : 'Write a comment...',
+                            ? context.tr('Write a reply...')
+                            : context.tr('Write a comment...'),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(24),
                         ),
@@ -1471,8 +1473,8 @@ class _CommentsScreenState extends State<CommentsScreen> {
 
                   IconButton(
                     tooltip: _replyingToCommentId != null
-                        ? 'Send reply'
-                        : 'Send comment',
+                        ? context.tr('Send reply')
+                        : context.tr('Send comment'),
                     onPressed: _isSending ? null : _sendComment,
                     icon: _isSending
                         ? const SizedBox(
@@ -2705,7 +2707,7 @@ class _RepliesSectionState extends State<_RepliesSection> {
         ? fullName
         : username.isNotEmpty
         ? username
-        : 'Nubify User';
+        : context.tr('Nubify User');
 
     final bool isOwner =
         _auth.currentUser != null &&
@@ -2858,7 +2860,7 @@ class _RepliesSectionState extends State<_RepliesSection> {
                             padding: const EdgeInsets.only(bottom: 2),
 
                             child: Text(
-                              'Replying to @$replyToUsername',
+                              context.tr('Replying to @{replyToUsername}', {'replyToUsername': replyToUsername}),
 
                               style: const TextStyle(
                                 color: Color(0xFF29B6F6),
@@ -2991,8 +2993,13 @@ class _RepliesSectionState extends State<_RepliesSection> {
 
                               child: Text(
                                 _expandedReplyIds.contains(replyId)
-                                    ? 'Hide replies'
-                                    : 'View $childCount ${childCount == 1 ? 'reply' : 'replies'}',
+                                    ? context.tr('Hide replies')
+                                    : context.tr(
+                                        childCount == 1
+                                            ? 'View {count} reply'
+                                            : 'View {count} replies',
+                                        {'count': childCount},
+                                      ),
 
                                 style: const TextStyle(
                                   color: Color(0xFF29B6F6),

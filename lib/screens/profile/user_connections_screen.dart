@@ -7,6 +7,7 @@ import '../../utils/profile/username_rules.dart';
 
 import '../../services/profile/profile_service.dart';
 import 'profile_screen.dart';
+import '../../l10n/nubify_text.dart';
 
 //===================================================
 // FOLLOWERS / FOLLOWING
@@ -29,14 +30,13 @@ class UserConnectionsScreen extends StatelessWidget {
       initialIndex: initialIndex.clamp(0, 1),
       child: Scaffold(
         appBar: AppBar(
-          title: const Text(
-            'Connections',
+          title: Text(context.tr('Connections'),
             style: TextStyle(fontWeight: FontWeight.w800),
           ),
-          bottom: const TabBar(
+          bottom: TabBar(
             tabs: <Widget>[
-              Tab(text: 'Followers'),
-              Tab(text: 'Following'),
+              Tab(text: context.tr('Followers')),
+              Tab(text: context.tr('Following')),
             ],
           ),
         ),
@@ -92,7 +92,7 @@ class _ConnectionListState extends State<_ConnectionList> {
 
         if (profileSnapshot.hasError) {
           return _ConnectionsErrorState(
-            message: 'Could not load this profile\'s connections.',
+            message: context.tr('Could not load this profile\'s connections.'),
             onRetry: () => setState(() {}),
           );
         }
@@ -126,7 +126,7 @@ class _ConnectionListState extends State<_ConnectionList> {
 
             if (usersSnapshot.hasError) {
               return _ConnectionsErrorState(
-                message: 'Could not load users right now.',
+                message: context.tr('Could not load users right now.'),
                 onRetry: () => setState(() {}),
               );
             }
@@ -166,8 +166,8 @@ class _ConnectionListState extends State<_ConnectionList> {
             controller: _searchController,
             decoration: InputDecoration(
               hintText: widget.field == 'followers'
-                  ? 'Search followers'
-                  : 'Search following',
+                  ? context.tr('Search followers')
+                  : context.tr('Search following'),
               prefixIcon: const Icon(Icons.search_rounded),
               suffixIcon: _query.isEmpty
                   ? null
@@ -255,8 +255,7 @@ class _UserDirectoryScreenState extends State<UserDirectoryScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Discover',
+        title: Text(context.tr('Discover'),
           style: TextStyle(fontWeight: FontWeight.w800),
         ),
       ),
@@ -283,7 +282,7 @@ class _UserDirectoryScreenState extends State<UserDirectoryScreen> {
 
               if (snapshot.hasError) {
                 return _ConnectionsErrorState(
-                  message: 'Could not load people right now.',
+                  message: context.tr('Could not load people right now.'),
                   onRetry: () => setState(() {}),
                 );
               }
@@ -310,8 +309,7 @@ class _UserDirectoryScreenState extends State<UserDirectoryScreen> {
                 children: <Widget>[
                   Padding(
                     padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
-                    child: Text(
-                      'Find friend and connect',
+                    child: Text(context.tr('Find friend and connect'),
                       style: TextStyle(
                         color: colors.onSurface,
                         fontSize: 28,
@@ -326,7 +324,7 @@ class _UserDirectoryScreenState extends State<UserDirectoryScreen> {
                       controller: _searchController,
                       textInputAction: TextInputAction.search,
                       decoration: InputDecoration(
-                        hintText: 'Search people',
+                        hintText: context.tr('Search people'),
                         prefixIcon: const Icon(Icons.search_rounded),
                         suffixIcon: _query.isEmpty
                             ? null
@@ -450,13 +448,13 @@ class _DirectoryViewSwitcher extends StatelessWidget {
         children: <Widget>[
           _DirectoryViewButton(
             icon: Icons.view_list_rounded,
-            tooltip: 'List view',
+            tooltip: context.tr('List view'),
             selected: !showGrid,
             onTap: () => onChanged(false),
           ),
           _DirectoryViewButton(
             icon: Icons.grid_view_rounded,
-            tooltip: 'Grid view',
+            tooltip: context.tr('Grid view'),
             selected: showGrid,
             onTap: () => onChanged(true),
           ),
@@ -547,8 +545,8 @@ class _DirectoryUserCardState extends State<_DirectoryUserCard> {
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Could not update this follow right now.'),
+          SnackBar(
+            content: Text(context.tr('Could not update this follow right now.')),
           ),
         );
       }
@@ -602,7 +600,7 @@ class _DirectoryUserCardState extends State<_DirectoryUserCard> {
                 ],
                 Flexible(
                   child: Text(
-                    widget.isFollowing ? 'Following' : 'Follow',
+                    widget.isFollowing ? context.tr('Following') : context.tr('Follow'),
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       fontSize: 14.5,
@@ -653,7 +651,7 @@ class _DirectoryUserCardState extends State<_DirectoryUserCard> {
                       const SizedBox(height: 5),
                       Text(
                         widget.user.username.isEmpty
-                            ? 'View profile'
+                            ? context.tr('View profile')
                             : '@${widget.user.username}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -709,7 +707,7 @@ class _DirectoryUserCardState extends State<_DirectoryUserCard> {
               const SizedBox(height: 5),
               Text(
                 widget.user.username.isEmpty
-                    ? 'View profile'
+                    ? context.tr('View profile')
                     : '@${widget.user.username}',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -802,7 +800,7 @@ class _ConnectionUser {
           ? fullName
           : username.isNotEmpty
           ? username
-          : 'Nubify user',
+          : NubifyText.tr('Nubify user'),
       username: username,
       photoUrl: (data['photoUrl'] ?? '').toString().trim(),
     );
@@ -872,12 +870,12 @@ class _ConnectionsEmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final String title = searching
-        ? 'No matching users'
+        ? context.tr('No matching users')
         : directory
-        ? 'No users available yet'
+        ? context.tr('No users available yet')
         : followers
-        ? 'No followers yet'
-        : 'Not following anyone yet';
+        ? context.tr('No followers yet')
+        : context.tr('Not following anyone yet');
 
     return Center(
       child: Padding(
@@ -932,7 +930,7 @@ class _ConnectionsErrorState extends StatelessWidget {
             FilledButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Try again'),
+              label: Text(context.tr('Try again')),
             ),
           ],
         ),

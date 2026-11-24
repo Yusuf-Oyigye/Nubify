@@ -4,6 +4,7 @@ import '../../utils/profile/username_rules.dart';
 
 import '../../services/stories/story_service.dart';
 import '../../utils/common/nubify_time.dart';
+import '../../l10n/nubify_text.dart';
 
 class StoryViewersScreen
     extends StatelessWidget {
@@ -34,8 +35,7 @@ class StoryViewersScreen
       appBar:
       AppBar(
         title:
-        const Text(
-          'Story Viewers',
+        Text(context.tr('Story Viewers'),
 
           style:
           TextStyle(
@@ -94,10 +94,9 @@ class StoryViewersScreen
                           dynamic>>>[];
 
           if (docs.isEmpty) {
-            return const Center(
+            return Center(
               child:
-              Text(
-                'No views yet.',
+              Text(context.tr('No views yet.'),
               ),
             );
           }
@@ -224,7 +223,7 @@ class StoryViewersScreen
                           .trim()
                           .isNotEmpty
                           ? UsernameRules.at(username)
-                          : 'Nubify user',
+                          : context.tr('Nubify user'),
                     ),
 
                     subtitle:

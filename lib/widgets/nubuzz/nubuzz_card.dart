@@ -19,6 +19,7 @@ import '../../utils/common/nubify_time.dart';
 import '../../screens/chat/chat_forward_screen.dart';
 import '../links/universal_link_text.dart';
 import '../common/translatable_text.dart';
+import '../../l10n/nubify_text.dart';
 
 //===================================================
 // NUBUZZ CARD
@@ -499,7 +500,7 @@ class _NubuzzCardState extends State<NubuzzCard>
     final User? user = _auth.currentUser;
 
     if (user == null) {
-      _showMessage('Please log in to like this post.');
+      _showMessage(context.tr('Please log in to like this post.'));
 
       return;
     }
@@ -545,7 +546,7 @@ class _NubuzzCardState extends State<NubuzzCard>
               _likeCount = oldCount;
             });
 
-            _showMessage('Unable to update like.');
+            _showMessage(context.tr('Unable to update like.'));
           })
           .whenComplete(() {
             _likeActionLocked = false;
@@ -678,7 +679,7 @@ class _NubuzzCardState extends State<NubuzzCard>
                   color: _isReposted ? const Color(0xFF29B6F6) : null,
                 ),
 
-                title: const Text('Repost'),
+                title: Text(context.tr('Repost')),
 
                 trailing: _isReposted
                     ? const Icon(Icons.check_rounded, color: Color(0xFF29B6F6))
@@ -688,7 +689,7 @@ class _NubuzzCardState extends State<NubuzzCard>
                   Navigator.pop(sheetContext);
 
                   if (_isReposted) {
-                    _showMessage('You already reposted this NUBuzz.');
+                    _showMessage(context.tr('You already reposted this NUBuzz.'));
 
                     return;
                   }
@@ -714,7 +715,7 @@ class _NubuzzCardState extends State<NubuzzCard>
     final User? user = _auth.currentUser;
 
     if (user == null) {
-      _showMessage('Please log in to repost.');
+      _showMessage(context.tr('Please log in to repost.'));
 
       return;
     }
@@ -725,13 +726,13 @@ class _NubuzzCardState extends State<NubuzzCard>
       await _reloadCounts();
 
       if (mounted) {
-        _showMessage('Reposted.');
+        _showMessage(context.tr('Reposted.'));
       }
     } catch (error) {
       debugPrint('NUBuzz repost error: $error');
 
       if (mounted) {
-        _showMessage('Unable to repost.');
+        _showMessage(context.tr('Unable to repost.'));
       }
     }
   }
@@ -745,7 +746,7 @@ class _NubuzzCardState extends State<NubuzzCard>
     final User? user = _auth.currentUser;
 
     if (user == null) {
-      _showMessage('Please log in to repost.');
+      _showMessage(context.tr('Please log in to repost.'));
 
       return;
     }
@@ -756,7 +757,7 @@ class _NubuzzCardState extends State<NubuzzCard>
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: const Text('Quote Repost'),
+          title: Text(context.tr('Quote Repost')),
           content: TextField(
             autofocus: true,
             maxLines: 5,
@@ -764,8 +765,8 @@ class _NubuzzCardState extends State<NubuzzCard>
             onChanged: (String value) {
               text = value;
             },
-            decoration: const InputDecoration(
-              hintText: 'Add your message...',
+            decoration: InputDecoration(
+              hintText: context.tr('Add your message...'),
               border: OutlineInputBorder(),
             ),
           ),
@@ -774,14 +775,14 @@ class _NubuzzCardState extends State<NubuzzCard>
               onPressed: () {
                 Navigator.pop(dialogContext);
               },
-              child: const Text('Cancel'),
+              child: Text(context.tr('Cancel')),
             ),
 
             FilledButton(
               onPressed: () {
                 Navigator.pop(dialogContext, text.trim());
               },
-              child: const Text('Repost'),
+              child: Text(context.tr('Repost')),
             ),
           ],
         );
@@ -801,13 +802,13 @@ class _NubuzzCardState extends State<NubuzzCard>
       await _reloadCounts();
 
       if (mounted) {
-        _showMessage('Quote reposted.');
+        _showMessage(context.tr('Quote reposted.'));
       }
     } catch (error) {
       debugPrint('NUBuzz quote repost error: $error');
 
       if (mounted) {
-        _showMessage('Unable to quote repost.');
+        _showMessage(context.tr('Unable to quote repost.'));
       }
     }
   }
@@ -826,7 +827,7 @@ class _NubuzzCardState extends State<NubuzzCard>
     await Clipboard.setData(ClipboardData(text: _postLink));
 
     if (mounted) {
-      _showMessage('Post link copied.');
+      _showMessage(context.tr('Post link copied.'));
     }
   }
 
@@ -838,7 +839,7 @@ class _NubuzzCardState extends State<NubuzzCard>
     final User? user = _auth.currentUser;
 
     if (user == null) {
-      _showMessage('Please log in to share this NUBuzz to your Story.');
+      _showMessage(context.tr('Please log in to share this NUBuzz to your Story.'));
 
       return;
     }
@@ -869,7 +870,7 @@ class _NubuzzCardState extends State<NubuzzCard>
 
     await _reloadCounts();
 
-    _showMessage('Added to your Story.');
+    _showMessage(NubifyText.tr('Added to your Story.'));
   }
 
   //===================================================
@@ -880,7 +881,7 @@ class _NubuzzCardState extends State<NubuzzCard>
   Future<void> _sharePost() async {
     final String shareText = <String>[
       if (_caption.trim().isNotEmpty) _caption.trim(),
-      'View this post by @${widget.video.username}:',
+      context.tr('View this post by @{username}:', {'username': widget.video.username}),
       _postLink,
     ].join('\n\n');
 
@@ -888,8 +889,8 @@ class _NubuzzCardState extends State<NubuzzCard>
       await SharePlus.instance.share(
         ShareParams(
           text: shareText,
-          title: 'Share post',
-          subject: 'Post from Nubify',
+          title: context.tr('Share post'),
+          subject: context.tr('Post from Nubify'),
         ),
       );
 
@@ -908,7 +909,7 @@ class _NubuzzCardState extends State<NubuzzCard>
       debugPrint('NUBuzz share error: $error');
 
       if (mounted) {
-        _showMessage('Unable to share this post.');
+        _showMessage(context.tr('Unable to share this post.'));
       }
     }
   }
@@ -951,7 +952,7 @@ class _NubuzzCardState extends State<NubuzzCard>
       });
     }
 
-    _showMessage('Sent to chat.');
+    _showMessage(NubifyText.tr('Sent to chat.'));
   }
   //===================================================
   // SHARE OPTIONS
@@ -971,8 +972,7 @@ class _NubuzzCardState extends State<NubuzzCard>
             children: <Widget>[
               const SizedBox(height: 6),
 
-              const Text(
-                'Share',
+              Text(context.tr('Share'),
 
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
@@ -985,7 +985,7 @@ class _NubuzzCardState extends State<NubuzzCard>
               ListTile(
                 leading: const Icon(Icons.add_to_photos_outlined),
 
-                title: const Text('Share to Story'),
+                title: Text(context.tr('Share to Story')),
 
                 onTap: () async {
                   Navigator.pop(sheetContext);
@@ -1000,7 +1000,7 @@ class _NubuzzCardState extends State<NubuzzCard>
               ListTile(
                 leading: const Icon(Icons.send_outlined),
 
-                title: const Text('Send to Chat'),
+                title: Text(context.tr('Send to Chat')),
 
                 onTap: () {
                   Navigator.pop(sheetContext);
@@ -1055,7 +1055,7 @@ class _NubuzzCardState extends State<NubuzzCard>
     final User? user = _auth.currentUser;
 
     if (user == null) {
-      _showMessage('Please log in to save posts.');
+      _showMessage(context.tr('Please log in to save posts.'));
 
       return;
     }
@@ -1078,7 +1078,7 @@ class _NubuzzCardState extends State<NubuzzCard>
           _isSaved = false;
         });
 
-        _showMessage('Post unsaved.');
+        _showMessage(context.tr('Post unsaved.'));
       } else {
         await ref.set(<String, dynamic>{
           'postId': widget.video.postId,
@@ -1093,13 +1093,13 @@ class _NubuzzCardState extends State<NubuzzCard>
           _isSaved = true;
         });
 
-        _showMessage('Post saved.');
+        _showMessage(context.tr('Post saved.'));
       }
     } catch (error) {
       debugPrint('NUBuzz save error: $error');
 
       if (mounted) {
-        _showMessage('Unable to update saved post.');
+        _showMessage(context.tr('Unable to update saved post.'));
       }
     }
   }
@@ -1112,7 +1112,7 @@ class _NubuzzCardState extends State<NubuzzCard>
     final User? user = _auth.currentUser;
 
     if (user == null) {
-      _showMessage('Please log in first.');
+      _showMessage(context.tr('Please log in first.'));
 
       return;
     }
@@ -1134,12 +1134,12 @@ class _NubuzzCardState extends State<NubuzzCard>
 
       widget.onRemoved?.call();
 
-      _showMessage('Post hidden.');
+      _showMessage(context.tr('Post hidden.'));
     } catch (error) {
       debugPrint('NUBuzz hide error: $error');
 
       if (mounted) {
-        _showMessage('Unable to hide post.');
+        _showMessage(context.tr('Unable to hide post.'));
       }
     }
   }
@@ -1152,13 +1152,13 @@ class _NubuzzCardState extends State<NubuzzCard>
     final User? user = _auth.currentUser;
 
     if (user == null) {
-      _showMessage('Please log in to report a post.');
+      _showMessage(context.tr('Please log in to report a post.'));
 
       return;
     }
 
     if (user.uid == widget.video.uid) {
-      _showMessage('You cannot report your own post.');
+      _showMessage(context.tr('You cannot report your own post.'));
 
       return;
     }
@@ -1178,7 +1178,7 @@ class _NubuzzCardState extends State<NubuzzCard>
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: const Text('Report Post'),
+          title: Text(context.tr('Report Post')),
           content: SizedBox(
             width: double.maxFinite,
             child: ListView.separated(
@@ -1187,7 +1187,7 @@ class _NubuzzCardState extends State<NubuzzCard>
               separatorBuilder: (_, _) => const Divider(height: 1),
               itemBuilder: (BuildContext context, int index) {
                 return ListTile(
-                  title: Text(reasons[index]),
+                  title: Text(context.tr(reasons[index])),
                   onTap: () {
                     Navigator.pop(dialogContext, reasons[index]);
                   },
@@ -1218,12 +1218,12 @@ class _NubuzzCardState extends State<NubuzzCard>
         return;
       }
 
-      _showMessage('Report submitted. Thank you.');
+      _showMessage(context.tr('Report submitted. Thank you.'));
     } catch (error) {
       debugPrint('NUBuzz report error: $error');
 
       if (mounted) {
-        _showMessage('Unable to submit report.');
+        _showMessage(context.tr('Unable to submit report.'));
       }
     }
   }
@@ -1236,13 +1236,13 @@ class _NubuzzCardState extends State<NubuzzCard>
     final User? user = _auth.currentUser;
 
     if (user == null) {
-      _showMessage('Please log in first.');
+      _showMessage(context.tr('Please log in first.'));
 
       return;
     }
 
     if (user.uid == widget.video.uid) {
-      _showMessage('You cannot block yourself.');
+      _showMessage(context.tr('You cannot block yourself.'));
 
       return;
     }
@@ -1251,16 +1251,16 @@ class _NubuzzCardState extends State<NubuzzCard>
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: const Text('Block User?'),
+          title: Text(context.tr('Block User?')),
           content: Text(
-            'You will no longer see posts from @${widget.video.username}.',
+            context.tr('You will no longer see posts from @{username}.', {'username': widget.video.username}),
           ),
           actions: <Widget>[
             TextButton(
               onPressed: () {
                 Navigator.pop(dialogContext, false);
               },
-              child: const Text('Cancel'),
+              child: Text(context.tr('Cancel')),
             ),
 
             FilledButton(
@@ -1268,7 +1268,7 @@ class _NubuzzCardState extends State<NubuzzCard>
               onPressed: () {
                 Navigator.pop(dialogContext, true);
               },
-              child: const Text('Block'),
+              child: Text(context.tr('Block')),
             ),
           ],
         );
@@ -1296,12 +1296,12 @@ class _NubuzzCardState extends State<NubuzzCard>
 
       widget.onRemoved?.call();
 
-      _showMessage('User blocked.');
+      _showMessage(context.tr('User blocked.'));
     } catch (error) {
       debugPrint('NUBuzz block error: $error');
 
       if (mounted) {
-        _showMessage('Unable to block user.');
+        _showMessage(context.tr('Unable to block user.'));
       }
     }
   }
@@ -1314,7 +1314,7 @@ class _NubuzzCardState extends State<NubuzzCard>
     final User? user = _auth.currentUser;
 
     if (user == null || user.uid != widget.video.uid) {
-      _showMessage('Only the owner can edit this post.');
+      _showMessage(context.tr('Only the owner can edit this post.'));
 
       return;
     }
@@ -1325,7 +1325,7 @@ class _NubuzzCardState extends State<NubuzzCard>
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: const Text('Edit Post'),
+          title: Text(context.tr('Edit Post')),
           content: TextFormField(
             initialValue: _caption,
             maxLines: 6,
@@ -1334,8 +1334,8 @@ class _NubuzzCardState extends State<NubuzzCard>
             onChanged: (String value) {
               editedCaption = value;
             },
-            decoration: const InputDecoration(
-              hintText: 'Write a caption...',
+            decoration: InputDecoration(
+              hintText: context.tr('Write a caption...'),
               border: OutlineInputBorder(),
             ),
           ),
@@ -1344,14 +1344,14 @@ class _NubuzzCardState extends State<NubuzzCard>
               onPressed: () {
                 Navigator.pop(dialogContext);
               },
-              child: const Text('Cancel'),
+              child: Text(context.tr('Cancel')),
             ),
 
             FilledButton(
               onPressed: () {
                 Navigator.pop(dialogContext, editedCaption.trim());
               },
-              child: const Text('Save'),
+              child: Text(context.tr('Save')),
             ),
           ],
         );
@@ -1380,12 +1380,12 @@ class _NubuzzCardState extends State<NubuzzCard>
         _caption = newCaption;
       });
 
-      _showMessage('Post updated.');
+      _showMessage(context.tr('Post updated.'));
     } catch (error) {
       debugPrint('NUBuzz edit error: $error');
 
       if (mounted) {
-        _showMessage('Unable to edit this post.');
+        _showMessage(context.tr('Unable to edit this post.'));
       }
     }
   }
@@ -1398,7 +1398,7 @@ class _NubuzzCardState extends State<NubuzzCard>
     final User? user = _auth.currentUser;
 
     if (user == null || user.uid != widget.video.uid) {
-      _showMessage('Only the owner can delete this post.');
+      _showMessage(context.tr('Only the owner can delete this post.'));
 
       return;
     }
@@ -1407,16 +1407,15 @@ class _NubuzzCardState extends State<NubuzzCard>
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: const Text('Delete Post?'),
-          content: const Text(
-            'This post will be permanently deleted. This action cannot be undone.',
+          title: Text(context.tr('Delete Post?')),
+          content: Text(context.tr('This post will be permanently deleted. This action cannot be undone.'),
           ),
           actions: <Widget>[
             TextButton(
               onPressed: () {
                 Navigator.pop(dialogContext, false);
               },
-              child: const Text('Cancel'),
+              child: Text(context.tr('Cancel')),
             ),
 
             FilledButton(
@@ -1424,7 +1423,7 @@ class _NubuzzCardState extends State<NubuzzCard>
               onPressed: () {
                 Navigator.pop(dialogContext, true);
               },
-              child: const Text('Delete'),
+              child: Text(context.tr('Delete')),
             ),
           ],
         );
@@ -1444,12 +1443,12 @@ class _NubuzzCardState extends State<NubuzzCard>
 
       widget.onRemoved?.call();
 
-      _showMessage('Post deleted.');
+      _showMessage(context.tr('Post deleted.'));
     } catch (error) {
       debugPrint('NUBuzz delete error: $error');
 
       if (mounted) {
-        _showMessage('Unable to delete this post.');
+        _showMessage(context.tr('Unable to delete this post.'));
       }
     }
   }
@@ -1492,7 +1491,7 @@ class _NubuzzCardState extends State<NubuzzCard>
 
                     color: _isSaved ? const Color(0xFF29B6F6) : null,
                   ),
-                  title: Text(_isSaved ? 'Unsave Post' : 'Save Post'),
+                  title: Text(_isSaved ? context.tr('Unsave Post') : context.tr('Save Post')),
                   onTap: () {
                     closeThen(_toggleSave);
                   },
@@ -1500,7 +1499,7 @@ class _NubuzzCardState extends State<NubuzzCard>
 
                 ListTile(
                   leading: const Icon(Icons.share_outlined),
-                  title: const Text('Share'),
+                  title: Text(context.tr('Share')),
                   onTap: () {
                     closeThen(() async {
                       _showShareOptions();
@@ -1510,7 +1509,7 @@ class _NubuzzCardState extends State<NubuzzCard>
 
                 ListTile(
                   leading: const Icon(Icons.link),
-                  title: const Text('Copy Link'),
+                  title: Text(context.tr('Copy Link')),
                   onTap: () {
                     closeThen(_copyPostLink);
                   },
@@ -1518,7 +1517,7 @@ class _NubuzzCardState extends State<NubuzzCard>
 
                 ListTile(
                   leading: const Icon(Icons.visibility_off_outlined),
-                  title: const Text('Hide Post'),
+                  title: Text(context.tr('Hide Post')),
                   onTap: () {
                     closeThen(_hidePost);
                   },
@@ -1527,7 +1526,7 @@ class _NubuzzCardState extends State<NubuzzCard>
                 if (!isOwner)
                   ListTile(
                     leading: const Icon(Icons.flag_outlined),
-                    title: const Text('Report'),
+                    title: Text(context.tr('Report')),
                     onTap: () {
                       closeThen(_reportPost);
                     },
@@ -1536,7 +1535,7 @@ class _NubuzzCardState extends State<NubuzzCard>
                 if (!isOwner)
                   ListTile(
                     leading: const Icon(Icons.block_outlined),
-                    title: const Text('Block User'),
+                    title: Text(context.tr('Block User')),
                     onTap: () {
                       closeThen(_blockUser);
                     },
@@ -1547,7 +1546,7 @@ class _NubuzzCardState extends State<NubuzzCard>
 
                   ListTile(
                     leading: const Icon(Icons.edit_outlined),
-                    title: const Text('Edit Post'),
+                    title: Text(context.tr('Edit Post')),
                     onTap: () {
                       closeThen(_editPost);
                     },
@@ -1558,8 +1557,7 @@ class _NubuzzCardState extends State<NubuzzCard>
                       Icons.delete_outline,
                       color: Colors.red,
                     ),
-                    title: const Text(
-                      'Delete Post',
+                    title: Text(context.tr('Delete Post'),
                       style: TextStyle(color: Colors.red),
                     ),
                     onTap: () {
@@ -1769,14 +1767,13 @@ class _NubuzzCardState extends State<NubuzzCard>
 
             const SizedBox(height: 12),
 
-            const Text(
-              'Unable to play this video',
+            Text(context.tr('Unable to play this video'),
               style: TextStyle(color: Colors.white),
             ),
 
             const SizedBox(height: 14),
 
-            ElevatedButton(onPressed: _retryVideo, child: const Text('Retry')),
+            ElevatedButton(onPressed: _retryVideo, child: Text(context.tr('Retry'))),
           ],
         ),
       );

@@ -4,6 +4,7 @@ import '../../models/huddles/huddle.dart';
 import '../../services/huddles/huddle_service.dart';
 import '../../widgets/huddles/huddle_ui.dart';
 import '../../widgets/profile/report_user_dialog.dart';
+import '../../l10n/nubify_text.dart';
 
 //===================================================
 // NUB HUDDLES — PEOPLE PANEL
@@ -62,7 +63,7 @@ class HuddlePeopleSheet extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
           children: [
             Text(
-              'People · ${people.length}',
+              context.tr('People · {count}', {'count': people.length}),
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 18,
@@ -70,7 +71,7 @@ class HuddlePeopleSheet extends StatelessWidget {
               ),
             ),
             if (myRole.canManage && requests.isNotEmpty) ...[
-              const _Header('Requests to speak'),
+              _Header(context.tr('Requests to speak')),
               for (final HuddleParticipant person in requests)
                 _RequestRow(huddleId: huddle.id, person: person),
             ],
@@ -78,7 +79,7 @@ class HuddlePeopleSheet extends StatelessWidget {
               if (withRole(role).isNotEmpty) ...[
                 _Header(
                   role == HuddleRole.host
-                      ? 'Host'
+                      ? context.tr('Host')
                       : '${role.label}s · ${withRole(role).length}',
                 ),
                 for (final HuddleParticipant person in withRole(role))
@@ -187,8 +188,7 @@ class _RequestRow extends StatelessWidget {
           TextButton(
             onPressed: () =>
                 _act(context, huddleId, 'declineRequest', person.uid),
-            child: const Text(
-              'Decline',
+            child: Text(context.tr('Decline'),
               style: TextStyle(color: Colors.white70),
             ),
           ),
@@ -203,10 +203,9 @@ class _RequestRow extends StatelessWidget {
               huddleId,
               'approveRequest',
               person.uid,
-              done: '${person.name} can now speak.',
+              done: context.tr('{name} can now speak.', {'name': person.name}),
             ),
-            child: const Text(
-              'Accept',
+            child: Text(context.tr('Accept'),
               style: TextStyle(fontWeight: FontWeight.w800),
             ),
           ),
@@ -254,24 +253,24 @@ class _PersonRow extends StatelessWidget {
       if (_canModerate &&
           person.role == HuddleRole.listener &&
           !person.hasSpeakerInvite)
-        ('inviteToSpeak', 'Invite to speak'),
+        ('inviteToSpeak', context.tr('Invite to speak')),
       if (_canModerate && person.role.canSpeak) ...[
-        ('muteSpeaker', 'Mute'),
-        ('moveToListeners', 'Move to listeners'),
+        ('muteSpeaker', context.tr('Mute')),
+        ('moveToListeners', context.tr('Move to listeners')),
       ],
       if (_canModerate && huddle.screenSharerId == person.uid)
-        ('stopScreenShare', 'Stop their presentation'),
+        ('stopScreenShare', context.tr('Stop their presentation')),
       if (host && !_isMe && person.role != HuddleRole.coHost)
-        ('makeCoHost', 'Make co-host'),
+        ('makeCoHost', context.tr('Make co-host')),
       if (host && person.role == HuddleRole.coHost)
-        ('removeCoHost', 'Remove co-host'),
-      if (host && !_isMe && person.role.canSpeak) ('makeHost', 'Make host'),
+        ('removeCoHost', context.tr('Remove co-host')),
+      if (host && !_isMe && person.role.canSpeak) ('makeHost', context.tr('Make host')),
       if (_canModerate) ...[
-        ('removeParticipant', 'Remove from Huddle'),
-        ('block', 'Remove and block from Huddle'),
+        ('removeParticipant', context.tr('Remove from Huddle')),
+        ('block', context.tr('Remove and block from Huddle')),
       ],
-      ('profile', 'View profile'),
-      if (!_isMe) ('report', 'Report'),
+      ('profile', context.tr('View profile')),
+      if (!_isMe) ('report', context.tr('Report')),
     ];
 
     return ListTile(
@@ -294,8 +293,7 @@ class _PersonRow extends StatelessWidget {
       subtitle: Align(
         alignment: Alignment.centerLeft,
         child: person.hasSpeakerInvite
-            ? const Text(
-          'Invited to speak',
+            ? Text(context.tr('Invited to speak'),
           style: TextStyle(color: HuddleColors.sky, fontSize: 12),
         )
             : HuddleRoleBadge(role: person.role),
@@ -337,22 +335,22 @@ class _PersonRow extends StatelessWidget {
           id,
           value,
           person.uid,
-          done: 'Invitation sent to ${person.name}.',
+          done: context.tr('Invitation sent to {name}.', {'name': person.name}),
         );
       case 'makeHost':
         final bool? sure = await showDialog<bool>(
           context: context,
           builder: (dialogContext) => AlertDialog(
-            title: Text('Make ${person.name} the host?'),
-            content: const Text('You will become a co-host.'),
+            title: Text(context.tr('Make {name} the host?', {'name': person.name})),
+            content: Text(context.tr('You will become a co-host.')),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(dialogContext, false),
-                child: const Text('Cancel'),
+                child: Text(context.tr('Cancel')),
               ),
               FilledButton(
                 onPressed: () => Navigator.pop(dialogContext, true),
-                child: const Text('Make host'),
+                child: Text(context.tr('Make host')),
               ),
             ],
           ),
@@ -367,7 +365,7 @@ class _PersonRow extends StatelessWidget {
           'removeParticipant',
           person.uid,
           extra: {'block': true},
-          done: '${person.name} was removed and blocked.',
+          done: context.tr('{name} was removed and blocked.', {'name': person.name}),
         );
       default:
         await _act(context, id, value, person.uid);

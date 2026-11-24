@@ -848,7 +848,7 @@ class _PostCardState extends State<PostCard> {
 
     final String shareText = <String>[
       if (_caption.trim().isNotEmpty) _caption.trim(),
-      'View this post by @${widget.post.username}:',
+      context.tr('View this post by @{username}:', {'username': widget.post.username}),
       postLink,
     ].join('\n\n');
 
@@ -857,7 +857,7 @@ class _PostCardState extends State<PostCard> {
         ShareParams(
           text: shareText,
           title: context.tr('Share post'),
-          subject: 'Post from Nubify',
+          subject: context.tr('Post from Nubify'),
         ),
       );
 
@@ -1625,7 +1625,7 @@ class _PostCardState extends State<PostCard> {
               separatorBuilder: (_, _) => const Divider(height: 1),
               itemBuilder: (BuildContext context, int index) {
                 return ListTile(
-                  title: Text(reasons[index]),
+                  title: Text(context.tr(reasons[index])),
                   onTap: () {
                     Navigator.of(dialogContext).pop(reasons[index]);
                   },
@@ -1689,7 +1689,7 @@ class _PostCardState extends State<PostCard> {
         return AlertDialog(
           title: Text(context.tr('Block User?')),
           content: Text(
-            'You will no longer see posts from @${widget.post.username}.',
+            context.tr('You will no longer see posts from @{username}.', {'username': widget.post.username}),
           ),
           actions: <Widget>[
             TextButton(
@@ -1794,7 +1794,7 @@ class _PostCardState extends State<PostCard> {
       }
 
       _showMessage(
-        pinned ? 'Post pinned to profile.' : 'Post unpinned from profile.',
+        pinned ? context.tr('Post pinned to profile.') : context.tr('Post unpinned from profile.'),
       );
     } catch (error) {
       if (!mounted) {
@@ -1850,7 +1850,7 @@ class _PostCardState extends State<PostCard> {
 
                     color: _isSaved ? const Color(0xFF29B6F6) : null,
                   ),
-                  title: Text(_isSaved ? 'Unsave Post' : 'Save Post'),
+                  title: Text(_isSaved ? context.tr('Unsave Post') : context.tr('Save Post')),
                   onTap: () {
                     closeThen(_toggleSave);
                   },
@@ -1891,12 +1891,12 @@ class _PostCardState extends State<PostCard> {
                           : Icons.visibility_off_outlined,
                     ),
                     title: Text(
-                      _isGloballyHidden ? 'Unhide Post' : 'Hide Post',
+                      _isGloballyHidden ? context.tr('Unhide Post') : context.tr('Hide Post'),
                     ),
                     subtitle: Text(
                       _isGloballyHidden
-                          ? 'Make this post visible on Home and your profile again'
-                          : 'Hide this post from Home and every profile visitor',
+                          ? context.tr('Make this post visible on Home and your profile again')
+                          : context.tr('Hide this post from Home and every profile visitor'),
                     ),
                     onTap: () {
                       closeThen(_isGloballyHidden ? _unhidePost : _hidePost);
@@ -1945,8 +1945,8 @@ class _PostCardState extends State<PostCard> {
                       ),
                       title: Text(
                         widget.isPinnedToProfile
-                            ? 'Unpin Post from Profile'
-                            : 'Pin Post to Profile',
+                            ? context.tr('Unpin Post from Profile')
+                            : context.tr('Pin Post to Profile'),
                       ),
                       subtitle: Text(context.tr('You can pin up to 3 posts.')),
                       onTap: () {
@@ -2500,13 +2500,13 @@ class _PostCardState extends State<PostCard> {
     }
 
     if (_isPollExpired || _pollClosed) {
-      return 'Voting closed';
+      return context.tr('Voting closed');
     }
 
     final Duration remaining = _pollExpiresAt!.difference(DateTime.now());
 
     if (remaining.isNegative) {
-      return 'Voting closed';
+      return context.tr('Voting closed');
     }
 
     final int hours = remaining.inHours;
@@ -2514,10 +2514,10 @@ class _PostCardState extends State<PostCard> {
     final int minutes = remaining.inMinutes % 60;
 
     if (hours > 0) {
-      return '$hours h $minutes min left';
+      return context.tr('{hours} h {minutes} min left', {'hours': hours, 'minutes': minutes});
     }
 
-    return '$minutes min left';
+    return context.tr('{minutes} min left', {'minutes': minutes});
   }
 
   //===================================================
@@ -3337,7 +3337,7 @@ class _PostCardState extends State<PostCard> {
             if (raw['isHidden'] == true || raw['isRootHidden'] == true) {
               return _buildUnavailableRepostCard(
                 quote: quote,
-                message: 'Referenced post is hidden by its owner.',
+                message: context.tr('Referenced post is hidden by its owner.'),
               );
             }
 
@@ -3410,7 +3410,7 @@ class _PostCardState extends State<PostCard> {
                       const SizedBox(width: 5),
 
                       Text(
-                        quote ? 'Quote repost' : 'Reposted',
+                        quote ? context.tr('Quote repost') : context.tr('Reposted'),
                         style: const TextStyle(
                           color: Color(0xFF29B6F6),
                           fontSize: 12,
@@ -3518,7 +3518,7 @@ class _PostCardState extends State<PostCard> {
         ? referenced.fullName.trim()
         : referenced.username.trim().isNotEmpty
         ? referenced.username.trim()
-        : 'Nubify User';
+        : context.tr('Nubify User');
 
     final String quoteText = referenced.repostText.trim().isNotEmpty
         ? referenced.repostText.trim()
@@ -3687,8 +3687,8 @@ class _PostCardState extends State<PostCard> {
 
                         Text(
                           referenced.isQuoteRepost
-                              ? 'Quote repost'
-                              : 'Reposted',
+                              ? context.tr('Quote repost')
+                              : context.tr('Reposted'),
                           style: const TextStyle(
                             color: Color(0xFF29B6F6),
                             fontSize: 11.5,
@@ -3847,7 +3847,7 @@ class _PostCardState extends State<PostCard> {
                   !snapshot.data!.exists ||
                   snapshot.data!.data() == null) {
                 return _buildSmallUnavailableReference(
-                  'Referenced post is no longer available.',
+                  context.tr('Referenced post is no longer available.'),
                 );
               }
 
@@ -3855,7 +3855,7 @@ class _PostCardState extends State<PostCard> {
 
               if (raw['isHidden'] == true || raw['isRootHidden'] == true) {
                 return _buildSmallUnavailableReference(
-                  'Referenced post is hidden.',
+                  context.tr('Referenced post is hidden.'),
                 );
               }
 
@@ -3867,7 +3867,7 @@ class _PostCardState extends State<PostCard> {
                 debugPrint('Nested repost parse error: $error');
 
                 return _buildSmallUnavailableReference(
-                  'Unable to display this referenced post.',
+                  context.tr('Unable to display this referenced post.'),
                 );
               }
             },
@@ -4342,7 +4342,7 @@ class _PostCardState extends State<PostCard> {
                   const SizedBox(width: 5),
 
                   Text(
-                    quote ? 'Quote repost' : 'Reposted',
+                    quote ? context.tr('Quote repost') : context.tr('Reposted'),
                     style: const TextStyle(
                       color: Color(0xFF29B6F6),
                       fontSize: 12,
@@ -4385,7 +4385,7 @@ class _PostCardState extends State<PostCard> {
 
                   Expanded(
                     child: Text(
-                      message,
+                      context.tr(message),
                       style: TextStyle(
                         color: Colors.grey.shade600,
                         fontSize: 13,

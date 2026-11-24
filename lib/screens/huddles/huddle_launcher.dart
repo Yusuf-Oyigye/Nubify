@@ -5,6 +5,7 @@ import '../../services/huddles/huddle_service.dart';
 import '../../services/huddles/huddle_session.dart';
 import 'huddle_ended_screen.dart';
 import 'huddle_room_screen.dart';
+import '../../l10n/nubify_text.dart';
 
 //===================================================
 // OPEN ANY HUDDLE
@@ -30,7 +31,7 @@ Future<void> openHuddle(BuildContext context, String huddleId) async {
     huddle = await HuddleService.instance.getHuddle(huddleId);
   } catch (_) {
     if (context.mounted) {
-      _snack(context, 'Could not open this Huddle. Check your connection.');
+      _snack(context, context.tr('Could not open this Huddle. Check your connection.'));
     }
     return;
   }
@@ -53,18 +54,18 @@ Future<void> openHuddle(BuildContext context, String huddleId) async {
     final bool? switchHuddle = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Leave your current Huddle?'),
+        title: Text(context.tr('Leave your current Huddle?')),
         content: Text(
-          'You are in "${session.title}". Leave it to join "${huddle!.title}"?',
+          context.tr('You are in "{title}". Leave it to join "{title2}"?', {'title': session.title, 'title2': huddle!.title}),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Stay'),
+            child: Text(context.tr('Stay')),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Leave and join'),
+            child: Text(context.tr('Leave and join')),
           ),
         ],
       ),

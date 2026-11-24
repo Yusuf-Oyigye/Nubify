@@ -24,3 +24,6 @@ Notes from the chat/marketplace batch:
   the sender's language); translate it where it is shown instead.
 - `test/translations_test.dart` checks every phrase has all five
   languages and keeps its `{placeholders}`.
+- To add phrases to a file that already has translations, use
+  `require("./tool/l10n/append_translations").append(file, rows)`;
+  it skips phrases that are already there.

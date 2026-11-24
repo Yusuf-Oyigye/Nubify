@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../services/profile/profile_service.dart';
+import '../../l10n/nubify_text.dart';
 
 //===============================
 // REPORT USER DIALOG
@@ -38,8 +39,7 @@ Future<void> showReportUserDialog({
             ) {
           return AlertDialog(
             title:
-            const Text(
-              'Report user',
+            Text(context.tr('Report user'),
             ),
 
             content:
@@ -82,7 +82,7 @@ Future<void> showReportUserDialog({
 
                           title:
                           Text(
-                            item,
+                            context.tr(item),
                           ),
                         ),
                   ),
@@ -111,12 +111,12 @@ Future<void> showReportUserDialog({
                     },
 
                     decoration:
-                    const InputDecoration(
+                    InputDecoration(
                       labelText:
-                      'Tell us more (optional)',
+                      context.tr('Tell us more (optional)'),
 
                       hintText:
-                      'Explain what happened...',
+                      context.tr('Explain what happened...'),
 
                       border:
                       OutlineInputBorder(),
@@ -139,8 +139,7 @@ Future<void> showReportUserDialog({
                 },
 
                 child:
-                const Text(
-                  'Cancel',
+                Text(context.tr('Cancel'),
                 ),
               ),
 
@@ -154,8 +153,7 @@ Future<void> showReportUserDialog({
                 },
 
                 child:
-                const Text(
-                  'Report',
+                Text(context.tr('Report'),
                 ),
               ),
             ],
@@ -188,10 +186,9 @@ Future<void> showReportUserDialog({
   ScaffoldMessenger.of(
     context,
   ).showSnackBar(
-    const SnackBar(
+    SnackBar(
       content:
-      Text(
-        'Report submitted.',
+      Text(context.tr('Report submitted.'),
       ),
     ),
   );

@@ -6,6 +6,7 @@ import 'package:video_player/video_player.dart';
 
 import '../../models/feed/post.dart';
 import '../../services/profile/profile_activity_service.dart';
+import '../../l10n/nubify_text.dart';
 
 typedef ProfilePostOpenCallback = void Function(Post post, int index);
 
@@ -84,7 +85,7 @@ class NubifyProfileCommentGrid extends StatelessWidget {
       key: const PageStorageKey<String>('profile-comments'),
       slivers: <Widget>[
         SliverToBoxAdapter(
-          child: _GridHeading(title: 'Comments', count: activities.length),
+          child: _GridHeading(title: context.tr('Comments'), count: activities.length),
         ),
         SliverPadding(
           padding: const EdgeInsets.fromLTRB(2, 2, 2, 20),
@@ -831,16 +832,16 @@ class _ContentTile extends StatelessWidget {
         : wrapperText.isNotEmpty
         ? wrapperText
         : unavailable
-        ? 'Post no longer exists'
+        ? context.tr('Post no longer exists')
         : isPoll
-        ? 'Poll'
+        ? context.tr('Poll')
         : isVideo
-        ? 'Video'
+        ? context.tr('Video')
         : primaryMedia?.isImage == true
-        ? 'Photo'
+        ? context.tr('Photo')
         : content == null
-        ? 'Loading post...'
-        : 'Post';
+        ? context.tr('Loading post...')
+        : context.tr('Post');
 
     final Post? metricsPost = content ?? wrapper;
 
@@ -969,7 +970,7 @@ class _ContentTile extends StatelessWidget {
                 top: 30,
                 right: 5,
                 child: Text(
-                  comment ? 'COMMENT' : 'REPOST',
+                  comment ? context.tr('COMMENT') : context.tr('REPOST'),
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 8,
@@ -1006,7 +1007,7 @@ class _ContentTile extends StatelessWidget {
                         child: _GridEngagementMetric(
                           icon: Icons.favorite_rounded,
                           value: _compact(likeCount),
-                          label: likeCount == 1 ? 'Like' : 'Likes',
+                          label: likeCount == 1 ? context.tr('Like') : context.tr('Likes'),
                           color: const Color(0xFFFF6B81),
                         ),
                       ),
@@ -1015,7 +1016,7 @@ class _ContentTile extends StatelessWidget {
                         child: _GridEngagementMetric(
                           icon: Icons.repeat_rounded,
                           value: _compact(repostCount),
-                          label: repostCount == 1 ? 'Repost' : 'Reposts',
+                          label: repostCount == 1 ? context.tr('Repost') : context.tr('Reposts'),
                           color: const Color(0xFF36C5F0),
                         ),
                       ),
@@ -1197,7 +1198,7 @@ class _RealTextCover extends StatelessWidget {
           //===================================
           : Center(
               child: Text(
-                text.trim().isNotEmpty ? text.trim() : 'Post',
+                text.trim().isNotEmpty ? text.trim() : context.tr('Post'),
                 maxLines: 8,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,

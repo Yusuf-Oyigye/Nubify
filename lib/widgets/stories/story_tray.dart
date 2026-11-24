@@ -6,6 +6,7 @@ import '../../models/stories/story.dart';
 import '../../screens/stories/create_story_screen.dart';
 import '../../screens/stories/story_viewer_screen.dart';
 import '../../services/stories/story_service.dart';
+import '../../l10n/nubify_text.dart';
 
 //===================================================
 // STORY TRAY
@@ -639,8 +640,8 @@ class _StoryTrayState extends State<StoryTray> {
 
           Text(
             hasStory
-                ? 'Your Story'
-                : 'Add Story',
+                ? context.tr('Your Story')
+                : context.tr('Add Story'),
             maxLines:
             1,
             overflow:

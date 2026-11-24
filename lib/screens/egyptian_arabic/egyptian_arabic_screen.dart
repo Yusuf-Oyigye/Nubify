@@ -12,6 +12,7 @@ import 'package:path_provider/path_provider.dart';
 
 import '../../models/egyptian_arabic/ea_models.dart';
 import '../../services/egyptian_arabic/ea_service.dart';
+import '../../l10n/nubify_text.dart';
 
 //===================================================
 // NUBIFY EGYPTIAN ARABIC — APP STYLING
@@ -98,8 +99,7 @@ class _EgyptianArabicScreenState extends State<EgyptianArabicScreen> {
         context: context,
         builder: (dialogContext) => AlertDialog(
           backgroundColor: palette.surface,
-          title: Text(
-            'Create Shared Deck',
+          title: Text(context.tr('Create Shared Deck'),
             style: TextStyle(color: palette.text),
           ),
           content: TextField(
@@ -107,17 +107,17 @@ class _EgyptianArabicScreenState extends State<EgyptianArabicScreen> {
             autofocus: true,
             maxLength: 80,
             style: TextStyle(color: palette.text),
-            decoration: _eaInput(context, 'Deck name', Icons.layers_outlined),
+            decoration: _eaInput(context, context.tr('Deck name'), Icons.layers_outlined),
             onSubmitted: (value) => Navigator.pop(dialogContext, value),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Cancel'),
+              child: Text(context.tr('Cancel')),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(dialogContext, controller.text),
-              child: const Text('Create'),
+              child: Text(context.tr('Create')),
             ),
           ],
         ),
@@ -130,7 +130,7 @@ class _EgyptianArabicScreenState extends State<EgyptianArabicScreen> {
       await _service.createDeck(name);
 
       if (mounted) {
-        _eaMessage(context, 'Shared deck created.');
+        _eaMessage(context, context.tr('Shared deck created.'));
       }
     } catch (error) {
       if (mounted) {
@@ -168,8 +168,7 @@ class _EgyptianArabicScreenState extends State<EgyptianArabicScreen> {
       return Scaffold(
         backgroundColor: palette.canvas,
         body: Center(
-          child: Text(
-            'Sign in to learn Egyptian Arabic.',
+          child: Text(context.tr('Sign in to learn Egyptian Arabic.'),
             style: TextStyle(color: palette.text),
           ),
         ),
@@ -183,7 +182,7 @@ class _EgyptianArabicScreenState extends State<EgyptianArabicScreen> {
         foregroundColor: _EAStyle.navy,
         onPressed: _openCreateCard,
         icon: const Icon(Icons.add_rounded),
-        label: const Text('Flashcard'),
+        label: Text(context.tr('Flashcard')),
       ),
       body: SafeArea(
         child: StreamBuilder<List<EaDeck>>(
@@ -269,8 +268,7 @@ class _EgyptianArabicScreenState extends State<EgyptianArabicScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
-                                'AHLAN!  •  WELCOME',
+                              Text(context.tr('AHLAN!  •  WELCOME'),
                                 style: TextStyle(
                                   color: _EAStyle.teal,
                                   fontWeight: FontWeight.w800,
@@ -279,8 +277,7 @@ class _EgyptianArabicScreenState extends State<EgyptianArabicScreen> {
                                 ),
                               ),
                               const SizedBox(height: 5),
-                              Text(
-                                'Speak Egyptian with confidence',
+                              Text(context.tr('Speak Egyptian with confidence'),
                                 style: TextStyle(
                                   color: palette.text,
                                   fontWeight: FontWeight.bold,
@@ -289,8 +286,7 @@ class _EgyptianArabicScreenState extends State<EgyptianArabicScreen> {
                                 ),
                               ),
                               const SizedBox(height: 4),
-                              Text(
-                                'Learn a little Masri every day.',
+                              Text(context.tr('Learn a little Masri every day.'),
                                 style: TextStyle(
                                   color: palette.muted,
                                   fontSize: 12,
@@ -300,7 +296,7 @@ class _EgyptianArabicScreenState extends State<EgyptianArabicScreen> {
                           ),
                         ),
                         IconButton(
-                          tooltip: 'Create deck',
+                          tooltip: context.tr('Create deck'),
                           onPressed: _addDeck,
                           icon: Icon(
                             Icons.create_new_folder_outlined,
@@ -327,8 +323,7 @@ class _EgyptianArabicScreenState extends State<EgyptianArabicScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'READY FOR TODAY?',
+                          Text(context.tr('READY FOR TODAY?'),
                             style: TextStyle(
                               color: _EAStyle.teal,
                               fontWeight: FontWeight.bold,
@@ -345,8 +340,7 @@ class _EgyptianArabicScreenState extends State<EgyptianArabicScreen> {
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          const Text(
-                            'Flashcards due for review',
+                          Text(context.tr('Flashcards due for review'),
                             style: TextStyle(color: _EAStyle.ivory),
                           ),
                           const SizedBox(height: 19),
@@ -363,10 +357,10 @@ class _EgyptianArabicScreenState extends State<EgyptianArabicScreen> {
                               icon: const Icon(Icons.play_arrow_rounded),
                               label: Text(
                                 available.isEmpty
-                                    ? 'No Flashcards Yet'
+                                    ? context.tr('No Flashcards Yet')
                                     : due > 0
-                                    ? 'Continue Learning'
-                                    : 'Practice Anytime',
+                                    ? context.tr('Continue Learning')
+                                    : context.tr('Practice Anytime'),
                               ),
                             ),
                           ),
@@ -378,11 +372,11 @@ class _EgyptianArabicScreenState extends State<EgyptianArabicScreen> {
 
                     Row(
                       children: [
-                        Expanded(child: _EAMetric('New', fresh, _EAStyle.sky)),
+                        Expanded(child: _EAMetric(context.tr('New'), fresh, _EAStyle.sky)),
                         const SizedBox(width: 9),
                         Expanded(
                           child: _EAMetric(
-                            'Learning',
+                            context.tr('Learning'),
                             learning,
                             _EAStyle.amber,
                           ),
@@ -390,7 +384,7 @@ class _EgyptianArabicScreenState extends State<EgyptianArabicScreen> {
                         const SizedBox(width: 9),
                         Expanded(
                           child: _EAMetric(
-                            'Total',
+                            context.tr('Total'),
                             cards.length,
                             _EAStyle.teal,
                           ),
@@ -403,8 +397,7 @@ class _EgyptianArabicScreenState extends State<EgyptianArabicScreen> {
                     Row(
                       children: [
                         Expanded(
-                          child: Text(
-                            'Community decks',
+                          child: Text(context.tr('Community decks'),
                             style: TextStyle(
                               color: palette.text,
                               fontSize: 20,
@@ -415,7 +408,7 @@ class _EgyptianArabicScreenState extends State<EgyptianArabicScreen> {
                         TextButton.icon(
                           onPressed: _addDeck,
                           icon: const Icon(Icons.add),
-                          label: const Text('New deck'),
+                          label: Text(context.tr('New deck')),
                         ),
                       ],
                     ),
@@ -432,14 +425,13 @@ class _EgyptianArabicScreenState extends State<EgyptianArabicScreen> {
                               size: 40,
                             ),
                             const SizedBox(height: 10),
-                            Text(
-                              'No shared decks yet',
+                            Text(context.tr('No shared decks yet'),
                               style: TextStyle(color: palette.text),
                             ),
                             const SizedBox(height: 12),
                             FilledButton(
                               onPressed: _addDeck,
-                              child: const Text('Create First Deck'),
+                              child: Text(context.tr('Create First Deck')),
                             ),
                           ],
                         ),
@@ -475,8 +467,16 @@ class _EgyptianArabicScreenState extends State<EgyptianArabicScreen> {
                                       ),
                                       const SizedBox(height: 5),
                                       Text(
-                                        '${cards.where((c) => c.deckId == deck.id).length} cards  •  '
-                                        '${cards.where((c) => c.deckId == deck.id && c.isDue).length} due',
+                                        context.tr('{count} cards  •  {due} due', {
+                                          'count': cards
+                                              .where((c) => c.deckId == deck.id)
+                                              .length,
+                                          'due': cards
+                                              .where(
+                                                (c) => c.deckId == deck.id && c.isDue,
+                                              )
+                                              .length,
+                                        }),
                                         style: TextStyle(color: palette.muted),
                                       ),
                                     ],
@@ -657,16 +657,16 @@ class _EAReviewScreenState extends State<_EAReviewScreen> {
         final confirmed = await showDialog<bool>(
           context: context,
           builder: (dialogContext) => AlertDialog(
-            title: const Text('Delete shared flashcard?'),
-            content: const Text('This removes the flashcard for all students.'),
+            title: Text(context.tr('Delete shared flashcard?')),
+            content: Text(context.tr('This removes the flashcard for all students.')),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(dialogContext, false),
-                child: const Text('Cancel'),
+                child: Text(context.tr('Cancel')),
               ),
               FilledButton(
                 onPressed: () => Navigator.pop(dialogContext, true),
-                child: const Text('Delete'),
+                child: Text(context.tr('Delete')),
               ),
             ],
           ),
@@ -702,10 +702,10 @@ class _EAReviewScreenState extends State<_EAReviewScreen> {
       appBar: AppBar(
         backgroundColor: palette.canvas,
         foregroundColor: palette.text,
-        title: Text(widget.title),
+        title: Text(context.tr(widget.title)),
         actions: [
           IconButton(
-            tooltip: 'Undo review',
+            tooltip: context.tr('Undo review'),
             onPressed: _lastCard == null || _submitting ? null : _undo,
             icon: const Icon(Icons.undo_rounded),
           ),
@@ -740,8 +740,7 @@ class _EAReviewScreenState extends State<_EAReviewScreen> {
 
             if (availableCards.isEmpty) {
               return Center(
-                child: Text(
-                  'No flashcards available in this deck.',
+                child: Text(context.tr('No flashcards available in this deck.'),
                   style: TextStyle(color: palette.text),
                 ),
               );
@@ -761,7 +760,7 @@ class _EAReviewScreenState extends State<_EAReviewScreen> {
                     });
                   },
                   icon: const Icon(Icons.replay_rounded),
-                  label: const Text('Study Again'),
+                  label: Text(context.tr('Study Again')),
                 ),
               );
             }
@@ -807,7 +806,7 @@ class _EAReviewScreenState extends State<_EAReviewScreen> {
                     Text(
                       dueInQueue > 0
                           ? '$dueInQueue due'
-                          : 'Practice • ${unstudied.length}',
+                          : context.tr('Practice • {count}', {'count': unstudied.length}),
                       style: const TextStyle(color: _EAStyle.sky),
                     ),
                     PopupMenuButton<String>(
@@ -815,20 +814,20 @@ class _EAReviewScreenState extends State<_EAReviewScreen> {
                       icon: Icon(Icons.more_vert_rounded, color: palette.text),
                       onSelected: (action) => _action(action, card),
                       itemBuilder: (_) => [
-                        const PopupMenuItem(
+                        PopupMenuItem(
                           value: 'suspend',
-                          child: Text('Suspend card'),
+                          child: Text(context.tr('Suspend card')),
                         ),
                         if (card.createdBy ==
                             FirebaseAuth.instance.currentUser?.uid)
-                          const PopupMenuItem(
+                          PopupMenuItem(
                             value: 'delete',
-                            child: Text('Delete note'),
+                            child: Text(context.tr('Delete note')),
                           ),
                         if (_lastCard != null)
-                          const PopupMenuItem(
+                          PopupMenuItem(
                             value: 'undo',
-                            child: Text('Undo review'),
+                            child: Text(context.tr('Undo review')),
                           ),
                       ],
                     ),
@@ -857,8 +856,7 @@ class _EAReviewScreenState extends State<_EAReviewScreen> {
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Text(
-                                'FRONT — ENGLISH',
+                              Text(context.tr('FRONT — ENGLISH'),
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   color: _EAStyle.sky,
@@ -888,8 +886,7 @@ class _EAReviewScreenState extends State<_EAReviewScreen> {
 
                                 const SizedBox(height: 18),
 
-                                const Text(
-                                  'BACK — LATIN PRONUNCIATION',
+                                Text(context.tr('BACK — LATIN PRONUNCIATION'),
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
                                     color: _EAStyle.teal,
@@ -921,8 +918,7 @@ class _EAReviewScreenState extends State<_EAReviewScreen> {
                                       Icons.replay_rounded,
                                       size: 19,
                                     ),
-                                    label: const Text(
-                                      'Tap to Replay',
+                                    label: Text(context.tr('Tap to Replay'),
                                       style: TextStyle(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w600,
@@ -963,8 +959,7 @@ class _EAReviewScreenState extends State<_EAReviewScreen> {
                         backgroundColor: _EAStyle.sky,
                         foregroundColor: _EAStyle.navy,
                       ),
-                      child: const Text(
-                        'Show Answer',
+                      child: Text(context.tr('Show Answer'),
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
@@ -1278,17 +1273,17 @@ class _EACreateCardScreenState extends State<_EACreateCardScreen> {
     if (_saving || _selectingAudio) return;
 
     if (_deckId == null) {
-      _eaMessage(context, 'Select a deck first.');
+      _eaMessage(context, context.tr('Select a deck first.'));
       return;
     }
 
     if (_english.text.trim().isEmpty) {
-      _eaMessage(context, 'Enter the English word or phrase.');
+      _eaMessage(context, context.tr('Enter the English word or phrase.'));
       return;
     }
 
     if (_latin.text.trim().isEmpty) {
-      _eaMessage(context, 'Enter the Latin pronunciation.');
+      _eaMessage(context, context.tr('Enter the Latin pronunciation.'));
       return;
     }
 
@@ -1321,7 +1316,7 @@ class _EACreateCardScreenState extends State<_EACreateCardScreen> {
       Navigator.pop(context);
 
       messenger.showSnackBar(
-        const SnackBar(content: Text('Flashcard shared successfully!')),
+        SnackBar(content: Text(context.tr('Flashcard shared successfully!'))),
       );
     } catch (error) {
       if (mounted) {
@@ -1364,10 +1359,10 @@ class _EACreateCardScreenState extends State<_EACreateCardScreen> {
       appBar: AppBar(
         backgroundColor: palette.canvas,
         foregroundColor: palette.text,
-        title: const Text('Create Flashcard'),
+        title: Text(context.tr('Create Flashcard')),
         actions: [
           IconButton(
-            tooltip: 'Save flashcard',
+            tooltip: context.tr('Save flashcard'),
             onPressed: _saving || _selectingAudio ? null : _save,
             icon: const Icon(Icons.check_rounded, color: _EAStyle.sky),
           ),
@@ -1410,8 +1405,7 @@ class _EACreateCardScreenState extends State<_EACreateCardScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'DECK',
+                      Text(context.tr('DECK'),
                         style: TextStyle(
                           color: _EAStyle.sky,
                           fontWeight: FontWeight.bold,
@@ -1428,7 +1422,7 @@ class _EACreateCardScreenState extends State<_EACreateCardScreen> {
                         style: TextStyle(color: palette.text),
                         decoration: _eaInput(
                           context,
-                          'Choose deck',
+                          context.tr('Choose deck'),
                           Icons.layers_outlined,
                         ),
                         items: decks.map((deck) {
@@ -1446,10 +1440,9 @@ class _EACreateCardScreenState extends State<_EACreateCardScreen> {
                               },
                       ),
                       if (decks.isEmpty)
-                        const Padding(
+                        Padding(
                           padding: EdgeInsets.only(top: 10),
-                          child: Text(
-                            'Create a deck from the dashboard first.',
+                          child: Text(context.tr('Create a deck from the dashboard first.'),
                             style: TextStyle(color: _EAStyle.amber),
                           ),
                         ),
@@ -1463,8 +1456,7 @@ class _EACreateCardScreenState extends State<_EACreateCardScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'FRONT — ENGLISH',
+                      Text(context.tr('FRONT — ENGLISH'),
                         style: TextStyle(
                           color: _EAStyle.sky,
                           fontWeight: FontWeight.bold,
@@ -1477,13 +1469,12 @@ class _EACreateCardScreenState extends State<_EACreateCardScreen> {
                         style: TextStyle(color: palette.text),
                         decoration: _eaInput(
                           context,
-                          'English word or phrase',
+                          context.tr('English word or phrase'),
                           Icons.translate_rounded,
                         ),
                       ),
                       const SizedBox(height: 14),
-                      const Text(
-                        'BACK — LATIN PRONUNCIATION',
+                      Text(context.tr('BACK — LATIN PRONUNCIATION'),
                         style: TextStyle(
                           color: _EAStyle.teal,
                           fontWeight: FontWeight.bold,
@@ -1510,16 +1501,14 @@ class _EACreateCardScreenState extends State<_EACreateCardScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'PRONUNCIATION AUDIO',
+                      Text(context.tr('PRONUNCIATION AUDIO'),
                         style: TextStyle(
                           color: _EAStyle.sky,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       const SizedBox(height: 7),
-                      Text(
-                        'Choose audio from your phone and listen before saving.',
+                      Text(context.tr('Choose audio from your phone and listen before saving.'),
                         style: TextStyle(color: palette.muted),
                       ),
                       const SizedBox(height: 12),
@@ -1532,10 +1521,10 @@ class _EACreateCardScreenState extends State<_EACreateCardScreen> {
                           icon: const Icon(Icons.audio_file_outlined),
                           label: Text(
                             _selectingAudio
-                                ? 'Selecting Audio…'
+                                ? context.tr('Selecting Audio…')
                                 : _audioPath == null
-                                ? 'Add Audio from Phone'
-                                : 'Replace Audio',
+                                ? context.tr('Add Audio from Phone')
+                                : context.tr('Replace Audio'),
                           ),
                         ),
                       ),
@@ -1558,7 +1547,7 @@ class _EACreateCardScreenState extends State<_EACreateCardScreen> {
                               ),
                             ),
                             IconButton(
-                              tooltip: 'Remove audio',
+                              tooltip: context.tr('Remove audio'),
                               onPressed: _saving ? null : _removeAudio,
                               icon: const Icon(
                                 Icons.close_rounded,
@@ -1581,10 +1570,10 @@ class _EACreateCardScreenState extends State<_EACreateCardScreen> {
                             ),
                             label: Text(
                               _playing
-                                  ? 'Pause Preview'
+                                  ? context.tr('Pause Preview')
                                   : _previewed
-                                  ? 'Replay / Resume Preview'
-                                  : 'Play Preview Before Saving',
+                                  ? context.tr('Replay / Resume Preview')
+                                  : context.tr('Play Preview Before Saving'),
                             ),
                           ),
                         ),
@@ -1625,7 +1614,7 @@ class _EACreateCardScreenState extends State<_EACreateCardScreen> {
                       padding: const EdgeInsets.symmetric(vertical: 17),
                     ),
                     icon: const Icon(Icons.check_circle_outline),
-                    label: Text(_saving ? 'Saving…' : 'Save Flashcard'),
+                    label: Text(_saving ? context.tr('Saving…') : context.tr('Save Flashcard')),
                   ),
                 ),
               ],
@@ -1744,8 +1733,7 @@ class _EAError extends StatelessWidget {
               size: 45,
             ),
             const SizedBox(height: 10),
-            Text(
-              'Could not load learning data',
+            Text(context.tr('Could not load learning data'),
               style: TextStyle(
                 color: palette.text,
                 fontWeight: FontWeight.bold,

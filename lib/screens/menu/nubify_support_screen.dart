@@ -55,7 +55,7 @@ class NubifySupportScreen extends StatelessWidget {
 
     if (!opened && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not open $app on this phone.')),
+        SnackBar(content: Text(context.tr('Could not open {app} on this phone.', {'app': app}))),
       );
     }
   }
@@ -157,7 +157,7 @@ class NubifySupportScreen extends StatelessWidget {
                 onTap: () => _open(
                   context,
                   NubifyContact.gmail(subject: subject, body: message),
-                  'your email app',
+                  context.tr('your email app'),
                 ),
               ),
               const SizedBox(height: 10),

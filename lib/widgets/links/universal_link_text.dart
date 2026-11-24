@@ -9,6 +9,7 @@ import '../../services/links/nubify_link_router.dart';
 import '../../utils/links/link_detector.dart';
 
 import 'universal_link_preview_card.dart';
+import '../../l10n/nubify_text.dart';
 
 //===================================================
 // UNIVERSAL LINK TEXT
@@ -290,8 +291,7 @@ class _UniversalLinkTextState extends State<UniversalLinkText> {
               },
               child: Padding(
                 padding: const EdgeInsets.only(top: 4, bottom: 2),
-                child: Text(
-                  'See more',
+                child: Text(context.tr('See more'),
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,

@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../models/huddles/huddle.dart';
+import '../../l10n/nubify_text.dart';
 
 //===================================================
 // NUB HUDDLES — COLOURS (Nubify sky blue)
@@ -211,8 +212,7 @@ class HuddleLivePill extends StatelessWidget {
             ),
           ),
           SizedBox(width: small ? 4 : 5),
-          Text(
-            'LIVE',
+          Text(context.tr('LIVE'),
             style: TextStyle(
               color: Colors.white,
               fontSize: small ? 10 : 11,

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../models/nubuzz/nubuzz_post.dart';
 import '../../services/nubuzz/nubuzz_service.dart';
 import '../../widgets/nubuzz/nubuzz_card.dart';
+import '../../l10n/nubify_text.dart';
 
 class NubuzzScreen
     extends StatefulWidget {
@@ -173,7 +174,7 @@ class NubuzzScreenState
         _isRefreshing = false;
 
         _errorMessage =
-        'Unable to load NUBuzz videos.';
+        context.tr('Unable to load NUBuzz videos.');
       });
     }
   }
@@ -368,8 +369,7 @@ class NubuzzScreenState
             // TITLE
             // ==================================================
 
-            const Text(
-              'NUBuzz',
+            Text(context.tr('NUBuzz'),
 
               style: TextStyle(
                 color:
@@ -414,7 +414,7 @@ class NubuzzScreenState
             else
               IconButton(
                 tooltip:
-                'Refresh NUBuzz',
+                context.tr('Refresh NUBuzz'),
 
                 onPressed:
                 refreshFeed,
@@ -438,8 +438,8 @@ class NubuzzScreenState
             IconButton(
               tooltip:
               _isMuted
-                  ? 'Turn sound on'
-                  : 'Mute',
+                  ? context.tr('Turn sound on')
+                  : context.tr('Mute'),
 
               onPressed:
               _toggleMute,
@@ -609,9 +609,8 @@ class NubuzzScreenState
             height: 15,
           ),
 
-          const Center(
-            child: Text(
-              'Could not load NUBuzz',
+          Center(
+            child: Text(context.tr('Could not load NUBuzz'),
 
               style:
               TextStyle(
@@ -639,7 +638,7 @@ class NubuzzScreenState
 
             child: Text(
               _errorMessage ??
-                  'Something went wrong.',
+                  context.tr('Something went wrong.'),
 
               textAlign:
               TextAlign.center,
@@ -678,8 +677,7 @@ class NubuzzScreenState
               ),
 
               child:
-              const Text(
-                'Try Again',
+              Text(context.tr('Try Again'),
               ),
             ),
           ),
@@ -710,7 +708,7 @@ class NubuzzScreenState
         const AlwaysScrollableScrollPhysics(),
 
         children:
-        const <Widget>[
+        <Widget>[
           SizedBox(
             height: 230,
           ),
@@ -730,8 +728,7 @@ class NubuzzScreenState
           ),
 
           Center(
-            child: Text(
-              'No NUBuzz videos yet',
+            child: Text(context.tr('No NUBuzz videos yet'),
 
               style:
               TextStyle(
@@ -757,8 +754,7 @@ class NubuzzScreenState
               horizontal: 30,
             ),
 
-            child: Text(
-              'Single-video posts from NUB students will appear here.',
+            child: Text(context.tr('Single-video posts from NUB students will appear here.'),
 
               textAlign:
               TextAlign.center,

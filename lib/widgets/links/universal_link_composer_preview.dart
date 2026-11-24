@@ -5,6 +5,7 @@ import '../../services/links/link_preview_service.dart';
 import '../../utils/links/link_detector.dart';
 
 import 'universal_link_preview_card.dart';
+import '../../l10n/nubify_text.dart';
 
 //===================================================
 // UNIVERSAL COMPOSER PREVIEW
@@ -286,7 +287,7 @@ class _UniversalLinkComposerPreviewState
                         'www.',
                         '',
                       ) ??
-                          'Link ${index + 1}',
+                          context.tr('Link {index}', {'index': index + 1}),
 
                       maxLines:
                       1,

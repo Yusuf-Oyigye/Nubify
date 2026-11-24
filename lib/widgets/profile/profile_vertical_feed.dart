@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../l10n/nubify_text.dart';
 
 typedef ProfileFeedItemBuilder<T> =
     Widget Function(BuildContext context, T item, int index);
@@ -59,7 +60,7 @@ class _ProfileVerticalFeedState<T> extends State<ProfileVerticalFeed<T>> {
     if (widget.items.isEmpty) {
       return Scaffold(
         appBar: AppBar(title: Text(widget.title)),
-        body: const Center(child: Text('No posts to show.')),
+        body: Center(child: Text(context.tr('No posts to show.'))),
       );
     }
 

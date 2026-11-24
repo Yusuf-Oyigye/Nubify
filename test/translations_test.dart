@@ -1,10 +1,16 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nubify/l10n/nubify_text.dart';
 import 'package:nubify/l10n/translations/chat.dart';
+import 'package:nubify/l10n/translations/egyptian_arabic.dart';
 import 'package:nubify/l10n/translations/faculties.dart';
+import 'package:nubify/l10n/translations/huddles.dart';
 import 'package:nubify/l10n/translations/information.dart';
 import 'package:nubify/l10n/translations/marketplace.dart';
 import 'package:nubify/l10n/translations/notifications.dart';
+import 'package:nubify/l10n/translations/nubi.dart';
+import 'package:nubify/l10n/translations/nubuzz.dart';
+import 'package:nubify/l10n/translations/profile.dart';
+import 'package:nubify/l10n/translations/stories.dart';
 
 void main() {
   const List<String> languages = <String>['ar', 'fr', 'ha', 'yo', 'hi'];
@@ -16,9 +22,15 @@ void main() {
         'information': informationTranslations,
         'marketplace': marketplaceTranslations,
         'notifications': notificationsTranslations,
+        'egyptian_arabic': egyptianArabicTranslations,
+        'huddles': huddlesTranslations,
+        'nubi': nubiTranslations,
+        'nubuzz': nubuzzTranslations,
+        'profile': profileTranslations,
+        'stories': storiesTranslations,
       };
 
-  final RegExp placeholder = RegExp(r'\{[a-z]+\}');
+  final RegExp placeholder = RegExp(r'\{[a-zA-Z0-9]+\}');
 
   test('every phrase is in all five languages', () {
     files.forEach((String file, Map<String, Map<String, String>> words) {

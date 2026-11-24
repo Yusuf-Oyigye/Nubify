@@ -13,6 +13,7 @@ import 'story_people_picker_screen.dart';
 import '../../widgets/stories/draggable_story_tags.dart';
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import '../../services/stories/story_sticker_service.dart';
+import '../../l10n/nubify_text.dart';
 
 //===================================================
 // SHARE POST TO STORY SCREEN
@@ -255,7 +256,7 @@ class _SharePostToStoryScreenState
             (_) =>
             StoryPeoplePickerScreen(
               title:
-              'Tag People',
+              context.tr('Tag People'),
               initialSelected:
               _taggedPeople,
               maxSelection:
@@ -311,8 +312,7 @@ class _SharePostToStoryScreenState
                   .start,
               children:
               <Widget>[
-                const Text(
-                  'Story background',
+                Text(context.tr('Story background'),
                   style:
                   TextStyle(
                     fontSize:
@@ -440,7 +440,7 @@ class _SharePostToStoryScreenState
                   Row(
                     children:
                     <Widget>[
-                      const Expanded(
+                      Expanded(
                         child:
                         Padding(
                           padding:
@@ -449,8 +449,7 @@ class _SharePostToStoryScreenState
                           ),
 
                           child:
-                          Text(
-                            'Story Stickers',
+                          Text(context.tr('Story Stickers'),
 
                             style:
                             TextStyle(
@@ -479,14 +478,13 @@ class _SharePostToStoryScreenState
                           },
 
                           child:
-                          const Text(
-                            'Remove',
+                          Text(context.tr('Remove'),
                           ),
                         ),
                     ],
                   ),
 
-                  const TabBar(
+                  TabBar(
                     indicatorColor:
                     Color(
                       0xFF29B6F6,
@@ -501,12 +499,12 @@ class _SharePostToStoryScreenState
                     <Widget>[
                       Tab(
                         text:
-                        'Emojis',
+                        context.tr('Emojis'),
                       ),
 
                       Tab(
                         text:
-                        'Recent',
+                        context.tr('Recent'),
                       ),
                     ],
                   ),
@@ -593,10 +591,9 @@ class _SharePostToStoryScreenState
                         //===================================================
 
                         _recentStickers.isEmpty
-                            ? const Center(
+                            ? Center(
                           child:
-                          Text(
-                            'No recent stickers yet.',
+                          Text(context.tr('No recent stickers yet.'),
                           ),
                         )
                             : GridView.builder(
@@ -685,10 +682,9 @@ class _SharePostToStoryScreenState
         context,
       )
           .showSnackBar(
-        const SnackBar(
+        SnackBar(
           content:
-          Text(
-            'Please sign in again before adding this story.',
+          Text(context.tr('Please sign in again before adding this story.'),
           ),
         ),
       );
@@ -863,7 +859,7 @@ class _SharePostToStoryScreenState
         SnackBar(
           content:
           Text(
-            'Unable to add story: $error',
+            context.tr('Unable to add story: {error}', {'error': error}),
           ),
         ),
       );
@@ -927,8 +923,7 @@ class _SharePostToStoryScreenState
         foregroundColor:
         Colors.white,
         title:
-        const Text(
-          'Share to Story',
+        Text(context.tr('Share to Story'),
         ),
         actions:
         <Widget>[
@@ -970,8 +965,7 @@ class _SharePostToStoryScreenState
                   Colors.white,
                 ),
               )
-                  : const Text(
-                'Add to Story',
+                  : Text(context.tr('Add to Story'),
               ),
             ),
           ),
@@ -1260,7 +1254,7 @@ class _SharePostToStoryScreenState
                             decoration:
                             InputDecoration(
                               hintText:
-                              'Add a caption...',
+                              context.tr('Add a caption...'),
                               hintStyle:
                               const TextStyle(
                                 color:
@@ -1330,7 +1324,7 @@ class _SharePostToStoryScreenState
                     Icons
                         .palette_outlined,
                     label:
-                    'Background',
+                    context.tr('Background'),
                     onTap:
                     _pickBackground,
                   ),
@@ -1340,7 +1334,7 @@ class _SharePostToStoryScreenState
                     Icons
                         .emoji_emotions_outlined,
                     label:
-                    'Sticker',
+                    context.tr('Sticker'),
                     onTap:
                     _pickSticker,
                   ),
@@ -1350,7 +1344,7 @@ class _SharePostToStoryScreenState
                     Icons
                         .alternate_email,
                     label:
-                    'Tag',
+                    context.tr('Tag'),
                     onTap:
                     _pickTaggedPeople,
                   ),
@@ -1415,7 +1409,7 @@ class _SharePostToStoryScreenState
             snapshot.data!.data() ==
                 null) {
           return _unavailableCard(
-            'This post is no longer available.',
+            context.tr('This post is no longer available.'),
           );
         }
 
@@ -1430,7 +1424,7 @@ class _SharePostToStoryScreenState
           );
         } catch (error) {
           return _unavailableCard(
-            'Unable to preview this post.',
+            context.tr('Unable to preview this post.'),
           );
         }
       },
@@ -1475,7 +1469,7 @@ class _SharePostToStoryScreenState
         .isNotEmpty
         ? post.username
         .trim()
-        : 'Nubify User';
+        : context.tr('Nubify User');
 
     return Container(
       width:

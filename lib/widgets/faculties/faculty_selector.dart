@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../utils/faculties/faculty_catalog.dart';
+import '../../l10n/nubify_text.dart';
 
 class FacultyIconBadge extends StatelessWidget {
   const FacultyIconBadge({
@@ -89,7 +90,7 @@ class FacultySelectionField extends StatelessWidget {
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          faculty.name,
+                          context.tr(faculty.name),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
@@ -107,7 +108,7 @@ class FacultySelectionField extends StatelessWidget {
                   return Align(
                     alignment: AlignmentDirectional.centerStart,
                     child: Text(
-                      faculty.name,
+                      context.tr(faculty.name),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(

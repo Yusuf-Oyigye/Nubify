@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../utils/profile/username_rules.dart';
 
 import '../../models/stories/story.dart';
+import '../../l10n/nubify_text.dart';
 
 class StoryPeoplePickerScreen
     extends StatefulWidget {
@@ -238,7 +239,7 @@ class _StoryPeoplePickerScreenState
         SnackBar(
           content:
           Text(
-            'Unable to load people: $error',
+            context.tr('Unable to load people: {error}', {'error': error}),
           ),
         ),
       );
@@ -313,7 +314,7 @@ class _StoryPeoplePickerScreenState
         SnackBar(
           content:
           Text(
-            'You can select up to $maxSelection people.',
+            context.tr('You can select up to {maxSelection} people.', {'maxSelection': maxSelection}),
           ),
         ),
       );
@@ -363,8 +364,7 @@ class _StoryPeoplePickerScreenState
             _done,
 
             child:
-            const Text(
-              'Done',
+            Text(context.tr('Done'),
 
               style:
               TextStyle(
@@ -420,7 +420,7 @@ class _StoryPeoplePickerScreenState
                 decoration:
                 InputDecoration(
                   hintText:
-                  'Search name or @username',
+                  context.tr('Search name or @username'),
 
                   prefixIcon:
                   const Icon(
@@ -526,10 +526,9 @@ class _StoryPeoplePickerScreenState
               )
                   : _filteredPeople
                   .isEmpty
-                  ? const Center(
+                  ? Center(
                 child:
-                Text(
-                  'No users found.',
+                Text(context.tr('No users found.'),
                 ),
               )
                   : ListView
@@ -626,8 +625,7 @@ class _StoryPeoplePickerScreenState
                               ),
                             ),
                             child:
-                            const Text(
-                              'Connected',
+                            Text(context.tr('Connected'),
                               style:
                               TextStyle(
                                 color:

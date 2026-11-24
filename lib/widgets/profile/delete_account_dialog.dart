@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../services/profile/account_deletion_service.dart';
 import '../menu/nubify_menu_components.dart';
+import '../../l10n/nubify_text.dart';
 
 //===================================================
 // STEP 1 — "ARE YOU SURE?" (YES / NO)
@@ -17,26 +18,25 @@ Future<void> confirmDeleteAccount(BuildContext context) async {
 
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
 
-      title: const Row(
+      title: Row(
         children: [
           Icon(Icons.warning_amber_rounded, color: NubifyPalette.crimson),
 
           SizedBox(width: 12),
 
-          Expanded(child: Text('Delete Account?')),
+          Expanded(child: Text(context.tr('Delete Account?'))),
         ],
       ),
 
-      content: const Text(
-        'Are you sure you want to delete your account? '
-            'Your profile will be permanently removed and this cannot be undone.',
+      content: Text(context.tr('Are you sure you want to delete your account? '
+            'Your profile will be permanently removed and this cannot be undone.'),
       ),
 
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(dialogContext, false),
 
-          child: const Text('No'),
+          child: Text(context.tr('No')),
         ),
 
         FilledButton(
@@ -47,7 +47,7 @@ Future<void> confirmDeleteAccount(BuildContext context) async {
 
           onPressed: () => Navigator.pop(dialogContext, true),
 
-          child: const Text('Yes'),
+          child: Text(context.tr('Yes')),
         ),
       ],
     ),
@@ -99,7 +99,7 @@ class _DeleteAccountPasswordDialogState
 
   Future<void> _delete() async {
     if (_password.text.isEmpty) {
-      setState(() => _error = 'Please enter your password.');
+      setState(() => _error = context.tr('Please enter your password.'));
       return;
     }
 
@@ -125,11 +125,11 @@ class _DeleteAccountPasswordDialogState
 
         _error = switch (error.code) {
           'wrong-password' ||
-          'invalid-credential' => 'Incorrect password. Please try again.',
+          'invalid-credential' => context.tr('Incorrect password. Please try again.'),
           'too-many-requests' =>
-          'Too many attempts. Please wait a moment and retry.',
-          'network-request-failed' => 'No internet connection. Please retry.',
-          _ => error.message ?? 'Could not delete your account. Please retry.',
+          context.tr('Too many attempts. Please wait a moment and retry.'),
+          'network-request-failed' => context.tr('No internet connection. Please retry.'),
+          _ => error.message ?? context.tr('Could not delete your account. Please retry.'),
         };
       });
     }
@@ -142,7 +142,7 @@ class _DeleteAccountPasswordDialogState
       setState(() {
         _deleting = false;
         _error =
-        'Could not delete your account. Check your connection and retry.';
+        context.tr('Could not delete your account. Check your connection and retry.');
       });
     }
   }
@@ -154,13 +154,13 @@ class _DeleteAccountPasswordDialogState
 
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
 
-      title: const Row(
+      title: Row(
         children: [
           Icon(Icons.lock_outline_rounded, color: NubifyPalette.crimson),
 
           SizedBox(width: 12),
 
-          Expanded(child: Text('Confirm Password')),
+          Expanded(child: Text(context.tr('Confirm Password'))),
         ],
       ),
 
@@ -169,9 +169,8 @@ class _DeleteAccountPasswordDialogState
         crossAxisAlignment: CrossAxisAlignment.start,
 
         children: [
-          const Text(
-            'For your security, enter your password to permanently '
-                'delete your account.',
+          Text(context.tr('For your security, enter your password to permanently '
+                'delete your account.'),
           ),
 
           const SizedBox(height: 16),
@@ -184,7 +183,7 @@ class _DeleteAccountPasswordDialogState
             onSubmitted: (_) => _delete(),
 
             decoration: InputDecoration(
-              labelText: 'Password',
+              labelText: context.tr('Password'),
               errorText: _error,
               errorMaxLines: 3,
 
@@ -210,7 +209,7 @@ class _DeleteAccountPasswordDialogState
         TextButton(
           onPressed: _deleting ? null : () => Navigator.pop(context),
 
-          child: const Text('Cancel'),
+          child: Text(context.tr('Cancel')),
         ),
 
         FilledButton(
@@ -233,7 +232,7 @@ class _DeleteAccountPasswordDialogState
               color: Colors.white,
             ),
           )
-              : const Text('Delete'),
+              : Text(context.tr('Delete')),
         ),
       ],
     );

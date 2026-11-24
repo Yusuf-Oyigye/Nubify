@@ -21,6 +21,7 @@ import '../../widgets/links/universal_link_text.dart';
 import '../../widgets/common/translatable_text.dart';
 import '../../widgets/profile/nubify_profile_grid.dart';
 import '../../widgets/profile/profile_vertical_feed.dart';
+import '../../l10n/nubify_text.dart';
 
 //===================================================
 // PROFILE SCREEN
@@ -338,7 +339,7 @@ class _ProfileScreenState extends State<ProfileScreen>
 
       barrierDismissible: true,
 
-      barrierLabel: 'Profile picture',
+      barrierLabel: context.tr('Profile picture'),
 
       barrierColor: Colors.black.withValues(alpha: 0.96),
 
@@ -472,7 +473,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         return;
       }
 
-      _showMessage(nowFollowing ? 'Following.' : 'Unfollowed.');
+      _showMessage(nowFollowing ? context.tr('Following.') : context.tr('Unfollowed.'));
     } catch (error) {
       _showMessage(error.toString().replaceFirst('Exception: ', ''));
     } finally {
@@ -573,7 +574,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               ListTile(
                 leading: const Icon(Icons.share_outlined),
 
-                title: const Text('Share Profile'),
+                title: Text(context.tr('Share Profile')),
 
                 onTap: () {
                   closeThen(() => _shareProfile(username));
@@ -586,7 +587,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               ListTile(
                 leading: const Icon(Icons.link_rounded),
 
-                title: const Text('Copy Profile Link'),
+                title: Text(context.tr('Copy Profile Link')),
 
                 onTap: () {
                   closeThen(_copyProfileLink);
@@ -600,9 +601,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                 ListTile(
                   leading: const Icon(Icons.archive_outlined),
 
-                  title: const Text('Story Archive'),
+                  title: Text(context.tr('Story Archive')),
 
-                  subtitle: const Text('View Stories you have shared'),
+                  subtitle: Text(context.tr('View Stories you have shared')),
 
                   onTap: () {
                     Navigator.pop(sheetContext);
@@ -624,9 +625,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                 ListTile(
                   leading: const Icon(Icons.visibility_off_outlined),
 
-                  title: const Text('Hidden Posts'),
+                  title: Text(context.tr('Hidden Posts')),
 
-                  subtitle: const Text('View and unhide posts you hid'),
+                  subtitle: Text(context.tr('View and unhide posts you hid')),
 
                   onTap: () {
                     Navigator.pop(sheetContext);
@@ -647,7 +648,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 ListTile(
                   leading: const Icon(Icons.flag_outlined),
 
-                  title: const Text('Report User'),
+                  title: Text(context.tr('Report User')),
 
                   onTap: () {
                     closeThen(_reportUser);
@@ -662,7 +663,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                   ),
 
                   title: Text(
-                    _isBlocked ? 'Unblock User' : 'Block User',
+                    _isBlocked ? context.tr('Unblock User') : context.tr('Block User'),
 
                     style: TextStyle(
                       color: _isBlocked ? null : Colors.redAccent,
@@ -695,11 +696,11 @@ class _ProfileScreenState extends State<ProfileScreen>
         ShareParams(
           text: username.isEmpty
               ? link
-              : 'Check out @$username on Nubify\n$link',
+              : context.tr('Check out @{username} on Nubify\n{link}', {'username': username, 'link': link}),
         ),
       );
     } catch (_) {
-      _showMessage('Unable to share profile.');
+      _showMessage(NubifyText.tr('Unable to share profile.'));
     }
   }
 
@@ -712,7 +713,7 @@ class _ProfileScreenState extends State<ProfileScreen>
 
     await Clipboard.setData(ClipboardData(text: link));
 
-    _showMessage('Profile link copied.');
+    _showMessage(NubifyText.tr('Profile link copied.'));
   }
 
   //===================================================
@@ -727,7 +728,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     try {
       await showReportUserDialog(context: context, targetUid: _profileUid);
     } catch (_) {
-      _showMessage('Unable to report this user.');
+      _showMessage(NubifyText.tr('Unable to report this user.'));
     }
   }
 
@@ -752,9 +753,9 @@ class _ProfileScreenState extends State<ProfileScreen>
           _isBlocked = false;
         });
 
-        _showMessage('User unblocked.');
+        _showMessage(context.tr('User unblocked.'));
       } catch (_) {
-        _showMessage('Unable to unblock user.');
+        _showMessage(context.tr('Unable to unblock user.'));
       }
 
       return;
@@ -765,10 +766,9 @@ class _ProfileScreenState extends State<ProfileScreen>
 
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: const Text('Block User?'),
+          title: Text(context.tr('Block User?')),
 
-          content: const Text(
-            'You will stop seeing this user\'s content where your block filters are applied.',
+          content: Text(context.tr('You will stop seeing this user\'s content where your block filters are applied.'),
           ),
 
           actions: <Widget>[
@@ -777,7 +777,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 Navigator.pop(dialogContext, false);
               },
 
-              child: const Text('Cancel'),
+              child: Text(context.tr('Cancel')),
             ),
 
             FilledButton(
@@ -787,7 +787,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 Navigator.pop(dialogContext, true);
               },
 
-              child: const Text('Block'),
+              child: Text(context.tr('Block')),
             ),
           ],
         );
@@ -809,9 +809,9 @@ class _ProfileScreenState extends State<ProfileScreen>
         _isBlocked = true;
       });
 
-      _showMessage('User blocked.');
+      _showMessage(context.tr('User blocked.'));
     } catch (_) {
-      _showMessage('Unable to block user.');
+      _showMessage(context.tr('Unable to block user.'));
     }
   }
 
@@ -931,7 +931,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         ? fullName
         : username.isNotEmpty
         ? username
-        : 'Nubify User';
+        : context.tr('Nubify User');
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 13, 16, 14),
@@ -985,7 +985,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                     _ProfileStat(
                       value: _compactNumber(following.length),
 
-                      label: 'Following',
+                      label: context.tr('Following'),
 
                       onTap: () {
                         _openConnections(initialIndex: 1);
@@ -995,7 +995,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                     _ProfileStat(
                       value: _compactNumber(followers.length),
 
-                      label: 'Followers',
+                      label: context.tr('Followers'),
 
                       onTap: () {
                         _openConnections(initialIndex: 0);
@@ -1010,7 +1010,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                             return _ProfileStat(
                               value: _compactNumber(snapshot.data ?? 0),
 
-                              label: 'Likes',
+                              label: context.tr('Likes'),
                             );
                           },
                     ),
@@ -1146,7 +1146,7 @@ class _ProfileScreenState extends State<ProfileScreen>
 
               icon: const Icon(Icons.edit_outlined),
 
-              label: const Text('Edit Profile'),
+              label: Text(context.tr('Edit Profile')),
 
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size.fromHeight(44),
@@ -1167,7 +1167,7 @@ class _ProfileScreenState extends State<ProfileScreen>
 
                     icon: const Icon(Icons.chat_bubble_outline_rounded),
 
-                    label: const Text('Message'),
+                    label: Text(context.tr('Message')),
 
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size.fromHeight(44),
@@ -1199,7 +1199,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                 : Icons.person_add_alt_1_rounded,
                           ),
 
-                    label: Text(isFollowing ? 'Unfollow' : 'Follow'),
+                    label: Text(isFollowing ? context.tr('Unfollow') : context.tr('Follow')),
 
                     style: FilledButton.styleFrom(
                       backgroundColor: _blue,
@@ -1269,7 +1269,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       context,
       MaterialPageRoute<void>(
         builder: (_) => ProfileVerticalFeed<ProfileCommentActivity>(
-          title: 'Comments',
+          title: context.tr('Comments'),
           items: activities,
           initialIndex: initialIndex,
           itemBuilder:
@@ -1307,27 +1307,27 @@ class _ProfileScreenState extends State<ProfileScreen>
         // POSTS
         //===================================================
 
-        const Tab(
+        Tab(
           height: 49,
-          icon: Tooltip(message: 'Posts', child: Icon(Icons.grid_view_rounded)),
+          icon: Tooltip(message: context.tr('Posts'), child: Icon(Icons.grid_view_rounded)),
         ),
 
         //===================================================
         // REPOSTS
         //===================================================
-        const Tab(
+        Tab(
           height: 49,
-          icon: Tooltip(message: 'Reposts', child: Icon(Icons.repeat_rounded)),
+          icon: Tooltip(message: context.tr('Reposts'), child: Icon(Icons.repeat_rounded)),
         ),
 
         //===================================================
         // SAVED
         //===================================================
         if (_isOwner)
-          const Tab(
+          Tab(
             height: 49,
             icon: Tooltip(
-              message: 'Saved',
+              message: context.tr('Saved'),
               child: Icon(Icons.bookmark_outline_rounded),
             ),
           ),
@@ -1336,10 +1336,10 @@ class _ProfileScreenState extends State<ProfileScreen>
         // COMMENTS
         //===================================================
         if (_isOwner)
-          const Tab(
+          Tab(
             height: 49,
             icon: Tooltip(
-              message: 'Comments',
+              message: context.tr('Comments'),
               child: Icon(Icons.mode_comment_outlined),
             ),
           ),
@@ -1348,10 +1348,10 @@ class _ProfileScreenState extends State<ProfileScreen>
         // LIKES
         //===================================================
         if (_isOwner)
-          const Tab(
+          Tab(
             height: 49,
             icon: Tooltip(
-              message: 'Likes',
+              message: context.tr('Likes'),
               child: Icon(Icons.favorite_border_rounded),
             ),
           ),
@@ -1374,22 +1374,22 @@ class _ProfileScreenState extends State<ProfileScreen>
     if (posts.isEmpty) {
       return _emptyTab(
         icon: Icons.grid_view_rounded,
-        title: 'No posts yet',
+        title: context.tr('No posts yet'),
         subtitle: _isOwner
-            ? 'Your original posts will appear here.'
-            : 'This user has not posted yet.',
+            ? context.tr('Your original posts will appear here.')
+            : context.tr('This user has not posted yet.'),
       );
     }
 
     return NubifyProfileGrid(
       posts: posts,
-      title: 'Posts',
+      title: context.tr('Posts'),
       pinnedPostIds: pinnedPostIds,
       onOpen: (Post post, int index) {
         _openGridPostFeed(
           posts: posts,
           initialIndex: index,
-          title: 'Post',
+          title: context.tr('Post'),
           isProfilePost: true,
           pinnedPostIds: pinnedPostIds,
         );
@@ -1406,21 +1406,21 @@ class _ProfileScreenState extends State<ProfileScreen>
     if (reposts.isEmpty) {
       return _emptyTab(
         icon: Icons.repeat_rounded,
-        title: 'No reposts yet',
+        title: context.tr('No reposts yet'),
         subtitle: _isOwner
-            ? 'Posts you repost or quote repost will appear here.'
-            : 'This user has not reposted anything yet.',
+            ? context.tr('Posts you repost or quote repost will appear here.')
+            : context.tr('This user has not reposted anything yet.'),
       );
     }
 
     return NubifyProfileGrid(
       posts: reposts,
-      title: 'Reposts',
+      title: context.tr('Reposts'),
       onOpen: (Post post, int index) {
         _openGridPostFeed(
           posts: reposts,
           initialIndex: index,
-          title: 'Repost',
+          title: context.tr('Repost'),
           isProfilePost: true,
         );
       },
@@ -1443,7 +1443,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         if (snapshot.hasError) {
           return _emptyTab(
             icon: Icons.error_outline_rounded,
-            title: 'Unable to load saved posts',
+            title: context.tr('Unable to load saved posts'),
             subtitle: '${snapshot.error}',
           );
         }
@@ -1457,19 +1457,19 @@ class _ProfileScreenState extends State<ProfileScreen>
         if (posts.isEmpty) {
           return _emptyTab(
             icon: Icons.bookmark_border_rounded,
-            title: 'No saved posts',
-            subtitle: 'Posts you save are private and only visible to you.',
+            title: context.tr('No saved posts'),
+            subtitle: context.tr('Posts you save are private and only visible to you.'),
           );
         }
 
         return NubifyProfileGrid(
           posts: posts,
-          title: 'Saved',
+          title: context.tr('Saved'),
           onOpen: (Post post, int index) {
             _openGridPostFeed(
               posts: posts,
               initialIndex: index,
-              title: 'Saved post',
+              title: context.tr('Saved post'),
             );
           },
         );
@@ -1493,7 +1493,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         if (snapshot.hasError) {
           return _emptyTab(
             icon: Icons.error_outline_rounded,
-            title: 'Unable to load comments',
+            title: context.tr('Unable to load comments'),
             subtitle: '${snapshot.error}',
           );
         }
@@ -1507,8 +1507,8 @@ class _ProfileScreenState extends State<ProfileScreen>
         if (activities.isEmpty) {
           return _emptyTab(
             icon: Icons.chat_bubble_outline_rounded,
-            title: 'No comments yet',
-            subtitle: 'Posts you comment or reply on will appear here.',
+            title: context.tr('No comments yet'),
+            subtitle: context.tr('Posts you comment or reply on will appear here.'),
           );
         }
 
@@ -1538,7 +1538,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         if (snapshot.hasError) {
           return _emptyTab(
             icon: Icons.error_outline_rounded,
-            title: 'Unable to load likes',
+            title: context.tr('Unable to load likes'),
             subtitle: '${snapshot.error}',
           );
         }
@@ -1552,20 +1552,20 @@ class _ProfileScreenState extends State<ProfileScreen>
         if (posts.isEmpty) {
           return _emptyTab(
             icon: Icons.favorite_border_rounded,
-            title: 'No liked posts yet',
+            title: context.tr('No liked posts yet'),
             subtitle:
-                'Every post, repost and NUBuzz video you like will appear here.',
+                context.tr('Every post, repost and NUBuzz video you like will appear here.'),
           );
         }
 
         return NubifyProfileGrid(
           posts: posts,
-          title: 'Likes',
+          title: context.tr('Likes'),
           onOpen: (Post post, int index) {
             _openGridPostFeed(
               posts: posts,
               initialIndex: index,
-              title: 'Liked post',
+              title: context.tr('Liked post'),
             );
           },
         );
@@ -1663,10 +1663,10 @@ class _ProfileScreenState extends State<ProfileScreen>
             icon: const Icon(Icons.arrow_back_rounded),
           ),
 
-          title: const Text('Profile'),
+          title: Text(context.tr('Profile')),
         ),
 
-        body: const Center(child: Text('Profile unavailable.')),
+        body: Center(child: Text(context.tr('Profile unavailable.'))),
       );
     }
 
@@ -1694,12 +1694,14 @@ class _ProfileScreenState extends State<ProfileScreen>
                     icon: const Icon(Icons.arrow_back_rounded),
                   ),
 
-                  title: const Text('Profile'),
+                  title: Text(context.tr('Profile')),
                 ),
 
                 body: Center(
                   child: Text(
-                    'Unable to load profile.\n${userSnapshot.error}',
+                    context.tr('Unable to load profile.\n{error}', {
+                      'error': '${userSnapshot.error}',
+                    }),
 
                     textAlign: TextAlign.center,
                   ),
@@ -1719,19 +1721,18 @@ class _ProfileScreenState extends State<ProfileScreen>
                       onPressed: _goBack,
                       icon: const Icon(Icons.arrow_back_rounded),
                     ),
-                    title: const Text('Profile'),
+                    title: Text(context.tr('Profile')),
                   ),
                   body: Center(
                     child: Padding(
                       padding: const EdgeInsets.all(28),
                       child: repairError == null
-                          ? const Column(
+                          ? Column(
                               mainAxisSize: MainAxisSize.min,
                               children: <Widget>[
                                 CircularProgressIndicator(color: _blue),
                                 SizedBox(height: 16),
-                                Text(
-                                  'Finishing your profile setup...',
+                                Text(context.tr('Finishing your profile setup...'),
                                   textAlign: TextAlign.center,
                                 ),
                               ],
@@ -1745,8 +1746,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                   size: 52,
                                 ),
                                 const SizedBox(height: 12),
-                                const Text(
-                                  'Your profile setup needs another try.',
+                                Text(context.tr('Your profile setup needs another try.'),
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
                                     fontSize: 17,
@@ -1763,7 +1763,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                 FilledButton.icon(
                                   onPressed: _retryProfileRepair,
                                   icon: const Icon(Icons.refresh_rounded),
-                                  label: const Text('Try Again'),
+                                  label: Text(context.tr('Try Again')),
                                 ),
                               ],
                             ),
@@ -1780,10 +1780,10 @@ class _ProfileScreenState extends State<ProfileScreen>
                     icon: const Icon(Icons.arrow_back_rounded),
                   ),
 
-                  title: const Text('Profile'),
+                  title: Text(context.tr('Profile')),
                 ),
 
-                body: const Center(child: Text('This profile is unavailable.')),
+                body: Center(child: Text(context.tr('This profile is unavailable.'))),
               );
             }
 
@@ -1817,8 +1817,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                         //===================================================
                         // PROFILE TITLE
                         //===================================================
-                        title: const Text(
-                          'Profile',
+                        title: Text(context.tr('Profile'),
 
                           maxLines: 1,
 
@@ -2209,9 +2208,9 @@ class _ProfileCommentPost extends StatelessWidget {
                             Text(
                               activity.isReply
                                   ? activity.replyToUsername.isNotEmpty
-                                        ? 'You replied to @${activity.replyToUsername}'
-                                        : 'You posted a reply'
-                                  : 'You commented on this post',
+                                        ? context.tr('You replied to @{replyToUsername}', {'replyToUsername': activity.replyToUsername})
+                                        : context.tr('You posted a reply')
+                                  : context.tr('You commented on this post'),
 
                               style: const TextStyle(
                                 color: _blue,

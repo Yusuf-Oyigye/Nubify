@@ -479,7 +479,7 @@ class NubUniversityScreen extends StatelessWidget {
           //=========================================
           _TextPanel(
             title: context.tr('About Nahda University'),
-            content: _nubAboutText,
+            content: context.tr(_nubAboutText),
           ),
 
         ],

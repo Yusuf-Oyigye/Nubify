@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../models/huddles/huddle.dart';
 import '../../services/huddles/huddle_service.dart';
 import '../../widgets/huddles/huddle_ui.dart';
+import '../../l10n/nubify_text.dart';
 
 //===================================================
 // NUB HUDDLES — LIVE CHAT
@@ -75,7 +76,7 @@ class _HuddleChatSheetState extends State<HuddleChatSheet> {
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Message not sent. Chat may be off.')),
+          SnackBar(content: Text(context.tr('Message not sent. Chat may be off.'))),
         );
       }
     } finally {
@@ -98,7 +99,7 @@ class _HuddleChatSheetState extends State<HuddleChatSheet> {
           children: [
             ListTile(
               leading: const Icon(Icons.reply_rounded, color: Colors.white70),
-              title: const Text('Reply', style: TextStyle(color: Colors.white)),
+              title: Text(context.tr('Reply'), style: TextStyle(color: Colors.white)),
               onTap: () => Navigator.pop(sheetContext, 'reply'),
             ),
             if (canDelete)
@@ -107,8 +108,7 @@ class _HuddleChatSheetState extends State<HuddleChatSheet> {
                   Icons.delete_outline_rounded,
                   color: HuddleColors.live,
                 ),
-                title: const Text(
-                  'Delete',
+                title: Text(context.tr('Delete'),
                   style: TextStyle(color: HuddleColors.live),
                 ),
                 onTap: () => Navigator.pop(sheetContext, 'delete'),
@@ -138,12 +138,11 @@ class _HuddleChatSheetState extends State<HuddleChatSheet> {
           ),
           child: Column(
             children: [
-              const Padding(
+              Padding(
                 padding: EdgeInsets.fromLTRB(16, 0, 16, 6),
                 child: Align(
                   alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Huddle chat',
+                  child: Text(context.tr('Huddle chat'),
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 18,
@@ -159,9 +158,8 @@ class _HuddleChatSheetState extends State<HuddleChatSheet> {
                     final List<HuddleChatMessage> messages =
                         snapshot.data ?? const <HuddleChatMessage>[];
                     if (messages.isEmpty) {
-                      return const Center(
-                        child: Text(
-                          'No messages yet. Say hi 👋',
+                      return Center(
+                        child: Text(context.tr('No messages yet. Say hi 👋'),
                           style: TextStyle(color: Colors.white38),
                         ),
                       );
@@ -179,10 +177,9 @@ class _HuddleChatSheetState extends State<HuddleChatSheet> {
                 ),
               ),
               if (!chatOn)
-                const Padding(
+                Padding(
                   padding: EdgeInsets.all(16),
-                  child: Text(
-                    'The host has turned off chat.',
+                  child: Text(context.tr('The host has turned off chat.'),
                     style: TextStyle(color: Colors.white54),
                   ),
                 )
@@ -219,7 +216,7 @@ class _HuddleChatSheetState extends State<HuddleChatSheet> {
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
-                      'Replying to ${reply.name}: ${reply.text}',
+                      context.tr('Replying to {name}: {text}', {'name': reply.name, 'text': reply.text}),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -252,7 +249,7 @@ class _HuddleChatSheetState extends State<HuddleChatSheet> {
                     onSubmitted: (_) => _send(),
                     decoration: InputDecoration(
                       counterText: '',
-                      hintText: 'Message the Huddle…',
+                      hintText: context.tr('Message the Huddle…'),
                       hintStyle: const TextStyle(color: Colors.white38),
                       filled: true,
                       fillColor: HuddleColors.stageCard,

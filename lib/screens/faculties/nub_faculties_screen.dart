@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../models/faculties/nub_faculty.dart';
 import '../../widgets/menu/nubify_menu_components.dart';
 import 'nub_faculty_detail_screen.dart';
+import '../../l10n/nubify_text.dart';
 
 //===================================================
 // NUB — FACULTIES & PROGRAMMES
@@ -26,7 +27,7 @@ class _NubFacultiesScreenState extends State<NubFacultiesScreen> {
         : nubFaculties.where((f) => f.field == _field).toList();
 
     return NubifyMenuPage(
-      title: 'Faculties & Programmes',
+      title: context.tr('Faculties & Programmes'),
 
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -141,14 +142,13 @@ class _FacultiesHeader extends StatelessWidget {
                     ),
                   ),
 
-                  child: const Row(
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
 
                     children: [
                       Icon(Icons.school_rounded, color: Colors.white, size: 15),
                       SizedBox(width: 6),
-                      Text(
-                        'NAHDA UNIVERSITY · NUB',
+                      Text(context.tr('NAHDA UNIVERSITY · NUB'),
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 11,
@@ -162,8 +162,7 @@ class _FacultiesHeader extends StatelessWidget {
 
                 const SizedBox(height: 18),
 
-                const Text(
-                  'Find your faculty',
+                Text(context.tr('Find your faculty'),
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 27,
@@ -174,8 +173,7 @@ class _FacultiesHeader extends StatelessWidget {
 
                 const SizedBox(height: 10),
 
-                Text(
-                  'Explore programmes in health, technology, business, media and the arts.',
+                Text(context.tr('Explore programmes in health, technology, business, media and the arts.'),
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: .80),
                     fontSize: 14,
@@ -185,13 +183,13 @@ class _FacultiesHeader extends StatelessWidget {
 
                 const SizedBox(height: 20),
 
-                const Row(
+                Row(
                   children: [
-                    Expanded(child: _HeaderStat(value: '10', label: 'Faculties')),
+                    Expanded(child: _HeaderStat(value: '10', label: context.tr('Faculties'))),
                     SizedBox(width: 10),
-                    Expanded(child: _HeaderStat(value: '4', label: 'Fields')),
+                    Expanded(child: _HeaderStat(value: '4', label: context.tr('Fields'))),
                     SizedBox(width: 10),
-                    Expanded(child: _HeaderStat(value: '2006', label: 'Founded')),
+                    Expanded(child: _HeaderStat(value: '2006', label: context.tr('Founded'))),
                   ],
                 ),
               ],
@@ -285,7 +283,7 @@ class _FieldFilter extends StatelessWidget {
 
         children: [
           _FilterChip(
-            label: 'All',
+            label: context.tr('All'),
             icon: Icons.apps_rounded,
             selected: selected == null,
             onTap: () => onChanged(null),
@@ -293,7 +291,7 @@ class _FieldFilter extends StatelessWidget {
 
           for (final field in NubFacultyField.values)
             _FilterChip(
-              label: field.label,
+              label: context.tr(field.label),
               icon: field.icon,
               selected: selected == field,
               onTap: () => onChanged(field),
@@ -490,7 +488,7 @@ class _FacultyCard extends StatelessWidget {
 
                           children: [
                             Text(
-                              faculty.shortName,
+                              context.tr(faculty.shortName),
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
@@ -504,7 +502,7 @@ class _FacultyCard extends StatelessWidget {
                             const SizedBox(height: 4),
 
                             Text(
-                              faculty.field.label,
+                              context.tr(faculty.field.label),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(

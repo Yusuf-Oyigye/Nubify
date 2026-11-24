@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../screens/huddles/huddle_room_screen.dart';
 import '../../services/huddles/huddle_session.dart';
 import 'huddle_ui.dart';
+import '../../l10n/nubify_text.dart';
 
 //===================================================
 // NUB HUDDLES — MINIMISED HUDDLE BAR
@@ -31,15 +32,15 @@ class HuddleMiniBar extends StatelessWidget {
         }
 
         final String status = switch (session.connection) {
-          HuddleConnection.connecting => 'Connecting…',
-          HuddleConnection.reconnecting => 'Reconnecting…',
-          HuddleConnection.poor => 'Poor connection',
+          HuddleConnection.connecting => context.tr('Connecting…'),
+          HuddleConnection.reconnecting => context.tr('Reconnecting…'),
+          HuddleConnection.poor => context.tr('Poor connection'),
           _ =>
           session.sharingScreen
-              ? 'You are presenting'
+              ? context.tr('You are presenting')
               : session.micOn
-              ? 'Your mic is on'
-              : 'Listening',
+              ? context.tr('Your mic is on')
+              : context.tr('Listening'),
         };
 
         return Material(
@@ -83,14 +84,13 @@ class HuddleMiniBar extends StatelessWidget {
                   ),
                   if (session.micOn)
                     IconButton(
-                      tooltip: 'Mute',
+                      tooltip: context.tr('Mute'),
                       onPressed: session.toggleMic,
                       icon: const Icon(Icons.mic_rounded, color: Colors.white),
                     ),
                   TextButton(
                     onPressed: session.leave,
-                    child: const Text(
-                      'Leave',
+                    child: Text(context.tr('Leave'),
                       style: TextStyle(
                         color: HuddleColors.live,
                         fontWeight: FontWeight.w800,

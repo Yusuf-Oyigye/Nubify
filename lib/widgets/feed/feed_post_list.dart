@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../../models/feed/post.dart';
 import '../../services/feed/feed_service.dart';
 import 'post_card.dart';
+import '../../l10n/nubify_text.dart';
 
 class FeedPostList extends StatefulWidget {
   const FeedPostList({
@@ -488,7 +489,7 @@ class FeedPostListState
                     20,
                   ),
                   child: Text(
-                    'Something went wrong:\n${snapshot.error}',
+                    context.tr('Something went wrong:\n{error}', {'error': '${snapshot.error}'}),
                     textAlign:
                     TextAlign.center,
                   ),
@@ -504,7 +505,7 @@ class FeedPostListState
 
         if (!snapshot.hasData) {
           return _emptyFeed(
-            'No posts yet.',
+            context.tr('No posts yet.'),
           );
         }
 
@@ -521,7 +522,7 @@ class FeedPostListState
 
         if (allDocuments.isEmpty) {
           return _emptyFeed(
-            'No posts yet.',
+            context.tr('No posts yet.'),
           );
         }
 
@@ -541,7 +542,7 @@ class FeedPostListState
 
         if (visibleDocuments.isEmpty) {
           return _emptyFeed(
-            'No visible posts yet.',
+            context.tr('No visible posts yet.'),
           );
         }
         //===================================================
@@ -731,7 +732,7 @@ class FeedPostListState
                     16,
                   ),
                   child: Text(
-                    'Could not display this post:\n$error',
+                    context.tr('Could not display this post:\n{error}', {'error': error}),
                     style:
                     TextStyle(
                       color:

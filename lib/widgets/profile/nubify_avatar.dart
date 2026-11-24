@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 
 import '../../utils/faculties/faculty_catalog.dart';
+import '../../l10n/nubify_text.dart';
 
 //===================================================
 // NUBIFY AVATARS
@@ -374,10 +375,10 @@ class NubifyAvatar extends StatelessWidget {
     return Semantics(
       image: true,
       label: switch (style) {
-        NubifyAvatarStyle.male => 'Male avatar',
-        NubifyAvatarStyle.female => 'Female avatar',
-        NubifyAvatarStyle.hijab => 'Female avatar with hijab',
-        _ => 'Avatar',
+        NubifyAvatarStyle.male => context.tr('Male avatar'),
+        NubifyAvatarStyle.female => context.tr('Female avatar'),
+        NubifyAvatarStyle.hijab => context.tr('Female avatar with hijab'),
+        _ => context.tr('Avatar'),
       },
       child: SizedBox.square(
         dimension: size,

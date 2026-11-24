@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../models/feed/post.dart';
 import '../../utils/common/nubify_time.dart';
 import '../feed/post_media_carousel.dart';
+import '../../l10n/nubify_text.dart';
 
 //=================================
 // SHARED POST STORY CARD
@@ -146,7 +147,7 @@ class SharedPostStoryCard extends StatelessWidget {
         ? current.fullName.trim()
         : current.username.trim().isNotEmpty
         ? current.username.trim()
-        : 'Nubify User';
+        : context.tr('Nubify User');
 
     final String ownText = current.isQuoteRepost
         ? current.repostText.trim().isNotEmpty
@@ -357,7 +358,7 @@ class SharedPostStoryCard extends StatelessWidget {
                       const SizedBox(width: 5),
 
                       Text(
-                        current.isQuoteRepost ? 'Quote repost' : 'Reposted',
+                        current.isQuoteRepost ? context.tr('Quote repost') : context.tr('Reposted'),
                         style: const TextStyle(
                           color: _blue,
                           fontWeight: FontWeight.w700,
@@ -925,7 +926,7 @@ class _ReferencedStoryPost extends StatelessWidget {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 onContentReady?.call();
               });
-              return _unavailable('Referenced post is unavailable.');
+              return _unavailable(context.tr('Referenced post is unavailable.'));
             }
 
             final Map<String, dynamic> data = snapshot.data!.data()!;
@@ -934,7 +935,7 @@ class _ReferencedStoryPost extends StatelessWidget {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 onContentReady?.call();
               });
-              return _unavailable('Referenced post is hidden.');
+              return _unavailable(context.tr('Referenced post is hidden.'));
             }
 
             try {
@@ -980,7 +981,7 @@ class _ReferencedStoryPost extends StatelessWidget {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 onContentReady?.call();
               });
-              return _unavailable('Unable to display referenced post.');
+              return _unavailable(context.tr('Unable to display referenced post.'));
             }
           },
     );

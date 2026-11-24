@@ -21,6 +21,7 @@ import '../../widgets/stories/story_link_preview_overlay.dart';
 import '../../widgets/stories/story_drawing_canvas.dart';
 import '../../services/links/nubify_link_router.dart';
 import '../../utils/links/link_detector.dart';
+import '../../l10n/nubify_text.dart';
 
 //===================================================
 // STORY VIEWER SCREEN
@@ -859,7 +860,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
     } catch (error) {
       debugPrint('Story like error: $error');
 
-      _showMessage('Unable to update reaction.');
+      _showMessage(context.tr('Unable to update reaction.'));
     } finally {
       if (mounted) {
         setState(() {
@@ -909,11 +910,11 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
         _replyCount++;
       });
 
-      _showMessage('Reply sent.');
+      _showMessage(context.tr('Reply sent.'));
     } catch (error) {
       debugPrint('Story reply error: $error');
 
-      _showMessage('Unable to send reply.');
+      _showMessage(context.tr('Unable to send reply.'));
     } finally {
       if (mounted) {
         setState(() {
@@ -953,11 +954,10 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
             mainAxisSize: MainAxisSize.min,
 
             children: <Widget>[
-              const Padding(
+              Padding(
                 padding: EdgeInsets.only(bottom: 8),
 
-                child: Text(
-                  'Share Story',
+                child: Text(context.tr('Share Story'),
 
                   style: TextStyle(
                     color: Colors.white,
@@ -979,8 +979,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                   color: _nubifyBlue,
                 ),
 
-                title: const Text(
-                  'Send to Chat',
+                title: Text(context.tr('Send to Chat'),
 
                   style: TextStyle(color: Colors.white),
                 ),
@@ -998,8 +997,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
               ListTile(
                 leading: const Icon(Icons.link, color: Colors.white),
 
-                title: const Text(
-                  'Copy Link',
+                title: Text(context.tr('Copy Link'),
 
                   style: TextStyle(color: Colors.white),
                 ),
@@ -1037,11 +1035,11 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
         _reshareCount++;
       });
 
-      _showMessage('Story added to your Story.');
+      _showMessage(context.tr('Story added to your Story.'));
     } catch (error) {
       debugPrint('Reshare Story error: $error');
 
-      _showMessage('Unable to reshare Story.');
+      _showMessage(context.tr('Unable to reshare Story.'));
     }
   }
 
@@ -1091,7 +1089,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
       }
     } catch (_) {}
 
-    _showMessage('Story link copied.');
+    _showMessage(NubifyText.tr('Story link copied.'));
   }
 
   //===================================================
@@ -1142,7 +1140,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
         }
       } catch (_) {}
 
-      _showMessage('Story sent.');
+      _showMessage(NubifyText.tr('Story sent.'));
     }
 
     _resumeAfterOverlay();
@@ -1226,14 +1224,14 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
           _shareCount++;
         });
 
-        _showMessage('Story sent to @${person.username}.');
+        _showMessage(context.tr('Story sent to @{username}.', {'username': person.username}));
       }
 
       return true;
     } catch (error) {
       debugPrint('Send Story chat error: $error');
 
-      _showMessage('Unable to send Story.');
+      _showMessage(NubifyText.tr('Unable to send Story.'));
 
       return false;
     }
@@ -1336,8 +1334,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                     Icons.delete_outline_rounded,
                     color: Colors.redAccent,
                   ),
-                  title: const Text(
-                    'Delete Story',
+                  title: Text(context.tr('Delete Story'),
                     style: TextStyle(color: Colors.redAccent),
                   ),
                   onTap: () {
@@ -1349,8 +1346,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
               else
                 ListTile(
                   leading: const Icon(Icons.flag_outlined, color: Colors.white),
-                  title: const Text(
-                    'Report Story',
+                  title: Text(context.tr('Report Story'),
                     style: TextStyle(color: Colors.white),
                   ),
                   onTap: () {
@@ -1362,8 +1358,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
 
               ListTile(
                 leading: const Icon(Icons.link, color: Colors.white),
-                title: const Text(
-                  'Copy Link',
+                title: Text(context.tr('Copy Link'),
                   style: TextStyle(color: Colors.white),
                 ),
                 onTap: () {
@@ -1392,14 +1387,14 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: const Text('Delete Story?'),
-          content: const Text('This Story will be permanently removed.'),
+          title: Text(context.tr('Delete Story?')),
+          content: Text(context.tr('This Story will be permanently removed.')),
           actions: <Widget>[
             TextButton(
               onPressed: () {
                 Navigator.pop(dialogContext, false);
               },
-              child: const Text('Cancel'),
+              child: Text(context.tr('Cancel')),
             ),
 
             FilledButton(
@@ -1407,7 +1402,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
               onPressed: () {
                 Navigator.pop(dialogContext, true);
               },
-              child: const Text('Delete'),
+              child: Text(context.tr('Delete')),
             ),
           ],
         );
@@ -1445,7 +1440,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
     } catch (error) {
       debugPrint('Delete Story error: $error');
 
-      _showMessage('Unable to delete Story.');
+      _showMessage(NubifyText.tr('Unable to delete Story.'));
     }
   }
 
@@ -1465,11 +1460,11 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
         'createdAt': FieldValue.serverTimestamp(),
       });
 
-      _showMessage('Story reported.');
+      _showMessage(NubifyText.tr('Story reported.'));
     } catch (error) {
       debugPrint('Report Story error: $error');
 
-      _showMessage('Unable to report Story.');
+      _showMessage(NubifyText.tr('Unable to report Story.'));
     }
   }
 
@@ -1537,11 +1532,10 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
     final NubifyStory? story = _currentStory;
 
     if (story == null) {
-      return const Scaffold(
+      return Scaffold(
         backgroundColor: Colors.black,
         body: Center(
-          child: Text(
-            'Story unavailable',
+          child: Text(context.tr('Story unavailable'),
             style: TextStyle(color: Colors.white),
           ),
         ),
@@ -1914,7 +1908,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                 _sendReply();
               },
               decoration: InputDecoration(
-                hintText: 'Send a message...',
+                hintText: context.tr('Send a message...'),
                 hintStyle: const TextStyle(color: Colors.white54),
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 16,
@@ -2089,8 +2083,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
 
                     const Spacer(),
 
-                    const Text(
-                      'Activity',
+                    Text(context.tr('Activity'),
                       style: TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
@@ -3124,9 +3117,8 @@ class _StoryVideoState extends State<_StoryVideo> {
     }
 
     if (_error || controller == null || !controller.value.isInitialized) {
-      return const Center(
-        child: Text(
-          'Unable to play video',
+      return Center(
+        child: Text(context.tr('Unable to play video'),
 
           style: TextStyle(color: Colors.white),
         ),
@@ -3681,8 +3673,7 @@ class _StoryVoicePlayerState extends State<_StoryVoicePlayer> {
 
               const SizedBox(height: 20),
 
-              const Text(
-                'Voice Story',
+              Text(context.tr('Voice Story'),
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 21,
@@ -3724,7 +3715,7 @@ class _StoryVoicePlayerState extends State<_StoryVoicePlayer> {
                 TextButton.icon(
                   onPressed: _playFromStart,
                   icon: const Icon(Icons.refresh),
-                  label: const Text('Try again'),
+                  label: Text(context.tr('Try again')),
                 ),
             ],
           ),
@@ -4167,7 +4158,7 @@ class _StoryPollViewState extends State<_StoryPollView> {
 
             if (voted)
               Text(
-                closed ? 'Final result' : 'Vote locked · cannot be changed',
+                closed ? context.tr('Final result') : context.tr('Vote locked · cannot be changed'),
                 textAlign: TextAlign.center,
                 style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 11),
               ),
@@ -4282,8 +4273,7 @@ class _StoryPollViewState extends State<_StoryPollView> {
                         color: const Color(0xFF29B6F6),
                         borderRadius: BorderRadius.circular(20),
                       ),
-                      child: const Text(
-                        'WINS',
+                      child: Text(context.tr('WINS'),
                         style: TextStyle(
                           color: Color(0xFF06141B),
                           fontSize: 10,
@@ -4363,7 +4353,7 @@ class _StoryReshareState extends State<_StoryReshare> {
           children: <Widget>[
             Text(
               story.sourceUsername.trim().isEmpty
-                  ? 'Shared Story'
+                  ? context.tr('Shared Story')
                   : '@${story.sourceUsername}',
               style: const TextStyle(
                 color: Color(0xFF29B6F6),
@@ -4528,7 +4518,7 @@ class _SharedPostStory extends StatelessWidget {
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(18, 74, 18, 130),
                 child: postId.isEmpty
-                    ? _sharedPostUnavailable('Shared post is unavailable.')
+                    ? _sharedPostUnavailable(context.tr('Shared post is unavailable.'))
                     : StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
                         stream: FirebaseFirestore.instance
                             .collection('posts')
@@ -4560,7 +4550,7 @@ class _SharedPostStory extends StatelessWidget {
                                 _notifyReady();
 
                                 return _sharedPostUnavailable(
-                                  'This post is no longer available.',
+                                  context.tr('This post is no longer available.'),
                                 );
                               }
                               try {
@@ -4577,7 +4567,7 @@ class _SharedPostStory extends StatelessWidget {
                                 _notifyReady();
 
                                 return _sharedPostUnavailable(
-                                  'Unable to display this shared post.',
+                                  context.tr('Unable to display this shared post.'),
                                 );
                               }
                             },
@@ -4709,7 +4699,7 @@ class _SharedPostStory extends StatelessWidget {
         ? post.fullName.trim()
         : post.username.trim().isNotEmpty
         ? post.username.trim()
-        : 'Nubify User';
+        : context.tr('Nubify User');
 
     final String quoteText = post.repostText.trim().isNotEmpty
         ? post.repostText.trim()
@@ -4812,7 +4802,7 @@ class _SharedPostStory extends StatelessWidget {
                     const SizedBox(width: 5),
 
                     Text(
-                      post.isQuoteRepost ? 'Quote repost' : 'Reposted',
+                      post.isQuoteRepost ? context.tr('Quote repost') : context.tr('Reposted'),
                       style: const TextStyle(
                         color: Color(0xFF29B6F6),
                         fontWeight: FontWeight.w700,
@@ -4905,7 +4895,7 @@ class _SharedPostStory extends StatelessWidget {
             }
 
             if (!snapshot.data!.exists || snapshot.data!.data() == null) {
-              return _sharedPostUnavailable('Referenced post is unavailable.');
+              return _sharedPostUnavailable(context.tr('Referenced post is unavailable.'));
             }
 
             try {
@@ -4951,7 +4941,7 @@ class _SharedPostStory extends StatelessWidget {
               );
             } catch (_) {
               return _sharedPostUnavailable(
-                'Unable to display referenced post.',
+                context.tr('Unable to display referenced post.'),
               );
             }
           },
@@ -5021,10 +5011,9 @@ class _StoryChatPickerState extends State<_StoryChatPicker> {
 
     return Column(
       children: <Widget>[
-        const Padding(
+        Padding(
           padding: EdgeInsets.fromLTRB(16, 14, 16, 8),
-          child: Text(
-            'Send Story to Chat',
+          child: Text(context.tr('Send Story to Chat'),
             style: TextStyle(
               color: Colors.white,
               fontSize: 20,
@@ -5044,7 +5033,7 @@ class _StoryChatPickerState extends State<_StoryChatPicker> {
               });
             },
             decoration: InputDecoration(
-              hintText: 'Search users...',
+              hintText: context.tr('Search users...'),
               hintStyle: const TextStyle(color: Colors.white54),
               prefixIcon: const Icon(Icons.search, color: Colors.white54),
               filled: true,
@@ -5100,9 +5089,8 @@ class _StoryChatPickerState extends State<_StoryChatPicker> {
                   }
 
                   if (people.isEmpty) {
-                    return const Center(
-                      child: Text(
-                        'No users found.',
+                    return Center(
+                      child: Text(context.tr('No users found.'),
                         style: TextStyle(color: Colors.white54),
                       ),
                     );
@@ -5162,7 +5150,7 @@ class _StoryChatPickerState extends State<_StoryChatPicker> {
                                     strokeWidth: 2,
                                   ),
                                 )
-                              : const Text('Send'),
+                              : Text(context.tr('Send')),
                         ),
                       );
                     },
@@ -5201,8 +5189,7 @@ class _StoryActivitySheet extends StatelessWidget {
         children: <Widget>[
           const SizedBox(height: 8),
 
-          const Text(
-            'Story Activity',
+          Text(context.tr('Story Activity'),
             style: TextStyle(
               color: Colors.white,
               fontSize: 20,
@@ -5218,42 +5205,42 @@ class _StoryActivitySheet extends StatelessWidget {
               children: <Widget>[
                 _ActivityCount(
                   icon: Icons.visibility_outlined,
-                  label: 'Views',
+                  label: context.tr('Views'),
                   count: story.viewCount,
                 ),
                 _ActivityCount(
                   icon: Icons.favorite,
-                  label: 'Likes',
+                  label: context.tr('Likes'),
                   count: story.likeCount,
                   color: _blue,
                 ),
                 _ActivityCount(
                   icon: Icons.chat_bubble_outline,
-                  label: 'Replies',
+                  label: context.tr('Replies'),
                   count: story.replyCount,
                 ),
                 _ActivityCount(
                   icon: Icons.send_outlined,
-                  label: 'Shares',
+                  label: context.tr('Shares'),
                   count: story.shareCount,
                 ),
                 _ActivityCount(
                   icon: Icons.repeat,
-                  label: 'Reshares',
+                  label: context.tr('Reshares'),
                   count: story.reshareCount,
                 ),
               ],
             ),
           ),
 
-          const TabBar(
+          TabBar(
             indicatorColor: _blue,
             labelColor: _blue,
             unselectedLabelColor: Colors.white54,
             tabs: <Tab>[
-              Tab(text: 'Viewers'),
-              Tab(text: 'Replies'),
-              Tab(text: 'Likes'),
+              Tab(text: context.tr('Viewers')),
+              Tab(text: context.tr('Replies')),
+              Tab(text: context.tr('Likes')),
             ],
           ),
 
@@ -5349,9 +5336,8 @@ class _StoryViewersTab extends StatelessWidget {
                 snapshot.data!.docs;
 
             if (docs.isEmpty) {
-              return const Center(
-                child: Text(
-                  'No viewers yet.',
+              return Center(
+                child: Text(context.tr('No viewers yet.'),
                   style: TextStyle(color: Colors.white54),
                 ),
               );
@@ -5413,9 +5399,8 @@ class _StoryRepliesTab extends StatelessWidget {
             final docs = snapshot.data!.docs;
 
             if (docs.isEmpty) {
-              return const Center(
-                child: Text(
-                  'No replies yet.',
+              return Center(
+                child: Text(context.tr('No replies yet.'),
                   style: TextStyle(color: Colors.white54),
                 ),
               );
@@ -5467,7 +5452,7 @@ class _StoryRepliesTab extends StatelessWidget {
                           ? fullName
                           : username.isNotEmpty
                           ? UsernameRules.at(username)
-                          : 'Nubify User',
+                          : context.tr('Nubify User'),
                       style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w600,
@@ -5509,9 +5494,8 @@ class _StoryLikesTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (userIds.isEmpty) {
-      return const Center(
-        child: Text(
-          'No reactions yet.',
+      return Center(
+        child: Text(context.tr('No reactions yet.'),
           style: TextStyle(color: Colors.white54),
         ),
       );
@@ -5571,7 +5555,7 @@ class _ActivityUserTile extends StatelessWidget {
                 ? fullName
                 : username.isNotEmpty
                 ? username
-                : 'Nubify User';
+                : context.tr('Nubify User');
 
             return ListTile(
               onTap: uid.trim().isEmpty

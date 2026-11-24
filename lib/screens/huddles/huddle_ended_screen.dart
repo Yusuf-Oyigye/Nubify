@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../models/huddles/huddle.dart';
 import '../../widgets/huddles/huddle_ui.dart';
+import '../../l10n/nubify_text.dart';
 
 //===================================================
 // "THIS HUDDLE HAS ENDED"
@@ -49,8 +50,7 @@ class HuddleEndedScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 18),
-                const Text(
-                  'This Huddle has ended',
+                Text(context.tr('This Huddle has ended'),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.white,
@@ -98,7 +98,7 @@ class HuddleEndedScreen extends StatelessWidget {
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                'Hosted by ${h.hostName}',
+                                context.tr('Hosted by {hostName}', {'hostName': h.hostName}),
                                 style: const TextStyle(color: Colors.white70),
                               ),
                             ),
@@ -109,17 +109,21 @@ class HuddleEndedScreen extends StatelessWidget {
                           _Fact(
                             icon: Icons.schedule_rounded,
                             text:
-                            'Started ${local.formatMediumDate(started)}, '
-                                '${local.formatTimeOfDay(TimeOfDay.fromDateTime(started))}',
+                            context.tr('Started {date}, {time}', {
+                              'date': local.formatMediumDate(started),
+                              'time': local.formatTimeOfDay(
+                                TimeOfDay.fromDateTime(started),
+                              ),
+                            }),
                           ),
                         _Fact(
                           icon: Icons.timer_outlined,
-                          text: 'Lasted ${formatHuddleDuration(h.elapsed)}',
+                          text: context.tr('Lasted {elapsed}', {'elapsed': formatHuddleDuration(h.elapsed)}),
                         ),
                         if (h.peakParticipants > 0)
                           _Fact(
                             icon: Icons.people_alt_outlined,
-                            text: 'Up to ${h.peakParticipants} people joined',
+                            text: context.tr('Up to {peakParticipants} people joined', {'peakParticipants': h.peakParticipants}),
                           ),
                       ],
                     ),
@@ -133,8 +137,7 @@ class HuddleEndedScreen extends StatelessWidget {
                     minimumSize: const Size(200, 48),
                   ),
                   onPressed: () => Navigator.of(context).maybePop(),
-                  child: const Text(
-                    'Back',
+                  child: Text(context.tr('Back'),
                     style: TextStyle(fontWeight: FontWeight.w700),
                   ),
                 ),

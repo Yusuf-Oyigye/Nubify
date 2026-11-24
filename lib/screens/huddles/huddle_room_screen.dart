@@ -13,6 +13,7 @@ import 'huddle_chat_sheet.dart';
 import 'huddle_ended_screen.dart';
 import 'huddle_invite_sheet.dart';
 import 'huddle_people_sheet.dart';
+import '../../l10n/nubify_text.dart';
 
 //===================================================
 // NUB HUDDLES — LIVE ROOM
@@ -93,7 +94,7 @@ class _HuddleRoomScreenState extends State<HuddleRoomScreen> {
       if (mounted) {
         setState(
               () => _joinError =
-              _session.endMessage ?? 'Could not connect to the Huddle.',
+              _session.endMessage ?? context.tr('Could not connect to the Huddle.'),
         );
       }
     }
@@ -191,12 +192,12 @@ class _HuddleRoomScreenState extends State<HuddleRoomScreen> {
     }
 
     final String message = switch (role) {
-      HuddleRole.host => 'You are now the host of this Huddle.',
-      HuddleRole.coHost => 'You are now a co-host.',
+      HuddleRole.host => context.tr('You are now the host of this Huddle.'),
+      HuddleRole.coHost => context.tr('You are now a co-host.'),
       HuddleRole.speaker when before == HuddleRole.listener =>
-      "You're a speaker. Your mic is off. Tap Unmute when you're ready.",
-      HuddleRole.speaker => 'You are a speaker.',
-      HuddleRole.listener => 'You are now listening.',
+      context.tr("You're a speaker. Your mic is off. Tap Unmute when you're ready."),
+      HuddleRole.speaker => context.tr('You are a speaker.'),
+      HuddleRole.listener => context.tr('You are now listening.'),
     };
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -261,8 +262,7 @@ class _HuddleRoomScreenState extends State<HuddleRoomScreen> {
                 Icons.stop_circle_rounded,
                 color: HuddleColors.live,
               ),
-              title: const Text(
-                'End Huddle for everyone',
+              title: Text(context.tr('End Huddle for everyone'),
                 style: TextStyle(
                   color: HuddleColors.live,
                   fontWeight: FontWeight.w700,
@@ -272,12 +272,10 @@ class _HuddleRoomScreenState extends State<HuddleRoomScreen> {
             ),
             ListTile(
               leading: const Icon(Icons.logout_rounded, color: Colors.white70),
-              title: const Text(
-                'Leave for now',
+              title: Text(context.tr('Leave for now'),
                 style: TextStyle(color: Colors.white),
               ),
-              subtitle: const Text(
-                'The Huddle stays live. If you are not back in 3 minutes, a co-host takes over.',
+              subtitle: Text(context.tr('The Huddle stays live. If you are not back in 3 minutes, a co-host takes over.'),
                 style: TextStyle(color: Colors.white54),
               ),
               onTap: () => Navigator.pop(sheetContext, 'leave'),
@@ -302,19 +300,18 @@ class _HuddleRoomScreenState extends State<HuddleRoomScreen> {
     final bool? end = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('End Huddle for everyone?'),
-        content: const Text(
-          'Everyone will be disconnected and the Huddle will close.',
+        title: Text(context.tr('End Huddle for everyone?')),
+        content: Text(context.tr('Everyone will be disconnected and the Huddle will close.'),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancel'),
+            child: Text(context.tr('Cancel')),
           ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: HuddleColors.live),
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('End Huddle'),
+            child: Text(context.tr('End Huddle')),
           ),
         ],
       ),
@@ -358,7 +355,7 @@ class _HuddleRoomScreenState extends State<HuddleRoomScreen> {
               return const SizedBox.shrink();
             }
             if (huddle == null) {
-              return const _Centered(text: 'Opening Huddle…');
+              return _Centered(text: context.tr('Opening Huddle…'));
             }
 
             return StreamBuilder<List<HuddleParticipant>>(
@@ -418,7 +415,7 @@ class _HuddleRoomScreenState extends State<HuddleRoomScreen> {
       child: Row(
         children: [
           IconButton(
-            tooltip: 'Minimise',
+            tooltip: context.tr('Minimise'),
             onPressed: _minimise,
             icon: const Icon(
               Icons.keyboard_arrow_down_rounded,
@@ -469,7 +466,7 @@ class _HuddleRoomScreenState extends State<HuddleRoomScreen> {
             ),
           ),
           IconButton(
-            tooltip: 'More',
+            tooltip: context.tr('More'),
             onPressed: () => _openMore(huddle, role),
             icon: const Icon(Icons.more_horiz_rounded, color: Colors.white),
           ),
@@ -481,8 +478,7 @@ class _HuddleRoomScreenState extends State<HuddleRoomScreen> {
               minimumSize: const Size(0, 36),
             ),
             onPressed: () => _leave(role),
-            child: const Text(
-              'Leave',
+            child: Text(context.tr('Leave'),
               style: TextStyle(fontWeight: FontWeight.w800),
             ),
           ),
@@ -501,45 +497,45 @@ class _HuddleRoomScreenState extends State<HuddleRoomScreen> {
         icon: Icons.error_outline_rounded,
         color: HuddleColors.live,
         text: _joinError!,
-        action: 'Try again',
+        action: context.tr('Try again'),
         onAction: _join,
       );
     }
 
     if (!_inThisHuddle) {
-      return const _StatusCard(
+      return _StatusCard(
         icon: Icons.wifi_tethering_rounded,
         color: HuddleColors.sky,
-        text: 'Connecting…',
+        text: context.tr('Connecting…'),
         busy: true,
       );
     }
 
     return switch (_session.connection) {
-      HuddleConnection.connecting => const _StatusCard(
+      HuddleConnection.connecting => _StatusCard(
         icon: Icons.wifi_tethering_rounded,
         color: HuddleColors.sky,
-        text: 'Connecting…',
+        text: context.tr('Connecting…'),
         busy: true,
       ),
-      HuddleConnection.reconnecting => const _StatusCard(
+      HuddleConnection.reconnecting => _StatusCard(
         icon: Icons.sync_rounded,
         color: HuddleColors.host,
-        text: 'Reconnecting…',
+        text: context.tr('Reconnecting…'),
         busy: true,
       ),
-      HuddleConnection.poor => const _StatusCard(
+      HuddleConnection.poor => _StatusCard(
         icon: Icons.network_check_rounded,
         color: HuddleColors.host,
-        text: 'Poor connection. Video may pause; audio comes first.',
+        text: context.tr('Poor connection. Video may pause; audio comes first.'),
       ),
       HuddleConnection.failed => _StatusCard(
         icon: Icons.portable_wifi_off_rounded,
         color: HuddleColors.live,
-        text: _session.endMessage ?? 'You lost connection to the Huddle.',
+        text: _session.endMessage ?? context.tr('You lost connection to the Huddle.'),
         action: _session.endMessage == 'You were removed from this Huddle.'
             ? null
-            : 'Rejoin',
+            : context.tr('Rejoin'),
         onAction: _join,
       ),
       _ => const SizedBox.shrink(),
@@ -578,7 +574,7 @@ class _HuddleRoomScreenState extends State<HuddleRoomScreen> {
       return _buildPresentation(
         screen: _session.sharingScreen ? null : screen,
         presenterName: _session.sharingScreen
-            ? 'You'
+            ? context.tr('You')
             : presenter?.name ?? huddle.screenSharerName,
         speakers: speakers,
       );
@@ -597,7 +593,7 @@ class _HuddleRoomScreenState extends State<HuddleRoomScreen> {
                 padding: const EdgeInsets.only(bottom: 14),
                 child: Text(
                   [
-                    if (huddle.topic.isNotEmpty) '#${huddle.topic}',
+                    if (huddle.topic.isNotEmpty) '#${context.tr(huddle.topic)}',
                     huddle.description,
                   ].where((s) => s.isNotEmpty).join('  ·  '),
                   style: const TextStyle(
@@ -607,7 +603,7 @@ class _HuddleRoomScreenState extends State<HuddleRoomScreen> {
                   ),
                 ),
               ),
-            const _Label('On stage'),
+            _Label(context.tr('On stage')),
             Wrap(
               spacing: 10,
               runSpacing: 14,
@@ -636,10 +632,9 @@ class _HuddleRoomScreenState extends State<HuddleRoomScreen> {
               ],
             ),
             const SizedBox(height: 22),
-            _Label('Listening · ${listeners.length}'),
+            _Label(context.tr('Listening · {count}', {'count': listeners.length})),
             if (listeners.isEmpty)
-              const Text(
-                'No listeners yet. Share the Huddle to bring people in.',
+              Text(context.tr('No listeners yet. Share the Huddle to bring people in.'),
                 style: TextStyle(color: Colors.white38, fontSize: 13),
               )
             else
@@ -716,8 +711,8 @@ class _HuddleRoomScreenState extends State<HuddleRoomScreen> {
                         const SizedBox(width: 6),
                         Text(
                           mine
-                              ? 'You are presenting'
-                              : '$presenterName is presenting',
+                              ? context.tr('You are presenting')
+                              : context.tr('{presenterName} is presenting', {'presenterName': presenterName}),
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 12.5,
@@ -744,7 +739,7 @@ class _HuddleRoomScreenState extends State<HuddleRoomScreen> {
                         Icons.stop_screen_share_rounded,
                         size: 18,
                       ),
-                      label: const Text('Stop sharing'),
+                      label: Text(context.tr('Stop sharing')),
                     ),
                   ),
               ],
@@ -852,7 +847,7 @@ class _HuddleRoomScreenState extends State<HuddleRoomScreen> {
       if (role.canSpeak) ...[
         _ControlButton(
           icon: _session.micOn ? Icons.mic_rounded : Icons.mic_off_rounded,
-          label: _session.micOn ? 'Mute' : 'Unmute',
+          label: _session.micOn ? context.tr('Mute') : context.tr('Unmute'),
           active: _session.micOn,
           enabled: connected,
           onTap: () => _media(_session.toggleMic),
@@ -862,7 +857,7 @@ class _HuddleRoomScreenState extends State<HuddleRoomScreen> {
             icon: _session.cameraOn
                 ? Icons.videocam_rounded
                 : Icons.videocam_off_rounded,
-            label: 'Camera',
+            label: context.tr('Camera'),
             active: _session.cameraOn,
             enabled: connected,
             onTap: () => _media(_session.toggleCamera),
@@ -872,7 +867,7 @@ class _HuddleRoomScreenState extends State<HuddleRoomScreen> {
             icon: _session.sharingScreen
                 ? Icons.stop_screen_share_rounded
                 : Icons.present_to_all_rounded,
-            label: _session.sharingScreen ? 'Stop' : 'Present',
+            label: _session.sharingScreen ? context.tr('Stop') : context.tr('Present'),
             active: _session.sharingScreen,
             enabled: connected,
             onTap: _toggleScreenShare,
@@ -880,37 +875,37 @@ class _HuddleRoomScreenState extends State<HuddleRoomScreen> {
       ] else
         _ControlButton(
           icon: Icons.back_hand_rounded,
-          label: me?.handRaised == true ? 'Cancel' : 'Raise hand',
+          label: me?.handRaised == true ? context.tr('Cancel') : context.tr('Raise hand'),
           active: me?.handRaised == true,
           enabled: connected,
           onTap: () {
             if (me?.handRaised == true) {
-              _act('lowerHand', done: 'Request cancelled.');
+              _act('lowerHand', done: context.tr('Request cancelled.'));
             } else if (!huddle.allowSpeakerRequests) {
-              _snack('The host has turned off speaker requests.');
+              _snack(context.tr('The host has turned off speaker requests.'));
             } else {
               _act(
                 'raiseHand',
-                done: 'Request sent. The host will see your hand.',
+                done: context.tr('Request sent. The host will see your hand.'),
               );
             }
           },
         ),
       _ControlButton(
         icon: Icons.emoji_emotions_outlined,
-        label: 'React',
+        label: context.tr('React'),
         active: _showEmojis,
         enabled: connected,
         onTap: () => setState(() => _showEmojis = !_showEmojis),
       ),
       _ControlButton(
         icon: Icons.chat_bubble_outline_rounded,
-        label: 'Chat',
+        label: context.tr('Chat'),
         onTap: () => HuddleChatSheet.show(context, huddleId: _id, role: role),
       ),
       _ControlButton(
         icon: Icons.groups_rounded,
-        label: 'People',
+        label: context.tr('People'),
         badge: role.canManage ? requests : 0,
         onTap: () =>
             HuddlePeopleSheet.show(context, huddle: huddle, myRole: role),
@@ -918,7 +913,7 @@ class _HuddleRoomScreenState extends State<HuddleRoomScreen> {
       if (!role.canSpeak)
         _ControlButton(
           icon: Icons.ios_share_rounded,
-          label: 'Share',
+          label: context.tr('Share'),
           onTap: () => HuddleInviteSheet.show(context, huddle: huddle),
         ),
     ];
@@ -948,20 +943,19 @@ class _HuddleRoomScreenState extends State<HuddleRoomScreen> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         icon: const Icon(Icons.present_to_all_rounded),
-        title: const Text('Share your screen?'),
-        content: const Text(
-          'Everything visible on your screen, including notifications and '
+        title: Text(context.tr('Share your screen?')),
+        content: Text(context.tr('Everything visible on your screen, including notifications and '
               'other apps you open, can be seen by everyone in this Huddle. '
-              'Your voice keeps working while you present.',
+              'Your voice keeps working while you present.'),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancel'),
+            child: Text(context.tr('Cancel')),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Start sharing'),
+            child: Text(context.tr('Start sharing')),
           ),
         ],
       ),
@@ -994,17 +988,17 @@ class _HuddleRoomScreenState extends State<HuddleRoomScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                item(Icons.ios_share_rounded, 'Invite or share', 'share'),
+                item(Icons.ios_share_rounded, context.tr('Invite or share'), 'share'),
                 if (_session.cameraOn)
-                  item(Icons.cameraswitch_rounded, 'Switch camera', 'flip'),
+                  item(Icons.cameraswitch_rounded, context.tr('Switch camera'), 'flip'),
                 if (role == HuddleRole.speaker || role == HuddleRole.coHost)
-                  item(Icons.headphones_rounded, 'Leave as Speaker', 'listen'),
+                  item(Icons.headphones_rounded, context.tr('Leave as Speaker'), 'listen'),
                 if (role == HuddleRole.host)
-                  item(Icons.tune_rounded, 'Huddle settings', 'settings'),
+                  item(Icons.tune_rounded, context.tr('Huddle settings'), 'settings'),
                 if (role != HuddleRole.host)
                   item(
                     Icons.flag_outlined,
-                    'Report this Huddle',
+                    context.tr('Report this Huddle'),
                     'report',
                     color: HuddleColors.live,
                   ),
@@ -1066,21 +1060,21 @@ class _HuddleRoomScreenState extends State<HuddleRoomScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                toggle('Live chat', chat, 'chatEnabled', (v) => chat = v),
+                toggle(context.tr('Live chat'), chat, 'chatEnabled', (v) => chat = v),
                 toggle(
-                  'Speaker requests (raise hand)',
+                  context.tr('Speaker requests (raise hand)'),
                   requests,
                   'allowSpeakerRequests',
                       (v) => requests = v,
                 ),
                 toggle(
-                  'Speakers can use camera',
+                  context.tr('Speakers can use camera'),
                   video,
                   'allowVideo',
                       (v) => video = v,
                 ),
                 toggle(
-                  'Speakers can share screen',
+                  context.tr('Speakers can share screen'),
                   screen,
                   'allowScreenShare',
                       (v) => screen = v,
@@ -1270,7 +1264,9 @@ class _SpeakerInviteBanner extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '${inviter.isEmpty ? 'The host' : inviter} invited you to speak',
+            context.tr('{name} invited you to speak', {
+              'name': inviter.isEmpty ? context.tr('The host') : inviter,
+            }),
             style: const TextStyle(
               color: Colors.white,
               fontSize: 15,
@@ -1278,8 +1274,7 @@ class _SpeakerInviteBanner extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
-            'Your mic stays off until you tap Unmute.',
+          Text(context.tr('Your mic stays off until you tap Unmute.'),
             style: TextStyle(color: Colors.white70, fontSize: 12.5),
           ),
           const SizedBox(height: 10),
@@ -1292,7 +1287,7 @@ class _SpeakerInviteBanner extends StatelessWidget {
                     side: const BorderSide(color: Colors.white38),
                   ),
                   onPressed: onDecline,
-                  child: const Text('Decline'),
+                  child: Text(context.tr('Decline')),
                 ),
               ),
               const SizedBox(width: 10),
@@ -1303,8 +1298,7 @@ class _SpeakerInviteBanner extends StatelessWidget {
                     foregroundColor: HuddleColors.skyDeep,
                   ),
                   onPressed: onAccept,
-                  child: const Text(
-                    'Accept',
+                  child: Text(context.tr('Accept'),
                     style: TextStyle(fontWeight: FontWeight.w800),
                   ),
                 ),
@@ -1427,7 +1421,7 @@ class _SharingYourScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const ColoredBox(
+    return ColoredBox(
       color: HuddleColors.stageCard,
       child: Center(
         child: Padding(
@@ -1441,8 +1435,7 @@ class _SharingYourScreen extends StatelessWidget {
                 size: 44,
               ),
               SizedBox(height: 12),
-              Text(
-                'You are sharing your screen',
+              Text(context.tr('You are sharing your screen'),
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 16,
@@ -1450,9 +1443,8 @@ class _SharingYourScreen extends StatelessWidget {
                 ),
               ),
               SizedBox(height: 6),
-              Text(
-                'Open your slides, PDF or any app. Everything on your screen '
-                    'is visible to the Huddle.',
+              Text(context.tr('Open your slides, PDF or any app. Everything on your screen '
+                    'is visible to the Huddle.'),
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Colors.white60,

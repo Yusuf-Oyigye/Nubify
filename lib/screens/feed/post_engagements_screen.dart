@@ -308,7 +308,7 @@ class _QuotesTab extends StatelessWidget {
             if (snapshot.hasError) {
               return _EngagementEmptyState(
                 icon: Icons.error_outline,
-                message: 'Unable to load quotes.\n${snapshot.error}',
+                message: context.tr('Unable to load quotes.\n{error}', {'error': '${snapshot.error}'}),
               );
             }
 
@@ -320,9 +320,9 @@ class _QuotesTab extends StatelessWidget {
             //===================================================
 
             if (quotes.isEmpty) {
-              return const _EngagementEmptyState(
+              return _EngagementEmptyState(
                 icon: Icons.format_quote_outlined,
-                message: 'No quote reposts yet.',
+                message: context.tr('No quote reposts yet.'),
               );
             }
 
@@ -362,7 +362,7 @@ class _QuotesTab extends StatelessWidget {
                 } catch (error) {
                   return Padding(
                     padding: const EdgeInsets.all(16),
-                    child: Text('Unable to display this quote repost:\n$error'),
+                    child: Text(context.tr('Unable to display this quote repost:\n{error}', {'error': error})),
                   );
                 }
               },
@@ -400,7 +400,7 @@ class _RepostedByTab extends StatelessWidget {
             if (snapshot.hasError) {
               return _EngagementEmptyState(
                 icon: Icons.error_outline,
-                message: 'Unable to load reposts.\n${snapshot.error}',
+                message: context.tr('Unable to load reposts.\n{error}', {'error': '${snapshot.error}'}),
               );
             }
 
@@ -408,9 +408,9 @@ class _RepostedByTab extends StatelessWidget {
                 snapshot.data ?? <Map<String, dynamic>>[];
 
             if (reposts.isEmpty) {
-              return const _EngagementEmptyState(
+              return _EngagementEmptyState(
                 icon: Icons.repeat_rounded,
-                message: 'Nobody has reposted this post yet.',
+                message: context.tr('Nobody has reposted this post yet.'),
               );
             }
 
@@ -495,7 +495,7 @@ class _RepostedByTile extends StatelessWidget {
                   ? fullName
                   : username.isNotEmpty
                   ? UsernameRules.at(username)
-                  : 'Nubify User',
+                  : context.tr('Nubify User'),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),

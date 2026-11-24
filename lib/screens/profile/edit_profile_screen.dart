@@ -14,6 +14,7 @@ import '../../utils/profile/username_rules.dart';
 import '../../widgets/faculties/faculty_selector.dart';
 import '../../widgets/profile/nubify_avatar.dart';
 import '../../widgets/profile/username_field.dart';
+import '../../l10n/nubify_text.dart';
 
 //===================================================
 // EDIT PROFILE SCREEN
@@ -176,7 +177,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       _phoneController.text = privateProfile.phoneE164;
     } catch (error) {
       if (mounted) {
-        _showMessage('Unable to load your profile.');
+        _showMessage(context.tr('Unable to load your profile.'));
       }
     } finally {
       if (mounted) {
@@ -244,7 +245,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               ListTile(
                 leading: const Icon(Icons.photo_library_outlined, color: _blue),
 
-                title: const Text('Change profile picture'),
+                title: Text(context.tr('Change profile picture')),
 
                 onTap: () async {
                   Navigator.pop(sheetContext);
@@ -262,10 +263,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   color: hasPhoto ? _blue : null,
                 ),
 
-                title: const Text('Remove photo'),
+                title: Text(context.tr('Remove photo')),
 
-                subtitle: const Text(
-                  'Then choose your default picture and tap Save',
+                subtitle: Text(context.tr('Then choose your default picture and tap Save'),
                 ),
 
                 onTap: !hasPhoto
@@ -317,13 +317,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     //===================================================
 
     if (fullName.isEmpty) {
-      _showMessage('Please enter your full name.');
+      _showMessage(context.tr('Please enter your full name.'));
 
       return;
     }
 
     if (username.isEmpty) {
-      _showMessage('Please enter your username.');
+      _showMessage(context.tr('Please enter your username.'));
 
       return;
     }
@@ -341,20 +341,20 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
 
     if (_selectedFacultyId == null) {
-      _showMessage('Please choose your faculty.');
+      _showMessage(context.tr('Please choose your faculty.'));
 
       return;
     }
 
     if (faculty.isEmpty) {
-      _showMessage('Please type your faculty.');
+      _showMessage(context.tr('Please type your faculty.'));
 
       return;
     }
 
     if (phone.isNotEmpty && !EgyptianPhone.isValid(phone)) {
       _showMessage(
-        'Enter a valid Egyptian number beginning 010, 011, 012, or 015.',
+        context.tr('Enter a valid Egyptian number beginning 010, 011, 012, or 015.'),
       );
       return;
     }
@@ -425,7 +425,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         return;
       }
 
-      _showMessage('Profile updated.');
+      _showMessage(context.tr('Profile updated.'));
 
       Navigator.pop(context, true);
     } catch (error) {
@@ -499,19 +499,19 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   if (currentPassword.isEmpty ||
                       newPassword.isEmpty ||
                       confirmPassword.isEmpty) {
-                    _showMessage('Fill all password fields.');
+                    _showMessage(context.tr('Fill all password fields.'));
 
                     return;
                   }
 
                   if (newPassword != confirmPassword) {
-                    _showMessage('New passwords do not match.');
+                    _showMessage(context.tr('New passwords do not match.'));
 
                     return;
                   }
 
                   if (newPassword.length < 6) {
-                    _showMessage('Password must be at least 6 characters.');
+                    _showMessage(context.tr('Password must be at least 6 characters.'));
 
                     return;
                   }
@@ -543,18 +543,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
                     Navigator.of(dialogContext).pop();
 
-                    _showMessage('Password changed successfully.');
+                    _showMessage(context.tr('Password changed successfully.'));
                   } on FirebaseAuthException catch (error) {
                     if (!mounted) {
                       return;
                     }
 
                     String message =
-                        error.message ?? 'Unable to change password.';
+                        error.message ?? context.tr('Unable to change password.');
 
                     if (error.code == 'wrong-password' ||
                         error.code == 'invalid-credential') {
-                      message = 'Your current password is incorrect.';
+                      message = context.tr('Your current password is incorrect.');
                     }
 
                     _showMessage(message);
@@ -590,13 +590,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   canPop: !changing,
 
                   child: AlertDialog(
-                    title: const Row(
+                    title: Row(
                       children: <Widget>[
                         Icon(Icons.lock_reset_rounded, color: _blue),
 
                         SizedBox(width: 10),
 
-                        Text('Change Password'),
+                        Text(context.tr('Change Password')),
                       ],
                     ),
 
@@ -622,7 +622,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             textInputAction: TextInputAction.next,
 
                             decoration: InputDecoration(
-                              labelText: 'Current password',
+                              labelText: context.tr('Current password'),
 
                               prefixIcon: const Icon(
                                 Icons.lock_outline_rounded,
@@ -663,7 +663,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             textInputAction: TextInputAction.next,
 
                             decoration: InputDecoration(
-                              labelText: 'New password',
+                              labelText: context.tr('New password'),
 
                               prefixIcon: const Icon(Icons.password_rounded),
 
@@ -708,7 +708,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                   },
 
                             decoration: InputDecoration(
-                              labelText: 'Confirm new password',
+                              labelText: context.tr('Confirm new password'),
 
                               prefixIcon: const Icon(
                                 Icons.verified_user_outlined,
@@ -750,7 +750,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                 Navigator.of(dialogContext).pop();
                               },
 
-                        child: const Text('Cancel'),
+                        child: Text(context.tr('Cancel')),
                       ),
 
                       FilledButton(
@@ -768,7 +768,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                   color: Colors.white,
                                 ),
                               )
-                            : const Text('Change'),
+                            : Text(context.tr('Change')),
                       ),
                     ],
                   ),
@@ -809,14 +809,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     final List<(String, String)> options = switch (_gender) {
       NubifyGender.female => <(String, String)>[
-        (NubifyAvatarStyle.female, 'With hair'),
-        (NubifyAvatarStyle.hijab, 'With hijab'),
+        (NubifyAvatarStyle.female, context.tr('With hair')),
+        (NubifyAvatarStyle.hijab, context.tr('With hijab')),
       ],
       NubifyGender.male => <(String, String)>[],
       _ => <(String, String)>[
-        (NubifyAvatarStyle.male, 'Male'),
-        (NubifyAvatarStyle.female, 'Female'),
-        (NubifyAvatarStyle.hijab, 'With hijab'),
+        (NubifyAvatarStyle.male, context.tr('Male')),
+        (NubifyAvatarStyle.female, context.tr('Female')),
+        (NubifyAvatarStyle.hijab, context.tr('With hijab')),
       ],
     };
 
@@ -828,15 +828,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         const SizedBox(height: 18),
-        Text(
-          'Your default picture',
+        Text(context.tr('Your default picture'),
           style: Theme.of(
             context,
           ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
         ),
         const SizedBox(height: 4),
-        Text(
-          'Shown in your faculty colour when you don\'t use a photo.',
+        Text(context.tr('Shown in your faculty colour when you don\'t use a photo.'),
           style: TextStyle(
             color: Theme.of(context).colorScheme.onSurfaceVariant,
             fontSize: 12.5,
@@ -1029,8 +1027,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       //===================================================
 
       appBar: AppBar(
-        title: const Text(
-          'Edit Profile',
+        title: Text(context.tr('Edit Profile'),
 
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
@@ -1039,8 +1036,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           TextButton(
             onPressed: _saving ? null : _saveProfile,
 
-            child: const Text(
-              'Save',
+            child: Text(context.tr('Save'),
 
               style: TextStyle(color: _blue, fontWeight: FontWeight.bold),
             ),
@@ -1080,7 +1076,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   _field(
                     controller: _fullNameController,
 
-                    label: 'Full name',
+                    label: context.tr('Full name'),
 
                     icon: Icons.badge_outlined,
                   ),
@@ -1113,7 +1109,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   //===================================================
                   _field(
                     controller: _phoneController,
-                    label: 'Egyptian mobile number',
+                    label: context.tr('Egyptian mobile number'),
                     icon: Icons.phone_android_rounded,
                     keyboardType: TextInputType.phone,
                   ),
@@ -1126,7 +1122,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   _field(
                     controller: _hobbiesController,
 
-                    label: 'Hobbies',
+                    label: context.tr('Hobbies'),
 
                     icon: Icons.interests_outlined,
 
@@ -1141,7 +1137,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   _field(
                     controller: _quoteController,
 
-                    label: 'Favourite quote',
+                    label: context.tr('Favourite quote'),
 
                     icon: Icons.format_quote_rounded,
 
@@ -1163,7 +1159,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
                     icon: const Icon(Icons.lock_reset_rounded),
 
-                    label: const Text('Change Password'),
+                    label: Text(context.tr('Change Password')),
 
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size.fromHeight(50),
@@ -1192,7 +1188,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           )
                         : const Icon(Icons.save_outlined),
 
-                    label: Text(_saving ? 'Saving...' : 'Save Changes'),
+                    label: Text(_saving ? context.tr('Saving...') : context.tr('Save Changes')),
 
                     style: FilledButton.styleFrom(
                       backgroundColor: _blue,

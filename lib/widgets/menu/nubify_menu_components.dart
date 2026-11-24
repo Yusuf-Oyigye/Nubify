@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../services/common/nubify_appearance_controller.dart';
+import '../../l10n/nubify_text.dart';
 
 // NUBIFY — PREMIUM MENU DESIGN SYSTEM
 
@@ -173,14 +174,14 @@ class NubifyAppearanceSelector extends StatelessWidget {
     final choices = <(ThemeMode, String, IconData, Color)>[
       (
         ThemeMode.light,
-        'Light',
+        context.tr('Light'),
         Icons.wb_sunny_rounded,
         const Color(0xFFE3A52E),
       ),
-      (ThemeMode.dark, 'Dark', Icons.nightlight_round, const Color(0xFF8289E1)),
+      (ThemeMode.dark, context.tr('Dark'), Icons.nightlight_round, const Color(0xFF8289E1)),
       (
         ThemeMode.system,
-        'System',
+        context.tr('System'),
         Icons.settings_brightness_rounded,
         nubifySky,
       ),
@@ -214,9 +215,8 @@ class NubifyAppearanceSelector extends StatelessWidget {
                     if (!context.mounted) return;
 
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          'Could not save appearance. Please retry.',
+                      SnackBar(
+                        content: Text(context.tr('Could not save appearance. Please retry.'),
                         ),
                       ),
                     );

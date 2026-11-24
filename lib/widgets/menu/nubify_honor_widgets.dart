@@ -154,7 +154,7 @@ class _NubifyVerifiedSealState extends State<NubifyVerifiedSeal>
     }
 
     return Tooltip(
-      message: widget.message ?? 'Verified',
+      message: widget.message ?? context.tr('Verified'),
       triggerMode: TooltipTriggerMode.tap,
       child: seal,
     );

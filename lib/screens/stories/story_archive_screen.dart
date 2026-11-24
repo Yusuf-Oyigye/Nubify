@@ -6,6 +6,7 @@ import '../../models/feed/post.dart';
 import '../../models/stories/story.dart';
 import '../../services/stories/story_service.dart';
 import 'story_viewer_screen.dart';
+import '../../l10n/nubify_text.dart';
 //============================
 // STORY ARCHIVE SCREEN
 //============================
@@ -32,8 +33,7 @@ class StoryArchiveScreen
       appBar:
       AppBar(
         title:
-        const Text(
-          'Story Archive',
+        Text(context.tr('Story Archive'),
           style:
           TextStyle(
             fontWeight:
@@ -69,9 +69,9 @@ class StoryArchiveScreen
           if (snapshot.hasError) {
             return Center(
               child:
-              Text(
-                'Unable to load Story Archive.\n'
-                    '${snapshot.error}',
+              Text(context.tr('Unable to load Story Archive.\n{error}', {
+                    'error': '${snapshot.error}',
+                  }),
                 textAlign:
                 TextAlign.center,
               ),
@@ -83,7 +83,7 @@ class StoryArchiveScreen
                   <NubifyStory>[];
 
           if (stories.isEmpty) {
-            return const Center(
+            return Center(
               child:
               Padding(
                 padding:
@@ -110,8 +110,7 @@ class StoryArchiveScreen
                       12,
                     ),
 
-                    Text(
-                      'No archived Stories yet',
+                    Text(context.tr('No archived Stories yet'),
                       style:
                       TextStyle(
                         fontSize:
@@ -126,8 +125,7 @@ class StoryArchiveScreen
                       5,
                     ),
 
-                    Text(
-                      'Stories you share will appear here.',
+                    Text(context.tr('Stories you share will appear here.'),
                       textAlign:
                       TextAlign.center,
                     ),
@@ -365,8 +363,8 @@ class _ArchiveStoryTile
               child:
               Text(
                 story.isExpired
-                    ? 'Archived'
-                    : 'Active',
+                    ? context.tr('Archived')
+                    : context.tr('Active'),
 
                 style:
                 TextStyle(
@@ -418,33 +416,33 @@ class _ArchiveStoryTile
       ) {
     switch (type) {
       case 'image':
-        return 'Photo Story';
+        return NubifyText.tr('Photo Story');
 
       case 'video':
-        return 'Video Story';
+        return NubifyText.tr('Video Story');
 
       case 'voice':
-        return 'Voice Story';
+        return NubifyText.tr('Voice Story');
 
       case 'layout':
-        return 'Layout Story';
+        return NubifyText.tr('Layout Story');
 
       case 'poll':
-        return 'Poll Story';
+        return NubifyText.tr('Poll Story');
 
       case 'postShare':
       case 'post_share':
-        return 'Shared Post';
+        return NubifyText.tr('Shared Post');
 
       case 'videoShare':
       case 'video_share':
-        return 'Shared Video';
+        return NubifyText.tr('Shared Video');
 
       case 'reshare':
-        return 'Reshared Story';
+        return NubifyText.tr('Reshared Story');
 
       default:
-        return 'Text Story';
+        return NubifyText.tr('Text Story');
     }
   }
 
@@ -745,7 +743,7 @@ class _ArchiveStoryPreview
       child:
       Text(
         text.trim().isEmpty
-            ? 'Story'
+            ? NubifyText.tr('Story')
             : text.trim(),
 
         maxLines:
@@ -805,7 +803,7 @@ class _ArchiveStoryPreview
         <Widget>[
           Text(
             question.isEmpty
-                ? 'Poll'
+                ? NubifyText.tr('Poll')
                 : question,
 
             maxLines:

@@ -17,6 +17,7 @@ import '../../widgets/stories/draggable_story_tags.dart';
 import '../../widgets/stories/story_link_preview_overlay.dart';
 import '../../widgets/stories/story_drawing_canvas.dart';
 import '../../widgets/chat/nubify_chat_style.dart';
+import '../../l10n/nubify_text.dart';
 
 //===================================================
 // STORY STUDIO LOOK
@@ -1508,7 +1509,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
 
     if (_modeHasContent(_mode)) {
       _showMessage(
-        'Delete the current ${_modeLabel(_mode)} first before choosing ${_modeLabel(mode)}.',
+        context.tr('Delete the current {mode} first before choosing {mode2}.', {'mode': _modeLabel(_mode), 'mode2': _modeLabel(mode)}),
       );
 
       return;
@@ -1584,19 +1585,19 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
   String _modeLabel(String mode) {
     switch (mode) {
       case 'media':
-        return 'photo/video';
+        return NubifyText.tr('photo/video');
 
       case 'layout':
-        return 'layout';
+        return NubifyText.tr('layout');
 
       case 'voice':
-        return 'voice';
+        return NubifyText.tr('voice');
 
       case 'text':
-        return 'text';
+        return NubifyText.tr('text');
 
       case 'poll':
-        return 'poll';
+        return NubifyText.tr('poll');
 
       default:
         return 'story';
@@ -1616,7 +1617,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
             children: <Widget>[
               ListTile(
                 leading: const Icon(Icons.photo_library_outlined),
-                title: const Text('Photo from gallery'),
+                title: Text(context.tr('Photo from gallery')),
                 onTap: () async {
                   Navigator.pop(sheetContext);
 
@@ -1626,7 +1627,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
 
               ListTile(
                 leading: const Icon(Icons.video_library_outlined),
-                title: const Text('Video from gallery'),
+                title: Text(context.tr('Video from gallery')),
                 onTap: () async {
                   Navigator.pop(sheetContext);
 
@@ -1636,7 +1637,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
 
               ListTile(
                 leading: const Icon(Icons.camera_alt_outlined),
-                title: const Text('Take photo'),
+                title: Text(context.tr('Take photo')),
                 onTap: () async {
                   Navigator.pop(sheetContext);
 
@@ -1646,7 +1647,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
 
               ListTile(
                 leading: const Icon(Icons.videocam_outlined),
-                title: const Text('Record video'),
+                title: Text(context.tr('Record video')),
                 onTap: () async {
                   Navigator.pop(sheetContext);
 
@@ -1723,7 +1724,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
     // One second of slack for rounding.
     if (durationSeconds > _maxVideoSeconds + 1) {
       _showMessage(
-        'Story videos can be up to 3 minutes. Please choose a shorter video.',
+        context.tr('Story videos can be up to 3 minutes. Please choose a shorter video.'),
       );
       return;
     }
@@ -1882,8 +1883,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
 
                         const SizedBox(height: 18),
 
-                        const Text(
-                          'Layout',
+                        Text(context.tr('Layout'),
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 21,
@@ -1893,8 +1893,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
 
                         const SizedBox(height: 6),
 
-                        const Text(
-                          'Choose 2, 3 or 4 panels. One photo can fill every panel.',
+                        Text(context.tr('Choose 2, 3 or 4 panels. One photo can fill every panel.'),
                           style: TextStyle(color: Colors.white60),
                         ),
 
@@ -1926,8 +1925,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
 
                         const SizedBox(height: 20),
 
-                        const Text(
-                          'Style',
+                        Text(context.tr('Style'),
                           style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
@@ -1949,7 +1947,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
                               selectedColor: const Color(0xFF29B6F6),
                               backgroundColor: Colors.white10,
                               label: Text(
-                                item['label']!,
+                                context.tr(item['label']!),
                                 style: TextStyle(
                                   color: selected ? Colors.black : Colors.white,
                                 ),
@@ -1969,7 +1967,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
                             onPressed: () {
                               Navigator.pop(sheetContext);
                             },
-                            child: const Text('Done'),
+                            child: Text(context.tr('Done')),
                           ),
                         ),
                       ],
@@ -2045,7 +2043,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
       final bool allowed = await _audioRecorder.hasPermission();
 
       if (!allowed) {
-        _showMessage('Microphone permission is required.');
+        _showMessage(NubifyText.tr('Microphone permission is required.'));
 
         return;
       }
@@ -2166,7 +2164,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
         });
       }
 
-      _showMessage('Unable to start voice recording: $error');
+      _showMessage(context.tr('Unable to start voice recording: {error}', {'error': error}));
     }
   }
 
@@ -2197,7 +2195,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
           _voicePath = null;
         });
 
-        _showMessage('No audio recording was created.');
+        _showMessage(context.tr('No audio recording was created.'));
 
         return;
       }
@@ -2211,7 +2209,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
           _voicePath = null;
         });
 
-        _showMessage('The recorded audio is empty.');
+        _showMessage(NubifyText.tr('The recorded audio is empty.'));
 
         return;
       }
@@ -2251,7 +2249,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
         });
       }
 
-      _showMessage('Unable to stop voice recording: $error');
+      _showMessage(NubifyText.tr('Unable to stop voice recording: {error}', {'error': error}));
     }
   }
 
@@ -2269,7 +2267,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
     final File file = File(path);
 
     if (!await file.exists()) {
-      _showMessage('The recorded audio file is no longer available.');
+      _showMessage(NubifyText.tr('The recorded audio file is no longer available.'));
 
       return;
     }
@@ -2367,7 +2365,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
         _isVoicePaused = false;
       });
 
-      _showMessage('Unable to play recording: $error');
+      _showMessage(context.tr('Unable to play recording: {error}', {'error': error}));
     }
   }
 
@@ -2504,7 +2502,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
       context,
       MaterialPageRoute<List<StoryPerson>>(
         builder: (_) => StoryPeoplePickerScreen(
-          title: 'Tag People',
+          title: context.tr('Tag People'),
           initialSelected: _taggedPeople,
           maxSelection: 20,
         ),
@@ -2526,7 +2524,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
 
   void _addPollOption() {
     if (_pollOptionControllers.length >= 4) {
-      _showMessage('A story poll can have up to 4 options.');
+      _showMessage(context.tr('A story poll can have up to 4 options.'));
 
       return;
     }
@@ -2660,7 +2658,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
                     ),
                   ),
 
-                  const Padding(
+                  Padding(
                     padding: EdgeInsets.fromLTRB(18, 14, 18, 8),
                     child: Row(
                       children: <Widget>[
@@ -2669,8 +2667,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
                           color: Color(0xFF29B6F6),
                         ),
                         SizedBox(width: 8),
-                        Text(
-                          'Story Stickers',
+                        Text(context.tr('Story Stickers'),
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 19,
@@ -2681,13 +2678,13 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
                     ),
                   ),
 
-                  const TabBar(
+                  TabBar(
                     indicatorColor: Color(0xFF29B6F6),
                     labelColor: Color(0xFF29B6F6),
                     unselectedLabelColor: Colors.white60,
                     tabs: <Tab>[
-                      Tab(text: 'Stickers'),
-                      Tab(text: 'Recent'),
+                      Tab(text: context.tr('Stickers')),
+                      Tab(text: context.tr('Recent')),
                     ],
                   ),
 
@@ -2715,7 +2712,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
                                     horizontal: 13,
                                   ),
                                   tabs: _storyEmojiGroups.keys
-                                      .map((String group) => Tab(text: group))
+                                      .map((String group) => Tab(text: context.tr(group)))
                                       .toList(),
                                 ),
                               ),
@@ -2777,9 +2774,8 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
                         // RECENT STICKERS
                         //===================================================
                         _recentStickers.isEmpty
-                            ? const Center(
-                                child: Text(
-                                  'No recent stickers yet.\nChoose one from Stickers.',
+                            ? Center(
+                                child: Text(context.tr('No recent stickers yet.\nChoose one from Stickers.'),
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
                                     color: Colors.white60,
@@ -2804,7 +2800,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
                                           _recentStickers = <String>[];
                                         });
                                       },
-                                      child: const Text('Clear recent'),
+                                      child: Text(context.tr('Clear recent')),
                                     ),
                                   ),
 
@@ -2894,12 +2890,11 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
-                        const Row(
+                        Row(
                           children: <Widget>[
                             Icon(Icons.title_rounded, color: Color(0xFF29B6F6)),
                             SizedBox(width: 10),
-                            Text(
-                              'Add text to your story',
+                            Text(context.tr('Add text to your story'),
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 20,
@@ -2909,8 +2904,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
                           ],
                         ),
                         const SizedBox(height: 8),
-                        const Text(
-                          'After adding it, drag with one finger and pinch with two fingers to resize.',
+                        Text(context.tr('After adding it, drag with one finger and pinch with two fingers to resize.'),
                           style: TextStyle(color: Colors.white60, height: 1.35),
                         ),
                         const SizedBox(height: 16),
@@ -2926,7 +2920,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
                             fontWeight: FontWeight.w700,
                           ),
                           decoration: InputDecoration(
-                            hintText: 'Write something...',
+                            hintText: context.tr('Write something...'),
                             hintStyle: const TextStyle(color: Colors.white38),
                             filled: true,
                             fillColor: Colors.white.withValues(alpha: 0.06),
@@ -2982,8 +2976,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
                                     'size': size,
                                   });
                                 },
-                                child: const Text(
-                                  'Remove text',
+                                child: Text(context.tr('Remove text'),
                                   style: TextStyle(color: Color(0xFFE88978)),
                                 ),
                               ),
@@ -3004,8 +2997,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
                                 });
                               },
                               icon: const Icon(Icons.check_rounded),
-                              label: const Text(
-                                'Add to story',
+                              label: Text(context.tr('Add to story'),
                                 style: TextStyle(fontWeight: FontWeight.w800),
                               ),
                             ),
@@ -3067,19 +3059,19 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
     }
 
     if (_mode == 'media' && _mediaFile == null) {
-      _showMessage('Choose a photo or video first.');
+      _showMessage(NubifyText.tr('Choose a photo or video first.'));
 
       return;
     }
 
     if (_mode == 'layout' && _layoutFiles.isEmpty) {
-      _showMessage('Choose at least 1 photo for your layout.');
+      _showMessage(NubifyText.tr('Choose at least 1 photo for your layout.'));
 
       return;
     }
 
     if (_mode == 'text' && _storyTextController.text.trim().isEmpty) {
-      _showMessage('Write something for your story.');
+      _showMessage(NubifyText.tr('Write something for your story.'));
 
       return;
     }
@@ -3097,7 +3089,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
           .toList();
 
       if (question.isEmpty || options.length < 2) {
-        _showMessage('Add a poll question and at least 2 options.');
+        _showMessage(NubifyText.tr('Add a poll question and at least 2 options.'));
 
         return;
       }
@@ -3105,7 +3097,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
 
     if (_mode == 'voice' &&
         (_voicePath == null || _voicePath!.trim().isEmpty)) {
-      _showMessage('Record your voice first.');
+      _showMessage(NubifyText.tr('Record your voice first.'));
 
       return;
     }
@@ -3292,7 +3284,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
       _isPosting = false;
       Navigator.of(context).pop(true);
     } catch (error) {
-      _showMessage('Unable to post story: $error');
+      _showMessage(NubifyText.tr('Unable to post story: {error}', {'error': error}));
     } finally {
       if (!storyPublished && mounted) {
         setState(() {
@@ -3357,7 +3349,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
                     ),
                   const SizedBox(width: 7),
                   Text(
-                    busy ? 'Sharing…' : 'Share',
+                    busy ? context.tr('Sharing…') : context.tr('Share'),
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w800,
@@ -3429,12 +3421,11 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
                     ),
                   ),
                   const SizedBox(width: 10),
-                  const Flexible(
+                  Flexible(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
-                        Text(
-                          'Story Studio',
+                        Text(context.tr('Story Studio'),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
@@ -3443,8 +3434,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
                             letterSpacing: -0.3,
                           ),
                         ),
-                        Text(
-                          'Create something worth watching',
+                        Text(context.tr('Create something worth watching'),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
@@ -3734,7 +3724,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
                         cursorColor: _Studio.sky,
                         decoration: InputDecoration(
                           counterText: '',
-                          hintText: 'Add a caption for your viewers...',
+                          hintText: context.tr('Add a caption for your viewers...'),
                           hintStyle: const TextStyle(color: Colors.white54),
                           filled: true,
                           fillColor: _Studio.glass,
@@ -3845,7 +3835,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
                   onTap: locked
                       ? () {
                           _showMessage(
-                            'Delete the current ${_modeLabel(_mode)} first before choosing ${_modeLabel(id)}.',
+                            context.tr('Delete the current {mode} first before choosing {id}.', {'mode': _modeLabel(_mode), 'id': _modeLabel(id)}),
                           );
                         }
                       : () {
@@ -3886,7 +3876,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
                         ),
                         const SizedBox(width: 7),
                         Text(
-                          modes[index]['label'] as String,
+                          context.tr(modes[index]['label'] as String),
                           style: TextStyle(
                             color: selected ? Colors.white : Colors.white70,
                             fontSize: 13,
@@ -3941,7 +3931,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
     if (file == null) {
       return _emptyCanvasButton(
         icon: Icons.add_photo_alternate_outlined,
-        label: 'Choose a photo or video',
+        label: context.tr('Choose a photo or video'),
         onTap: _showMediaPicker,
       );
     }
@@ -3962,7 +3952,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
             children: <Widget>[
               _smallGlassButton(
                 icon: Icons.swap_horiz,
-                label: 'Replace',
+                label: context.tr('Replace'),
                 onTap: _showMediaPicker,
               ),
 
@@ -3970,7 +3960,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
 
               _smallGlassButton(
                 icon: Icons.delete_outline_rounded,
-                label: 'Delete',
+                label: context.tr('Delete'),
                 onTap: _deleteSelectedMedia,
               ),
             ],
@@ -3988,7 +3978,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
     if (_layoutFiles.isEmpty) {
       return _emptyCanvasButton(
         icon: Icons.grid_view_rounded,
-        label: 'Choose 1–4 photos',
+        label: context.tr('Choose 1–4 photos'),
         onTap: _pickLayoutImages,
       );
     }
@@ -4006,7 +3996,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
             children: <Widget>[
               _smallGlassButton(
                 icon: Icons.photo_library_outlined,
-                label: 'Replace',
+                label: context.tr('Replace'),
                 onTap: _pickLayoutImages,
               ),
 
@@ -4014,7 +4004,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
 
               _smallGlassButton(
                 icon: Icons.delete_outline_rounded,
-                label: 'Delete',
+                label: context.tr('Delete'),
                 onTap: _deleteLayout,
               ),
             ],
@@ -4210,8 +4200,8 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
                 setState(() {});
               },
               style: _buildTextStyle(),
-              decoration: const InputDecoration(
-                hintText: 'Type something...',
+              decoration: InputDecoration(
+                hintText: context.tr('Type something...'),
                 hintStyle: TextStyle(color: Colors.white54),
                 border: InputBorder.none,
                 counterText: '',
@@ -4226,7 +4216,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
             right: 12,
             child: _smallGlassButton(
               icon: Icons.delete_outline_rounded,
-              label: 'Delete',
+              label: context.tr('Delete'),
               onTap: _clearTextStory,
             ),
           ),
@@ -4247,7 +4237,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
             alignment: Alignment.centerRight,
             child: _smallGlassButton(
               icon: Icons.delete_outline_rounded,
-              label: 'Delete Poll',
+              label: context.tr('Delete Poll'),
               onTap: _clearPollStory,
             ),
           ),
@@ -4261,8 +4251,8 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
               fontWeight: FontWeight.bold,
               fontSize: 22,
             ),
-            decoration: const InputDecoration(
-              hintText: 'Ask a question...',
+            decoration: InputDecoration(
+              hintText: context.tr('Ask a question...'),
               hintStyle: TextStyle(color: Colors.white54),
             ),
           ),
@@ -4279,7 +4269,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
                       controller: _pollOptionControllers[index],
                       style: const TextStyle(color: Colors.white),
                       decoration: InputDecoration(
-                        hintText: 'Option ${index + 1}',
+                        hintText: context.tr('Option {index}', {'index': index + 1}),
                         hintStyle: const TextStyle(color: Colors.white54),
                         filled: true,
                         fillColor: Colors.white10,
@@ -4305,7 +4295,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
           TextButton.icon(
             onPressed: _addPollOption,
             icon: const Icon(Icons.add),
-            label: const Text('Add option'),
+            label: Text(context.tr('Add option')),
           ),
         ],
       ),
@@ -4346,8 +4336,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
 
             const SizedBox(height: 18),
 
-            const Text(
-              'Tap to record',
+            Text(context.tr('Tap to record'),
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 19,
@@ -4358,7 +4347,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
             const SizedBox(height: 6),
 
             Text(
-              'Maximum ${_formatDuration(Duration(seconds: _maxVoiceSeconds))}',
+              context.tr('Maximum {maxVoiceSeconds}', {'maxVoiceSeconds': _formatDuration(Duration(seconds: _maxVoiceSeconds))}),
               style: const TextStyle(color: Colors.white54),
             ),
           ],
@@ -4397,8 +4386,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
 
               const SizedBox(height: 18),
 
-              const Text(
-                'Recording...',
+              Text(context.tr('Recording...'),
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 18,
@@ -4424,14 +4412,13 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
               const SizedBox(height: 4),
 
               Text(
-                'Maximum ${_formatDuration(Duration(seconds: _maxVoiceSeconds))}',
+                context.tr('Maximum {maxVoiceSeconds}', {'maxVoiceSeconds': _formatDuration(Duration(seconds: _maxVoiceSeconds))}),
                 style: const TextStyle(color: Colors.white54, fontSize: 12),
               ),
 
               const SizedBox(height: 12),
 
-              const Text(
-                'Tap the red button to stop',
+              Text(context.tr('Tap the red button to stop'),
                 style: TextStyle(color: Colors.white54),
               ),
             ],
@@ -4476,8 +4463,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
 
             const SizedBox(height: 12),
 
-            const Text(
-              'Play Review',
+            Text(context.tr('Play Review'),
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 19,
@@ -4600,7 +4586,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
                     ),
                     onPressed: _startRecording,
                     icon: const Icon(Icons.refresh_rounded),
-                    label: const Text('Record Again'),
+                    label: Text(context.tr('Record Again')),
                   ),
                 ),
 
@@ -4615,7 +4601,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
                     ),
                     onPressed: _deleteVoiceRecording,
                     icon: const Icon(Icons.delete_outline_rounded),
-                    label: const Text('Delete'),
+                    label: Text(context.tr('Delete')),
                   ),
                 ),
               ],
@@ -4756,7 +4742,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
       child: Row(
         children: <Widget>[
           Tooltip(
-            message: 'Finish drawing',
+            message: context.tr('Finish drawing'),
             child: GestureDetector(
               onTap: () {
                 setState(() {
@@ -4782,12 +4768,12 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
             ),
           ),
           IconButton(
-            tooltip: 'Undo last line',
+            tooltip: context.tr('Undo last line'),
             onPressed: _drawingStrokes.isEmpty ? null : _undoDrawingStroke,
             icon: const Icon(Icons.undo_rounded),
           ),
           IconButton(
-            tooltip: 'Clear drawing',
+            tooltip: context.tr('Clear drawing'),
             onPressed: _drawingStrokes.isEmpty ? null : _clearDrawing,
             icon: const Icon(Icons.delete_sweep_outlined),
           ),
@@ -4834,7 +4820,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
             ),
           ),
           PopupMenuButton<double>(
-            tooltip: 'Pen thickness',
+            tooltip: context.tr('Pen thickness'),
             initialValue: _drawingWidth,
             color: _Studio.sheet,
             onSelected: (double value) {
@@ -4883,29 +4869,29 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
         children: <Widget>[
           _controlButton(
             icon: Icons.person_add_alt,
-            label: 'Tag',
+            label: context.tr('Tag'),
             onTap: _pickTaggedPeople,
           ),
 
           _controlButton(
             icon: Icons.emoji_emotions_outlined,
-            label: 'Sticker',
+            label: context.tr('Sticker'),
             onTap: _showStickers,
           ),
 
           _controlButton(
             icon: Icons.title_rounded,
             label: _mode == 'text'
-                ? 'Text size'
+                ? context.tr('Text size')
                 : _storyTextController.text.trim().isEmpty
-                ? 'Add text'
-                : 'Edit text',
+                ? context.tr('Add text')
+                : context.tr('Edit text'),
             onTap: _openOverlayTextEditor,
           ),
 
           _controlButton(
             icon: Icons.draw_rounded,
-            label: 'Draw',
+            label: context.tr('Draw'),
             onTap: () {
               setState(() {
                 _isDrawing = true;
@@ -4916,30 +4902,30 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
           if (_mode == 'layout')
             _controlButton(
               icon: Icons.dashboard_customize_outlined,
-              label: 'Layout',
+              label: context.tr('Layout'),
               onTap: _showLayoutSettings,
             ),
           _controlButton(
             icon: Icons.format_align_center,
-            label: 'Align',
+            label: context.tr('Align'),
             onTap: _cycleTextAlignment,
           ),
 
           _controlButton(
             icon: Icons.format_bold,
-            label: 'Style',
+            label: context.tr('Style'),
             onTap: _showTextStylePicker,
           ),
 
           _controlButton(
             icon: Icons.palette_outlined,
-            label: 'Background',
+            label: context.tr('Background'),
             onTap: _showBackgroundColorPicker,
           ),
 
           _controlButton(
             icon: Icons.format_color_text,
-            label: 'Text colour',
+            label: context.tr('Text colour'),
             onTap: _showTextColorPicker,
           ),
         ],
@@ -5189,8 +5175,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                const Text(
-                  'Text Style',
+                Text(context.tr('Text Style'),
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 19,
@@ -5215,7 +5200,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
 
                     final String value = item['value'] as String;
 
-                    final String label = item['label'] as String;
+                    final String label = context.tr(item['label'] as String);
 
                     final IconData icon = item['icon'] as IconData;
 
@@ -5314,7 +5299,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
 
   Future<void> _showBackgroundColorPicker() async {
     final int? selected = await _showColorPickerSheet(
-      title: 'Background Color',
+      title: context.tr('Background Color'),
       colors: _backgroundColors,
       selectedColor: _backgroundColor,
       previewTextColor: Colors.white,
@@ -5335,7 +5320,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
 
   Future<void> _showTextColorPicker() async {
     final int? selected = await _showColorPickerSheet(
-      title: 'Text Color',
+      title: context.tr('Text Color'),
       colors: _textColors,
       selectedColor: _textColor,
       previewTextColor: Color(_textColor),
@@ -5463,9 +5448,8 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
 
                       const SizedBox(width: 10),
 
-                      const Expanded(
-                        child: Text(
-                          'Current selection',
+                      Expanded(
+                        child: Text(context.tr('Current selection'),
                           style: TextStyle(
                             color: Colors.white70,
                             fontSize: 12,

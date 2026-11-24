@@ -260,7 +260,7 @@ class _CreatePostScreenState
 
       if (files.length > _maxMedia) {
         _showMessage(
-          'You can select up to $_maxMedia photos/videos.',
+          context.tr('You can select up to {maxMedia} photos/videos.', {'maxMedia': _maxMedia}),
         );
       }
 
@@ -370,7 +370,7 @@ class _CreatePostScreenState
 
     if (user == null) {
       throw Exception(
-        'User is not logged in.',
+        context.tr('User is not logged in.'),
       );
     }
 
@@ -1335,7 +1335,7 @@ class _CreatePostScreenState
                           counterText:
                           '',
                           hintText:
-                          'Option ${index + 1}',
+                          context.tr('Option {index}', {'index': index + 1}),
                           prefixIcon:
                           const Icon(
                             Icons
@@ -1391,7 +1391,7 @@ class _CreatePostScreenState
               ),
               label:
               Text(
-                'Add option (${_pollOptionControllers.length}/$_maxPollOptions)',
+                context.tr('Add option ({count}/{maxPollOptions})', {'count': _pollOptionControllers.length, 'maxPollOptions': _maxPollOptions}),
               ),
             ),
 
