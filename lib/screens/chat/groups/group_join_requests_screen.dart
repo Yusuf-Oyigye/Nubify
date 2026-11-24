@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import '../../../services/chat/group_chat_service.dart';
+import '../../../l10n/nubify_text.dart';
 
 //===================================================
 // GROUP JOIN REQUESTS SCREEN
@@ -70,8 +71,8 @@ class _GroupJoinRequestsScreenState
         SnackBar(
           content: Text(
             approve
-                ? 'Student added to the group.'
-                : 'Join request rejected.',
+                ? context.tr('Student added to the group.')
+                : context.tr('Join request rejected.'),
           ),
         ),
       );
@@ -81,7 +82,7 @@ class _GroupJoinRequestsScreenState
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Unable to process request: $error',
+            context.tr('Unable to process request: {error}', {'error': '$error'}),
           ),
         ),
       );
@@ -114,7 +115,7 @@ class _GroupJoinRequestsScreenState
                 <String, dynamic>{};
 
         final String name =
-        (user['fullName'] ?? 'Student').toString();
+        (user['fullName'] ?? context.tr('Student')).toString();
 
         final String username =
         (user['username'] ?? '').toString();
@@ -183,8 +184,7 @@ class _GroupJoinRequestsScreenState
 
                           const SizedBox(height: 4),
 
-                          const Text(
-                            'Wants to join your group',
+                          Text(context.tr('Wants to join your group'),
                             style: TextStyle(
                               fontSize: 12,
                             ),
@@ -217,7 +217,7 @@ class _GroupJoinRequestsScreenState
                           icon: const Icon(
                             Icons.close_rounded,
                           ),
-                          label: const Text('Reject'),
+                          label: Text(context.tr('Reject')),
                         ),
                       ),
 
@@ -237,7 +237,7 @@ class _GroupJoinRequestsScreenState
                           icon: const Icon(
                             Icons.check_rounded,
                           ),
-                          label: const Text('Approve'),
+                          label: Text(context.tr('Approve')),
                         ),
                       ),
                     ],
@@ -258,8 +258,7 @@ class _GroupJoinRequestsScreenState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Join requests',
+        title: Text(context.tr('Join requests'),
           style: TextStyle(
             fontWeight: FontWeight.bold,
           ),
@@ -277,9 +276,8 @@ class _GroupJoinRequestsScreenState
 
         builder: (context, snapshot) {
           if (snapshot.hasError) {
-            return const Center(
-              child: Text(
-                'Unable to load join requests.',
+            return Center(
+              child: Text(context.tr('Unable to load join requests.'),
               ),
             );
           }
@@ -295,7 +293,7 @@ class _GroupJoinRequestsScreenState
           final requests = snapshot.data!.docs;
 
           if (requests.isEmpty) {
-            return const Center(
+            return Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -305,16 +303,14 @@ class _GroupJoinRequestsScreenState
                     color: _blue,
                   ),
                   SizedBox(height: 12),
-                  Text(
-                    'No pending join requests',
+                  Text(context.tr('No pending join requests'),
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 17,
                     ),
                   ),
                   SizedBox(height: 5),
-                  Text(
-                    'New requests will appear here.',
+                  Text(context.tr('New requests will appear here.'),
                   ),
                 ],
               ),

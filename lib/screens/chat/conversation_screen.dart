@@ -36,6 +36,7 @@ import '../../widgets/chat/chat_call_event_bubble.dart';
 import '../../widgets/chat/nubify_chat_style.dart';
 import '../../widgets/chat/chat_story_avatar.dart';
 import '../../services/notifications/push_notifications.dart';
+import '../../l10n/nubify_text.dart';
 
 //===============================
 // IS ONLINE
@@ -954,7 +955,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
 
     if (story == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('This story has expired or was removed.')),
+        SnackBar(content: Text(context.tr('This story has expired or was removed.'))),
       );
 
       return;
@@ -1025,7 +1026,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
 
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(const SnackBar(content: Text('Profile link copied.')));
+    ).showSnackBar(SnackBar(content: Text(context.tr('Profile link copied.'))));
   }
 
   //===============================
@@ -1068,23 +1069,22 @@ class _ConversationScreenState extends State<ConversationScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Block ${widget.otherName}?'),
-          content: const Text(
-            'They will no longer be able to interact with you normally through direct messaging.',
+          title: Text(context.tr('Block {name}?', {'name': widget.otherName})),
+          content: Text(context.tr('They will no longer be able to interact with you normally through direct messaging.'),
           ),
           actions: <Widget>[
             TextButton(
               onPressed: () {
                 Navigator.pop(context, false);
               },
-              child: const Text('Cancel'),
+              child: Text(context.tr('Cancel')),
             ),
             FilledButton(
               style: FilledButton.styleFrom(backgroundColor: Colors.redAccent),
               onPressed: () {
                 Navigator.pop(context, true);
               },
-              child: const Text('Block'),
+              child: Text(context.tr('Block')),
             ),
           ],
         );
@@ -1136,7 +1136,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('Conversation unmuted.')));
+        ).showSnackBar(SnackBar(content: Text(context.tr('Conversation unmuted.'))));
       }
     } else {
       await reference.set(<String, dynamic>{
@@ -1147,7 +1147,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('Conversation muted.')));
+        ).showSnackBar(SnackBar(content: Text(context.tr('Conversation muted.'))));
       }
     }
   }
@@ -1261,7 +1261,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
           return Text(
             widget.otherUsername.trim().isNotEmpty
                 ? '@${widget.otherUsername}'
-                : 'Nubify',
+                : context.tr('Nubify'),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(color: palette.muted, fontSize: 11),
@@ -1276,8 +1276,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
           builder:
               (BuildContext context, AsyncSnapshot<bool> recordingSnapshot) {
                 if (recordingSnapshot.data == true) {
-                  return const Text(
-                    'recording audio...',
+                  return Text(context.tr('recording audio...'),
                     style: TextStyle(color: _blue, fontSize: 11),
                   );
                 }
@@ -1293,8 +1292,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
                         AsyncSnapshot<bool> typingSnapshot,
                       ) {
                         if (typingSnapshot.data == true) {
-                          return const Text(
-                            'typing...',
+                          return Text(context.tr('typing...'),
                             style: TextStyle(color: _blue, fontSize: 11),
                           );
                         }
@@ -1354,7 +1352,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
                                       TimeOfDay.fromDateTime(time);
 
                                   return Text(
-                                    'last seen ${dayTime.format(context)}',
+                                    context.tr('last seen {time}', {'time': dayTime.format(context)}),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
@@ -1406,7 +1404,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
             }
 
             return IconButton(
-              tooltip: 'Seller Marketplace listings',
+              tooltip: context.tr('Seller Marketplace listings'),
               onPressed: _openCatalogue,
               icon: const MarketplaceBrandIcon(size: 25),
             );
@@ -1488,7 +1486,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
         _catalogueButton(),
 
         IconButton(
-          tooltip: 'Audio call',
+          tooltip: context.tr('Audio call'),
           onPressed: _startCall,
           style: IconButton.styleFrom(
             backgroundColor: NubifyChatStyle.royal.withValues(alpha: 0.12),
@@ -1500,50 +1498,50 @@ class _ConversationScreenState extends State<ConversationScreen> {
         PopupMenuButton<String>(
           onSelected: _handleMenu,
           itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-            const PopupMenuItem<String>(
+            PopupMenuItem<String>(
               value: 'profile',
               child: ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: Icon(Icons.person_outline_rounded),
-                title: Text('View profile'),
+                title: Text(context.tr('View profile')),
               ),
             ),
 
-            const PopupMenuItem<String>(
+            PopupMenuItem<String>(
               value: 'media',
               child: ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: Icon(Icons.perm_media_outlined),
-                title: Text('Media, links & docs'),
+                title: Text(context.tr('Media, links & docs')),
               ),
             ),
 
-            const PopupMenuItem<String>(
+            PopupMenuItem<String>(
               value: 'search',
               child: ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: Icon(Icons.search_rounded),
-                title: Text('Search conversation'),
+                title: Text(context.tr('Search conversation')),
               ),
             ),
 
-            const PopupMenuItem<String>(
+            PopupMenuItem<String>(
               value: 'copy',
               child: ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: Icon(Icons.link_rounded),
-                title: Text('Copy profile link'),
+                title: Text(context.tr('Copy profile link')),
               ),
             ),
 
             const PopupMenuDivider(),
 
-            const PopupMenuItem<String>(
+            PopupMenuItem<String>(
               value: 'report',
               child: ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: Icon(Icons.flag_outlined, color: Colors.orange),
-                title: Text('Report user'),
+                title: Text(context.tr('Report user')),
               ),
             ),
 
@@ -1555,7 +1553,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
                   _blocked ? Icons.lock_open_rounded : Icons.block_rounded,
                   color: Colors.redAccent,
                 ),
-                title: Text(_blocked ? 'Unblock user' : 'Block user'),
+                title: Text(_blocked ? context.tr('Unblock user') : context.tr('Block user')),
               ),
             ),
           ],
@@ -1587,8 +1585,8 @@ class _ConversationScreenState extends State<ConversationScreen> {
       title: TextField(
         controller: _searchController,
         autofocus: true,
-        decoration: const InputDecoration(
-          hintText: 'Search messages...',
+        decoration: InputDecoration(
+          hintText: context.tr('Search messages...'),
           border: InputBorder.none,
         ),
       ),
@@ -1607,7 +1605,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
     }
 
     final String sender = message.senderId == _auth.currentUser?.uid
-        ? 'You'
+        ? context.tr('You')
         : widget.otherName;
 
     final _ConversationPalette palette = _ConversationPalette.of(context);
@@ -1679,12 +1677,12 @@ class _ConversationScreenState extends State<ConversationScreen> {
 
           Expanded(
             child: Text(
-              '${widget.otherName} is blocked.',
+              context.tr('{name} is blocked.', {'name': widget.otherName}),
               style: TextStyle(color: palette.text),
             ),
           ),
 
-          TextButton(onPressed: _blockOrUnblock, child: const Text('Unblock')),
+          TextButton(onPressed: _blockOrUnblock, child: Text(context.tr('Unblock'))),
         ],
       ),
     );
@@ -1735,7 +1733,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
     // VIDEO
     //===============================
     else if (pending.type == 'video') {
-      content = const SizedBox(
+      content = SizedBox(
         width: 220,
 
         height: 125,
@@ -1748,8 +1746,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
 
             SizedBox(height: 7),
 
-            Text(
-              'Sending video...',
+            Text(context.tr('Sending video...'),
 
               style: TextStyle(color: Colors.white70, fontSize: 12),
             ),
@@ -1795,8 +1792,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
 
                 children: <Widget>[
-                  const Text(
-                    'Sending voice message...',
+                  Text(context.tr('Sending voice message...'),
 
                     style: TextStyle(
                       color: Colors.white,
@@ -1848,7 +1844,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
                   Text(
                     pending.fileName.trim().isNotEmpty
                         ? pending.fileName
-                        : 'Document',
+                        : context.tr('Document'),
 
                     maxLines: 2,
 
@@ -1865,8 +1861,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
 
                   const SizedBox(height: 3),
 
-                  const Text(
-                    'Sending...',
+                  Text(context.tr('Sending...'),
 
                     style: TextStyle(color: Colors.white60, fontSize: 10),
                   ),
@@ -1922,7 +1917,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
                       Text(
                         pending.replySenderName.trim().isNotEmpty
                             ? pending.replySenderName
-                            : 'Reply',
+                            : context.tr('Reply'),
 
                         style: const TextStyle(
                           color: Colors.white,
@@ -1954,7 +1949,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
 
               const SizedBox(height: 6),
 
-              const Row(
+              Row(
                 mainAxisSize: MainAxisSize.min,
 
                 children: <Widget>[
@@ -1968,8 +1963,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
 
                   SizedBox(width: 4),
 
-                  Text(
-                    'Sending',
+                  Text(context.tr('Sending'),
 
                     style: TextStyle(color: Colors.white70, fontSize: 9),
                   ),
@@ -2158,8 +2152,8 @@ class _ConversationScreenState extends State<ConversationScreen> {
                         const SizedBox(height: 14),
                         Text(
                           _search.isNotEmpty
-                              ? 'No matching messages.'
-                              : 'Say hi to ${widget.otherName}',
+                              ? context.tr('No matching messages.')
+                              : context.tr('Say hi to {name}', {'name': widget.otherName}),
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: palette.text,
@@ -2169,8 +2163,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
                         ),
                         if (_search.isEmpty) ...<Widget>[
                           const SizedBox(height: 4),
-                          Text(
-                            'Start the conversation.',
+                          Text(context.tr('Start the conversation.'),
                             style: TextStyle(color: palette.muted),
                           ),
                         ],

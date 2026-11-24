@@ -5,6 +5,7 @@ import '../../models/marketplace/marketplace_listing.dart';
 import '../../services/marketplace/marketplace_service.dart';
 import '../../utils/marketplace/marketplace_theme.dart';
 import 'marketplace_listing_card.dart';
+import '../../l10n/nubify_text.dart';
 
 //===================================================
 // MORE FROM THIS SELLER
@@ -90,9 +91,8 @@ class MarketplaceMoreFromSeller extends StatelessWidget {
                 children: <Widget>[
                   Row(
                     children: <Widget>[
-                      const Expanded(
-                        child: Text(
-                          'More from this seller',
+                      Expanded(
+                        child: Text(context.tr('More from this seller'),
                           style: TextStyle(
                             fontSize: 19,
                             fontWeight: FontWeight.w900,
@@ -101,13 +101,12 @@ class MarketplaceMoreFromSeller extends StatelessWidget {
                       ),
                       TextButton(
                         onPressed: onViewStore,
-                        child: const Text('View Store'),
+                        child: Text(context.tr('View Store')),
                       ),
                     ],
                   ),
                   const SizedBox(height: 12),
-                  Text(
-                    'No other available listings.',
+                  Text(context.tr('No other available listings.'),
                     style: TextStyle(
                       color:
                       MarketplaceTheme.mutedText(
@@ -129,9 +128,8 @@ class MarketplaceMoreFromSeller extends StatelessWidget {
               children: <Widget>[
                 Row(
                   children: <Widget>[
-                    const Expanded(
-                      child: Text(
-                        'More From This Seller',
+                    Expanded(
+                      child: Text(context.tr('More From This Seller'),
                         style: TextStyle(
                           fontSize: 19,
                           fontWeight: FontWeight.w900,
@@ -140,7 +138,7 @@ class MarketplaceMoreFromSeller extends StatelessWidget {
                     ),
                     TextButton(
                       onPressed: onViewStore,
-                      child: const Text('View Store'),
+                      child: Text(context.tr('View Store')),
                     ),
                   ],
                 ),

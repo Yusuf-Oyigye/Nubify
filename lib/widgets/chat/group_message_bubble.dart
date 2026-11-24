@@ -7,6 +7,7 @@ import 'chat_voice_message.dart';
 import 'chat_link_text.dart';
 import 'nubify_chat_style.dart';
 import 'nubify_shared_chat_card.dart';
+import '../../l10n/nubify_text.dart';
 
 //===============================
 // GROUP MESSAGE BUBBLE
@@ -140,7 +141,7 @@ class GroupMessageBubble extends StatelessWidget {
           Text(
             message.replyToText.trim().isNotEmpty
                 ? message.replyToText
-                : 'Message',
+                : NubifyText.tr('Message'),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(color: Colors.white60, fontSize: 11),
@@ -231,7 +232,7 @@ class GroupMessageBubble extends StatelessWidget {
 
   Widget _content() {
     if (message.deletedForEveryone) {
-      return const Row(
+      return Row(
         mainAxisSize: MainAxisSize.min,
 
         children: <Widget>[
@@ -239,8 +240,7 @@ class GroupMessageBubble extends StatelessWidget {
 
           SizedBox(width: 6),
 
-          Text(
-            'This message was deleted',
+          Text(NubifyText.tr('This message was deleted'),
             style: TextStyle(
               color: Colors.white60,
               fontStyle: FontStyle.italic,
@@ -309,7 +309,7 @@ class GroupMessageBubble extends StatelessWidget {
                 child: Text(
                   message.fileName.trim().isNotEmpty
                       ? message.fileName
-                      : 'Document',
+                      : NubifyText.tr('Document'),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(color: Colors.white, fontSize: 12),
@@ -453,10 +453,9 @@ class GroupMessageBubble extends StatelessWidget {
                         ),
                       ),
                     if (message.isForwarded)
-                      const Padding(
+                      Padding(
                         padding: EdgeInsets.only(bottom: 4),
-                        child: Text(
-                          '↪ Forwarded',
+                        child: Text(context.tr('↪ Forwarded'),
                           style: TextStyle(
                             color: Colors.white54,
                             fontSize: 10,

@@ -5,6 +5,7 @@ import '../../../utils/profile/username_rules.dart';
 
 import 'audio_call_screen.dart';
 import '../../profile/profile_screen.dart';
+import '../../../l10n/nubify_text.dart';
 
 //===================================================
 // DIRECT NEW CALL PICKER
@@ -68,8 +69,7 @@ class _NewCallScreenState extends State<NewCallScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'New call',
+        title: Text(context.tr('New call'),
           style: TextStyle(fontWeight: FontWeight.w800),
         ),
       ),
@@ -81,7 +81,7 @@ class _NewCallScreenState extends State<NewCallScreen> {
               controller: _searchController,
               autofocus: true,
               decoration: InputDecoration(
-                hintText: 'Search users to call',
+                hintText: context.tr('Search users to call'),
                 prefixIcon: const Icon(Icons.search_rounded),
                 suffixIcon: _search.isEmpty
                     ? null
@@ -140,8 +140,8 @@ class _NewCallScreenState extends State<NewCallScreen> {
                   return Center(
                     child: Text(
                       _search.isEmpty
-                          ? 'No users available to call.'
-                          : 'No matching users.',
+                          ? context.tr('No users available to call.')
+                          : context.tr('No matching users.'),
                       style: TextStyle(color: scheme.onSurfaceVariant),
                     ),
                   );
@@ -172,7 +172,7 @@ class _NewCallScreenState extends State<NewCallScreen> {
                         ? fullName
                         : username.isNotEmpty
                         ? username
-                        : 'Nubify user';
+                        : context.tr('Nubify user');
 
                     return ListTile(
                       contentPadding: const EdgeInsets.symmetric(
@@ -214,7 +214,7 @@ class _NewCallScreenState extends State<NewCallScreen> {
                               overflow: TextOverflow.ellipsis,
                             ),
                       trailing: IconButton.filledTonal(
-                        tooltip: 'Call $name',
+                        tooltip: context.tr('Call {name}', {'name': name}),
                         onPressed: () {
                           _startCall(
                             uid: document.id,

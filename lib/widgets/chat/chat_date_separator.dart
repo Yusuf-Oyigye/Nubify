@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../../l10n/nubify_text.dart';
 
 //===============================
 // CHAT DATE SEPARATOR
@@ -24,11 +25,11 @@ class ChatDateSeparator extends StatelessWidget {
     final int difference = today.difference(messageDate).inDays;
 
     if (difference == 0) {
-      return 'Today';
+      return NubifyText.tr('Today');
     }
 
     if (difference == 1) {
-      return 'Yesterday';
+      return NubifyText.tr('Yesterday');
     }
 
     return DateFormat('dd/MM/yyyy').format(date);

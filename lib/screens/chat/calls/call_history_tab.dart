@@ -11,6 +11,7 @@ import '../../../widgets/chat/chat_story_avatar.dart';
 import '../../../widgets/chat/nubify_chat_style.dart';
 import 'audio_call_screen.dart';
 import '../conversation_screen.dart';
+import '../../../l10n/nubify_text.dart';
 
 //===================================================
 // CALL HISTORY TAB
@@ -120,7 +121,7 @@ class _CallHistoryTabState extends State<CallHistoryTab> {
     }
 
     if (day == today.subtract(const Duration(days: 1))) {
-      return 'Yesterday, $clock';
+      return NubifyText.tr('Yesterday, {time}', {'time': clock});
     }
 
     return '${value.day}/${value.month}/${value.year}';
@@ -242,7 +243,7 @@ class _CallHistoryTabState extends State<CallHistoryTab> {
                 ? fullName
                 : username.isNotEmpty
                 ? username
-                : 'Nubify user';
+                : context.tr('Nubify user');
 
             return ListTile(
               contentPadding: const EdgeInsets.symmetric(
@@ -322,7 +323,7 @@ class _CallHistoryTabState extends State<CallHistoryTab> {
               // CALL ICON - START CALL
               //===================================================
               trailing: IconButton(
-                tooltip: 'Call $name',
+                tooltip: context.tr('Call {name}', {'name': name}),
                 onPressed: () {
                   _call(
                     uid: otherUid,
@@ -395,8 +396,7 @@ class _CallHistoryTabState extends State<CallHistoryTab> {
           children: <Widget>[
             const NubifyChatEmptyIcon(icon: Icons.call_rounded),
             const SizedBox(height: 16),
-            Text(
-              'No recent calls',
+            Text(context.tr('No recent calls'),
               style: TextStyle(
                 color: scheme.onSurface,
                 fontSize: 17,
@@ -404,8 +404,7 @@ class _CallHistoryTabState extends State<CallHistoryTab> {
               ),
             ),
             const SizedBox(height: 5),
-            Text(
-              'Your voice calls will show up here.',
+            Text(context.tr('Your voice calls will show up here.'),
               style: TextStyle(color: scheme.onSurfaceVariant),
             ),
           ],
@@ -439,7 +438,7 @@ class _CallHistoryTabState extends State<CallHistoryTab> {
     final ColorScheme scheme = Theme.of(context).colorScheme;
 
     if (uid.isEmpty) {
-      return const Center(child: Text('Please log in to view calls.'));
+      return Center(child: Text(context.tr('Please log in to view calls.')));
     }
 
     //===================================================
@@ -464,8 +463,7 @@ class _CallHistoryTabState extends State<CallHistoryTab> {
                   ) {
                     if (outgoing.hasError || incoming.hasError) {
                       return Center(
-                        child: Text(
-                          'Unable to load call history.',
+                        child: Text(context.tr('Unable to load call history.'),
                           style: TextStyle(color: scheme.onSurfaceVariant),
                         ),
                       );

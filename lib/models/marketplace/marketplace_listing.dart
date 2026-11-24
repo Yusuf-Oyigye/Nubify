@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../l10n/nubify_text.dart';
+
 //===================================================
 // MARKETPLACE MEDIA
 //===================================================
@@ -133,6 +135,29 @@ class MarketplaceListing {
       default:
         return price == null
             ? 'Price unavailable'
+            : '$currency ${_formatPrice(price!)}';
+    }
+  }
+
+  // priceLabel in the app language, for the screen
+  // (priceLabel itself stays English: it is shared in
+  // chats and links).
+  String get displayPrice {
+    switch (priceType) {
+      case 'free':
+        return NubifyText.tr('Free');
+      case 'contact':
+        return NubifyText.tr('Contact for Price');
+      case 'negotiable':
+        return price == null
+            ? NubifyText.tr('Negotiable')
+            : NubifyText.tr('{price} · Negotiable', {
+                'price': '$currency ${_formatPrice(price!)}',
+              });
+      case 'fixed':
+      default:
+        return price == null
+            ? NubifyText.tr('Price unavailable')
             : '$currency ${_formatPrice(price!)}';
     }
   }

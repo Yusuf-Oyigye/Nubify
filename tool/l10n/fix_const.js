@@ -22,27 +22,40 @@ for (let round = 0; round < 40; round++) {
     console.log(`done after ${round} rounds, ${errors.length} other errors`);
     process.exit(0);
   }
-  // One fix per file per round (positions shift after edits).
-  const seen = new Set();
+  // Every const error in a file in one round: find the
+  // nearest "const " before each error on the unchanged
+  // text, then remove those from the end backwards so
+  // earlier positions stay right. (A const shared by
+  // several errors is removed once.)
+  const byFile = new Map();
   for (const l of constErrors) {
     const parts = l.split("|");
-    const file = parts[3];
-    if (seen.has(file)) continue;
-    seen.add(file);
-    const line = Number(parts[4]);
-    const col = Number(parts[5]);
+    const list = byFile.get(parts[3]) || [];
+    list.push([Number(parts[4]), Number(parts[5])]);
+    byFile.set(parts[3], list);
+  }
+  for (const [file, places] of byFile) {
     const raw = fs.readFileSync(file, "utf8");
     const crlf = raw.includes("\r\n");
-    const text = raw.replace(/\r\n/g, "\n");
-    const lines = text.split("\n");
-    let offset = 0;
-    for (let i = 0; i < line - 1; i++) offset += lines[i].length + 1;
-    offset += col - 1;
-    const before = text.slice(0, offset);
-    const at = before.lastIndexOf("const ");
-    if (at === -1) { console.log("NO CONST for " + l); process.exit(1); }
-    const fixed = text.slice(0, at) + text.slice(at + 6);
-    fs.writeFileSync(file, crlf ? fixed.replace(/\n/g, "\r\n") : fixed);
+    let text = raw.replace(/\r\n/g, "\n");
+    const starts = [0];
+    for (let i = 0; i < text.length; i++) if (text[i] === "\n") starts.push(i + 1);
+    const targets = new Set();
+    for (const [line, col] of places) {
+      const at = text.lastIndexOf("const ", starts[line - 1] + col - 1);
+      // A const more than 40 lines up is not the cause (for
+      // example a constructor declaration): fix it by hand.
+      const constLine = text.slice(0, at).split("\n").length;
+      if (at === -1 || line - constLine > 40) {
+        console.log("FIX BY HAND " + file + " at " + line + ":" + col);
+        process.exit(1);
+      }
+      targets.add(at);
+    }
+    for (const at of [...targets].sort((a, b) => b - a)) {
+      text = text.slice(0, at) + text.slice(at + 6);
+    }
+    fs.writeFileSync(file, crlf ? text.replace(/\n/g, "\r\n") : text);
   }
 }
 console.log("gave up after 40 rounds");

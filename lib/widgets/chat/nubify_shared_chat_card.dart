@@ -4,6 +4,7 @@ import '../../models/chat/chat_message.dart';
 import '../../models/links/link_preview.dart';
 import '../../services/links/link_preview_service.dart';
 import '../links/universal_link_preview_card.dart';
+import '../../l10n/nubify_text.dart';
 
 //===========================================
 // NUBIFY SHARED CHAT CARD
@@ -66,15 +67,15 @@ class _NubifySharedChatCardState extends State<NubifySharedChatCard> {
           ? m.postFullName.trim()
           : m.postUsername.trim();
 
-      return author.isEmpty ? 'Nubify post' : 'Post by $author';
+      return author.isEmpty ? context.tr('Nubify post') : context.tr('Post by {name}', {'name': author});
     }
 
     if (m.isStoryShare || m.isStoryReply) {
       return m.storyUsername
           .trim()
           .isNotEmpty
-          ? 'Story by ${m.storyUsername}'
-          : 'Nubify Story';
+          ? context.tr('Story by {name}', {'name': m.storyUsername})
+          : context.tr('Nubify Story');
     }
 
     if (m.isProduct) {
@@ -82,10 +83,10 @@ class _NubifySharedChatCardState extends State<NubifySharedChatCard> {
           .trim()
           .isNotEmpty
           ? m.productName.trim()
-          : 'Marketplace listing';
+          : context.tr('Marketplace listing');
     }
 
-    return 'Nubify content';
+    return context.tr('Nubify content');
   }
 
   //===========================================
@@ -100,17 +101,17 @@ class _NubifySharedChatCardState extends State<NubifySharedChatCard> {
           .trim()
           .isNotEmpty
           ? m.postCaption.trim()
-          : 'View this Nubify post';
+          : context.tr('View this Nubify post');
     }
 
     if (m.isStoryReply) {
       return m.text
           .trim()
-          .isNotEmpty ? m.text.trim() : 'Replied to a story';
+          .isNotEmpty ? m.text.trim() : context.tr('Replied to a story');
     }
 
     if (m.isStoryShare) {
-      return 'Tap to view this story';
+      return context.tr('Tap to view this story');
     }
 
     if (m.isProduct) {
@@ -188,7 +189,7 @@ class _NubifySharedChatCardState extends State<NubifySharedChatCard> {
       'provider': 'Nubify',
       'isInternal': true,
       'isAvailable': true,
-      'actionLabel': 'View content',
+      'actionLabel': context.tr('View content'),
     });
   }
 

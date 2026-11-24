@@ -8,6 +8,7 @@ import '../../utils/marketplace/marketplace_constants.dart';
 import '../../utils/marketplace/marketplace_motion.dart';
 import '../../utils/marketplace/marketplace_theme.dart';
 import 'marketplace_brand_icon.dart';
+import '../../l10n/nubify_text.dart';
 
 class MarketplaceListingCard extends StatefulWidget {
   const MarketplaceListingCard({
@@ -64,7 +65,7 @@ class _MarketplaceListingCardState extends State<MarketplaceListingCard> {
       if (mounted) {
         setState(() => _saved = previous);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not update Saved Listings.')),
+          SnackBar(content: Text(context.tr('Could not update Saved Listings.'))),
         );
       }
     } finally {
@@ -126,17 +127,17 @@ class _MarketplaceListingCardState extends State<MarketplaceListingCard> {
                                     ? Icons.sell_rounded
                                     : Icons.visibility_off_rounded,
                                 label: listing.status == 'sold'
-                                    ? 'Sold'
-                                    : 'Unavailable',
+                                    ? context.tr('Sold')
+                                    : context.tr('Unavailable'),
                               ),
                             )
                           else if (listing.hasVideo)
-                            const Positioned(
+                            Positioned(
                               left: 10,
                               top: 10,
                               child: _MediaBadge(
                                 icon: Icons.play_arrow_rounded,
-                                label: 'Video',
+                                label: context.tr('Video'),
                               ),
                             ),
                           Positioned(
@@ -154,8 +155,8 @@ class _MarketplaceListingCardState extends State<MarketplaceListingCard> {
                                 child: IconButton(
                                   visualDensity: VisualDensity.compact,
                                   tooltip: _saved
-                                      ? 'Remove from saved'
-                                      : 'Save listing',
+                                      ? context.tr('Remove from saved')
+                                      : context.tr('Save listing'),
                                   onPressed: _saving ? null : _toggleSaved,
                                   icon: Icon(
                                     _saved
@@ -180,7 +181,7 @@ class _MarketplaceListingCardState extends State<MarketplaceListingCard> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
                       Text(
-                        listing.priceLabel,
+                        listing.displayPrice,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(

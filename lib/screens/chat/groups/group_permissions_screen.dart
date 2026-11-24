@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../../models/chat/chat_group.dart';
 import '../../../services/chat/group_chat_service.dart';
+import '../../../l10n/nubify_text.dart';
 
 //===============================
 // GROUP PERMISSIONS SCREEN
@@ -91,8 +92,7 @@ class GroupPermissionsScreen
           0xFF0B1116,
         ),
         title:
-        const Text(
-          'Group permissions',
+        Text(context.tr('Group permissions'),
           style:
           TextStyle(
             fontWeight:
@@ -122,10 +122,9 @@ class GroupPermissionsScreen
           }
 
           if (!snapshot.data!.exists) {
-            return const Center(
+            return Center(
               child:
-              Text(
-                'Group not found.',
+              Text(context.tr('Group not found.'),
               ),
             );
           }
@@ -147,7 +146,7 @@ class GroupPermissionsScreen
           return ListView(
             children:
             <Widget>[
-              const Padding(
+              Padding(
                 padding:
                 EdgeInsets.fromLTRB(
                   18,
@@ -156,8 +155,7 @@ class GroupPermissionsScreen
                   7,
                 ),
                 child:
-                Text(
-                  'Members can',
+                Text(context.tr('Members can'),
                   style:
                   TextStyle(
                     color:
@@ -200,12 +198,10 @@ class GroupPermissionsScreen
                   Icons.edit_rounded,
                 ),
                 title:
-                const Text(
-                  'Edit group settings',
+                Text(context.tr('Edit group settings'),
                 ),
                 subtitle:
-                const Text(
-                  'Change the group name, photo and description',
+                Text(context.tr('Change the group name, photo and description'),
                 ),
               ),
 
@@ -239,12 +235,10 @@ class GroupPermissionsScreen
                   Icons.chat_bubble_outline_rounded,
                 ),
                 title:
-                const Text(
-                  'Send new messages',
+                Text(context.tr('Send new messages'),
                 ),
                 subtitle:
-                const Text(
-                  'When off, only admins can send messages',
+                Text(context.tr('When off, only admins can send messages'),
                 ),
               ),
 
@@ -278,14 +272,13 @@ class GroupPermissionsScreen
                   Icons.person_add_alt_1_rounded,
                 ),
                 title:
-                const Text(
-                  'Add other members',
+                Text(context.tr('Add other members'),
                 ),
                 subtitle:
                 Text(
                   group.permissions.membersCanAddMembers
-                      ? 'Members can add other Nubify users'
-                      : 'Only admins can add members',
+                      ? context.tr('Members can add other Nubify users')
+                      : context.tr('Only admins can add members'),
                 ),
               ),
 
@@ -319,12 +312,10 @@ class GroupPermissionsScreen
                   Icons.history_rounded,
                 ),
                 title:
-                const Text(
-                  'Send previous message history',
+                Text(context.tr('Send previous message history'),
                 ),
                 subtitle:
-                const Text(
-                  'Allow new members to see messages sent before they joined',
+                Text(context.tr('Allow new members to see messages sent before they joined'),
                 ),
               ),
 
@@ -333,7 +324,7 @@ class GroupPermissionsScreen
                 30,
               ),
 
-              const Padding(
+              Padding(
                 padding:
                 EdgeInsets.fromLTRB(
                   18,
@@ -342,8 +333,7 @@ class GroupPermissionsScreen
                   7,
                 ),
                 child:
-                Text(
-                  'Admins can',
+                Text(context.tr('Admins can'),
                   style:
                   TextStyle(
                     color:
@@ -387,24 +377,21 @@ class GroupPermissionsScreen
                       .admin_panel_settings_outlined,
                 ),
                 title:
-                const Text(
-                  'Approve new members',
+                Text(context.tr('Approve new members'),
                 ),
                 subtitle:
-                const Text(
-                  'People joining with the group link need admin approval',
+                Text(context.tr('People joining with the group link need admin approval'),
                 ),
               ),
 
               if (!admin)
-                const Padding(
+                Padding(
                   padding:
                   EdgeInsets.all(
                     18,
                   ),
                   child:
-                  Text(
-                    'Only group admins can change these permissions.',
+                  Text(context.tr('Only group admins can change these permissions.'),
                     style:
                     TextStyle(
                       color:

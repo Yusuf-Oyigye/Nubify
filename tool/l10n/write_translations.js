@@ -7,7 +7,14 @@ const fs = require("fs");
 
 function write(file, name, comment, rows) {
   const langs = ["ar", "fr", "ha", "yo", "hi"];
-  const q = (t) => "'" + t.replace(/\\/g, "\\\\").replace(/'/g, "\\'") + "'";
+  const q = (t) =>
+    "'" +
+    t
+      .replace(/\\/g, "\\\\")
+      .replace(/'/g, "\\'")
+      .replace(/\$/g, "\\$")
+      .replace(/\n/g, "\\n") +
+    "'";
   let out = `// ${comment}\n// See lib/l10n/nubify_text.dart.\n\nconst Map<String, Map<String, String>> ${name} =\n    <String, Map<String, String>>{\n`;
   langs.forEach((lang, i) => {
     out += `      '${lang}': <String, String>{\n`;

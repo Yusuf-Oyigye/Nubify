@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 
 import '../../utils/faculties/faculty_catalog.dart';
 import '../../widgets/menu/nubify_honor_widgets.dart';
+import '../../l10n/nubify_text.dart';
 
 //===================================================
 // HONOREES — EDIT ONLY THIS LIST
@@ -103,9 +104,8 @@ class HonoraryRecognitionScreen extends StatelessWidget {
                         ),
                       ),
                     const SizedBox(height: 18),
-                    Text(
-                      'Recognitions are expressions of gratitude, not '
-                          'university appointments or endorsements.',
+                    Text(context.tr('Recognitions are expressions of gratitude, not '
+                          'university appointments or endorsements.'),
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: NubifyHonorColors.muted(context),
@@ -155,7 +155,7 @@ class HonoraryRecognitionScreen extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(10, 6, 18, 22),
                 child: Column(
                   children: [
-                    const NubifyHeaderBar(title: 'Honorary Recognition'),
+                    NubifyHeaderBar(title: context.tr('Honorary Recognition')),
                     const SizedBox(height: 14),
                     NubifyReveal(
                       child: Padding(
@@ -187,12 +187,11 @@ class HonoraryRecognitionScreen extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(width: 14),
-                            const Expanded(
+                            Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    'Wall of Honour',
+                                  Text(context.tr('Wall of Honour'),
                                     style: TextStyle(
                                       color: Colors.white,
                                       fontSize: 21,
@@ -201,10 +200,9 @@ class HonoraryRecognitionScreen extends StatelessWidget {
                                     ),
                                   ),
                                   SizedBox(height: 4),
-                                  Text(
-                                    'Celebrating the people who inspired, '
+                                  Text(context.tr('Celebrating the people who inspired, '
                                         'supported and contributed to the '
-                                        'Nubify journey.',
+                                        'Nubify journey.'),
                                     style: TextStyle(
                                       color: Colors.white70,
                                       fontSize: 13.5,
@@ -254,7 +252,9 @@ class _HonoreeCard extends StatelessWidget {
         children: [
           Semantics(
             button: hasPhoto,
-            label: hasPhoto ? 'View photo of ${honoree.name}' : null,
+            label: hasPhoto
+                ? context.tr('View photo of {name}', {'name': honoree.name})
+                : null,
             child: GestureDetector(
               onTap: hasPhoto ? () => _viewPhoto(context, honoree) : null,
               child: NubifyHonorAvatar(
@@ -361,10 +361,10 @@ class _NameWithSeal extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 6),
-        const NubifyVerifiedSeal(
+        NubifyVerifiedSeal(
           tone: NubifySealTone.green,
           size: 18,
-          message: 'Honorary recognition by Nubify',
+          message: context.tr('Honorary recognition by Nubify'),
         ),
       ],
     );
@@ -395,7 +395,7 @@ class _FacultyChip extends StatelessWidget {
           const SizedBox(width: 5),
           Flexible(
             child: Text(
-              faculty,
+              context.tr(faculty),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
@@ -494,7 +494,7 @@ class _RolePill extends StatelessWidget {
           const SizedBox(width: 4),
           Flexible(
             child: Text(
-              role,
+              context.tr(role),
               style: TextStyle(
                 color: text,
                 fontSize: 11.5,

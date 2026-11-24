@@ -14,6 +14,7 @@ import '../../widgets/marketplace/marketplace_listing_card.dart';
 import '../chat/conversation_screen.dart';
 import 'marketplace_listing_details_screen.dart';
 import '../profile/profile_screen.dart';
+import '../../l10n/nubify_text.dart';
 
 class MarketplaceSellerStoreScreen extends StatefulWidget {
   const MarketplaceSellerStoreScreen({super.key, required this.sellerId});
@@ -194,7 +195,7 @@ class _MarketplaceSellerStoreScreenState
         builder: (_) => ConversationScreen(
           otherUserId: widget.sellerId,
           otherName:
-              (profile['fullName'] ?? profile['username'] ?? 'Student Seller')
+              (profile['fullName'] ?? profile['username'] ?? context.tr('Student Seller'))
                   .toString(),
           otherUsername: (profile['username'] ?? '').toString(),
           otherPhotoUrl: (profile['photoUrl'] ?? '').toString(),
@@ -216,8 +217,7 @@ class _MarketplaceSellerStoreScreenState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Seller profile',
+        title: Text(context.tr('Seller profile'),
           style: TextStyle(fontWeight: FontWeight.w900),
         ),
       ),
@@ -295,8 +295,8 @@ class _MarketplaceSellerStoreScreenState
                                                 ),
                                                 child: Text(
                                                   _selectedStatus == 'available'
-                                                      ? 'Available listings'
-                                                      : 'Sold listings',
+                                                      ? context.tr('Available listings')
+                                                      : context.tr('Sold listings'),
                                                   key: ValueKey<String>(
                                                     _selectedStatus,
                                                   ),
@@ -348,14 +348,14 @@ class _MarketplaceSellerStoreScreenState
           child: _StoreState(
             icon: _loadError == null ? null : Icons.cloud_off_rounded,
             title: _selectedStatus == 'available'
-                ? 'No available listings'
-                : 'No sold listing yet',
+                ? context.tr('No available listings')
+                : context.tr('No sold listing yet'),
             message: _loadError == null
                 ? _selectedStatus == 'available'
-                      ? 'This seller does not have a public item or service right now.'
-                      : 'Items this seller marks as sold will appear here.'
-                : 'The listings could not load right now. Pull down or try again.',
-            actionLabel: _loadError == null ? null : 'Try Again',
+                      ? context.tr('This seller does not have a public item or service right now.')
+                      : context.tr('Items this seller marks as sold will appear here.')
+                : context.tr('The listings could not load right now. Pull down or try again.'),
+            actionLabel: _loadError == null ? null : context.tr('Try Again'),
             onAction: _loadError == null
                 ? null
                 : () => unawaited(_loadListings(reset: true)),
@@ -407,10 +407,10 @@ class _MarketplaceSellerStoreScreenState
                 ? TextButton.icon(
                     onPressed: () => unawaited(_loadListings()),
                     icon: const Icon(Icons.refresh_rounded),
-                    label: const Text('Could not load more — retry'),
+                    label: Text(context.tr('Could not load more — retry')),
                   )
                 : !_hasMore
-                ? const Text('You reached the end of this store.')
+                ? Text(context.tr('You reached the end of this store.'))
                 : const SizedBox(height: 20),
           ),
         ),
@@ -452,7 +452,7 @@ class _SellerProfileCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final String name =
-        (profile['fullName'] ?? profile['username'] ?? 'Student Seller')
+        (profile['fullName'] ?? profile['username'] ?? context.tr('Student Seller'))
             .toString();
     final String username = (profile['username'] ?? '').toString().trim();
     final String photo = (profile['photoUrl'] ?? '').toString().trim();
@@ -515,7 +515,7 @@ class _SellerProfileCard extends StatelessWidget {
                     const SizedBox(height: 7),
                     Text(
                       username.isEmpty
-                          ? 'NUB Marketplace seller'
+                          ? context.tr('NUB Marketplace seller')
                           : '@$username',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -533,13 +533,13 @@ class _SellerProfileCard extends StatelessWidget {
           Row(
             children: <Widget>[
               Expanded(
-                child: _SellerMetric(value: available, label: 'Available'),
+                child: _SellerMetric(value: available, label: context.tr('Available')),
               ),
               Expanded(
-                child: _SellerMetric(value: sold, label: 'Sold'),
+                child: _SellerMetric(value: sold, label: context.tr('Sold')),
               ),
               Expanded(
-                child: _SellerMetric(value: everListed, label: 'Ever listed'),
+                child: _SellerMetric(value: everListed, label: context.tr('Ever listed')),
               ),
             ],
           ),
@@ -557,7 +557,7 @@ class _SellerProfileCard extends StatelessWidget {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Icon(Icons.chat_bubble_rounded),
-                    label: const Text('Message seller'),
+                    label: Text(context.tr('Message seller')),
                     style: FilledButton.styleFrom(
                       minimumSize: const Size.fromHeight(54),
                       backgroundColor: MarketplaceTheme.sky,
@@ -575,7 +575,7 @@ class _SellerProfileCard extends StatelessWidget {
                 child: OutlinedButton.icon(
                   onPressed: onProfile,
                   icon: const Icon(Icons.person_outline_rounded),
-                  label: Text(isOwner ? 'My profile' : 'Profile'),
+                  label: Text(isOwner ? context.tr('My profile') : context.tr('Profile')),
                   style: OutlinedButton.styleFrom(
                     minimumSize: const Size.fromHeight(54),
                     shape: RoundedRectangleBorder(
@@ -642,12 +642,12 @@ class _StoreStatusSwitch extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           _StoreStatusButton(
-            label: 'Available',
+            label: context.tr('Available'),
             selected: selected == 'available',
             onTap: () => onSelected('available'),
           ),
           _StoreStatusButton(
-            label: 'Sold',
+            label: context.tr('Sold'),
             selected: selected == 'sold',
             onTap: () => onSelected('sold'),
           ),

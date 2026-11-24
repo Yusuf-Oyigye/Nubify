@@ -9,6 +9,7 @@ import '../../widgets/common/full_photo_viewer.dart';
 import '../../widgets/chat/nubify_chat_style.dart';
 import 'chat_media_screen.dart';
 import '../profile/profile_screen.dart';
+import '../../l10n/nubify_text.dart';
 
 //===============================
 // CONTACT INFO SCREEN
@@ -220,7 +221,7 @@ class _ChatContactInfoScreenState extends State<ChatContactInfoScreen> {
         children: <Widget>[
           Semantics(
             button: photoUrl.isNotEmpty,
-            label: 'Profile photo of $name',
+            label: context.tr('Profile photo of {name}', {'name': name}),
             child: GestureDetector(
               onTap: () {
                 _openPhoto(name, photoUrl);
@@ -285,25 +286,25 @@ class _ChatContactInfoScreenState extends State<ChatContactInfoScreen> {
         children: <Widget>[
           _actionTile(
             icon: Icons.call_rounded,
-            label: 'Audio',
+            label: context.tr('Audio'),
             onTap: widget.onCall,
           ),
           const SizedBox(width: 10),
           _actionTile(
             icon: Icons.search_rounded,
-            label: 'Search',
+            label: context.tr('Search'),
             onTap: _searchChat,
           ),
           const SizedBox(width: 10),
           _actionTile(
             icon: Icons.person_rounded,
-            label: 'Profile',
+            label: context.tr('Profile'),
             onTap: _openProfile,
           ),
           const SizedBox(width: 10),
           _actionTile(
             icon: Icons.link_rounded,
-            label: 'Copy link',
+            label: context.tr('Copy link'),
             onTap: widget.onCopyLink,
           ),
         ],
@@ -380,7 +381,7 @@ class _ChatContactInfoScreenState extends State<ChatContactInfoScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          _sectionTitle('About'),
+          _sectionTitle(context.tr('About')),
 
           if (about.isNotEmpty) ...<Widget>[
             const SizedBox(height: 6),
@@ -473,10 +474,9 @@ class _ChatContactInfoScreenState extends State<ChatContactInfoScreen> {
                       child: Row(
                         children: <Widget>[
                           Expanded(
-                            child: _sectionTitle('Media, links and docs'),
+                            child: _sectionTitle(context.tr('Media, links and docs')),
                           ),
-                          Text(
-                            'See all',
+                          Text(context.tr('See all'),
                             style: TextStyle(
                               color: NubifyChatStyle.royal,
                               fontSize: 13,
@@ -499,8 +499,8 @@ class _ChatContactInfoScreenState extends State<ChatContactInfoScreen> {
                       padding: const EdgeInsets.fromLTRB(0, 4, 10, 4),
                       child: Text(
                         snapshot.connectionState == ConnectionState.waiting
-                            ? 'Loading…'
-                            : 'Photos and videos you share in this chat will show here.',
+                            ? context.tr('Loading…')
+                            : context.tr('Photos and videos you share in this chat will show here.'),
                         style: TextStyle(
                           color: scheme.onSurfaceVariant,
                           fontSize: 13,
@@ -556,7 +556,7 @@ class _ChatContactInfoScreenState extends State<ChatContactInfoScreen> {
 
     return Semantics(
       button: true,
-      label: message.isVideo ? 'Open video' : 'Open photo',
+      label: message.isVideo ? context.tr('Open video') : context.tr('Open photo'),
       child: GestureDetector(
         onTap: () {
           _openMedia(message);
@@ -654,7 +654,7 @@ class _ChatContactInfoScreenState extends State<ChatContactInfoScreen> {
         children: <Widget>[
           _dangerRow(
             icon: blocked ? Icons.lock_open_rounded : Icons.block_rounded,
-            label: blocked ? 'Unblock $name' : 'Block $name',
+            label: context.tr(blocked ? 'Unblock {name}' : 'Block {name}', {'name': name}),
             onTap: _toggleBlock,
           ),
           Divider(
@@ -666,7 +666,7 @@ class _ChatContactInfoScreenState extends State<ChatContactInfoScreen> {
           ),
           _dangerRow(
             icon: Icons.flag_rounded,
-            label: 'Report $name',
+            label: context.tr('Report {name}', {'name': name}),
             onTap: widget.onReport,
           ),
         ],
@@ -703,8 +703,7 @@ class _ChatContactInfoScreenState extends State<ChatContactInfoScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Contact info',
+        title: Text(context.tr('Contact info'),
           style: TextStyle(fontWeight: FontWeight.w800),
         ),
         surfaceTintColor: Colors.transparent,

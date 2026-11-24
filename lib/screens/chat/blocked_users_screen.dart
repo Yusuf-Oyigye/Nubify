@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../services/profile/profile_service.dart';
+import '../../l10n/nubify_text.dart';
 
 //===============================
 // BLOCKED USERS SCREEN
@@ -45,12 +46,11 @@ class BlockedUsersScreen
           ) {
         return AlertDialog(
           title:
-          const Text(
-            'Unblock user?',
+          Text(context.tr('Unblock user?'),
           ),
           content:
           Text(
-            'Unblock $name?',
+            context.tr('Unblock {name}?', {'name': name}),
           ),
           actions:
           <Widget>[
@@ -63,8 +63,7 @@ class BlockedUsersScreen
                 );
               },
               child:
-              const Text(
-                'Cancel',
+              Text(context.tr('Cancel'),
               ),
             ),
             FilledButton(
@@ -76,8 +75,7 @@ class BlockedUsersScreen
                 );
               },
               child:
-              const Text(
-                'Unblock',
+              Text(context.tr('Unblock'),
               ),
             ),
           ],
@@ -120,8 +118,7 @@ class BlockedUsersScreen
           0xFF0B1116,
         ),
         title:
-        const Text(
-          'Blocked users',
+        Text(context.tr('Blocked users'),
           style:
           TextStyle(
             fontWeight:
@@ -131,10 +128,9 @@ class BlockedUsersScreen
       ),
       body:
       uid == null
-          ? const Center(
+          ? Center(
         child:
-        Text(
-          'Please log in.',
+        Text(context.tr('Please log in.'),
         ),
       )
           : StreamBuilder<
@@ -191,7 +187,7 @@ class BlockedUsersScreen
 
           if (docs
               .isEmpty) {
-            return const Center(
+            return Center(
               child:
               Column(
                 mainAxisSize:
@@ -211,8 +207,7 @@ class BlockedUsersScreen
                     height:
                     10,
                   ),
-                  Text(
-                    'No blocked users',
+                  Text(context.tr('No blocked users'),
                     style:
                     TextStyle(
                       color:
@@ -309,7 +304,7 @@ class BlockedUsersScreen
                       .trim()
                       .isNotEmpty
                       ? username
-                      : 'Nubify user';
+                      : context.tr('Nubify user');
 
                   return ListTile(
                     contentPadding:
@@ -376,8 +371,7 @@ class BlockedUsersScreen
                         );
                       },
                       child:
-                      const Text(
-                        'Unblock',
+                      Text(context.tr('Unblock'),
                       ),
                     ),
                   );

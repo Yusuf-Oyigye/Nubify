@@ -12,6 +12,7 @@ import '../../utils/marketplace/marketplace_constants.dart';
 import '../../utils/marketplace/marketplace_theme.dart';
 import '../../widgets/marketplace/marketplace_brand_icon.dart';
 import 'marketplace_listing_details_screen.dart';
+import '../../l10n/nubify_text.dart';
 
 class _EditableMarketplaceMedia {
   _EditableMarketplaceMedia.existing(this.existing)
@@ -120,7 +121,7 @@ class _CreateMarketplaceListingScreenState
   Future<void> _addFromGallery() async {
     final int remaining = MarketplaceConstants.maxMediaCount - _totalMedia;
     if (remaining <= 0) {
-      _message('You can add a maximum of five photos and videos combined.');
+      _message(context.tr('You can add a maximum of five photos and videos combined.'));
       return;
     }
     try {
@@ -142,7 +143,7 @@ class _CreateMarketplaceListingScreenState
 
   Future<void> _capture({required bool video}) async {
     if (_totalMedia >= MarketplaceConstants.maxMediaCount) {
-      _message('You already selected five media files.');
+      _message(context.tr('You already selected five media files.'));
       return;
     }
     try {
@@ -241,9 +242,11 @@ class _CreateMarketplaceListingScreenState
           children: <Widget>[
             ListTile(
               leading: const Icon(Icons.photo_library_outlined),
-              title: const Text('Choose photos or videos'),
+              title: Text(context.tr('Choose photos or videos')),
               subtitle: Text(
-                '${MarketplaceConstants.maxMediaCount - _totalMedia} slots remaining',
+                context.tr('{count} slots remaining', {
+                'count': MarketplaceConstants.maxMediaCount - _totalMedia,
+              }),
               ),
               onTap: () {
                 Navigator.pop(sheetContext);
@@ -252,7 +255,7 @@ class _CreateMarketplaceListingScreenState
             ),
             ListTile(
               leading: const Icon(Icons.photo_camera_outlined),
-              title: const Text('Take a photo'),
+              title: Text(context.tr('Take a photo')),
               onTap: () {
                 Navigator.pop(sheetContext);
                 _capture(video: false);
@@ -260,8 +263,8 @@ class _CreateMarketplaceListingScreenState
             ),
             ListTile(
               leading: const Icon(Icons.videocam_outlined),
-              title: const Text('Record a video'),
-              subtitle: const Text('Maximum recording length: 2 minutes'),
+              title: Text(context.tr('Record a video')),
+              subtitle: Text(context.tr('Maximum recording length: 2 minutes')),
               onTap: () {
                 Navigator.pop(sheetContext);
                 _capture(video: true);
@@ -280,7 +283,7 @@ class _CreateMarketplaceListingScreenState
     }
     final User? user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      _message('Sign in before creating a listing.');
+      _message(context.tr('Sign in before creating a listing.'));
       return;
     }
     if (publish) {
@@ -294,7 +297,7 @@ class _CreateMarketplaceListingScreenState
     setState(() {
       _saving = true;
       _progress = 0;
-      _progressLabel = 'Preparing listing';
+      _progressLabel = context.tr('Preparing listing');
     });
 
     final DocumentReference<Map<String, dynamic>> reference = FirebaseFirestore
@@ -325,7 +328,7 @@ class _CreateMarketplaceListingScreenState
           : profileUsername;
       if (sellerName.isEmpty) {
         throw StateError(
-          'Add your name or username in Edit Profile before selling.',
+          NubifyText.tr('Add your name or username in Edit Profile before selling.'),
         );
       }
       final String sellerPhotoUrl = (userData['photoUrl'] ?? '')
@@ -490,17 +493,17 @@ class _CreateMarketplaceListingScreenState
               size: 62,
             ),
             title: Text(
-              newlyPublishing ? 'Published Successfully!' : 'Changes Saved!',
+              newlyPublishing ? context.tr('Published Successfully!') : context.tr('Changes Saved!'),
             ),
             content: Text(
               newlyPublishing
-                  ? 'Your product has been published to NUB Market.'
-                  : 'Your listing has been updated successfully.',
+                  ? context.tr('Your product has been published to NUB Market.')
+                  : context.tr('Your listing has been updated successfully.'),
             ),
             actions: <Widget>[
               FilledButton(
                 onPressed: () => Navigator.pop(dialogContext),
-                child: const Text('OK'),
+                child: Text(context.tr('OK')),
               ),
             ],
           ),
@@ -518,8 +521,8 @@ class _CreateMarketplaceListingScreenState
       } else {
         _message(
           _editingListing == null
-              ? 'Draft saved privately.'
-              : 'Listing updated.',
+              ? context.tr('Draft saved privately.')
+              : context.tr('Listing updated.'),
         );
         Navigator.pop(context);
       }
@@ -532,7 +535,7 @@ class _CreateMarketplaceListingScreenState
         _message(
           cancellation?.isCancelled == true ||
                   error is MarketplaceUploadCancelledException
-              ? 'Upload cancelled. Nothing was published.'
+              ? context.tr('Upload cancelled. Nothing was published.')
               : _saveError(error),
         );
       }
@@ -554,7 +557,7 @@ class _CreateMarketplaceListingScreenState
     }
     setState(() {
       _cancellingUpload = true;
-      _progressLabel = 'Cancelling upload…';
+      _progressLabel = context.tr('Cancelling upload…');
     });
     try {
       await cancellation.cancel();
@@ -564,13 +567,13 @@ class _CreateMarketplaceListingScreenState
   }
 
   String? _validatePublish() {
-    if (_totalMedia == 0) return 'Add at least one photo or video.';
-    if (_title.text.trim().length < 2) return 'Enter a clear listing title.';
-    if (_category == null) return 'Choose a category.';
-    if (_condition == null) return 'Choose the condition.';
+    if (_totalMedia == 0) return context.tr('Add at least one photo or video.');
+    if (_title.text.trim().length < 2) return context.tr('Enter a clear listing title.');
+    if (_category == null) return context.tr('Choose a category.');
+    if (_condition == null) return context.tr('Choose the condition.');
     final double? value = double.tryParse(_price.text.trim());
     if (value == null || value <= 0 || value > 100000000) {
-      return 'Enter a valid price greater than zero.';
+      return context.tr('Enter a valid price greater than zero.');
     }
     return null;
   }
@@ -580,7 +583,7 @@ class _CreateMarketplaceListingScreenState
     final String normalized = value.toLowerCase();
     if (normalized.contains('unauthorized') ||
         normalized.contains('permission-denied')) {
-      return 'Nubify could not upload this listing. Please refresh and try again.';
+      return context.tr('Nubify could not upload this listing. Please refresh and try again.');
     }
     return value.replaceFirst('Exception: ', '');
   }
@@ -591,13 +594,13 @@ class _CreateMarketplaceListingScreenState
       canPop: !_saving,
       onPopInvokedWithResult: (bool didPop, Object? result) {
         if (!didPop && _saving) {
-          _message('Cancel the current upload before leaving this screen.');
+          _message(context.tr('Cancel the current upload before leaving this screen.'));
         }
       },
       child: Scaffold(
         appBar: AppBar(
           title: Text(
-            _editingListing == null ? 'Sell on Marketplace' : 'Edit Listing',
+            _editingListing == null ? context.tr('Sell on Marketplace') : context.tr('Edit Listing'),
           ),
         ),
         body: _loadingExisting
@@ -633,21 +636,19 @@ class _CreateMarketplaceListingScreenState
                                   ),
                                 ),
                                 const SizedBox(width: 12),
-                                const Expanded(
+                                Expanded(
                                   child: Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: <Widget>[
-                                      Text(
-                                        'Photos & videos',
+                                      Text(context.tr('Photos & videos'),
                                         style: TextStyle(
                                           fontSize: 20,
                                           fontWeight: FontWeight.w900,
                                         ),
                                       ),
                                       SizedBox(height: 2),
-                                      Text(
-                                        'Add up to five. Tap one to make it the cover.',
+                                      Text(context.tr('Add up to five. Tap one to make it the cover.'),
                                       ),
                                     ],
                                   ),
@@ -709,7 +710,7 @@ class _CreateMarketplaceListingScreenState
                                                   .withValues(alpha: 0.4),
                                             ),
                                           ),
-                                          child: const Column(
+                                          child: Column(
                                             mainAxisAlignment:
                                                 MainAxisAlignment.center,
                                             children: <Widget>[
@@ -720,8 +721,7 @@ class _CreateMarketplaceListingScreenState
                                                 size: 34,
                                               ),
                                               SizedBox(height: 7),
-                                              Text(
-                                                'Add photos\nor videos',
+                                              Text(context.tr('Add photos\nor videos'),
                                                 textAlign: TextAlign.center,
                                                 style: TextStyle(
                                                   fontWeight: FontWeight.w800,
@@ -771,7 +771,7 @@ class _CreateMarketplaceListingScreenState
                                                 mainAxisSize: MainAxisSize.min,
                                                 children: <Widget>[
                                                   _MediaMoveButton(
-                                                    tooltip: 'Move left',
+                                                    tooltip: context.tr('Move left'),
                                                     icon: Icons
                                                         .chevron_left_rounded,
                                                     onTap: index > 0
@@ -783,7 +783,7 @@ class _CreateMarketplaceListingScreenState
                                                   ),
                                                   const SizedBox(width: 3),
                                                   _MediaMoveButton(
-                                                    tooltip: 'Move right',
+                                                    tooltip: context.tr('Move right'),
                                                     icon: Icons
                                                         .chevron_right_rounded,
                                                     onTap:
@@ -808,8 +808,7 @@ class _CreateMarketplaceListingScreenState
                             ),
                             if (_totalMedia > 0) ...<Widget>[
                               const SizedBox(height: 8),
-                              Text(
-                                'Tap to choose the cover. Use the arrow buttons to reorder and the swap icon to replace a file.',
+                              Text(context.tr('Tap to choose the cover. Use the arrow buttons to reorder and the swap icon to replace a file.'),
                                 style: Theme.of(context).textTheme.bodySmall,
                               ),
                             ],
@@ -844,8 +843,8 @@ class _CreateMarketplaceListingScreenState
                             icon: const Icon(Icons.close_rounded),
                             label: Text(
                               _cancellingUpload
-                                  ? 'Cancelling…'
-                                  : 'Cancel Upload',
+                                  ? context.tr('Cancelling…')
+                                  : context.tr('Cancel Upload'),
                             ),
                           ),
                         ],
@@ -893,12 +892,12 @@ class _CreateMarketplaceListingScreenState
                 ),
                 label: Text(
                   _saving
-                      ? 'Saving…'
+                      ? context.tr('Saving…')
                       : _editingListing?.status == 'available'
-                      ? 'Save Changes'
+                      ? context.tr('Save Changes')
                       : _editingListing?.status == 'sold'
-                      ? 'Save Sold Listing'
-                      : 'Publish Listing',
+                      ? context.tr('Save Sold Listing')
+                      : context.tr('Publish Listing'),
                 ),
                 style: FilledButton.styleFrom(
                   backgroundColor: Colors.transparent,
@@ -1045,19 +1044,18 @@ class _ListingFormPanel extends StatelessWidget {
                 child: const Icon(Icons.edit_note_rounded, color: Colors.white),
               ),
               const SizedBox(width: 12),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Text(
-                      'Listing details',
+                    Text(context.tr('Listing details'),
                       style: TextStyle(
                         fontSize: 19,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
                     SizedBox(height: 3),
-                    Text('Add the important information buyers need.'),
+                    Text(context.tr('Add the important information buyers need.')),
                   ],
                 ),
               ),
@@ -1070,8 +1068,8 @@ class _ListingFormPanel extends StatelessWidget {
             textCapitalization: TextCapitalization.sentences,
             decoration: _decoration(
               context,
-              label: 'Item or service name',
-              hint: 'What are you selling?',
+              label: context.tr('Item or service name'),
+              hint: context.tr('What are you selling?'),
               icon: Icons.title_rounded,
             ),
           ),
@@ -1081,7 +1079,7 @@ class _ListingFormPanel extends StatelessWidget {
             isExpanded: true,
             decoration: _decoration(
               context,
-              label: 'Category',
+              label: context.tr('Category'),
               icon: selectedCategory?.icon ?? Icons.category_outlined,
             ),
             items: MarketplaceConstants.categories
@@ -1098,7 +1096,7 @@ class _ListingFormPanel extends StatelessWidget {
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
-                            value.label,
+                            context.tr(value.label),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -1125,7 +1123,7 @@ class _ListingFormPanel extends StatelessWidget {
                   ],
                   decoration: _decoration(
                     context,
-                    label: 'Price',
+                    label: context.tr('Price'),
                     prefixText: 'EGP ',
                     icon: Icons.payments_outlined,
                   ),
@@ -1138,7 +1136,7 @@ class _ListingFormPanel extends StatelessWidget {
                   isExpanded: true,
                   decoration: _decoration(
                     context,
-                    label: 'Condition',
+                    label: context.tr('Condition'),
                     icon: Icons.auto_awesome_outlined,
                   ),
                   items: MarketplaceConstants.conditions
@@ -1166,8 +1164,8 @@ class _ListingFormPanel extends StatelessWidget {
             textCapitalization: TextCapitalization.sentences,
             decoration: _decoration(
               context,
-              label: 'Description (optional)',
-              hint: 'Describe the item, service, or availability.',
+              label: context.tr('Description (optional)'),
+              hint: context.tr('Describe the item, service, or availability.'),
               icon: Icons.notes_rounded,
               alignLabelWithHint: true,
             ),
@@ -1284,8 +1282,7 @@ class _PendingMediaTile extends StatelessWidget {
                 color: MarketplaceTheme.sky,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Text(
-                'COVER',
+              child: Text(context.tr('COVER'),
                 style: TextStyle(
                   color: MarketplaceTheme.midnight,
                   fontSize: 9,
@@ -1396,8 +1393,7 @@ class _ExistingMediaTile extends StatelessWidget {
                 color: MarketplaceTheme.sky,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Text(
-                'COVER',
+              child: Text(context.tr('COVER'),
                 style: TextStyle(
                   color: MarketplaceTheme.midnight,
                   fontSize: 9,

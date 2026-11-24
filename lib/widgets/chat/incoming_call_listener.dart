@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../screens/chat/calls/audio_call_screen.dart';
+import '../../l10n/nubify_text.dart';
 
 //===============================
 // INCOMING CALL LISTENER
@@ -152,7 +153,7 @@ class _IncomingCallListenerState
     true;
 
     String callerName =
-        'Nubify user';
+        context.tr('Nubify user');
 
     String callerPhotoUrl =
         '';
@@ -178,7 +179,7 @@ class _IncomingCallListenerState
       callerName =
           (user['fullName'] ??
               user['username'] ??
-              'Nubify user')
+              NubifyText.tr('Nubify user'))
               .toString();
 
       callerPhotoUrl =
@@ -205,8 +206,7 @@ class _IncomingCallListenerState
           ) {
         return AlertDialog(
           title:
-          const Text(
-            'Incoming audio call',
+          Text(context.tr('Incoming audio call'),
           ),
           content:
           Column(
@@ -257,8 +257,7 @@ class _IncomingCallListenerState
                 4,
               ),
 
-              const Text(
-                'is calling you',
+              Text(context.tr('is calling you'),
               ),
             ],
           ),
@@ -280,8 +279,7 @@ class _IncomingCallListenerState
                 Colors.redAccent,
               ),
               label:
-              const Text(
-                'Decline',
+              Text(context.tr('Decline'),
               ),
             ),
 
@@ -298,8 +296,7 @@ class _IncomingCallListenerState
                 Icons.call_rounded,
               ),
               label:
-              const Text(
-                'Answer',
+              Text(context.tr('Answer'),
               ),
             ),
           ],

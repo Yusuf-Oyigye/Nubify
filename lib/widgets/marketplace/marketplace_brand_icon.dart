@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../../l10n/nubify_text.dart';
 
 /// Shared visual assets used for NUB Marketplace branding.
 abstract final class MarketplaceBrandAssets {
@@ -36,7 +37,7 @@ class MarketplaceBrandIcon extends StatelessWidget {
 
     return Semantics(
       image: true,
-      label: 'NUB Marketplace',
+      label: context.tr('NUB Marketplace'),
       child: SizedBox.square(
         dimension: size,
         child: DecoratedBox(

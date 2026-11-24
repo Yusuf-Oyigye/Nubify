@@ -7,6 +7,7 @@ import '../../services/marketplace/marketplace_service.dart';
 import '../../utils/marketplace/marketplace_theme.dart';
 import '../../widgets/marketplace/marketplace_listing_card.dart';
 import 'marketplace_listing_details_screen.dart';
+import '../../l10n/nubify_text.dart';
 
 class SavedMarketplaceListingsScreen extends StatefulWidget {
   const SavedMarketplaceListingsScreen({super.key});
@@ -118,7 +119,7 @@ class _SavedMarketplaceListingsScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Saved Listings')),
+      appBar: AppBar(title: Text(context.tr('Saved Listings'))),
       body: _buildBody(),
     );
   }
@@ -130,15 +131,15 @@ class _SavedMarketplaceListingsScreenState
     if (_listings.isEmpty) {
       return RefreshIndicator(
         onRefresh: () => _loadSaved(reset: true),
-        child: const CustomScrollView(
+        child: CustomScrollView(
           physics: AlwaysScrollableScrollPhysics(),
           slivers: <Widget>[
             SliverFillRemaining(
               hasScrollBody: false,
               child: _SavedState(
                 icon: Icons.favorite_border_rounded,
-                title: 'No saved listings yet',
-                message: 'Tap the heart on a listing to keep it here.',
+                title: context.tr('No saved listings yet'),
+                message: context.tr('Tap the heart on a listing to keep it here.'),
               ),
             ),
           ],
@@ -196,13 +197,13 @@ class _SavedMarketplaceListingsScreenState
             child: TextButton.icon(
               onPressed: () => unawaited(_loadSaved()),
               icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Could not load more — retry'),
+              label: Text(context.tr('Could not load more — retry')),
             ),
           )
         else if (!_hasMore)
-          const Padding(
+          Padding(
             padding: EdgeInsets.fromLTRB(16, 4, 16, 20),
-            child: Text('You reached the end of Saved Listings.'),
+            child: Text(context.tr('You reached the end of Saved Listings.')),
           ),
       ],
     );

@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../../utils/chat/nubify_call_display.dart';
 import 'nubify_chat_style.dart';
+import '../../l10n/nubify_text.dart';
 
 //===================================================
 // CHAT CALL EVENT BUBBLE
@@ -139,7 +140,7 @@ class ChatCallEventBubble extends StatelessWidget {
               // CALL AGAIN BUTTON
               //===================================================
               IconButton(
-                tooltip: 'Call again',
+                tooltip: context.tr('Call again'),
                 visualDensity: VisualDensity.compact,
                 onPressed: onCall,
                 icon: Icon(

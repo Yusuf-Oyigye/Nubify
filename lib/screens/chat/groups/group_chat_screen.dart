@@ -23,6 +23,7 @@ import '../../../widgets/common/full_photo_viewer.dart';
 import '../../../widgets/links/universal_link_composer_preview.dart';
 import '../../../widgets/chat/nubify_chat_style.dart';
 import '../../../services/notifications/push_notifications.dart';
+import '../../../l10n/nubify_text.dart';
 
 //===============================
 // GROUP CHAT SCREEN
@@ -508,7 +509,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
     // VIDEO PREVIEW
     //===============================
     else if (pending.type == 'video') {
-      content = const SizedBox(
+      content = SizedBox(
         width: 210,
         height: 120,
         child: Column(
@@ -516,8 +517,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
           children: <Widget>[
             Icon(Icons.videocam_rounded, color: Colors.white, size: 42),
             SizedBox(height: 6),
-            Text(
-              'Sending video...',
+            Text(context.tr('Sending video...'),
               style: TextStyle(color: Colors.white70, fontSize: 12),
             ),
           ],
@@ -546,8 +546,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  const Text(
-                    'Sending voice...',
+                  Text(context.tr('Sending voice...'),
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 12,
@@ -589,14 +588,13 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                   Text(
                     pending.fileName.trim().isNotEmpty
                         ? pending.fileName
-                        : 'Document',
+                        : context.tr('Document'),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(color: Colors.white, fontSize: 12),
                   ),
 
-                  const Text(
-                    'Sending...',
+                  Text(context.tr('Sending...'),
                     style: TextStyle(color: Colors.white60, fontSize: 10),
                   ),
                 ],
@@ -622,7 +620,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
 
               const SizedBox(height: 5),
 
-              const Row(
+              Row(
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
                   Icon(
@@ -633,8 +631,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
 
                   SizedBox(width: 4),
 
-                  Text(
-                    'Sending',
+                  Text(context.tr('Sending'),
                     style: TextStyle(color: Colors.white70, fontSize: 9),
                   ),
                 ],
@@ -651,7 +648,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
 
   Future<String> _userName(String uid) async {
     if (uid.isEmpty) {
-      return 'User';
+      return context.tr('User');
     }
 
     try {
@@ -669,9 +666,9 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
           ? fullName
           : username.trim().isNotEmpty
           ? username
-          : 'User';
+          : NubifyText.tr('User');
     } catch (_) {
-      return 'User';
+      return NubifyText.tr('User');
     }
   }
 
@@ -683,7 +680,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
     final List<String> memberIds = group.memberIds.take(4).toList();
 
     if (memberIds.isEmpty) {
-      return 'No members';
+      return context.tr('No members');
     }
 
     final List<String> names = await Future.wait(
@@ -711,7 +708,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
 
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: const Text('Edit group name'),
+          title: Text(context.tr('Edit group name')),
 
           content: TextFormField(
             initialValue: group.name,
@@ -731,7 +728,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                 Navigator.pop(dialogContext);
               },
 
-              child: const Text('Cancel'),
+              child: Text(context.tr('Cancel')),
             ),
 
             FilledButton(
@@ -739,7 +736,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                 Navigator.pop(dialogContext, draft.trim());
               },
 
-              child: const Text('Save'),
+              child: Text(context.tr('Save')),
             ),
           ],
         );
@@ -772,7 +769,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
 
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: const Text('Edit description'),
+          title: Text(context.tr('Edit description')),
 
           content: TextFormField(
             initialValue: group.description,
@@ -794,7 +791,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                 Navigator.pop(dialogContext);
               },
 
-              child: const Text('Cancel'),
+              child: Text(context.tr('Cancel')),
             ),
 
             FilledButton(
@@ -802,7 +799,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                 Navigator.pop(dialogContext, draft.trim());
               },
 
-              child: const Text('Save'),
+              child: Text(context.tr('Save')),
             ),
           ],
         );
@@ -1024,8 +1021,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                const Text(
-                  'Replying to message',
+                Text(context.tr('Replying to message'),
                   style: TextStyle(
                     color: NubifyChatStyle.royal,
                     fontWeight: FontWeight.w800,
@@ -1085,8 +1081,8 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                 : username.trim().isNotEmpty
                 ? username
                 : mine
-                ? 'You'
-                : 'User';
+                ? context.tr('You')
+                : context.tr('User');
 
             return GroupMessageBubble(
               message: message,
@@ -1145,7 +1141,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
             if (groupSnapshot.hasData && !groupSnapshot.data!.exists) {
               return Scaffold(
                 backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-                body: const Center(child: Text('Group not found.')),
+                body: Center(child: Text(context.tr('Group not found.'))),
               );
             }
 
@@ -1254,29 +1250,29 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                     },
                     itemBuilder: (BuildContext context) =>
                         <PopupMenuEntry<String>>[
-                          const PopupMenuItem<String>(
+                          PopupMenuItem<String>(
                             value: 'info',
-                            child: Text('Group info'),
+                            child: Text(context.tr('Group info')),
                           ),
                           if (canAdd)
-                            const PopupMenuItem<String>(
+                            PopupMenuItem<String>(
                               value: 'add',
-                              child: Text('Add members'),
+                              child: Text(context.tr('Add members')),
                             ),
                           if (canEdit)
-                            const PopupMenuItem<String>(
+                            PopupMenuItem<String>(
                               value: 'name',
-                              child: Text('Edit group name'),
+                              child: Text(context.tr('Edit group name')),
                             ),
                           if (canEdit)
-                            const PopupMenuItem<String>(
+                            PopupMenuItem<String>(
                               value: 'description',
-                              child: Text('Edit description'),
+                              child: Text(context.tr('Edit description')),
                             ),
                           if (admin)
-                            const PopupMenuItem<String>(
+                            PopupMenuItem<String>(
                               value: 'permissions',
-                              child: Text('Group permissions'),
+                              child: Text(context.tr('Group permissions')),
                             ),
                         ],
                   ),
@@ -1349,7 +1345,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                                       ),
                                       const SizedBox(height: 14),
                                       Text(
-                                        'Welcome to ${group.name}',
+                                        context.tr('Welcome to {name}', {'name': group.name}),
                                         textAlign: TextAlign.center,
                                         style: TextStyle(
                                           color: scheme.onSurface,
@@ -1358,8 +1354,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                                         ),
                                       ),
                                       const SizedBox(height: 4),
-                                      Text(
-                                        'Start the group conversation.',
+                                      Text(context.tr('Start the group conversation.'),
                                         style: TextStyle(
                                           color: scheme.onSurfaceVariant,
                                         ),
@@ -1441,8 +1436,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                         margin: NubifyChatStyle.composerMargin,
                         padding: const EdgeInsets.all(14),
                         decoration: NubifyChatStyle.composerCard(context),
-                        child: Text(
-                          'Only admins can send messages in this group.',
+                        child: Text(context.tr('Only admins can send messages in this group.'),
                           textAlign: TextAlign.center,
                           style: TextStyle(color: scheme.onSurfaceVariant),
                         ),

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../services/marketplace/marketplace_admin_service.dart';
 import '../../utils/marketplace/marketplace_theme.dart';
+import '../../l10n/nubify_text.dart';
 
 //===================================================
 // MARKETPLACE REPORT MODERATION DASHBOARD
@@ -39,12 +40,11 @@ class _MarketplaceReportsAdminScreenState
             }
             if (accessSnapshot.data?.canReview != true) {
               return Scaffold(
-                appBar: AppBar(title: const Text('Listing Reports')),
-                body: const Center(
+                appBar: AppBar(title: Text(context.tr('Listing Reports'))),
+                body: Center(
                   child: Padding(
                     padding: EdgeInsets.all(28),
-                    child: Text(
-                      'A trusted Marketplace reviewer account is required.',
+                    child: Text(context.tr('A trusted Marketplace reviewer account is required.'),
                       textAlign: TextAlign.center,
                     ),
                   ),
@@ -55,14 +55,14 @@ class _MarketplaceReportsAdminScreenState
               length: 4,
               child: Scaffold(
                 appBar: AppBar(
-                  title: const Text('Listing Reports'),
-                  bottom: const TabBar(
+                  title: Text(context.tr('Listing Reports')),
+                  bottom: TabBar(
                     isScrollable: true,
                     tabs: <Widget>[
-                      Tab(text: 'Submitted'),
-                      Tab(text: 'Reviewing'),
-                      Tab(text: 'Resolved'),
-                      Tab(text: 'Dismissed'),
+                      Tab(text: context.tr('Submitted')),
+                      Tab(text: context.tr('Reviewing')),
+                      Tab(text: context.tr('Resolved')),
+                      Tab(text: context.tr('Dismissed')),
                     ],
                   ),
                 ),
@@ -84,7 +84,9 @@ class _MarketplaceReportsAdminScreenState
                             child: Padding(
                               padding: const EdgeInsets.all(24),
                               child: Text(
-                                'Unable to load reports: ${snapshot.error}',
+                                context.tr('Unable to load reports: {error}', {
+                                  'error': '${snapshot.error}',
+                                }),
                                 textAlign: TextAlign.center,
                               ),
                             ),
@@ -155,7 +157,9 @@ class _ReportList extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               Text(
-                'No $status reports',
+                context.tr('No {status} reports', {
+                  'status': context.tr(status),
+                }),
                 style: const TextStyle(
                   fontSize: 19,
                   fontWeight: FontWeight.w900,
@@ -204,15 +208,15 @@ class _ReportCardState extends State<_ReportCard> {
           controller: controller,
           maxLength: 1000,
           maxLines: 4,
-          decoration: const InputDecoration(
-            labelText: 'Moderator note',
+          decoration: InputDecoration(
+            labelText: context.tr('Moderator note'),
             border: OutlineInputBorder(),
           ),
         ),
         actions: <Widget>[
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
+            child: Text(context.tr('Cancel')),
           ),
           FilledButton(
             onPressed: () {
@@ -222,7 +226,7 @@ class _ReportCardState extends State<_ReportCard> {
               }
               Navigator.pop(dialogContext, note);
             },
-            child: const Text('Confirm'),
+            child: Text(context.tr('Confirm')),
           ),
         ],
       ),
@@ -239,7 +243,7 @@ class _ReportCardState extends State<_ReportCard> {
     if (decision != 'reviewing') {
       note =
           await _askForNote(
-            decision == 'resolved' ? 'Resolve report' : 'Dismiss report',
+            decision == 'resolved' ? context.tr('Resolve report') : context.tr('Dismiss report'),
           ) ??
           '';
       if (note.isEmpty) {
@@ -256,12 +260,26 @@ class _ReportCardState extends State<_ReportCard> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Report moved to $decision.')));
+        ).showSnackBar(
+          SnackBar(
+            content: Text(
+              context.tr('Report moved to {status}.', {
+                'status': context.tr(decision),
+              }),
+            ),
+          ),
+        );
       }
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not update report: $error')),
+          SnackBar(
+            content: Text(
+              context.tr('Could not update report: {error}', {
+                'error': '$error',
+              }),
+            ),
+          ),
         );
       }
     } finally {
@@ -276,7 +294,7 @@ class _ReportCardState extends State<_ReportCard> {
     final dynamic rawCreatedAt = widget.report['createdAt'];
     final String created = rawCreatedAt is Timestamp
         ? rawCreatedAt.toDate().toLocal().toString().split('.').first
-        : 'Pending timestamp';
+        : context.tr('Pending timestamp');
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: MarketplaceTheme.premiumCard(context),
@@ -287,7 +305,7 @@ class _ReportCardState extends State<_ReportCard> {
             children: <Widget>[
               Expanded(
                 child: Text(
-                  (widget.report['reason'] ?? 'Report').toString(),
+                  (widget.report['reason'] ?? context.tr('Report')).toString(),
                   style: const TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w900,
@@ -297,16 +315,19 @@ class _ReportCardState extends State<_ReportCard> {
               Chip(label: Text(_status.toUpperCase())),
             ],
           ),
-          Text('Submitted: $created'),
+          Text(context.tr('Submitted: {date}', {'date': created})),
           const SizedBox(height: 8),
           Text(
             (widget.report['explanation'] ?? '').toString().trim().isEmpty
-                ? 'No additional explanation.'
+                ? context.tr('No additional explanation.')
                 : (widget.report['explanation'] ?? '').toString(),
           ),
           const SizedBox(height: 8),
           Text(
-            'Listing: $_listingId\nSeller: $_sellerId',
+            context.tr('Listing: {listing}\nSeller: {seller}', {
+              'listing': _listingId,
+              'seller': _sellerId,
+            }),
             style: Theme.of(context).textTheme.bodySmall,
           ),
           const SizedBox(height: 12),
@@ -323,21 +344,21 @@ class _ReportCardState extends State<_ReportCard> {
                         arguments: _listingId,
                       ),
                 icon: const Icon(Icons.open_in_new_rounded),
-                label: const Text('Open Listing'),
+                label: Text(context.tr('Open Listing')),
               ),
               if (_status == 'submitted')
                 FilledButton.tonal(
                   onPressed: _working ? null : () => _review('reviewing'),
-                  child: const Text('Start Review'),
+                  child: Text(context.tr('Start Review')),
                 ),
               if (_status == 'submitted' || _status == 'reviewing') ...<Widget>[
                 FilledButton(
                   onPressed: _working ? null : () => _review('resolved'),
-                  child: const Text('Resolve'),
+                  child: Text(context.tr('Resolve')),
                 ),
                 OutlinedButton(
                   onPressed: _working ? null : () => _review('dismissed'),
-                  child: const Text('Dismiss'),
+                  child: Text(context.tr('Dismiss')),
                 ),
               ],
             ],

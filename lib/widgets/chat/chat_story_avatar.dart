@@ -5,6 +5,7 @@ import '../../models/stories/story.dart';
 import '../../screens/stories/story_viewer_screen.dart';
 import '../common/full_photo_viewer.dart';
 import 'nubify_chat_style.dart';
+import '../../l10n/nubify_text.dart';
 
 //===================================================
 // STORY RING FOR ONE PERSON
@@ -110,8 +111,8 @@ class NubifyChatStoryAvatar extends StatelessWidget {
     return Semantics(
       button: true,
       label: ring == NubifyStoryRing.none
-          ? 'Profile photo of $name'
-          : 'Story from $name',
+          ? context.tr('Profile photo of {name}', {'name': name})
+          : context.tr('Story from {name}', {'name': name}),
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () {

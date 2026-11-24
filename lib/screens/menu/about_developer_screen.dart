@@ -13,6 +13,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../utils/common/nubify_contact.dart';
 import '../../utils/faculties/faculty_catalog.dart';
 import '../../widgets/menu/nubify_honor_widgets.dart';
+import '../../l10n/nubify_text.dart';
 
 //===================================================
 // YOUR DETAILS — EDIT ONLY THIS PART
@@ -106,7 +107,10 @@ class AboutDeveloperScreen extends StatelessWidget {
       String label,
       ) async {
     if (link.trim().isEmpty) {
-      _snack(context, '$label link coming soon');
+      _snack(
+        context,
+        context.tr('{label} link coming soon', {'label': label}),
+      );
       return;
     }
 
@@ -123,7 +127,7 @@ class AboutDeveloperScreen extends StatelessWidget {
     }
 
     if (!opened && context.mounted) {
-      _snack(context, 'Could not open $label');
+      _snack(context, context.tr('Could not open {label}', {'label': label}));
     }
   }
 
@@ -209,7 +213,7 @@ class AboutDeveloperScreen extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(10, 6, 18, 30),
                 child: Column(
                   children: [
-                    const NubifyHeaderBar(title: 'About the Developer'),
+                    NubifyHeaderBar(title: context.tr('About the Developer')),
                     const SizedBox(height: 16),
                     const NubifyReveal(child: _DeveloperPhoto(size: 136)),
                     const SizedBox(height: 20),
@@ -217,7 +221,7 @@ class AboutDeveloperScreen extends StatelessWidget {
                       delay: const Duration(milliseconds: 80),
                       child: Column(
                         children: [
-                          const Row(
+                          Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Flexible(
@@ -237,7 +241,7 @@ class AboutDeveloperScreen extends StatelessWidget {
                                 tone: NubifySealTone.gold,
                                 size: 24,
                                 shimmer: true,
-                                message: 'Verified founder of Nubify',
+                                message: context.tr('Verified founder of Nubify'),
                               ),
                             ],
                           ),
@@ -294,7 +298,7 @@ class AboutDeveloperScreen extends StatelessWidget {
           for (int i = 0; i < _Developer.story.length; i++) ...[
             if (i > 0) const SizedBox(height: 14),
             Text(
-              _Developer.story[i],
+              context.tr(_Developer.story[i]),
               style: TextStyle(
                 color: NubifyHonorColors.text(context),
                 fontSize: i == 0 ? 16.5 : 15,
@@ -317,7 +321,7 @@ class AboutDeveloperScreen extends StatelessWidget {
   Widget _buildSocials(BuildContext context) {
     final List<_SocialLink> links = [
       _SocialLink(
-        label: 'WhatsApp',
+        label: context.tr('WhatsApp'),
         action: NubifyContact.whatsappDisplay,
         logo: const FaIcon(
           FontAwesomeIcons.whatsapp,
@@ -328,7 +332,7 @@ class AboutDeveloperScreen extends StatelessWidget {
         colors: const [Color(0xFF25D366), Color(0xFF128C7E)],
       ),
       _SocialLink(
-        label: 'Gmail',
+        label: context.tr('Gmail'),
         action: _Developer.gmail,
         logo: const Icon(Icons.mail_rounded, color: Colors.white, size: 21),
         link: NubifyContact.gmail(subject: 'Nubify').toString(),
@@ -381,7 +385,7 @@ class AboutDeveloperScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        item.link.isEmpty ? 'Coming soon' : item.action,
+                        item.link.isEmpty ? context.tr('Coming soon') : item.action,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
@@ -411,8 +415,7 @@ class AboutDeveloperScreen extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(4, 0, 4, 12),
-            child: Text(
-              'For technical support, reports or suggestions, contact me via:',
+            child: Text(context.tr('For technical support, reports or suggestions, contact me via:'),
               style: TextStyle(
                 color: NubifyHonorColors.text(context),
                 fontSize: 15,
@@ -447,8 +450,7 @@ class AboutDeveloperScreen extends StatelessWidget {
         ),
       ),
       icon: const Icon(Icons.person_rounded),
-      label: const Text(
-        'View my Nubify profile',
+      label: Text(context.tr('View my Nubify profile'),
         style: TextStyle(fontWeight: FontWeight.w700),
       ),
       onPressed: () => Navigator.of(
@@ -469,9 +471,9 @@ class AboutDeveloperScreen extends StatelessWidget {
         Text.rich(
           TextSpan(
             style: TextStyle(color: muted, fontSize: 12.5),
-            children: const [
-              TextSpan(text: 'Made with '),
-              WidgetSpan(
+            children: [
+              TextSpan(text: context.tr('Made with ')),
+              const WidgetSpan(
                 alignment: PlaceholderAlignment.middle,
                 child: Icon(
                   Icons.favorite_rounded,
@@ -479,14 +481,13 @@ class AboutDeveloperScreen extends StatelessWidget {
                   color: NubifyHonorColors.gold,
                 ),
               ),
-              TextSpan(text: ' for the NUB community'),
+              TextSpan(text: context.tr(' for the NUB community')),
             ],
           ),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 6),
-        Text(
-          'NUBIFY · CAMPUS SOCIAL',
+        Text(context.tr('NUBIFY · CAMPUS SOCIAL'),
           style: TextStyle(
             color: muted.withValues(alpha: .7),
             fontSize: 11,
@@ -656,14 +657,14 @@ class _DeveloperPhotoState extends State<_DeveloperPhoto>
           children: [
             ListTile(
               leading: const Icon(Icons.photo_library_rounded),
-              title: const Text('Choose a new photo'),
-              subtitle: const Text('Everyone on Nubify will see it'),
+              title: Text(context.tr('Choose a new photo')),
+              subtitle: Text(context.tr('Everyone on Nubify will see it')),
               onTap: () => Navigator.pop(sheetContext, 'pick'),
             ),
             if (_currentUrl.isNotEmpty)
               ListTile(
                 leading: const Icon(Icons.restart_alt_rounded),
-                title: const Text('Use the original photo'),
+                title: Text(context.tr('Use the original photo')),
                 onTap: () => Navigator.pop(sheetContext, 'default'),
               ),
             const SizedBox(height: 8),
@@ -715,7 +716,7 @@ class _DeveloperPhotoState extends State<_DeveloperPhoto>
     }
 
     setState(() => _busy = false);
-    _snack(context, message);
+    _snack(context, context.tr(message));
   }
 
   // Shows the whole photo, not the square crop.
@@ -824,7 +825,7 @@ class _DeveloperPhotoState extends State<_DeveloperPhoto>
                       children: [
                         Semantics(
                           image: true,
-                          label: 'Photo of ${_Developer.name}',
+                          label: context.tr('Photo of {name}', {'name': _Developer.name}),
                           child: GestureDetector(
                             onTap: _viewLarge,
                             child: _photo(_currentUrl, BoxFit.cover),
@@ -865,13 +866,13 @@ class _DeveloperPhotoState extends State<_DeveloperPhoto>
                       child: InkWell(
                         customBorder: const CircleBorder(),
                         onTap: _busy ? null : _openEditor,
-                        child: const Padding(
+                        child: Padding(
                           padding: EdgeInsets.all(8),
                           child: Icon(
                             Icons.photo_camera_rounded,
                             size: 18,
                             color: NubifyHonorColors.ink,
-                            semanticLabel: 'Change photo',
+                            semanticLabel: context.tr('Change photo'),
                           ),
                         ),
                       ),
@@ -914,7 +915,7 @@ class _FacultyChip extends StatelessWidget {
           const SizedBox(width: 7),
           Flexible(
             child: Text(
-              faculty,
+              context.tr(faculty),
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 13.5,
@@ -949,7 +950,7 @@ class _RoleLine extends StatelessWidget {
         ),
       ),
       child: Text(
-        text,
+        context.tr(text),
         textAlign: TextAlign.center,
         style: const TextStyle(
           color: NubifyHonorColors.goldLight,
@@ -996,10 +997,10 @@ class _ClosingPanel extends StatelessWidget {
             shaderCallback: (bounds) => const LinearGradient(
               colors: NubifyHonorColors.goldGradient,
             ).createShader(bounds),
-            child: const Text(
-              _Developer.motto,
+            child: Text(
+              context.tr(_Developer.motto),
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 18,
                 height: 1.45,
                 fontWeight: FontWeight.w800,
@@ -1007,10 +1008,10 @@ class _ClosingPanel extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 14),
-          const Text(
-            _Developer.welcome,
+          Text(
+            context.tr(_Developer.welcome),
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 15,
               fontWeight: FontWeight.w600,
@@ -1024,7 +1025,7 @@ class _ClosingPanel extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           Text(
-            _Developer.signOff,
+            context.tr(_Developer.signOff),
             textAlign: TextAlign.center,
             style: TextStyle(
               color: Colors.white.withValues(alpha: .72),

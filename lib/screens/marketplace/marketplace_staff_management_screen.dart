@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../services/marketplace/marketplace_admin_service.dart';
 import '../../utils/marketplace/marketplace_theme.dart';
+import '../../l10n/nubify_text.dart';
 
 //===================================================
 // MARKETPLACE OWNER: STAFF AND OWNERSHIP MANAGEMENT
@@ -55,7 +56,7 @@ class _MarketplaceStaffManagementScreenState
       await _service.setStaffRole(uid: uid, role: role, enabled: enabled);
       await _search();
       if (mounted) {
-        _message(enabled ? 'Role granted.' : 'Role removed.');
+        _message(enabled ? context.tr('Role granted.') : context.tr('Role removed.'));
       }
     } catch (error) {
       if (mounted) {
@@ -76,19 +77,18 @@ class _MarketplaceStaffManagementScreenState
     final bool? confirmed = await showDialog<bool>(
       context: context,
       builder: (BuildContext dialogContext) => AlertDialog(
-        title: const Text('Transfer Marketplace ownership?'),
-        content: const Text(
-          'The selected account becomes the new Marketplace owner. Your account keeps its other staff roles but loses the power to manage ownership.',
+        title: Text(context.tr('Transfer Marketplace ownership?')),
+        content: Text(context.tr('The selected account becomes the new Marketplace owner. Your account keeps its other staff roles but loses the power to manage ownership.'),
         ),
         actions: <Widget>[
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancel'),
+            child: Text(context.tr('Cancel')),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext, true),
             style: FilledButton.styleFrom(backgroundColor: Colors.redAccent),
-            child: const Text('Transfer'),
+            child: Text(context.tr('Transfer')),
           ),
         ],
       ),
@@ -102,7 +102,7 @@ class _MarketplaceStaffManagementScreenState
       if (!mounted) {
         return;
       }
-      _message('Ownership transferred. Sign in again to refresh access.');
+      _message(context.tr('Ownership transferred. Sign in again to refresh access.'));
       Navigator.pop(context);
     } catch (error) {
       if (mounted) {
@@ -118,7 +118,7 @@ class _MarketplaceStaffManagementScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Marketplace Staff')),
+      appBar: AppBar(title: Text(context.tr('Marketplace Staff'))),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: <Widget>[
@@ -128,7 +128,7 @@ class _MarketplaceStaffManagementScreenState
               gradient: MarketplaceTheme.heroGradient,
               borderRadius: BorderRadius.circular(24),
             ),
-            child: const Column(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Icon(
@@ -136,8 +136,7 @@ class _MarketplaceStaffManagementScreenState
                   color: MarketplaceTheme.gold,
                 ),
                 SizedBox(height: 12),
-                Text(
-                  'Trusted access only',
+                Text(context.tr('Trusted access only'),
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 23,
@@ -145,8 +144,7 @@ class _MarketplaceStaffManagementScreenState
                   ),
                 ),
                 SizedBox(height: 6),
-                Text(
-                  'Find an existing Nubify account by email, assign review roles, or securely transfer Marketplace ownership to your main account.',
+                Text(context.tr('Find an existing Nubify account by email, assign review roles, or securely transfer Marketplace ownership to your main account.'),
                   style: TextStyle(color: Colors.white70, height: 1.4),
                 ),
               ],
@@ -159,7 +157,7 @@ class _MarketplaceStaffManagementScreenState
             textInputAction: TextInputAction.search,
             onSubmitted: (_) => _search(),
             decoration: InputDecoration(
-              labelText: 'Nubify account email',
+              labelText: context.tr('Nubify account email'),
               prefixIcon: const Icon(Icons.manage_search_rounded),
               suffixIcon: IconButton(
                 onPressed: _loading ? null : _search,
@@ -237,7 +235,7 @@ class _UserRoleCard extends StatelessWidget {
                   : null,
             ),
             title: Text(
-              (user['fullName'] ?? user['email'] ?? 'Nubify user').toString(),
+              (user['fullName'] ?? user['email'] ?? context.tr('Nubify user')).toString(),
               style: const TextStyle(fontWeight: FontWeight.w900),
             ),
             subtitle: Text((user['email'] ?? '').toString()),
@@ -248,9 +246,8 @@ class _UserRoleCard extends StatelessWidget {
             onChanged: disabled
                 ? null
                 : (bool value) => onRoleChanged('marketplaceReviewer', value),
-            title: const Text('Marketplace report reviewer'),
-            subtitle: const Text(
-              'Can inspect private applications and decide them.',
+            title: Text(context.tr('Marketplace report reviewer')),
+            subtitle: Text(context.tr('Can inspect private applications and decide them.'),
             ),
           ),
           SwitchListTile.adaptive(
@@ -258,9 +255,8 @@ class _UserRoleCard extends StatelessWidget {
             onChanged: disabled
                 ? null
                 : (bool value) => onRoleChanged('moderator', value),
-            title: const Text('Moderator'),
-            subtitle: const Text(
-              'Can review sellers and moderate Marketplace activity.',
+            title: Text(context.tr('Moderator')),
+            subtitle: Text(context.tr('Can review sellers and moderate Marketplace activity.'),
             ),
           ),
           SwitchListTile.adaptive(
@@ -268,14 +264,14 @@ class _UserRoleCard extends StatelessWidget {
             onChanged: disabled
                 ? null
                 : (bool value) => onRoleChanged('admin', value),
-            title: const Text('Administrator'),
-            subtitle: const Text('Broad Marketplace administrative access.'),
+            title: Text(context.tr('Administrator')),
+            subtitle: Text(context.tr('Broad Marketplace administrative access.')),
           ),
           const SizedBox(height: 10),
           OutlinedButton.icon(
             onPressed: disabled ? null : onTransferOwnership,
             icon: const Icon(Icons.swap_horiz_rounded),
-            label: const Text('Make this account the Marketplace owner'),
+            label: Text(context.tr('Make this account the Marketplace owner')),
             style: OutlinedButton.styleFrom(
               foregroundColor: MarketplaceTheme.gold,
               minimumSize: const Size.fromHeight(50),

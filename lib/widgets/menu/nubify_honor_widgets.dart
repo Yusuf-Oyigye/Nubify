@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import '../../l10n/nubify_text.dart';
 
 //===================================================
 // NUBIFY — HONOR WIDGETS
@@ -517,7 +518,7 @@ class NubifyHeaderBar extends StatelessWidget {
           color: Colors.white.withValues(alpha: .1),
           shape: const CircleBorder(),
           child: IconButton(
-            tooltip: 'Back',
+            tooltip: context.tr('Back'),
             icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
             onPressed: () => Navigator.of(context).maybePop(),
           ),

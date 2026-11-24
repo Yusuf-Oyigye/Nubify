@@ -10,6 +10,7 @@ import 'chat_link_text.dart';
 import 'nubify_shared_chat_card.dart';
 import '../marketplace/marketplace_brand_icon.dart';
 import 'nubify_chat_style.dart';
+import '../../l10n/nubify_text.dart';
 
 //===============================
 // CHAT MESSAGE BUBBLE
@@ -137,7 +138,7 @@ class ChatMessageBubble extends StatelessWidget {
         ? message.replyToText
         : message.replyToType.trim().isNotEmpty
         ? message.replyToType
-        : 'Message';
+        : NubifyText.tr('Message');
 
     return Container(
       width: double.infinity,
@@ -223,8 +224,8 @@ class ChatMessageBubble extends StatelessWidget {
                   Expanded(
                     child: Text(
                       message.isStoryReply
-                          ? 'Replied to story'
-                          : 'Shared story',
+                          ? NubifyText.tr('Replied to story')
+                          : NubifyText.tr('Shared story'),
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 12,
@@ -251,13 +252,12 @@ class ChatMessageBubble extends StatelessWidget {
       width: double.infinity,
       color: const Color(0xFF14242E),
       alignment: Alignment.center,
-      child: const Column(
+      child: Column(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           Icon(Icons.auto_stories_rounded, color: _blue, size: 34),
           SizedBox(height: 5),
-          Text(
-            'Nubify Story',
+          Text(NubifyText.tr('Nubify Story'),
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
           ),
         ],
@@ -276,7 +276,7 @@ class ChatMessageBubble extends StatelessWidget {
         ? message.postFullName
         : message.postUsername.trim().isNotEmpty
         ? '@${message.postUsername}'
-        : 'Nubify post';
+        : NubifyText.tr('Nubify post');
 
     return InkWell(
       onTap: onOpenPost,
@@ -357,14 +357,13 @@ class ChatMessageBubble extends StatelessWidget {
                 ),
               ),
 
-            const Padding(
+            Padding(
               padding: EdgeInsets.fromLTRB(10, 0, 10, 10),
               child: Row(
                 children: <Widget>[
                   Icon(Icons.dynamic_feed_rounded, color: _blue, size: 16),
                   SizedBox(width: 5),
-                  Text(
-                    'Nubify post',
+                  Text(NubifyText.tr('Nubify post'),
                     style: TextStyle(
                       color: Colors.white70,
                       fontSize: 11,
@@ -426,7 +425,7 @@ class ChatMessageBubble extends StatelessWidget {
                   Text(
                     message.productName.trim().isNotEmpty
                         ? message.productName
-                        : 'Marketplace product',
+                        : NubifyText.tr('Marketplace product'),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -448,14 +447,13 @@ class ChatMessageBubble extends StatelessWidget {
 
                   const SizedBox(height: 7),
 
-                  const Row(
+                  Row(
                     children: <Widget>[
                       MarketplaceBrandIcon(
                         size: 15,
                       ),
                       SizedBox(width: 5),
-                      Text(
-                        'Nubify Marketplace',
+                      Text(NubifyText.tr('Nubify Marketplace'),
                         style: TextStyle(color: Colors.white60, fontSize: 10),
                       ),
                     ],
@@ -475,7 +473,7 @@ class ChatMessageBubble extends StatelessWidget {
 
   Widget _buildContent(BuildContext context) {
     if (message.deletedForEveryone) {
-      return const Row(
+      return Row(
         mainAxisSize: MainAxisSize.min,
 
         children: <Widget>[
@@ -483,8 +481,7 @@ class ChatMessageBubble extends StatelessWidget {
 
           SizedBox(width: 6),
 
-          Text(
-            'This message was deleted',
+          Text(context.tr('This message was deleted'),
             style: TextStyle(
               color: Colors.white60,
               fontStyle: FontStyle.italic,
@@ -562,7 +559,7 @@ class ChatMessageBubble extends StatelessWidget {
                 child: Text(
                   message.fileName.trim().isNotEmpty
                       ? message.fileName
-                      : 'Document',
+                      : context.tr('Document'),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -699,10 +696,9 @@ class ChatMessageBubble extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
               if (message.isForwarded)
-                const Padding(
+                Padding(
                   padding: EdgeInsets.only(bottom: 4),
-                  child: Text(
-                    '↪ Forwarded',
+                  child: Text(context.tr('↪ Forwarded'),
                     style: TextStyle(
                       color: Colors.white54,
                       fontSize: 10,

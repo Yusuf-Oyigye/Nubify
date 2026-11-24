@@ -20,6 +20,7 @@ import 'create_marketplace_listing_screen.dart';
 import 'marketplace_seller_store_screen.dart';
 import '../../widgets/common/translatable_text.dart';
 import '../profile/profile_screen.dart';
+import '../../l10n/nubify_text.dart';
 
 class MarketplaceListingDetailsScreen extends StatefulWidget {
   const MarketplaceListingDetailsScreen({super.key, required this.listingId});
@@ -60,7 +61,7 @@ class _MarketplaceListingDetailsScreenState
         builder: (_) => ConversationScreen(
           otherUserId: listing.sellerId,
           otherName: listing.sellerName.trim().isEmpty
-              ? 'Student Seller'
+              ? context.tr('Student Seller')
               : listing.sellerName,
           otherUsername: '',
           otherPhotoUrl: listing.sellerPhotoUrl,
@@ -114,14 +115,14 @@ class _MarketplaceListingDetailsScreenState
         lower.contains('failed-precondition') ||
         lower.contains('phone contact is not available') ||
         lower.contains('has not added a valid phone')) {
-      return 'This seller has not added their Egyptian mobile number yet.';
+      return context.tr('This seller has not added their Egyptian mobile number yet.');
     }
     if (lower.contains('permission-denied') ||
         lower.contains('unauthenticated')) {
-      return 'Sign in to call this seller.';
+      return context.tr('Sign in to call this seller.');
     }
     if (lower.contains('call_unavailable') || lower.contains('missingplugin')) {
-      return 'Calling is not available on this device.';
+      return context.tr('Calling is not available on this device.');
     }
     return value
         .replaceFirst('Bad state: ', '')
@@ -141,35 +142,35 @@ class _MarketplaceListingDetailsScreenState
   Future<void> _copyLink(MarketplaceListing listing) async {
     await Clipboard.setData(ClipboardData(text: _listingLink(listing)));
     if (mounted) {
-      _message('Listing link copied.');
+      _message(context.tr('Listing link copied.'));
     }
   }
 
   Future<void> _shareToStory(MarketplaceListing listing) async {
     final bool shared = await shareListingToStory(context, listing);
     if (mounted && shared) {
-      _message('Listing added to your Story.');
+      _message(context.tr('Listing added to your Story.'));
     }
   }
 
   Future<void> _shareToChat(MarketplaceListing listing) async {
     final bool sent = await shareListingToChat(context, listing);
     if (mounted && sent) {
-      _message('Listing sent.');
+      _message(context.tr('Listing sent.'));
     }
   }
 
   // Share to Story and Share to Chat, for both the owner's
   // and the buyer's ⋮ menu.
   List<PopupMenuEntry<String>> _shareMenuItems() {
-    return const <PopupMenuEntry<String>>[
+    return <PopupMenuEntry<String>>[
       PopupMenuItem(
         value: 'story',
         child: Row(
           children: <Widget>[
             Icon(Icons.auto_stories_outlined),
             SizedBox(width: 10),
-            Text('Share to Story'),
+            Text(context.tr('Share to Story')),
           ],
         ),
       ),
@@ -179,7 +180,7 @@ class _MarketplaceListingDetailsScreenState
           children: <Widget>[
             Icon(Icons.near_me_outlined),
             SizedBox(width: 10),
-            Text('Share to Chat'),
+            Text(context.tr('Share to Chat')),
           ],
         ),
       ),
@@ -196,16 +197,14 @@ class _MarketplaceListingDetailsScreenState
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              const Text(
-                'Share Listing',
+              Text(context.tr('Share Listing'),
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
               ),
               const SizedBox(height: 8),
               ListTile(
                 leading: const Icon(Icons.auto_stories_outlined),
-                title: const Text('Share to Story'),
-                subtitle: const Text(
-                  'Edit it in the existing Nubify Story editor',
+                title: Text(context.tr('Share to Story')),
+                subtitle: Text(context.tr('Edit it in the existing Nubify Story editor'),
                 ),
                 onTap: () {
                   Navigator.pop(sheetContext);
@@ -214,8 +213,8 @@ class _MarketplaceListingDetailsScreenState
               ),
               ListTile(
                 leading: const Icon(Icons.forum_outlined),
-                title: const Text('Share to Chat'),
-                subtitle: const Text('Choose direct messages or groups'),
+                title: Text(context.tr('Share to Chat')),
+                subtitle: Text(context.tr('Choose direct messages or groups')),
                 onTap: () {
                   Navigator.pop(sheetContext);
                   _shareToChat(listing);
@@ -236,22 +235,22 @@ class _MarketplaceListingDetailsScreenState
       builder: (BuildContext dialogContext) => StatefulBuilder(
         builder: (BuildContext context, StateSetter setDialogState) =>
             AlertDialog(
-              title: const Text('Report Listing'),
+              title: Text(context.tr('Report Listing')),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
                     DropdownButtonFormField<String>(
                       initialValue: reason,
-                      decoration: const InputDecoration(
-                        labelText: 'Reason',
+                      decoration: InputDecoration(
+                        labelText: context.tr('Reason'),
                         border: OutlineInputBorder(),
                       ),
                       items: MarketplaceConstants.reportReasons
                           .map(
                             (String value) => DropdownMenuItem<String>(
                               value: value,
-                              child: Text(value),
+                              child: Text(context.tr(value)),
                             ),
                           )
                           .toList(growable: false),
@@ -268,8 +267,8 @@ class _MarketplaceListingDetailsScreenState
                       maxLines: 4,
                       decoration: InputDecoration(
                         labelText: reason == 'Other'
-                            ? 'Explanation (required)'
-                            : 'Explanation (optional)',
+                            ? context.tr('Explanation (required)')
+                            : context.tr('Explanation (optional)'),
                         border: const OutlineInputBorder(),
                       ),
                     ),
@@ -279,21 +278,21 @@ class _MarketplaceListingDetailsScreenState
               actions: <Widget>[
                 TextButton(
                   onPressed: () => Navigator.pop(dialogContext, false),
-                  child: const Text('Cancel'),
+                  child: Text(context.tr('Cancel')),
                 ),
                 FilledButton(
                   onPressed: () {
                     if (reason == 'Other' && explanation.text.trim().isEmpty) {
                       ScaffoldMessenger.of(dialogContext).showSnackBar(
-                        const SnackBar(
-                          content: Text('Please add an explanation.'),
+                        SnackBar(
+                          content: Text(context.tr('Please add an explanation.')),
                         ),
                       );
                       return;
                     }
                     Navigator.pop(dialogContext, true);
                   },
-                  child: const Text('Submit Report'),
+                  child: Text(context.tr('Submit Report')),
                 ),
               ],
             ),
@@ -311,7 +310,7 @@ class _MarketplaceListingDetailsScreenState
         explanation: details,
       );
       if (mounted) {
-        _message('Report submitted for moderator review.');
+        _message(context.tr('Report submitted for moderator review.'));
       }
     } catch (error) {
       if (mounted) {
@@ -333,13 +332,13 @@ class _MarketplaceListingDetailsScreenState
         if (snapshot.hasError) {
           return _UnavailableListingView(
             message:
-                'This listing is sold, unavailable, private, or you no longer have access to it.',
+                context.tr('This listing is sold, unavailable, private, or you no longer have access to it.'),
           );
         }
         final MarketplaceListing? listing = snapshot.data;
         if (listing == null) {
-          return const _UnavailableListingView(
-            message: 'This listing was removed or no longer exists.',
+          return _UnavailableListingView(
+            message: context.tr('This listing was removed or no longer exists.'),
           );
         }
         final bool owner =
@@ -353,14 +352,13 @@ class _MarketplaceListingDetailsScreenState
                 backgroundColor: MarketplaceTheme.midnight,
                 foregroundColor: Colors.white,
                 surfaceTintColor: Colors.transparent,
-                title: const Text(
-                  'Listing details',
+                title: Text(context.tr('Listing details'),
                   style: TextStyle(fontWeight: FontWeight.w900),
                 ),
                 actions: <Widget>[
                   if (owner || !listing.isAvailable)
                     IconButton(
-                      tooltip: 'Share listing',
+                      tooltip: context.tr('Share listing'),
                       onPressed: () => _showShareOptions(listing),
                       icon: const Icon(Icons.near_me_outlined),
                     ),
@@ -369,57 +367,57 @@ class _MarketplaceListingDetailsScreenState
                       onSelected: (String value) =>
                           _ownerAction(listing, value),
                       itemBuilder: (_) => <PopupMenuEntry<String>>[
-                        const PopupMenuItem(
+                        PopupMenuItem(
                           value: 'edit',
-                          child: Text('Edit Listing'),
+                          child: Text(context.tr('Edit Listing')),
                         ),
                         if (listing.status ==
                             'available') ...<PopupMenuEntry<String>>[
-                          const PopupMenuItem(
+                          PopupMenuItem(
                             value: 'sold',
-                            child: Text('Mark Sold'),
+                            child: Text(context.tr('Mark Sold')),
                           ),
-                          const PopupMenuItem(
+                          PopupMenuItem(
                             value: 'unavailable',
-                            child: Text('Mark Unavailable'),
+                            child: Text(context.tr('Mark Unavailable')),
                           ),
                         ],
                         if (listing.status == 'unavailable' ||
                             listing.status == 'archived')
-                          const PopupMenuItem(
+                          PopupMenuItem(
                             value: 'available',
-                            child: Text('Restore Available'),
+                            child: Text(context.tr('Restore Available')),
                           ),
                         if (listing.status != 'archived')
-                          const PopupMenuItem(
+                          PopupMenuItem(
                             value: 'archived',
-                            child: Text('Archive'),
+                            child: Text(context.tr('Archive')),
                           ),
                         const PopupMenuDivider(),
                         ..._shareMenuItems(),
-                        const PopupMenuItem(
+                        PopupMenuItem(
                           value: 'copy',
                           child: Row(
                             children: <Widget>[
                               Icon(Icons.link_rounded),
                               SizedBox(width: 10),
-                              Text('Copy Link'),
+                              Text(context.tr('Copy Link')),
                             ],
                           ),
                         ),
-                        const PopupMenuItem(
+                        PopupMenuItem(
                           value: 'share_external',
                           child: Row(
                             children: <Widget>[
                               Icon(Icons.share_rounded),
                               SizedBox(width: 10),
-                              Text('Share to Other Apps'),
+                              Text(context.tr('Share to Other Apps')),
                             ],
                           ),
                         ),
-                        const PopupMenuItem(
+                        PopupMenuItem(
                           value: 'delete',
-                          child: Text('Delete'),
+                          child: Text(context.tr('Delete')),
                         ),
                       ],
                     ),
@@ -440,29 +438,29 @@ class _MarketplaceListingDetailsScreenState
                       },
                       itemBuilder: (_) => <PopupMenuEntry<String>>[
                         ..._shareMenuItems(),
-                        const PopupMenuItem(
+                        PopupMenuItem(
                           value: 'copy',
                           child: Row(
                             children: <Widget>[
                               Icon(Icons.link_rounded),
                               SizedBox(width: 10),
-                              Text('Copy Link'),
+                              Text(context.tr('Copy Link')),
                             ],
                           ),
                         ),
-                        const PopupMenuItem(
+                        PopupMenuItem(
                           value: 'share_external',
                           child: Row(
                             children: <Widget>[
                               Icon(Icons.share_rounded),
                               SizedBox(width: 10),
-                              Text('Share to Other Apps'),
+                              Text(context.tr('Share to Other Apps')),
                             ],
                           ),
                         ),
-                        const PopupMenuItem(
+                        PopupMenuItem(
                           value: 'report',
-                          child: Text('Report Listing'),
+                          child: Text(context.tr('Report Listing')),
                         ),
                       ],
                     ),
@@ -509,8 +507,8 @@ class _MarketplaceListingDetailsScreenState
                         ),
                         child: Text(
                           listing.status == 'sold'
-                              ? 'Sold · No Longer Available'
-                              : 'No Longer Available',
+                              ? context.tr('Sold · No Longer Available')
+                              : context.tr('No Longer Available'),
                           style: const TextStyle(
                             color: Colors.orange,
                             fontWeight: FontWeight.w900,
@@ -557,7 +555,7 @@ class _MarketplaceListingDetailsScreenState
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      listing.priceLabel,
+                      listing.displayPrice,
                       style: const TextStyle(
                         color: MarketplaceTheme.sky,
                         fontSize: 25,
@@ -566,8 +564,7 @@ class _MarketplaceListingDetailsScreenState
                     ),
                     if (listing.description.trim().isNotEmpty) ...<Widget>[
                       const SizedBox(height: 26),
-                      const Text(
-                        'Description',
+                      Text(context.tr('Description'),
                         style: TextStyle(
                           fontSize: 19,
                           fontWeight: FontWeight.w900,
@@ -624,8 +621,7 @@ class _MarketplaceListingDetailsScreenState
                                     ),
                                   ),
                                   const SizedBox(height: 4),
-                                  Text(
-                                    'View seller profile',
+                                  Text(context.tr('View seller profile'),
                                     style: TextStyle(
                                       color: MarketplaceTheme.mutedText(
                                         context,
@@ -700,7 +696,7 @@ class _MarketplaceListingDetailsScreenState
                               icon: const Icon(
                                 Icons.chat_bubble_outline_rounded,
                               ),
-                              label: const Text('Message seller'),
+                              label: Text(context.tr('Message seller')),
                               style: FilledButton.styleFrom(
                                 backgroundColor: Colors.transparent,
                                 foregroundColor: MarketplaceTheme.midnight,
@@ -719,9 +715,9 @@ class _MarketplaceListingDetailsScreenState
                         const SizedBox(width: 10),
                         Semantics(
                           button: true,
-                          label: 'Call seller using cellular phone',
+                          label: context.tr('Call seller using cellular phone'),
                           child: IconButton.filled(
-                            tooltip: 'Call seller',
+                            tooltip: context.tr('Call seller'),
                             onPressed: _calling
                                 ? null
                                 : () => _callSeller(listing),
@@ -743,9 +739,9 @@ class _MarketplaceListingDetailsScreenState
                         const SizedBox(width: 8),
                         Semantics(
                           button: true,
-                          label: 'Share listing to Story or Chat',
+                          label: context.tr('Share listing to Story or Chat'),
                           child: IconButton.filled(
-                            tooltip: 'Share to Story or Chat',
+                            tooltip: context.tr('Share to Story or Chat'),
                             onPressed: () => _showShareOptions(listing),
                             icon: const Icon(Icons.near_me_outlined),
                             style: IconButton.styleFrom(
@@ -785,16 +781,16 @@ class _MarketplaceListingDetailsScreenState
         final bool? confirmed = await showDialog<bool>(
           context: context,
           builder: (BuildContext dialogContext) => AlertDialog(
-            title: const Text('Delete listing?'),
-            content: const Text('This cannot be undone.'),
+            title: Text(context.tr('Delete listing?')),
+            content: Text(context.tr('This cannot be undone.')),
             actions: <Widget>[
               TextButton(
                 onPressed: () => Navigator.pop(dialogContext, false),
-                child: const Text('Cancel'),
+                child: Text(context.tr('Cancel')),
               ),
               FilledButton(
                 onPressed: () => Navigator.pop(dialogContext, true),
-                child: const Text('Delete'),
+                child: Text(context.tr('Delete')),
               ),
             ],
           ),
@@ -865,7 +861,7 @@ class _UnavailableListingView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Listing')),
+      appBar: AppBar(title: Text(context.tr('Listing'))),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(28),
@@ -884,8 +880,7 @@ class _UnavailableListingView extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 18),
-              const Text(
-                'No Longer Available',
+              Text(context.tr('No Longer Available'),
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 23, fontWeight: FontWeight.w900),
               ),
@@ -895,7 +890,7 @@ class _UnavailableListingView extends StatelessWidget {
               FilledButton.icon(
                 onPressed: () => Navigator.maybePop(context),
                 icon: const Icon(Icons.arrow_back_rounded),
-                label: const Text('Go Back'),
+                label: Text(context.tr('Go Back')),
               ),
             ],
           ),

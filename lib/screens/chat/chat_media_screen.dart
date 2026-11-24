@@ -6,6 +6,7 @@ import '../../models/chat/chat_message.dart';
 import '../../services/chat/chat_sevice.dart';
 import '../../widgets/common/full_photo_viewer.dart';
 import '../../widgets/chat/nubify_chat_style.dart';
+import '../../l10n/nubify_text.dart';
 
 //===============================
 // CHAT MEDIA SCREEN
@@ -85,7 +86,7 @@ class _ChatMediaScreenState extends State<ChatMediaScreen> {
         .toList();
 
     if (media.isEmpty) {
-      return _empty('No media sent yet.', Icons.photo_library_rounded);
+      return _empty(context.tr('No media sent yet.'), Icons.photo_library_rounded);
     }
 
     return GridView.builder(
@@ -101,7 +102,7 @@ class _ChatMediaScreenState extends State<ChatMediaScreen> {
 
         return Semantics(
           button: true,
-          label: message.isVideo ? 'Open video' : 'Open photo',
+          label: message.isVideo ? context.tr('Open video') : context.tr('Open photo'),
           child: GestureDetector(
             onTap: () {
               if (message.isVideo) {
@@ -165,7 +166,7 @@ class _ChatMediaScreenState extends State<ChatMediaScreen> {
     ];
 
     if (links.isEmpty) {
-      return _empty('No links sent yet.', Icons.link_rounded);
+      return _empty(context.tr('No links sent yet.'), Icons.link_rounded);
     }
 
     return ListView.builder(
@@ -195,7 +196,7 @@ class _ChatMediaScreenState extends State<ChatMediaScreen> {
         .toList();
 
     if (documents.isEmpty) {
-      return _empty('No documents sent yet.', Icons.description_rounded);
+      return _empty(context.tr('No documents sent yet.'), Icons.description_rounded);
     }
 
     return ListView.builder(
@@ -208,7 +209,7 @@ class _ChatMediaScreenState extends State<ChatMediaScreen> {
           icon: Icons.description_rounded,
           title: message.fileName.trim().isNotEmpty
               ? message.fileName
-              : 'Document',
+              : context.tr('Document'),
           onTap: () {
             _openUrl(message.mediaUrl);
           },
@@ -338,10 +339,10 @@ class _ChatMediaScreenState extends State<ChatMediaScreen> {
           labelColor: Colors.white,
           unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
           labelStyle: const TextStyle(fontWeight: FontWeight.w800),
-          tabs: const <Widget>[
-            Tab(text: 'Media'),
-            Tab(text: 'Links'),
-            Tab(text: 'Docs'),
+          tabs: <Widget>[
+            Tab(text: context.tr('Media')),
+            Tab(text: context.tr('Links')),
+            Tab(text: context.tr('Docs')),
           ],
         ),
       ),
@@ -361,7 +362,7 @@ class _ChatMediaScreenState extends State<ChatMediaScreen> {
         appBar: AppBar(
           surfaceTintColor: Colors.transparent,
           title: Text(
-            'Media with ${widget.otherName}',
+            context.tr('Media with {name}', {'name': widget.otherName}),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(fontWeight: FontWeight.w800),

@@ -9,6 +9,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../services/chat/chat_media_service.dart';
 import '../../../services/chat/group_chat_service.dart';
 import 'group_chat_screen.dart';
+import '../../../l10n/nubify_text.dart';
 
 //===============================
 // CREATE GROUP SCREEN
@@ -298,7 +299,7 @@ class _CreateGroupScreenState
 
     if (name.isEmpty) {
       _showMessage(
-        'Enter a group name.',
+        context.tr('Enter a group name.'),
       );
 
       return;
@@ -306,7 +307,7 @@ class _CreateGroupScreenState
 
     if (_selectedIds.isEmpty) {
       _showMessage(
-        'Add at least one member.',
+        context.tr('Add at least one member.'),
       );
 
       return;
@@ -631,7 +632,7 @@ class _CreateGroupScreenState
         ? fullName
         : username.trim().isNotEmpty
         ? username
-        : 'Nubify user';
+        : context.tr('Nubify user');
 
     final bool selected =
     _selectedIds.contains(
@@ -809,8 +810,7 @@ class _CreateGroupScreenState
           0xFF0B1116,
         ),
         title:
-        const Text(
-          'Create group',
+        Text(context.tr('Create group'),
           style:
           TextStyle(
             fontWeight:
@@ -839,8 +839,7 @@ class _CreateGroupScreenState
                 _blue,
               ),
             )
-                : const Text(
-              'Create',
+                : Text(context.tr('Create'),
               style:
               TextStyle(
                 color:
@@ -955,9 +954,9 @@ class _CreateGroupScreenState
                         maxLength:
                         80,
                         decoration:
-                        const InputDecoration(
+                        InputDecoration(
                           hintText:
-                          'Group name',
+                          context.tr('Group name'),
                           counterText:
                           '',
                         ),
@@ -971,9 +970,9 @@ class _CreateGroupScreenState
                         maxLines:
                         2,
                         decoration:
-                        const InputDecoration(
+                        InputDecoration(
                           hintText:
-                          'Group description (optional)',
+                          context.tr('Group description (optional)'),
                           counterText:
                           '',
                         ),
@@ -1004,7 +1003,7 @@ class _CreateGroupScreenState
               decoration:
               InputDecoration(
                 hintText:
-                'Search users',
+                context.tr('Search users'),
                 prefixIcon:
                 const Icon(
                   Icons.search_rounded,
@@ -1171,7 +1170,7 @@ class _CreateGroupScreenState
                           <Widget>[
                             _section(
                               title:
-                              'People you follow / who follow you',
+                              context.tr('People you follow / who follow you'),
                               users:
                               priority,
                             ),
@@ -1185,7 +1184,7 @@ class _CreateGroupScreenState
 
                             _section(
                               title:
-                              'Other Nubify users',
+                              context.tr('Other Nubify users'),
                               users:
                               others,
                             ),

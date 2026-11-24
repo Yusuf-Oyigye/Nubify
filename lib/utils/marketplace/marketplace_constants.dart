@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/nubify_text.dart';
+
 //===================================================
 // NUB MARKETPLACE DOMAIN CONSTANTS
 //===================================================
@@ -103,25 +105,26 @@ abstract final class MarketplaceConstants {
     'Other',
   ];
 
+  // Both are shown on screen, in the app language.
   static String categoryLabel(String id) {
     for (final MarketplaceCategory category in categories) {
       if (category.id == id) {
-        return category.label;
+        return NubifyText.tr(category.label);
       }
     }
-    return 'Other';
+    return NubifyText.tr('Other');
   }
 
   static String conditionLabel(String value) {
     switch (value) {
       case 'new':
-        return 'New';
+        return NubifyText.tr('New');
       case 'used':
-        return 'Used';
+        return NubifyText.tr('Used');
       case 'service':
-        return 'Service';
+        return NubifyText.tr('Service');
       default:
-        return 'Used';
+        return NubifyText.tr('Used');
     }
   }
 

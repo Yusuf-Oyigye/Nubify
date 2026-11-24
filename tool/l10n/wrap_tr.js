@@ -9,7 +9,9 @@ const path = require("path");
 const root = process.cwd();
 const files = process.argv.slice(2);
 const messageHelpers = ["_showMessage", "showSnackBar", "_showSnack", "_showSnackBar", "_showError", "_toast"];
-const named = ["label", "tooltip", "hintText", "labelText", "helperText", "title", "subtitle", "semanticLabel"];
+const named = ["label", "tooltip", "hintText", "labelText", "helperText", "title", "subtitle", "semanticLabel", "message", "hint", "actionLabel", "description"];
+// Helpers that take the context first: _snack(context, 'x').
+const contextHelpers = ["_snack"];
 
 function ok(str) {
   return /[A-Za-z]{2}/.test(str) && !str.includes("$") && !/^https?:/.test(str) &&
@@ -51,6 +53,15 @@ for (const rel of files) {
       if (!ok(str)) return m;
       count++;
       return `${fn}(${sp}context.tr('${str}')${tail}`;
+    });
+  }
+
+  for (const fn of contextHelpers) {
+    const re = new RegExp(`\\b${fn}\\((\\s*)context,(\\s*)'((?:[^'\\\\\\n]|\\\\.)*)'(\\s*[,)])`, "g");
+    s = s.replace(re, (m, sp, sp2, str, tail) => {
+      if (!ok(str)) return m;
+      count++;
+      return `${fn}(${sp}context,${sp2}context.tr('${str}')${tail}`;
     });
   }
 

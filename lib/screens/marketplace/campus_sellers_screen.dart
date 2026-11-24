@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../utils/marketplace/marketplace_theme.dart';
 import 'marketplace_seller_store_screen.dart';
+import '../../l10n/nubify_text.dart';
 
 //===================================================
 // CAMPUS SELLERS — NO SEPARATE SELLER REGISTRATION
@@ -96,7 +97,12 @@ class _CampusSellersScreenState extends State<CampusSellersScreen> {
       final int count = seller.knownCount!;
 
       return Text(
-        '$count available ${count == 1 ? 'listing' : 'listings'}',
+        context.tr(
+                count == 1
+                    ? '{count} available listing'
+                    : '{count} available listings',
+                {'count': count},
+              ),
         textAlign: TextAlign.center,
       );
     }
@@ -108,17 +114,22 @@ class _CampusSellersScreenState extends State<CampusSellersScreen> {
       ),
       builder: (BuildContext context, AsyncSnapshot<int> snapshot) {
         if (snapshot.hasError) {
-          return const Text('Available listings', textAlign: TextAlign.center);
+          return Text(context.tr('Available listings'), textAlign: TextAlign.center);
         }
 
         if (!snapshot.hasData) {
-          return const Text('New campus seller', textAlign: TextAlign.center);
+          return Text(context.tr('New campus seller'), textAlign: TextAlign.center);
         }
 
         final int count = snapshot.data!;
 
         return Text(
-          '$count available ${count == 1 ? 'listing' : 'listings'}',
+          context.tr(
+                count == 1
+                    ? '{count} available listing'
+                    : '{count} available listings',
+                {'count': count},
+              ),
           textAlign: TextAlign.center,
         );
       },
@@ -132,7 +143,7 @@ class _CampusSellersScreenState extends State<CampusSellersScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Campus Sellers')),
+      appBar: AppBar(title: Text(context.tr('Campus Sellers'))),
       body: Column(
         children: <Widget>[
           //===================================================
@@ -149,7 +160,7 @@ class _CampusSellersScreenState extends State<CampusSellersScreen> {
                 });
               },
               decoration: InputDecoration(
-                hintText: 'Search campus sellers',
+                hintText: context.tr('Search campus sellers'),
                 prefixIcon: const Icon(Icons.search_rounded),
                 filled: true,
                 fillColor: MarketplaceTheme.softSurface(context),
@@ -219,7 +230,7 @@ class _CampusSellersScreenState extends State<CampusSellersScreen> {
 
                               sellers[id] = _SellerPreview(
                                 id: id,
-                                name: (data['sellerName'] ?? 'Student seller')
+                                name: (data['sellerName'] ?? context.tr('Student seller'))
                                     .toString(),
                                 photoUrl: (data['sellerPhotoUrl'] ?? '')
                                     .toString(),
@@ -261,7 +272,7 @@ class _CampusSellersScreenState extends State<CampusSellersScreen> {
                                 name:
                                     (data['sellerName'] ??
                                             existing?.name ??
-                                            'Student seller')
+                                            context.tr('Student seller'))
                                         .toString(),
                                 photoUrl:
                                     (data['sellerPhotoUrl'] ??
@@ -292,10 +303,10 @@ class _CampusSellersScreenState extends State<CampusSellersScreen> {
                               return Center(
                                 child: Text(
                                   stats.hasError && recent.hasError
-                                      ? 'Unable to load campus sellers. Please retry.'
+                                      ? context.tr('Unable to load campus sellers. Please retry.')
                                       : _query.isEmpty
-                                      ? 'No campus sellers yet.'
-                                      : 'No campus seller matches your search.',
+                                      ? context.tr('No campus sellers yet.')
+                                      : context.tr('No campus seller matches your search.'),
                                 ),
                               );
                             }
@@ -397,7 +408,7 @@ class _CampusSellersScreenState extends State<CampusSellersScreen> {
                                                 ),
                                               );
                                             },
-                                            child: const Text('View Store'),
+                                            child: Text(context.tr('View Store')),
                                           ),
                                         ),
                                       ],

@@ -9,6 +9,7 @@ import '../../utils/marketplace/marketplace_constants.dart';
 import '../../utils/marketplace/marketplace_theme.dart';
 import '../../widgets/marketplace/marketplace_listing_card.dart';
 import 'marketplace_listing_details_screen.dart';
+import '../../l10n/nubify_text.dart';
 
 class MarketplaceSearchScreen extends StatefulWidget {
   const MarketplaceSearchScreen({super.key, this.initialCategory});
@@ -137,7 +138,7 @@ class _MarketplaceSearchScreenState extends State<MarketplaceSearchScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Search Marketplace')),
+      appBar: AppBar(title: Text(context.tr('Search Marketplace'))),
       body: Column(
         children: <Widget>[
           Padding(
@@ -147,7 +148,7 @@ class _MarketplaceSearchScreenState extends State<MarketplaceSearchScreen> {
               autofocus: widget.initialCategory == null,
               onChanged: _onSearchChanged,
               decoration: InputDecoration(
-                hintText: 'Search products, services, or sellers…',
+                hintText: context.tr('Search products, services, or sellers…'),
                 prefixIcon: const Icon(Icons.search_rounded),
                 suffixIcon: IconButton(
                   onPressed: _openFilters,
@@ -203,19 +204,19 @@ class _MarketplaceSearchScreenState extends State<MarketplaceSearchScreen> {
                 if (_results.isEmpty && _loadError != null) {
                   return _SearchState(
                     icon: Icons.manage_search_rounded,
-                    title: 'No matching listings',
+                    title: context.tr('No matching listings'),
                     message:
-                        'Nothing matches this search yet. Pull down or try again.',
-                    actionLabel: 'Try Again',
+                        context.tr('Nothing matches this search yet. Pull down or try again.'),
+                    actionLabel: context.tr('Try Again'),
                     onAction: () => unawaited(_loadResults(reset: true)),
                   );
                 }
                 if (_results.isEmpty) {
-                  return const _SearchState(
+                  return _SearchState(
                     icon: Icons.search_off_rounded,
-                    title: 'No matching listings',
+                    title: context.tr('No matching listings'),
                     message:
-                        'Try a different word, category, condition, or price range.',
+                        context.tr('Try a different word, category, condition, or price range.'),
                   );
                 }
                 return Column(
@@ -267,7 +268,7 @@ class _MarketplaceSearchScreenState extends State<MarketplaceSearchScreen> {
                         child: TextButton.icon(
                           onPressed: () => unawaited(_loadResults()),
                           icon: const Icon(Icons.refresh_rounded),
-                          label: const Text('Could not load more — retry'),
+                          label: Text(context.tr('Could not load more — retry')),
                         ),
                       ),
                   ],
@@ -328,26 +329,25 @@ class _FilterSheetState extends State<_FilterSheet> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            const Text(
-              'Filter Listings',
+            Text(context.tr('Filter Listings'),
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String?>(
               initialValue: _filter.category,
-              decoration: const InputDecoration(
-                labelText: 'Category',
+              decoration: InputDecoration(
+                labelText: context.tr('Category'),
                 border: OutlineInputBorder(),
               ),
               items: <DropdownMenuItem<String?>>[
-                const DropdownMenuItem<String?>(
+                DropdownMenuItem<String?>(
                   value: null,
-                  child: Text('All categories'),
+                  child: Text(context.tr('All categories')),
                 ),
                 ...MarketplaceConstants.categories.map(
                   (MarketplaceCategory category) => DropdownMenuItem<String?>(
                     value: category.id,
-                    child: Text(category.label),
+                    child: Text(context.tr(category.label)),
                   ),
                 ),
               ],
@@ -360,14 +360,14 @@ class _FilterSheetState extends State<_FilterSheet> {
             const SizedBox(height: 14),
             DropdownButtonFormField<String?>(
               initialValue: _filter.condition,
-              decoration: const InputDecoration(
-                labelText: 'Condition',
+              decoration: InputDecoration(
+                labelText: context.tr('Condition'),
                 border: OutlineInputBorder(),
               ),
               items: <DropdownMenuItem<String?>>[
-                const DropdownMenuItem<String?>(
+                DropdownMenuItem<String?>(
                   value: null,
-                  child: Text('All conditions'),
+                  child: Text(context.tr('All conditions')),
                 ),
                 ...MarketplaceConstants.conditions.map(
                   (String value) => DropdownMenuItem<String?>(
@@ -391,8 +391,8 @@ class _FilterSheetState extends State<_FilterSheet> {
                     keyboardType: const TextInputType.numberWithOptions(
                       decimal: true,
                     ),
-                    decoration: const InputDecoration(
-                      labelText: 'Minimum EGP',
+                    decoration: InputDecoration(
+                      labelText: context.tr('Minimum EGP'),
                       border: OutlineInputBorder(),
                     ),
                   ),
@@ -404,44 +404,43 @@ class _FilterSheetState extends State<_FilterSheet> {
                     keyboardType: const TextInputType.numberWithOptions(
                       decimal: true,
                     ),
-                    decoration: const InputDecoration(
-                      labelText: 'Maximum EGP',
+                    decoration: InputDecoration(
+                      labelText: context.tr('Maximum EGP'),
                       border: OutlineInputBorder(),
                     ),
                   ),
                 ),
               ],
             ),
-            const Padding(
+            Padding(
               padding: EdgeInsets.only(top: 8),
-              child: Text(
-                'A price range uses price order so every next page remains correctly sorted.',
+              child: Text(context.tr('A price range uses price order so every next page remains correctly sorted.'),
                 style: TextStyle(fontSize: 11),
               ),
             ),
             const SizedBox(height: 14),
             DropdownButtonFormField<MarketplaceSort>(
               initialValue: _filter.sort,
-              decoration: const InputDecoration(
-                labelText: 'Sort',
+              decoration: InputDecoration(
+                labelText: context.tr('Sort'),
                 border: OutlineInputBorder(),
               ),
-              items: const <DropdownMenuItem<MarketplaceSort>>[
+              items: <DropdownMenuItem<MarketplaceSort>>[
                 DropdownMenuItem(
                   value: MarketplaceSort.newest,
-                  child: Text('Newest First'),
+                  child: Text(context.tr('Newest First')),
                 ),
                 DropdownMenuItem(
                   value: MarketplaceSort.oldest,
-                  child: Text('Oldest First'),
+                  child: Text(context.tr('Oldest First')),
                 ),
                 DropdownMenuItem(
                   value: MarketplaceSort.priceLowToHigh,
-                  child: Text('Price Low to High'),
+                  child: Text(context.tr('Price Low to High')),
                 ),
                 DropdownMenuItem(
                   value: MarketplaceSort.priceHighToLow,
-                  child: Text('Price High to Low'),
+                  child: Text(context.tr('Price High to Low')),
                 ),
               ],
               onChanged: (MarketplaceSort? value) {
@@ -459,14 +458,14 @@ class _FilterSheetState extends State<_FilterSheet> {
                       context,
                       MarketplaceFilter(query: widget.initial.query),
                     ),
-                    child: const Text('Reset'),
+                    child: Text(context.tr('Reset')),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: FilledButton(
                     onPressed: _applyFilters,
-                    child: const Text('Apply'),
+                    child: Text(context.tr('Apply')),
                   ),
                 ),
               ],
@@ -485,14 +484,14 @@ class _FilterSheetState extends State<_FilterSheet> {
     if ((minimumText.isNotEmpty && (minimum == null || minimum < 0)) ||
         (maximumText.isNotEmpty && (maximum == null || maximum < 0))) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Enter a valid price of 0 or more.')),
+        SnackBar(content: Text(context.tr('Enter a valid price of 0 or more.'))),
       );
       return;
     }
     if (minimum != null && maximum != null && minimum > maximum) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Minimum price cannot be greater than maximum price.'),
+        SnackBar(
+          content: Text(context.tr('Minimum price cannot be greater than maximum price.')),
         ),
       );
       return;

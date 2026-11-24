@@ -8,6 +8,7 @@ import '../../models/chat/chat_message.dart';
 import '../../services/chat/chat_sevice.dart';
 import '../../services/chat/chat_share_service.dart';
 import '../../services/chat/group_chat_service.dart';
+import '../../l10n/nubify_text.dart';
 
 //===================================================
 // CHAT FORWARD / SHARE SCREEN
@@ -333,7 +334,7 @@ class _ChatForwardScreenState extends State<ChatForwardScreen> {
 
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Unable to send: $error')));
+      ).showSnackBar(SnackBar(content: Text(context.tr('Unable to send: {error}', {'error': '$error'}))));
     } finally {
       if (mounted) {
         setState(() {
@@ -382,7 +383,7 @@ class _ChatForwardScreenState extends State<ChatForwardScreen> {
                     .toList();
 
             if (documents.isEmpty) {
-              return const Center(child: Text('No users found.'));
+              return Center(child: Text(context.tr('No users found.')));
             }
 
             return ListView.builder(
@@ -403,7 +404,7 @@ class _ChatForwardScreenState extends State<ChatForwardScreen> {
                     ? fullName
                     : username.trim().isNotEmpty
                     ? username
-                    : 'Nubify user';
+                    : context.tr('Nubify user');
 
                 final bool selected = _selectedUsers.contains(document.id);
 
@@ -467,7 +468,7 @@ class _ChatForwardScreenState extends State<ChatForwardScreen> {
                     .toList();
 
             if (groups.isEmpty) {
-              return const Center(child: Text('No groups found.'));
+              return Center(child: Text(context.tr('No groups found.')));
             }
 
             return ListView.builder(
@@ -531,17 +532,17 @@ class _ChatForwardScreenState extends State<ChatForwardScreen> {
           backgroundColor: scheme.surface,
           foregroundColor: scheme.onSurface,
 
-          title: const Text('Send to chat'),
+          title: Text(context.tr('Send to chat')),
 
-          bottom: const TabBar(
+          bottom: TabBar(
             indicatorColor: _blue,
 
             labelColor: _blue,
 
             tabs: <Widget>[
-              Tab(icon: Icon(Icons.person_rounded), text: 'Users'),
+              Tab(icon: Icon(Icons.person_rounded), text: context.tr('Users')),
 
-              Tab(icon: Icon(Icons.groups_rounded), text: 'Groups'),
+              Tab(icon: Icon(Icons.groups_rounded), text: context.tr('Groups')),
             ],
           ),
         ),
@@ -555,7 +556,7 @@ class _ChatForwardScreenState extends State<ChatForwardScreen> {
                 controller: _searchController,
 
                 decoration: InputDecoration(
-                  hintText: 'Search users or groups',
+                  hintText: context.tr('Search users or groups'),
 
                   prefixIcon: const Icon(Icons.search_rounded),
 
@@ -627,10 +628,10 @@ class _ChatForwardScreenState extends State<ChatForwardScreen> {
 
                     label: Text(
                       _sending
-                          ? 'Sending...'
+                          ? context.tr('Sending...')
                           : selectedCount == 0
-                          ? 'Select users or groups'
-                          : 'Send to $selectedCount',
+                          ? context.tr('Select users or groups')
+                          : context.tr('Send to {count}', {'count': selectedCount}),
                     ),
                   ),
                 ),

@@ -7,6 +7,7 @@ import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../../../widgets/chat/nubify_chat_style.dart';
+import '../../../l10n/nubify_text.dart';
 
 //===============================
 // AUDIO CALL SCREEN
@@ -67,7 +68,7 @@ class _AudioCallScreenState
       '';
 
   String _statusText =
-      'Preparing call...';
+      NubifyText.tr('Preparing call...');
 
   bool _muted =
   false;
@@ -107,7 +108,7 @@ class _AudioCallScreenState
 
     if (!microphone.isGranted) {
       _setStatus(
-        'Microphone permission is required.',
+        NubifyText.tr('Microphone permission is required.'),
       );
 
       return;
@@ -194,28 +195,28 @@ class _AudioCallScreenState
         case RTCPeerConnectionState
             .RTCPeerConnectionStateConnected:
           _setStatus(
-            'Connected',
+            context.tr('Connected'),
           );
           break;
 
         case RTCPeerConnectionState
             .RTCPeerConnectionStateConnecting:
           _setStatus(
-            'Connecting...',
+            context.tr('Connecting...'),
           );
           break;
 
         case RTCPeerConnectionState
             .RTCPeerConnectionStateFailed:
           _setStatus(
-            'Call failed',
+            context.tr('Call failed'),
           );
           break;
 
         case RTCPeerConnectionState
             .RTCPeerConnectionStateDisconnected:
           _setStatus(
-            'Disconnected',
+            context.tr('Disconnected'),
           );
           break;
 
@@ -231,7 +232,7 @@ class _AudioCallScreenState
       if (event.track.kind ==
           'audio') {
         _setStatus(
-          'Connected',
+          context.tr('Connected'),
         );
       }
     };
@@ -249,7 +250,7 @@ class _AudioCallScreenState
     if (callerId == null ||
         callerId.isEmpty) {
       throw Exception(
-        'User is not logged in.',
+        context.tr('User is not logged in.'),
       );
     }
 
@@ -354,7 +355,7 @@ class _AudioCallScreenState
     );
 
     _setStatus(
-      'Calling...',
+      NubifyText.tr('Calling...'),
     );
 
     _listenToCallDocument(
@@ -380,7 +381,7 @@ class _AudioCallScreenState
 
     if (incomingCallId.isEmpty) {
       throw Exception(
-        'Invalid call.',
+        context.tr('Invalid call.'),
       );
     }
 
@@ -405,7 +406,7 @@ class _AudioCallScreenState
 
     if (!snapshot.exists) {
       throw Exception(
-        'This call no longer exists.',
+        NubifyText.tr('This call no longer exists.'),
       );
     }
 
@@ -426,7 +427,7 @@ class _AudioCallScreenState
         .toString()
         .isEmpty) {
       throw Exception(
-        'The incoming call has no valid offer.',
+        NubifyText.tr('The incoming call has no valid offer.'),
       );
     }
 
@@ -521,7 +522,7 @@ class _AudioCallScreenState
     );
 
     _setStatus(
-      'Connecting...',
+      NubifyText.tr('Connecting...'),
     );
 
     _listenToCallDocument(
@@ -597,7 +598,7 @@ class _AudioCallScreenState
                 true;
 
                 _setStatus(
-                  'Connecting...',
+                  NubifyText.tr('Connecting...'),
                 );
               }
             }
@@ -605,7 +606,7 @@ class _AudioCallScreenState
             if (status ==
                 'declined') {
               _setStatus(
-                'Call declined',
+                NubifyText.tr('Call declined'),
               );
 
               await Future<void>.delayed(
@@ -622,8 +623,8 @@ class _AudioCallScreenState
                 status == 'missed') {
               _setStatus(
                 status == 'missed'
-                    ? 'Missed call'
-                    : 'Call ended',
+                    ? NubifyText.tr('Missed call')
+                    : NubifyText.tr('Call ended'),
               );
 
               await Future<void>.delayed(
@@ -932,7 +933,7 @@ class _AudioCallScreenState
                         color: Colors.white.withValues(alpha: 0.12),
                       ),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: <Widget>[
                         Icon(
@@ -941,8 +942,7 @@ class _AudioCallScreenState
                           size: 16,
                         ),
                         SizedBox(width: 6),
-                        Text(
-                          'Nubify audio call',
+                        Text(context.tr('Nubify audio call'),
                           style: TextStyle(
                             color: Colors.white70,
                             fontSize: 12,
@@ -1040,7 +1040,7 @@ class _AudioCallScreenState
                               icon: _muted
                                   ? Icons.mic_off_rounded
                                   : Icons.mic_rounded,
-                              label: _muted ? 'Unmute' : 'Mute',
+                              label: _muted ? context.tr('Unmute') : context.tr('Mute'),
                               active: _muted,
                               onTap: _toggleMute,
                             ),
@@ -1048,7 +1048,7 @@ class _AudioCallScreenState
                               icon: _speakerOn
                                   ? Icons.volume_up_rounded
                                   : Icons.volume_down_rounded,
-                              label: 'Speaker',
+                              label: context.tr('Speaker'),
                               active: _speakerOn,
                               onTap: _toggleSpeaker,
                             ),
@@ -1186,7 +1186,7 @@ class _HangUpButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      label: 'End call',
+      label: context.tr('End call'),
       child: GestureDetector(
         onTap: onTap,
         child: Container(

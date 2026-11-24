@@ -5,6 +5,7 @@ import '../../../utils/profile/username_rules.dart';
 
 import '../../../models/chat/chat_group.dart';
 import '../../../services/chat/group_chat_service.dart';
+import '../../../l10n/nubify_text.dart';
 
 //===============================
 // ADD GROUP MEMBERS SCREEN
@@ -166,8 +167,7 @@ class _AddGroupMembersScreenState
           0xFF0B1116,
         ),
         title:
-        const Text(
-          'Add members',
+        Text(context.tr('Add members'),
           style:
           TextStyle(
             fontWeight:
@@ -198,7 +198,7 @@ class _AddGroupMembersScreenState
               ),
             )
                 : Text(
-              'Add (${_selected.length})',
+              context.tr('Add ({count})', {'count': _selected.length}),
               style:
               const TextStyle(
                 color:
@@ -237,10 +237,9 @@ class _AddGroupMembersScreenState
           }
 
           if (!groupSnapshot.data!.exists) {
-            return const Center(
+            return Center(
               child:
-              Text(
-                'Group not found.',
+              Text(context.tr('Group not found.'),
               ),
             );
           }
@@ -262,7 +261,7 @@ class _AddGroupMembersScreenState
                           .membersCanAddMembers);
 
           if (!canAdd) {
-            return const Center(
+            return Center(
               child:
               Padding(
                 padding:
@@ -270,8 +269,7 @@ class _AddGroupMembersScreenState
                   30,
                 ),
                 child:
-                Text(
-                  'Only admins can add members because the group admin has disabled member adding.',
+                Text(context.tr('Only admins can add members because the group admin has disabled member adding.'),
                   textAlign:
                   TextAlign.center,
                   style:
@@ -302,7 +300,7 @@ class _AddGroupMembersScreenState
                   decoration:
                   InputDecoration(
                     hintText:
-                    'Search users',
+                    context.tr('Search users'),
                     prefixIcon:
                     const Icon(
                       Icons.search_rounded,
@@ -403,10 +401,9 @@ class _AddGroupMembersScreenState
                         .toList();
 
                     if (users.isEmpty) {
-                      return const Center(
+                      return Center(
                         child:
-                        Text(
-                          'No users found.',
+                        Text(context.tr('No users found.'),
                           style:
                           TextStyle(
                             color:

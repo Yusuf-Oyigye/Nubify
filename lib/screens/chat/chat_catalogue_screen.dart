@@ -6,6 +6,7 @@ import '../../models/marketplace/marketplace_listing.dart';
 import '../../widgets/marketplace/marketplace_brand_icon.dart';
 import '../../widgets/chat/nubify_chat_style.dart';
 import '../marketplace/marketplace_listing_details_screen.dart';
+import '../../l10n/nubify_text.dart';
 
 //===============================
 // CHAT CATALOGUE SCREEN
@@ -155,7 +156,7 @@ class _ChatCatalogueScreenState extends State<ChatCatalogueScreen> {
 
     return Semantics(
       button: true,
-      label: '${listing.title}, ${listing.priceLabel}',
+      label: '${listing.title}, ${listing.displayPrice}',
       child: GestureDetector(
         onTap: () {
           _openListing(listing);
@@ -241,7 +242,7 @@ class _ChatCatalogueScreenState extends State<ChatCatalogueScreen> {
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
-                        listing.priceLabel,
+                        listing.displayPrice,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -272,8 +273,7 @@ class _ChatCatalogueScreenState extends State<ChatCatalogueScreen> {
     return Scaffold(
       appBar: AppBar(
         surfaceTintColor: Colors.transparent,
-        title: const Text(
-          'Catalogue',
+        title: Text(context.tr('Catalogue'),
           style: TextStyle(fontWeight: FontWeight.w800),
         ),
       ),
@@ -288,10 +288,9 @@ class _ChatCatalogueScreenState extends State<ChatCatalogueScreen> {
                 return Column(
                   children: <Widget>[
                     _header(null),
-                    const Expanded(
+                    Expanded(
                       child: Center(
-                        child: Text(
-                          'Products could not load right now. Please try again.',
+                        child: Text(context.tr('Products could not load right now. Please try again.'),
                           textAlign: TextAlign.center,
                         ),
                       ),
@@ -331,8 +330,7 @@ class _ChatCatalogueScreenState extends State<ChatCatalogueScreen> {
                           children: <Widget>[
                             const MarketplaceBrandIcon(size: 56),
                             const SizedBox(height: 12),
-                            Text(
-                              'No products listed yet.',
+                            Text(context.tr('No products listed yet.'),
                               style: TextStyle(color: scheme.onSurfaceVariant),
                             ),
                           ],

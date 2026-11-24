@@ -10,6 +10,7 @@ import '../feed/comment_screen.dart';
 import '../nubi/nubi_mindrush_screen.dart';
 import '../stories/story_viewer_screen.dart';
 import '../huddles/huddle_launcher.dart';
+import '../../l10n/nubify_text.dart';
 
 //===================================================
 // NOTIFICATIONS SCREEN
@@ -94,7 +95,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
       await _openNotification(notificationId: notificationId, data: data);
     } catch (_) {
-      _showMessage('Unable to open this notification.');
+      _showMessage(NubifyText.tr('Unable to open this notification.'));
     }
   }
 
@@ -164,7 +165,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     try {
       await _notificationService.markAllAsRead();
     } catch (error) {
-      _showMessage('Unable to mark notifications as read.');
+      _showMessage(NubifyText.tr('Unable to mark notifications as read.'));
     }
   }
 
@@ -359,7 +360,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final String cleanPostId = postId.trim();
 
     if (cleanPostId.isEmpty) {
-      _showMessage('This post is unavailable.');
+      _showMessage(context.tr('This post is unavailable.'));
 
       return;
     }
@@ -375,7 +376,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       }
 
       if (!snapshot.exists || snapshot.data() == null) {
-        _showMessage('This post was removed.');
+        _showMessage(context.tr('This post was removed.'));
 
         return;
       }
@@ -387,7 +388,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       //===================================================
 
       if (data['isHidden'] == true || data['isRootHidden'] == true) {
-        _showMessage('This post is currently hidden.');
+        _showMessage(context.tr('This post is currently hidden.'));
 
         return;
       }
@@ -403,7 +404,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         ),
       );
     } catch (_) {
-      _showMessage('Unable to open this post.');
+      _showMessage(NubifyText.tr('Unable to open this post.'));
     }
   }
 
@@ -415,7 +416,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final String cleanStoryId = storyId.trim();
 
     if (cleanStoryId.isEmpty) {
-      _showMessage('This story is unavailable.');
+      _showMessage(context.tr('This story is unavailable.'));
 
       return;
     }
@@ -428,7 +429,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       }
 
       if (story == null) {
-        _showMessage('This story has expired or was removed.');
+        _showMessage(context.tr('This story has expired or was removed.'));
 
         return;
       }
@@ -440,7 +441,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         ),
       );
     } catch (_) {
-      _showMessage('Unable to open this story.');
+      _showMessage(NubifyText.tr('Unable to open this story.'));
     }
   }
 
@@ -452,7 +453,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     try {
       await _notificationService.deleteNotification(notificationId);
     } catch (_) {
-      _showMessage('Unable to remove notification.');
+      _showMessage(NubifyText.tr('Unable to remove notification.'));
     }
   }
 
@@ -464,8 +465,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Notifications',
+        title: Text(context.tr('Notifications'),
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
 
@@ -473,7 +473,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           TextButton.icon(
             onPressed: _markAllAsRead,
             icon: const Icon(Icons.done_all_rounded, size: 19),
-            label: const Text('Mark all read'),
+            label: Text(context.tr('Mark all read')),
           ),
           const SizedBox(width: 4),
         ],
@@ -515,10 +515,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     children: <Widget>[
                       SizedBox(
                         height: MediaQuery.of(context).size.height * 0.55,
-                        child: const _NotificationsEmptyState(
+                        child: _NotificationsEmptyState(
                           icon: Icons.error_outline_rounded,
-                          title: 'Unable to load notifications',
-                          subtitle: 'Pull down to try again.',
+                          title: context.tr('Unable to load notifications'),
+                          subtitle: context.tr('Pull down to try again.'),
                         ),
                       ),
                     ],
@@ -540,11 +540,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     children: <Widget>[
                       SizedBox(
                         height: MediaQuery.of(context).size.height * 0.58,
-                        child: const _NotificationsEmptyState(
+                        child: _NotificationsEmptyState(
                           icon: Icons.notifications_none_rounded,
-                          title: 'No notifications yet',
+                          title: context.tr('No notifications yet'),
                           subtitle:
-                              'Likes, comments, replies, reposts, follows and story activity will appear here.',
+                              context.tr('Likes, comments, replies, reposts, follows and story activity will appear here.'),
                         ),
                       ),
                     ],
@@ -654,6 +654,25 @@ class _NotificationTile extends StatelessWidget {
   // BUILD
   //===================================================
 
+  //===================================================
+  // "liked your post" IN THE READER'S LANGUAGE
+  //
+  // Arabic and Hausa also have a (female) version when
+  // the verb changes for a woman.
+  //===================================================
+
+  static String _sentence(BuildContext context, String message, bool female) {
+    if (female) {
+      final String key = '$message (female)';
+      final String she = context.tr(key);
+      if (she != key) {
+        return she;
+      }
+    }
+
+    return context.tr(message);
+  }
+
   @override
   Widget build(BuildContext context) {
     final String senderId = (data['senderId'] ?? data['senderUid'] ?? '')
@@ -699,7 +718,9 @@ class _NotificationTile extends StatelessWidget {
                 ? fullName
                 : username.isNotEmpty
                 ? username
-                : 'Someone';
+                : context.tr('Someone');
+
+            final bool female = userData['gender'] == 'female';
 
             return Dismissible(
               key: ValueKey<String>('notification_$notificationId'),
@@ -813,7 +834,8 @@ class _NotificationTile extends StatelessWidget {
 
                                     if (message.isNotEmpty)
                                       TextSpan(
-                                        text: ' $message',
+                                        text:
+                                            ' ${_sentence(context, message, female)}',
                                         style: TextStyle(
                                           color: Theme.of(context)
                                               .colorScheme

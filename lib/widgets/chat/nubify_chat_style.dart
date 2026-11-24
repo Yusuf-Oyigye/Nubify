@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import '../../l10n/nubify_text.dart';
 
 //===================================================
 // NUBIFY CHAT — PREMIUM STYLE
@@ -338,7 +339,7 @@ class NubifyChatAvatar extends StatelessWidget {
           right: 2,
           bottom: 2,
           child: Semantics(
-            label: 'Online',
+            label: context.tr('Online'),
             child: Container(
               width: dot,
               height: dot,

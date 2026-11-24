@@ -21,6 +21,7 @@ import 'marketplace_seller_store_screen.dart';
 import 'my_marketplace_listings_screen.dart';
 import '../notifications/notifications_screen.dart';
 import 'saved_marketplace_listings_screen.dart';
+import '../../l10n/nubify_text.dart';
 
 class MarketplaceScreen extends StatefulWidget {
   const MarketplaceScreen({super.key, this.initialProductId = ''});
@@ -271,23 +272,21 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     return Scaffold(
       appBar: AppBar(
         toolbarHeight: 64,
-        title: const Column(
+        title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Text(
-              'NUB Marketplace',
+            Text(context.tr('NUB Marketplace'),
               style: TextStyle(fontWeight: FontWeight.w900),
             ),
-            Text(
-              'Discover. Connect. Trade.',
+            Text(context.tr('Discover. Connect. Trade.'),
               style: TextStyle(fontSize: 10, color: MarketplaceTheme.sky),
             ),
           ],
         ),
         actions: <Widget>[
           _MarketplaceHeaderAction(
-            title: 'Saved Listings',
-            label: 'Saved',
+            title: context.tr('Saved Listings'),
+            label: context.tr('Saved'),
             color: Colors.redAccent,
             onPressed: () => Navigator.push(
               context,
@@ -298,8 +297,8 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
             child: const Icon(Icons.favorite_rounded, size: 20),
           ),
           _MarketplaceHeaderAction(
-            title: 'Chats',
-            label: 'Chat',
+            title: context.tr('Chats'),
+            label: context.tr('Chat'),
             color: MarketplaceTheme.sky,
             onPressed: () {
               Navigator.push(
@@ -313,8 +312,8 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
             ),
           ),
           _MarketplaceHeaderAction(
-            title: 'Notifications',
-            label: 'Alerts',
+            title: context.tr('Notifications'),
+            label: context.tr('Alerts'),
             color: MarketplaceTheme.gold,
             onPressed: () {
               Navigator.push(
@@ -341,8 +340,8 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
             ),
           ),
           _MarketplaceHeaderAction(
-            title: 'My Listings',
-            label: 'Mine',
+            title: context.tr('My Listings'),
+            label: context.tr('Mine'),
             color: MarketplaceTheme.copper,
             onPressed: () => Navigator.push(
               context,
@@ -386,12 +385,12 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                       borderRadius: BorderRadius.circular(18),
                       border: Border.all(color: Theme.of(context).dividerColor),
                     ),
-                    child: const Row(
+                    child: Row(
                       children: <Widget>[
                         Icon(Icons.search_rounded, color: MarketplaceTheme.sky),
                         SizedBox(width: 12),
                         Expanded(
-                          child: Text('Search products, services, or sellers…'),
+                          child: Text(context.tr('Search products, services, or sellers…')),
                         ),
                         Icon(Icons.tune_rounded),
                       ],
@@ -400,10 +399,10 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                 ),
               ),
             ),
-            const SliverToBoxAdapter(
+            SliverToBoxAdapter(
               child: _SectionHeading(
-                title: 'Browse Categories',
-                subtitle: 'Find exactly what campus has to offer',
+                title: context.tr('Browse Categories'),
+                subtitle: context.tr('Find exactly what campus has to offer'),
               ),
             ),
             SliverToBoxAdapter(
@@ -413,8 +412,8 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
             ),
             SliverToBoxAdapter(
               child: _SectionHeading(
-                title: 'Campus Sellers',
-                subtitle: 'Students with available listings',
+                title: context.tr('Campus Sellers'),
+                subtitle: context.tr('Students with available listings'),
                 action: TextButton(
                   onPressed: () => Navigator.push(
                     context,
@@ -422,7 +421,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                       builder: (_) => const CampusSellersScreen(),
                     ),
                   ),
-                  child: const Text('View All'),
+                  child: Text(context.tr('View All')),
                 ),
               ),
             ),
@@ -432,10 +431,10 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                 loading: _loadingDiscovery,
               ),
             ),
-            const SliverToBoxAdapter(
+            SliverToBoxAdapter(
               child: _SectionHeading(
-                title: 'Fresh Listings',
-                subtitle: 'Newest available items and services',
+                title: context.tr('Fresh Listings'),
+                subtitle: context.tr('Newest available items and services'),
               ),
             ),
             if (_loadingFresh && _freshListings.isEmpty)
@@ -446,10 +445,10 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                 ),
               )
             else if (_freshListings.isEmpty)
-              const SliverToBoxAdapter(
+              SliverToBoxAdapter(
                 child: _MarketplaceState(
-                  title: 'No fresh listings yet',
-                  message: 'New Marketplace items will appear here.',
+                  title: context.tr('No fresh listings yet'),
+                  message: context.tr('New Marketplace items will appear here.'),
                 ),
               )
             else
@@ -502,10 +501,10 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                         ? TextButton.icon(
                             onPressed: () => unawaited(_loadFreshListings()),
                             icon: const Icon(Icons.refresh_rounded),
-                            label: const Text('Could not load more — retry'),
+                            label: Text(context.tr('Could not load more — retry')),
                           )
                         : !_hasMoreFresh
-                        ? const Text('You have reached the latest listings.')
+                        ? Text(context.tr('You have reached the latest listings.'))
                         : const SizedBox(height: 24),
                   ),
                 ),
@@ -518,8 +517,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
         backgroundColor: MarketplaceTheme.sky,
         foregroundColor: MarketplaceTheme.midnight,
         icon: const Icon(Icons.add_business_rounded),
-        label: const Text(
-          'Sell',
+        label: Text(context.tr('Sell'),
           style: TextStyle(fontWeight: FontWeight.w900),
         ),
       ),
@@ -570,8 +568,7 @@ class _HeroBanner extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            const Text(
-              'Good finds. Real sellers.',
+            Text(context.tr('Good finds. Real sellers.'),
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 26,
@@ -580,8 +577,7 @@ class _HeroBanner extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Discover products and services, then connect directly with sellers.',
+            Text(context.tr('Discover products and services, then connect directly with sellers.'),
               style: TextStyle(color: Colors.white70, height: 1.4),
             ),
             const SizedBox(height: 14),
@@ -591,7 +587,7 @@ class _HeroBanner extends StatelessWidget {
                   child: FilledButton.icon(
                     onPressed: onSell,
                     icon: const Icon(Icons.add_rounded),
-                    label: const Text('Sell Something'),
+                    label: Text(context.tr('Sell Something')),
                     style: FilledButton.styleFrom(
                       backgroundColor: MarketplaceTheme.sky,
                       foregroundColor: MarketplaceTheme.midnight,
@@ -600,7 +596,7 @@ class _HeroBanner extends StatelessWidget {
                 ),
                 const SizedBox(width: 10),
                 IconButton.filledTonal(
-                  tooltip: 'Explore sellers',
+                  tooltip: context.tr('Explore sellers'),
                   onPressed: () => Navigator.push(
                     context,
                     MaterialPageRoute<void>(
@@ -660,7 +656,7 @@ class _CategoriesStrip extends StatelessWidget {
                   Icon(category.icon, color: _categoryColor(index)),
                   const Spacer(),
                   Text(
-                    category.label,
+                    context.tr(category.label),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -702,7 +698,7 @@ class _CampusSellerStrip extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 18),
               child: Align(
                 alignment: Alignment.centerLeft,
-                child: const Text('No campus sellers yet.'),
+                child: Text(context.tr('No campus sellers yet.')),
               ),
             )
           : ListView.separated(
@@ -759,7 +755,7 @@ class _CampusSellerStrip extends StatelessWidget {
                         Text(
                           seller.countVerified
                               ? '${seller.availableListingCount} listings'
-                              : 'New seller',
+                              : context.tr('New seller'),
                           style: TextStyle(
                             fontSize: 9,
                             color: MarketplaceTheme.mutedText(context),

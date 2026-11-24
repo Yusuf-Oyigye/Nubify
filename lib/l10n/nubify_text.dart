@@ -9,6 +9,7 @@ import 'translations/egyptian_arabic.dart';
 import 'translations/faculties.dart';
 import 'translations/feed.dart';
 import 'translations/huddles.dart';
+import 'translations/information.dart';
 import 'translations/marketplace.dart';
 import 'translations/menu.dart';
 import 'translations/notifications.dart';
@@ -39,6 +40,7 @@ abstract final class NubifyText {
       _merge(<Map<String, Map<String, String>>>[
         commonTranslations,
         menuTranslations,
+        informationTranslations,
         feedTranslations,
         chatTranslations,
         storiesTranslations,

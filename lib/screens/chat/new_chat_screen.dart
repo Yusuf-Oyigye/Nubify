@@ -5,6 +5,7 @@ import '../../utils/profile/username_rules.dart';
 
 import 'conversation_screen.dart';
 import '../../widgets/common/search_highlight_text.dart';
+import '../../l10n/nubify_text.dart';
 
 //===============================
 // NEW CHAT SCREEN
@@ -245,7 +246,7 @@ class _NewChatScreenState
                   .trim()
                   .isNotEmpty
                   ? username
-                  : 'Nubify user',
+                  : context.tr('Nubify user'),
               otherUsername:
               username,
               otherPhotoUrl:
@@ -292,7 +293,7 @@ class _NewChatScreenState
         .trim()
         .isNotEmpty
         ? username
-        : 'Nubify user';
+        : context.tr('Nubify user');
 
     return ListTile(
       contentPadding:
@@ -459,8 +460,7 @@ class _NewChatScreenState
           0xFF0B1116,
         ),
         title:
-        const Text(
-          'New message',
+        Text(context.tr('New message'),
           style:
           TextStyle(
             fontWeight:
@@ -491,7 +491,7 @@ class _NewChatScreenState
               decoration:
               InputDecoration(
                 hintText:
-                'Search users',
+                context.tr('Search users'),
                 prefixIcon:
                 const Icon(
                   Icons
@@ -703,10 +703,9 @@ class _NewChatScreenState
                       .isEmpty &&
                       others
                           .isEmpty) {
-                    return const Center(
+                    return Center(
                       child:
-                      Text(
-                        'No users found.',
+                      Text(context.tr('No users found.'),
                         style:
                         TextStyle(
                           color:
@@ -721,7 +720,7 @@ class _NewChatScreenState
                     <Widget>[
                       _section(
                         title:
-                        'People you follow / who follow you',
+                        context.tr('People you follow / who follow you'),
                         users:
                         priority,
                       ),
@@ -739,7 +738,7 @@ class _NewChatScreenState
 
                       _section(
                         title:
-                        'Other Nubify users',
+                        context.tr('Other Nubify users'),
                         users:
                         others,
                       ),

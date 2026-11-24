@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../l10n/nubify_text.dart';
 
 //===============================
 // MESSAGE ACTION RESULT
@@ -131,8 +132,7 @@ showChatMessageActions({
                     .reply_rounded,
               ),
               title:
-              const Text(
-                'Reply',
+              Text(context.tr('Reply'),
               ),
               onTap:
                   () {
@@ -153,8 +153,7 @@ showChatMessageActions({
                     .forward_rounded,
               ),
               title:
-              const Text(
-                'Forward',
+              Text(context.tr('Forward'),
               ),
               onTap:
                   () {
@@ -177,8 +176,7 @@ showChatMessageActions({
                 Colors.redAccent,
               ),
               title:
-              const Text(
-                'Delete',
+              Text(context.tr('Delete'),
                 style:
                 TextStyle(
                   color:
@@ -226,8 +224,7 @@ showDeleteMessageDialog({
         ) {
       return AlertDialog(
         title:
-        const Text(
-          'Delete message?',
+        Text(context.tr('Delete message?'),
         ),
         actions:
         <Widget>[
@@ -239,8 +236,7 @@ showDeleteMessageDialog({
               );
             },
             child:
-            const Text(
-              'Cancel',
+            Text(context.tr('Cancel'),
             ),
           ),
 
@@ -253,8 +249,7 @@ showDeleteMessageDialog({
               );
             },
             child:
-            const Text(
-              'Delete for me',
+            Text(context.tr('Delete for me'),
             ),
           ),
 
@@ -268,8 +263,7 @@ showDeleteMessageDialog({
                 );
               },
               child:
-              const Text(
-                'Delete for everyone',
+              Text(context.tr('Delete for everyone'),
                 style:
                 TextStyle(
                   color:

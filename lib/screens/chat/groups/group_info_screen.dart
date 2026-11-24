@@ -15,6 +15,7 @@ import '../chat_forward_screen.dart';
 import '../../../services/chat/chat_media_service.dart';
 import '../../../widgets/common/full_photo_viewer.dart';
 import 'group_join_requests_screen.dart';
+import '../../../l10n/nubify_text.dart';
 
 //===============================
 // GROUP INFO SCREEN
@@ -161,8 +162,7 @@ class _GroupInfoScreenState
           ) {
         return AlertDialog(
           title:
-          const Text(
-            'Edit group name',
+          Text(context.tr('Edit group name'),
           ),
 
           content:
@@ -196,8 +196,7 @@ class _GroupInfoScreenState
               },
 
               child:
-              const Text(
-                'Cancel',
+              Text(context.tr('Cancel'),
               ),
             ),
 
@@ -211,8 +210,7 @@ class _GroupInfoScreenState
               },
 
               child:
-              const Text(
-                'Save',
+              Text(context.tr('Save'),
               ),
             ),
           ],
@@ -262,8 +260,7 @@ class _GroupInfoScreenState
           ) {
         return AlertDialog(
           title:
-          const Text(
-            'Edit description',
+          Text(context.tr('Edit description'),
           ),
 
           content:
@@ -300,8 +297,7 @@ class _GroupInfoScreenState
               },
 
               child:
-              const Text(
-                'Cancel',
+              Text(context.tr('Cancel'),
               ),
             ),
 
@@ -315,8 +311,7 @@ class _GroupInfoScreenState
               },
 
               child:
-              const Text(
-                'Save',
+              Text(context.tr('Save'),
               ),
             ),
           ],
@@ -381,7 +376,7 @@ class _GroupInfoScreenState
     );
 
     _message(
-      'Group link copied.',
+      NubifyText.tr('Group link copied.'),
     );
   }
 
@@ -402,7 +397,7 @@ class _GroupInfoScreenState
         text:
         link,
         title:
-        'Join my Nubify group',
+        NubifyText.tr('Join my Nubify group'),
       ),
     );
   }
@@ -455,8 +450,7 @@ class _GroupInfoScreenState
           ) {
         return AlertDialog(
           title:
-          const Text(
-            'Group QR code',
+          Text(context.tr('Group QR code'),
           ),
           content:
           SizedBox(
@@ -504,12 +498,10 @@ class _GroupInfoScreenState
           ) {
         return AlertDialog(
           title:
-          const Text(
-            'Reset group link?',
+          Text(context.tr('Reset group link?'),
           ),
           content:
-          const Text(
-            'The old invite link will stop working.',
+          Text(context.tr('The old invite link will stop working.'),
           ),
           actions:
           <Widget>[
@@ -522,8 +514,7 @@ class _GroupInfoScreenState
                 );
               },
               child:
-              const Text(
-                'Cancel',
+              Text(context.tr('Cancel'),
               ),
             ),
 
@@ -536,8 +527,7 @@ class _GroupInfoScreenState
                 );
               },
               child:
-              const Text(
-                'Reset',
+              Text(context.tr('Reset'),
               ),
             ),
           ],
@@ -555,7 +545,7 @@ class _GroupInfoScreenState
       );
 
       _message(
-        'New group link created.',
+        NubifyText.tr('New group link created.'),
       );
     } catch (error) {
       _message(
@@ -615,8 +605,7 @@ class _GroupInfoScreenState
                   Icons.person_outline_rounded,
                 ),
                 title:
-                const Text(
-                  'View profile',
+                Text(context.tr('View profile'),
                 ),
                 onTap:
                     () {
@@ -646,8 +635,7 @@ class _GroupInfoScreenState
                         .admin_panel_settings_outlined,
                   ),
                   title:
-                  const Text(
-                    'Make group admin',
+                  Text(context.tr('Make group admin'),
                   ),
                   onTap:
                       () async {
@@ -674,8 +662,7 @@ class _GroupInfoScreenState
                         .remove_moderator_outlined,
                   ),
                   title:
-                  const Text(
-                    'Dismiss as admin',
+                  Text(context.tr('Dismiss as admin'),
                   ),
                   onTap:
                       () async {
@@ -703,7 +690,7 @@ class _GroupInfoScreenState
                   ),
                   title:
                   Text(
-                    'Remove $memberName',
+                    context.tr('Remove {name}', {'name': memberName}),
                     style:
                     const TextStyle(
                       color:
@@ -747,13 +734,11 @@ class _GroupInfoScreenState
           ) {
         return AlertDialog(
           title:
-          const Text(
-            'Exit group?',
+          Text(context.tr('Exit group?'),
           ),
 
           content:
-          const Text(
-            'Are you sure you want to exit from the group?',
+          Text(context.tr('Are you sure you want to exit from the group?'),
           ),
 
           actions:
@@ -768,8 +753,7 @@ class _GroupInfoScreenState
               },
 
               child:
-              const Text(
-                'No',
+              Text(context.tr('No'),
               ),
             ),
 
@@ -783,8 +767,7 @@ class _GroupInfoScreenState
               },
 
               child:
-              const Text(
-                'Yes',
+              Text(context.tr('Yes'),
               ),
             ),
           ],
@@ -898,7 +881,7 @@ class _GroupInfoScreenState
             ? fullName
             : username.trim().isNotEmpty
             ? username
-            : 'Nubify user';
+            : context.tr('Nubify user');
 
         final bool admin =
         group.isAdmin(
@@ -978,8 +961,7 @@ class _GroupInfoScreenState
               ),
             ),
             child:
-            const Text(
-              'Admin',
+            Text(context.tr('Admin'),
               style:
               TextStyle(
                 color:
@@ -1017,8 +999,7 @@ class _GroupInfoScreenState
           0xFF0B1116,
         ),
         title:
-        const Text(
-          'Group info',
+        Text(context.tr('Group info'),
           style:
           TextStyle(
             fontWeight:
@@ -1053,10 +1034,9 @@ class _GroupInfoScreenState
           }
 
           if (!snapshot.data!.exists) {
-            return const Center(
+            return Center(
               child:
-              Text(
-                'Group no longer exists.',
+              Text(context.tr('Group no longer exists.'),
               ),
             );
           }
@@ -1299,14 +1279,13 @@ class _GroupInfoScreenState
                   Icons.info_outline_rounded,
                 ),
                 title:
-                const Text(
-                  'Description',
+                Text(context.tr('Description'),
                 ),
                 subtitle:
                 Text(
                   group.description.trim().isNotEmpty
                       ? group.description
-                      : 'No group description',
+                      : context.tr('No group description'),
                   style:
                   const TextStyle(
                     color:
@@ -1354,8 +1333,7 @@ class _GroupInfoScreenState
                     ),
                   ),
                   title:
-                  const Text(
-                    'Add members',
+                  Text(context.tr('Add members'),
                     style:
                     TextStyle(
                       fontWeight:
@@ -1399,8 +1377,7 @@ class _GroupInfoScreenState
                     ),
                   ),
                   title:
-                  const Text(
-                    'Group permissions',
+                  Text(context.tr('Group permissions'),
                     style:
                     TextStyle(
                       fontWeight:
@@ -1408,8 +1385,7 @@ class _GroupInfoScreenState
                     ),
                   ),
                   subtitle:
-                  const Text(
-                    'Control what members can do',
+                  Text(context.tr('Control what members can do'),
                   ),
                   onTap:
                       () {
@@ -1440,14 +1416,12 @@ class _GroupInfoScreenState
                       color: _blue,
                     ),
                   ),
-                  title: const Text(
-                    'Join requests',
+                  title: Text(context.tr('Join requests'),
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  subtitle: const Text(
-                    'Approve or reject students',
+                  subtitle: Text(context.tr('Approve or reject students'),
                   ),
                   trailing: const Icon(
                     Icons.chevron_right_rounded,
@@ -1470,7 +1444,7 @@ class _GroupInfoScreenState
               // INVITE LINK
               //===============================
 
-              const Padding(
+              Padding(
                 padding:
                 EdgeInsets.fromLTRB(
                   18,
@@ -1479,8 +1453,7 @@ class _GroupInfoScreenState
                   5,
                 ),
                 child:
-                Text(
-                  'Invite to group',
+                Text(context.tr('Invite to group'),
                   style:
                   TextStyle(
                     color:
@@ -1499,8 +1472,7 @@ class _GroupInfoScreenState
                   Icons.share_rounded,
                 ),
                 title:
-                const Text(
-                  'Share group link',
+                Text(context.tr('Share group link'),
                 ),
                 onTap:
                 _shareLink,
@@ -1512,8 +1484,7 @@ class _GroupInfoScreenState
                   Icons.forward_rounded,
                 ),
                 title:
-                const Text(
-                  'Forward group link',
+                Text(context.tr('Forward group link'),
                 ),
                 onTap:
                 _forwardLink,
@@ -1525,8 +1496,7 @@ class _GroupInfoScreenState
                   Icons.content_copy_rounded,
                 ),
                 title:
-                const Text(
-                  'Copy group link',
+                Text(context.tr('Copy group link'),
                 ),
                 onTap:
                 _copyLink,
@@ -1538,8 +1508,7 @@ class _GroupInfoScreenState
                   Icons.qr_code_2_rounded,
                 ),
                 title:
-                const Text(
-                  'QR code',
+                Text(context.tr('QR code'),
                 ),
                 onTap:
                 _showQr,
@@ -1554,12 +1523,10 @@ class _GroupInfoScreenState
                     Colors.orange,
                   ),
                   title:
-                  const Text(
-                    'Reset group link',
+                  Text(context.tr('Reset group link'),
                   ),
                   subtitle:
-                  const Text(
-                    'Old link will stop working',
+                  Text(context.tr('Old link will stop working'),
                   ),
                   onTap:
                   _resetLink,
@@ -1623,8 +1590,7 @@ class _GroupInfoScreenState
                   Colors.redAccent,
                 ),
                 title:
-                const Text(
-                  'Exit group',
+                Text(context.tr('Exit group'),
                   style:
                   TextStyle(
                     color:

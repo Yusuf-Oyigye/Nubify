@@ -14,3 +14,13 @@ Run from the project root, for the files of one feature:
 
 Text with names or numbers inside (`'Hello $name'`) is skipped by step 1;
 change it to `context.tr('Hello {name}', {'name': name})` by hand.
+
+Notes from the chat/marketplace batch:
+- Where there is no `context` (a helper in a StatelessWidget, a model,
+  a field initializer, or after an `await`), use `NubifyText.tr('...')`.
+- After step 2, check the diff for a removed `const` on a constructor
+  declaration (`const MyScreen({super.key})`) and put it back.
+- Never translate text that is saved to Firestore (it would be stored in
+  the sender's language); translate it where it is shown instead.
+- `test/translations_test.dart` checks every phrase has all five
+  languages and keeps its `{placeholders}`.

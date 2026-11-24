@@ -10,6 +10,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
 import 'nubify_chat_style.dart';
 import '../links/universal_link_composer_preview.dart';
+import '../../l10n/nubify_text.dart';
 
 //===============================
 // CHAT COMPOSER
@@ -243,10 +244,9 @@ class _ChatComposerState extends State<ChatComposer> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
-                const Align(
+                Align(
                   alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Send attachment',
+                  child: Text(context.tr('Send attachment'),
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 18,
@@ -262,7 +262,7 @@ class _ChatComposerState extends State<ChatComposer> {
                   children: <Widget>[
                     _AttachmentButton(
                       icon: Icons.photo_camera_rounded,
-                      label: 'Camera',
+                      label: context.tr('Camera'),
                       color: const Color(0xFF29B6F6),
                       onTap: () async {
                         Navigator.pop(context);
@@ -273,7 +273,7 @@ class _ChatComposerState extends State<ChatComposer> {
 
                     _AttachmentButton(
                       icon: Icons.photo_library_rounded,
-                      label: 'Gallery',
+                      label: context.tr('Gallery'),
                       color: const Color(0xFF8E7CFF),
                       onTap: () async {
                         Navigator.pop(context);
@@ -284,7 +284,7 @@ class _ChatComposerState extends State<ChatComposer> {
 
                     _AttachmentButton(
                       icon: Icons.videocam_rounded,
-                      label: 'Video',
+                      label: context.tr('Video'),
                       color: const Color(0xFFFF6B81),
                       onTap: () async {
                         Navigator.pop(context);
@@ -295,7 +295,7 @@ class _ChatComposerState extends State<ChatComposer> {
 
                     _AttachmentButton(
                       icon: Icons.description_rounded,
-                      label: 'Document',
+                      label: context.tr('Document'),
                       color: const Color(0xFFFFB74D),
                       onTap: () async {
                         Navigator.pop(context);
@@ -382,9 +382,8 @@ class _ChatComposerState extends State<ChatComposer> {
         }
 
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Microphone permission is required for voice messages.',
+          SnackBar(
+            content: Text(context.tr('Microphone permission is required for voice messages.'),
             ),
           ),
         );
@@ -457,7 +456,7 @@ class _ChatComposerState extends State<ChatComposer> {
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not start recording: $error')),
+        SnackBar(content: Text(context.tr('Could not start recording: {error}', {'error': '$error'}))),
       );
     }
   }
@@ -498,7 +497,11 @@ class _ChatComposerState extends State<ChatComposer> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Unable to pause or resume recording: $error'),
+            content: Text(
+                context.tr('Unable to pause or resume recording: {error}', {
+                  'error': '$error',
+                }),
+              ),
           ),
         );
       }
@@ -586,9 +589,8 @@ class _ChatComposerState extends State<ChatComposer> {
         if (!await file.exists() || await file.length() < 100) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
-                  'Voice recording could not be saved correctly. Please try again.',
+              SnackBar(
+                content: Text(context.tr('Voice recording could not be saved correctly. Please try again.'),
                 ),
               ),
             );
@@ -645,7 +647,7 @@ class _ChatComposerState extends State<ChatComposer> {
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not play this voice note: $error')),
+          SnackBar(content: Text(context.tr('Could not play this voice note: {error}', {'error': '$error'}))),
         );
       }
     }
@@ -817,7 +819,7 @@ class _ChatComposerState extends State<ChatComposer> {
                 TextButton.icon(
                   onPressed: _toggleStickers,
                   icon: const Icon(Icons.auto_awesome_rounded, size: 18),
-                  label: const Text('Stickers'),
+                  label: Text(context.tr('Stickers')),
                 ),
               ],
             ),
@@ -917,7 +919,7 @@ class _ChatComposerState extends State<ChatComposer> {
       child: Row(
         children: <Widget>[
           IconButton(
-            tooltip: _voicePreviewPlaying ? 'Pause preview' : 'Play preview',
+            tooltip: _voicePreviewPlaying ? context.tr('Pause preview') : context.tr('Play preview'),
             onPressed: _processingVoice ? null : _toggleVoicePreview,
             icon: Icon(
               _voicePreviewPlaying
@@ -934,7 +936,9 @@ class _ChatComposerState extends State<ChatComposer> {
               children: <Widget>[
                 _voiceWaveform(showPlaybackProgress: true),
                 Text(
-                  '$minutes:${seconds.toString().padLeft(2, '0')} · Review before sending',
+                  context.tr('{time} · Review before sending', {
+                    'time': '$minutes:${seconds.toString().padLeft(2, '0')}',
+                  }),
                   style: TextStyle(
                     color: scheme.onSurfaceVariant,
                     fontSize: 10,
@@ -944,7 +948,7 @@ class _ChatComposerState extends State<ChatComposer> {
             ),
           ),
           IconButton(
-            tooltip: 'Delete recording',
+            tooltip: context.tr('Delete recording'),
             onPressed: _processingVoice ? null : _discardVoicePreview,
             icon: const Icon(
               Icons.delete_outline_rounded,
@@ -954,7 +958,7 @@ class _ChatComposerState extends State<ChatComposer> {
           Container(
             decoration: NubifyChatStyle.actionCircle(),
             child: IconButton(
-              tooltip: 'Send voice note',
+              tooltip: context.tr('Send voice note'),
               onPressed: _processingVoice ? null : _sendVoicePreview,
               icon: _processingVoice
                   ? const SizedBox(
@@ -1022,7 +1026,7 @@ class _ChatComposerState extends State<ChatComposer> {
               children: <Widget>[
                 _voiceWaveform(showPlaybackProgress: false),
                 Text(
-                  _recordingPaused ? 'Paused' : 'Wave follows your voice live',
+                  _recordingPaused ? context.tr('Paused') : context.tr('Wave follows your voice live'),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -1038,7 +1042,7 @@ class _ChatComposerState extends State<ChatComposer> {
           // PAUSE OR RESUME BUTTON
           //===================================================
           IconButton(
-            tooltip: _recordingPaused ? 'Resume recording' : 'Pause recording',
+            tooltip: _recordingPaused ? context.tr('Resume recording') : context.tr('Pause recording'),
             onPressed: _processingVoice || _pauseActionBusy
                 ? null
                 : _toggleRecordingPause,
@@ -1055,7 +1059,7 @@ class _ChatComposerState extends State<ChatComposer> {
           // DELETE RECORDING
           //===================================================
           IconButton(
-            tooltip: 'Delete recording',
+            tooltip: context.tr('Delete recording'),
             onPressed: _processingVoice || _pauseActionBusy
                 ? null
                 : _cancelRecording,
@@ -1071,7 +1075,7 @@ class _ChatComposerState extends State<ChatComposer> {
           Container(
             decoration: NubifyChatStyle.actionCircle(),
             child: IconButton(
-              tooltip: 'Finish and send voice note',
+              tooltip: context.tr('Finish and send voice note'),
               onPressed: _processingVoice || _pauseActionBusy
                   ? null
                   : _stopAndSendRecording,
@@ -1138,12 +1142,12 @@ class _ChatComposerState extends State<ChatComposer> {
                 style: TextStyle(color: scheme.onSurface),
                 cursorColor: NubifyChatStyle.royal,
                 decoration: InputDecoration(
-                  hintText: 'Message...',
+                  hintText: context.tr('Message...'),
                   hintStyle: TextStyle(color: scheme.onSurfaceVariant),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.fromLTRB(15, 11, 4, 11),
                   suffixIcon: IconButton(
-                    tooltip: 'Attach',
+                    tooltip: context.tr('Attach'),
                     onPressed: widget.enabled ? _showAttachments : null,
                     icon: Icon(
                       Icons.attach_file_rounded,

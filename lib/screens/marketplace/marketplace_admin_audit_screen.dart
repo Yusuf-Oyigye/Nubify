@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../models/marketplace/marketplace_admin_audit.dart';
 import '../../services/marketplace/marketplace_admin_service.dart';
 import '../../utils/marketplace/marketplace_theme.dart';
+import '../../l10n/nubify_text.dart';
 
 //===================================================
 // TRUSTED MARKETPLACE ADMIN AUDIT LOG
@@ -32,7 +33,7 @@ class _MarketplaceAdminAuditScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Marketplace Audit Log')),
+      appBar: AppBar(title: Text(context.tr('Marketplace Audit Log'))),
       body: FutureBuilder<MarketplaceAdminAccess>(
         future: _access,
         builder:
@@ -44,11 +45,11 @@ class _MarketplaceAdminAuditScreenState
                 return const Center(child: CircularProgressIndicator());
               }
               if (accessSnapshot.data?.canReview != true) {
-                return const _AuditState(
+                return _AuditState(
                   icon: Icons.lock_outline_rounded,
-                  title: 'Reviewer access required',
+                  title: context.tr('Reviewer access required'),
                   message:
-                      'Only authorized Marketplace reviewers can read the server audit log.',
+                      context.tr('Only authorized Marketplace reviewers can read the server audit log.'),
                 );
               }
               return Column(
@@ -60,12 +61,12 @@ class _MarketplaceAdminAuditScreenState
                       onChanged: (String value) =>
                           setState(() => _query = value.trim().toLowerCase()),
                       decoration: InputDecoration(
-                        hintText: 'Search action or account ID…',
+                        hintText: context.tr('Search action or account ID…'),
                         prefixIcon: const Icon(Icons.search_rounded),
                         suffixIcon: _query.isEmpty
                             ? null
                             : IconButton(
-                                tooltip: 'Clear search',
+                                tooltip: context.tr('Clear search'),
                                 onPressed: () {
                                   _search.clear();
                                   setState(() => _query = '');
@@ -98,7 +99,7 @@ class _MarketplaceAdminAuditScreenState
                             if (snapshot.hasError) {
                               return _AuditState(
                                 icon: Icons.cloud_off_rounded,
-                                title: 'Audit log could not load',
+                                title: context.tr('Audit log could not load'),
                                 message: snapshot.error.toString(),
                               );
                             }
@@ -111,11 +112,11 @@ class _MarketplaceAdminAuditScreenState
                               return _AuditState(
                                 icon: Icons.history_rounded,
                                 title: _query.isEmpty
-                                    ? 'No administrative actions yet'
-                                    : 'No matching audit records',
+                                    ? context.tr('No administrative actions yet')
+                                    : context.tr('No matching audit records'),
                                 message: _query.isEmpty
-                                    ? 'Trusted Marketplace actions will appear here automatically.'
-                                    : 'Try a different action or account ID.',
+                                    ? context.tr('Trusted Marketplace actions will appear here automatically.')
+                                    : context.tr('Try a different action or account ID.'),
                               );
                             }
                             return ListView.separated(
@@ -204,12 +205,12 @@ class _AuditCard extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             _IdentityLine(
-              label: 'Performed by',
+              label: context.tr('Performed by'),
               uid: event.actorUid,
               admin: admin,
             ),
             _IdentityLine(
-              label: 'Affected account',
+              label: context.tr('Affected account'),
               uid: event.targetUid,
               admin: admin,
             ),

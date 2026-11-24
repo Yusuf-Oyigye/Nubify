@@ -25,6 +25,31 @@ import 'calls/call_history_tab.dart';
 import 'calls/new_call_screen.dart';
 import '../../widgets/common/full_photo_viewer.dart';
 import '../../widgets/chat/nubify_chat_style.dart';
+import '../../l10n/nubify_text.dart';
+
+//===============================
+// CHAT LIST PREVIEW
+//
+// Previews the app writes itself ("📷 Photo", "Message
+// deleted") show in the reader's language. What people
+// wrote stays as written.
+//===============================
+
+String _storyReplyPreview = 'Replied to your story: ';
+
+String chatPreview(BuildContext context, String preview, String type) {
+  if (type == 'text' && preview != 'Message deleted') {
+    return preview;
+  }
+
+  if (preview.startsWith(_storyReplyPreview)) {
+    return context.tr('Replied to your story: {text}', {
+      'text': preview.substring(_storyReplyPreview.length),
+    });
+  }
+
+  return context.tr(preview);
+}
 
 class _ChatPalette {
   const _ChatPalette({
@@ -53,7 +78,7 @@ class _ChatPalette {
     return _ChatPalette(
       canvas: theme.scaffoldBackgroundColor,
       surface: scheme.surface,
-      field: dark ? const Color(0xFF1A2228) : scheme.surfaceContainerHighest,
+      field: dark ? Color(0xFF1A2228) : scheme.surfaceContainerHighest,
       text: scheme.onSurface,
       muted: scheme.onSurfaceVariant,
       subtle: scheme.onSurfaceVariant.withValues(alpha: 0.72),
@@ -159,13 +184,13 @@ class _ChatScreenState extends State<ChatScreen>
       // local database, then use the network only when no cached copy exists.
       try {
         final DocumentSnapshot<Map<String, dynamic>> cached = await reference
-            .get(const GetOptions(source: Source.cache));
+            .get(GetOptions(source: Source.cache));
         if (cached.exists) {
           return cached;
         }
       } catch (_) {}
 
-      return reference.get(const GetOptions(source: Source.serverAndCache));
+      return reference.get(GetOptions(source: Source.serverAndCache));
     });
   }
 
@@ -247,16 +272,14 @@ class _ChatScreenState extends State<ChatScreen>
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
-                      const ListTile(
-                        title: Text(
-                          'Chat privacy',
+                      ListTile(
+                        title: Text(context.tr('Chat privacy'),
                           style: TextStyle(
                             fontWeight: FontWeight.w800,
                             fontSize: 18,
                           ),
                         ),
-                        subtitle: Text(
-                          'Control read receipts and online visibility.',
+                        subtitle: Text(context.tr('Control read receipts and online visibility.'),
                         ),
                       ),
 
@@ -269,11 +292,11 @@ class _ChatScreenState extends State<ChatScreen>
                               ? NubifyChatStyle.readGreenOnSurface
                               : palette.subtle,
                         ),
-                        title: const Text('Read receipts'),
+                        title: Text(context.tr('Read receipts')),
                         subtitle: Text(
                           current
-                              ? 'Read receipts are on. Messages you have read show green ticks.'
-                              : 'Read receipts and online visibility are hidden for both sides.',
+                              ? context.tr('Read receipts are on. Messages you have read show green ticks.')
+                              : context.tr('Read receipts and online visibility are hidden for both sides.'),
                         ),
                         onChanged: (bool value) async {
                           setSheetState(() {
@@ -285,9 +308,9 @@ class _ChatScreenState extends State<ChatScreen>
                       ),
 
                       ListTile(
-                        leading: const Icon(Icons.block_rounded),
-                        title: const Text('Blocked users'),
-                        trailing: const Icon(Icons.chevron_right_rounded),
+                        leading: Icon(Icons.block_rounded),
+                        title: Text(context.tr('Blocked users')),
+                        trailing: Icon(Icons.chevron_right_rounded),
                         onTap: () {
                           Navigator.pop(context);
 
@@ -300,7 +323,7 @@ class _ChatScreenState extends State<ChatScreen>
                         },
                       ),
 
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                     ],
                   ),
                 );
@@ -316,14 +339,14 @@ class _ChatScreenState extends State<ChatScreen>
   void _openNewMessage() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const NewChatScreen()),
+      MaterialPageRoute(builder: (_) => NewChatScreen()),
     );
   }
 
   void _openNewCall() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const NewCallScreen()),
+      MaterialPageRoute(builder: (_) => NewCallScreen()),
     );
   }
 
@@ -390,8 +413,8 @@ class _ChatScreenState extends State<ChatScreen>
 
               if (_search.isNotEmpty) {
                 return _emptyMessages(
-                  title: 'No matching conversations',
-                  message: 'Try another name or message.',
+                  title: context.tr('No matching conversations'),
+                  message: context.tr('Try another name or message.'),
                   showAction: false,
                 );
               }
@@ -407,10 +430,10 @@ class _ChatScreenState extends State<ChatScreen>
                     AsyncSnapshot<List<NubifyStory>> storySnapshot,
                   ) {
                     final List<NubifyStory> stories =
-                        storySnapshot.data ?? const <NubifyStory>[];
+                        storySnapshot.data ?? <NubifyStory>[];
 
                     return ListView.builder(
-                      padding: const EdgeInsets.only(bottom: 100),
+                      padding: EdgeInsets.only(bottom: 100),
 
                       itemCount: docs.length,
 
@@ -442,7 +465,7 @@ class _ChatScreenState extends State<ChatScreen>
                         }
 
                         if (otherUid.isEmpty) {
-                          return const SizedBox.shrink();
+                          return SizedBox.shrink();
                         }
 
                         return _DirectConversationTile(
@@ -513,8 +536,8 @@ class _ChatScreenState extends State<ChatScreen>
             if (groups.isEmpty) {
               if (_search.isNotEmpty) {
                 return _emptyMessages(
-                  title: 'No matching groups',
-                  message: 'Try another group name or message.',
+                  title: context.tr('No matching groups'),
+                  message: context.tr('Try another group name or message.'),
                   showAction: false,
                 );
               }
@@ -522,12 +545,11 @@ class _ChatScreenState extends State<ChatScreen>
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
-                    const NubifyChatEmptyIcon(icon: Icons.groups_2_rounded),
+                    NubifyChatEmptyIcon(icon: Icons.groups_2_rounded),
 
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
 
-                    Text(
-                      'No groups yet',
+                    Text(context.tr('No groups yet'),
                       style: TextStyle(
                         color: palette.text,
                         fontWeight: FontWeight.w800,
@@ -535,27 +557,26 @@ class _ChatScreenState extends State<ChatScreen>
                       ),
                     ),
 
-                    const SizedBox(height: 5),
+                    SizedBox(height: 5),
 
-                    Text(
-                      'Bring your classmates together in one place.',
+                    Text(context.tr('Bring your classmates together in one place.'),
                       textAlign: TextAlign.center,
                       style: TextStyle(color: palette.muted),
                     ),
 
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
 
                     TextButton.icon(
                       onPressed: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => const CreateGroupScreen(),
+                            builder: (_) => CreateGroupScreen(),
                           ),
                         );
                       },
-                      icon: const Icon(Icons.group_add_rounded),
-                      label: const Text('Create group'),
+                      icon: Icon(Icons.group_add_rounded),
+                      label: Text(context.tr('Create group')),
                     ),
                   ],
                 ),
@@ -563,7 +584,7 @@ class _ChatScreenState extends State<ChatScreen>
             }
 
             return ListView.separated(
-              padding: const EdgeInsets.only(top: 4, bottom: 100),
+              padding: EdgeInsets.only(top: 4, bottom: 100),
               itemCount: groups.length,
               separatorBuilder: (_, _) => Divider(
                 height: 1,
@@ -583,7 +604,7 @@ class _ChatScreenState extends State<ChatScreen>
                     final int unread = unreadSnapshot.data ?? 0;
 
                     return ListTile(
-                      contentPadding: const EdgeInsets.symmetric(
+                      contentPadding: EdgeInsets.symmetric(
                         horizontal: 14,
                         vertical: 5,
                       ),
@@ -619,8 +640,14 @@ class _ChatScreenState extends State<ChatScreen>
                       ),
                       subtitle: SearchHighlightText(
                         text: group.lastMessage.trim().isNotEmpty
-                            ? group.lastMessage
-                            : '${group.memberIds.length} members',
+                            ? chatPreview(
+                                context,
+                                group.lastMessage,
+                                group.lastMessageType,
+                              )
+                            : context.tr('{count} members', {
+                                'count': group.memberIds.length,
+                              }),
                         query: _search,
                         style: TextStyle(
                           color: unread > 0 ? palette.text : palette.muted,
@@ -652,7 +679,7 @@ class _ChatScreenState extends State<ChatScreen>
                                 ),
                               ),
                             if (unread > 0) ...<Widget>[
-                              const SizedBox(height: 6),
+                              SizedBox(height: 6),
                               NubifyUnreadBadge(count: unread),
                             ],
                           ],
@@ -683,8 +710,8 @@ class _ChatScreenState extends State<ChatScreen>
   //===============================
 
   Widget _emptyMessages({
-    String title = 'No conversations yet',
-    String message = 'Start chatting with another Nubify user.',
+    String? title,
+    String? message,
     bool showAction = true,
   }) {
     final _ChatPalette palette = _ChatPalette.of(context);
@@ -696,7 +723,7 @@ class _ChatScreenState extends State<ChatScreen>
           const NubifyChatEmptyIcon(icon: Icons.forum_rounded),
           const SizedBox(height: 16),
           Text(
-            title,
+            title ?? context.tr('No conversations yet'),
             style: TextStyle(
               color: palette.text,
               fontWeight: FontWeight.w800,
@@ -705,7 +732,8 @@ class _ChatScreenState extends State<ChatScreen>
           ),
           const SizedBox(height: 5),
           Text(
-            message,
+            message ??
+                context.tr('Start chatting with another Nubify user.'),
             textAlign: TextAlign.center,
             style: TextStyle(color: palette.muted),
           ),
@@ -714,7 +742,7 @@ class _ChatScreenState extends State<ChatScreen>
             FilledButton.icon(
               onPressed: _openNewMessage,
               icon: const Icon(Icons.add_comment_rounded),
-              label: const Text('New message'),
+              label: Text(context.tr('New message')),
             ),
           ],
         ],
@@ -763,8 +791,7 @@ class _ChatScreenState extends State<ChatScreen>
               ),
             ),
             const SizedBox(width: 11),
-            const Text(
-              'Chats',
+            Text(context.tr('Chats'),
               style: TextStyle(
                 fontWeight: FontWeight.w900,
                 fontSize: 25,
@@ -777,7 +804,7 @@ class _ChatScreenState extends State<ChatScreen>
           Padding(
             padding: const EdgeInsets.only(right: 10),
             child: IconButton.filledTonal(
-              tooltip: 'Chat privacy',
+              tooltip: context.tr('Chat privacy'),
               style: IconButton.styleFrom(
                 backgroundColor: palette.field,
                 foregroundColor: palette.text,
@@ -804,7 +831,7 @@ class _ChatScreenState extends State<ChatScreen>
                 child: TextField(
                   controller: _searchController,
                   decoration: InputDecoration(
-                    hintText: 'Search people, chats or groups',
+                    hintText: context.tr('Search people, chats or groups'),
                     hintStyle: TextStyle(fontSize: 13.5, color: palette.subtle),
                     prefixIcon: const Icon(
                       Icons.search_rounded,
@@ -885,17 +912,17 @@ class _ChatScreenState extends State<ChatScreen>
                   tabs: <Widget>[
                     _ChatTab(
                       icon: Icons.chat_bubble_rounded,
-                      label: 'Messages',
+                      label: context.tr('Messages'),
                       count: _messagesUnread,
                     ),
                     _ChatTab(
                       icon: Icons.groups_2_rounded,
-                      label: 'Groups',
+                      label: context.tr('Groups'),
                       count: _groupsUnread,
                     ),
                     _ChatTab(
                       icon: Icons.call_rounded,
-                      label: 'Calls',
+                      label: context.tr('Calls'),
                       count: _missedCalls,
                     ),
                   ],
@@ -930,10 +957,10 @@ class _ChatScreenState extends State<ChatScreen>
       //===============================
       floatingActionButton: NubifyGradientFab(
         tooltip: _tabIndex == 0
-            ? 'New message'
+            ? context.tr('New message')
             : _tabIndex == 2
-            ? 'New call'
-            : 'New group',
+            ? context.tr('New call')
+            : context.tr('New group'),
 
         onPressed: _tabIndex == 0
             ? _openNewMessage
@@ -1138,7 +1165,7 @@ class _DirectConversationTile extends StatelessWidget {
                 ? fullName
                 : username.trim().isNotEmpty
                 ? username
-                : 'Nubify user';
+                : context.tr('Nubify user');
 
             final String lastMessage = (conversation['lastMessage'] ?? '')
                 .toString();
@@ -1205,7 +1232,11 @@ class _DirectConversationTile extends StatelessWidget {
 
                   Expanded(
                     child: SearchHighlightText(
-                      text: lastMessage,
+                      text: chatPreview(
+                        context,
+                        lastMessage,
+                        (conversation['lastMessageType'] ?? 'text').toString(),
+                      ),
 
                       query: search,
 

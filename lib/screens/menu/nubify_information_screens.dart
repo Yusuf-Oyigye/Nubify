@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 
 import '../../widgets/marketplace/marketplace_brand_icon.dart';
 import '../../widgets/menu/nubify_menu_components.dart';
+import '../../widgets/common/translatable_text.dart';
+import '../../l10n/nubify_text.dart';
 
 //===================================================
 // NUBIFY — ABOUT THE APP
@@ -54,10 +56,10 @@ class NubifyAboutAppScreen extends StatelessWidget {
     ];
 
     return NubifyMenuPage(
-      title: 'About the App',
+      title: context.tr('About the App'),
 
       subtitle:
-          'Nubify · Campus Social\nBuilt for the Nahda University student community.',
+          context.tr('Nubify · Campus Social\nBuilt for the Nahda University student community.'),
 
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -73,7 +75,7 @@ class NubifyAboutAppScreen extends StatelessWidget {
               borderRadius: BorderRadius.circular(25),
             ),
 
-            child: const Column(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
 
               children: [
@@ -81,8 +83,7 @@ class NubifyAboutAppScreen extends StatelessWidget {
 
                 SizedBox(height: 18),
 
-                Text(
-                  'One campus. More connections.',
+                Text(context.tr('One campus. More connections.'),
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 24,
@@ -92,8 +93,7 @@ class NubifyAboutAppScreen extends StatelessWidget {
 
                 SizedBox(height: 9),
 
-                Text(
-                  'A social space designed to bring the NUB community together.',
+                Text(context.tr('A social space designed to bring the NUB community together.'),
                   style: TextStyle(color: Colors.white, height: 1.45),
                 ),
               ],
@@ -120,9 +120,8 @@ class NubifyAboutAppScreen extends StatelessWidget {
           //=========================================
           // CREDITS (required by the CC-BY 4.0 licence)
           //=========================================
-          Text(
-            'Marketplace cart icon: Twemoji by Twitter, Inc. and other '
-            'contributors, licensed under CC-BY 4.0.',
+          Text(context.tr('Marketplace cart icon: Twemoji by Twitter, Inc. and other '
+            'contributors, licensed under CC-BY 4.0.'),
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 11.5,
@@ -146,8 +145,8 @@ class NubifyDeveloperScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return NubifyMenuPage(
-      title: 'About the Developer',
-      subtitle: 'Meet the person behind the Nubify experience.',
+      title: context.tr('About the Developer'),
+      subtitle: context.tr('Meet the person behind the Nubify experience.'),
 
       child: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
         stream: FirebaseFirestore.instance
@@ -161,11 +160,11 @@ class NubifyDeveloperScreen extends StatelessWidget {
           //=========================================
 
           if (snapshot.hasError) {
-            return const _EmptyPublishedPage(
+            return _EmptyPublishedPage(
               icon: Icons.wifi_off_rounded,
-              title: 'Developer profile unavailable',
+              title: context.tr('Developer profile unavailable'),
               message:
-                  'Unable to load the developer information. Please try again.',
+                  context.tr('Unable to load the developer information. Please try again.'),
             );
           }
 
@@ -186,11 +185,11 @@ class NubifyDeveloperScreen extends StatelessWidget {
           if (data == null ||
               data['published'] != true ||
               (data['name'] ?? '').toString().trim().isEmpty) {
-            return const _EmptyPublishedPage(
+            return _EmptyPublishedPage(
               icon: Icons.person_outline_rounded,
-              title: 'Developer details coming soon',
+              title: context.tr('Developer details coming soon'),
               message:
-                  'The verified developer biography has not been published yet.',
+                  context.tr('The verified developer biography has not been published yet.'),
             );
           }
 
@@ -285,7 +284,7 @@ class NubifyDeveloperScreen extends StatelessWidget {
               if (biography.trim().isNotEmpty) ...[
                 const SizedBox(height: 14),
 
-                _TextPanel(title: 'Biography', content: biography),
+                _TextPanel(title: context.tr('Biography'), content: biography),
               ],
 
               //=====================================
@@ -294,7 +293,7 @@ class NubifyDeveloperScreen extends StatelessWidget {
               if (vision.trim().isNotEmpty) ...[
                 const SizedBox(height: 14),
 
-                _TextPanel(title: 'Vision', content: vision),
+                _TextPanel(title: context.tr('Vision'), content: vision),
               ],
 
               //=====================================
@@ -303,7 +302,7 @@ class NubifyDeveloperScreen extends StatelessWidget {
               if (thanks.trim().isNotEmpty) ...[
                 const SizedBox(height: 14),
 
-                _TextPanel(title: 'To the Nubify community', content: thanks),
+                _TextPanel(title: context.tr('To the Nubify community'), content: thanks),
               ],
 
               //=====================================
@@ -333,7 +332,7 @@ class NubifyDeveloperScreen extends StatelessWidget {
                             }
 
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Link copied')),
+                              SnackBar(content: Text(context.tr('Link copied'))),
                             );
                           },
                         ),
@@ -369,12 +368,17 @@ class NubifyLegalScreen extends StatelessWidget {
 
     final title = isTerms ? 'Terms and Conditions' : 'Privacy Policy';
 
+    // The owner can publish a translation next to the
+    // English (body_ar, title_ar ...); otherwise readers
+    // get the English with a Translate link.
+    final String language = Localizations.localeOf(context).languageCode;
+
     return NubifyMenuPage(
-      title: title,
+      title: context.tr(title),
 
       subtitle: isTerms
-          ? 'The official Nubify terms, when published.'
-          : 'The official Nubify privacy policy, when published.',
+          ? context.tr('The official Nubify terms, when published.')
+          : context.tr('The official Nubify privacy policy, when published.'),
 
       child: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
         stream: FirebaseFirestore.instance
@@ -384,11 +388,11 @@ class NubifyLegalScreen extends StatelessWidget {
 
         builder: (context, snapshot) {
           if (snapshot.hasError) {
-            return const _EmptyPublishedPage(
+            return _EmptyPublishedPage(
               icon: Icons.wifi_off_rounded,
-              title: 'Document unavailable',
+              title: context.tr('Document unavailable'),
               message:
-                  'We could not load this page right now. Please retry later.',
+                  context.tr('We could not load this page right now. Please retry later.'),
             );
           }
 
@@ -398,23 +402,35 @@ class NubifyLegalScreen extends StatelessWidget {
 
           final data = snapshot.data?.data();
 
-          final text = (data?['body'] ?? '').toString().trim();
+          final String translated =
+              (data?['body_$language'] ?? '').toString().trim();
+
+          final text = translated.isNotEmpty
+              ? translated
+              : (data?['body'] ?? '').toString().trim();
 
           if (data?['published'] != true || text.isEmpty) {
             return _EmptyPublishedPage(
               icon: isTerms ? Icons.gavel_rounded : Icons.shield_outlined,
 
-              title: 'Official document not yet published',
+              title: context.tr('Official document not yet published'),
 
-              message:
-                  'No approved $title is configured. Do not treat this as a legal policy.',
+              message: context.tr(
+                'No approved {title} is configured. Do not treat this as a legal policy.',
+                {'title': context.tr(title)},
+              ),
             );
           }
 
           return _TextPanel(
-            title: (data?['title'] ?? title).toString(),
+            title: (data?['title_$language'] ??
+                    data?['title'] ??
+                    context.tr(title))
+                .toString(),
 
             content: text,
+
+            translatable: translated.isEmpty,
           );
         },
       ),
@@ -431,8 +447,8 @@ class NubUniversityScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return NubifyMenuPage(
-      title: 'The University',
-      subtitle: 'Nahda University in Beni Suef · Est. 2006',
+      title: context.tr('The University'),
+      subtitle: context.tr('Nahda University in Beni Suef · Est. 2006'),
 
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -461,8 +477,8 @@ class NubUniversityScreen extends StatelessWidget {
           //=========================================
           // ABOUT THE UNIVERSITY
           //=========================================
-          const _TextPanel(
-            title: 'About Nahda University',
+          _TextPanel(
+            title: context.tr('About Nahda University'),
             content: _nubAboutText,
           ),
 
@@ -542,7 +558,7 @@ class _InfoRow extends StatelessWidget {
 
               children: [
                 Text(
-                  title,
+                  context.tr(title),
 
                   style: TextStyle(
                     fontSize: 15,
@@ -554,7 +570,7 @@ class _InfoRow extends StatelessWidget {
                 const SizedBox(height: 5),
 
                 Text(
-                  description,
+                  context.tr(description),
 
                   style: TextStyle(
                     fontSize: 13.3,
@@ -577,10 +593,24 @@ class _InfoRow extends StatelessWidget {
 //===================================================
 
 class _TextPanel extends StatelessWidget {
-  const _TextPanel({required this.title, required this.content});
+  const _TextPanel({
+    required this.title,
+    required this.content,
+    this.translatable = false,
+  });
 
   final String title;
   final String content;
+
+  // Shows the Translate link under the text (published
+  // documents only in English).
+  final bool translatable;
+
+  TextStyle _contentStyle(BuildContext context) => TextStyle(
+    fontSize: 14.5,
+    height: 1.7,
+    color: NubifyMenuColors.primaryText(context),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -611,15 +641,14 @@ class _TextPanel extends StatelessWidget {
 
           const SizedBox(height: 14),
 
-          SelectableText(
-            content,
-
-            style: TextStyle(
-              fontSize: 14.5,
-              height: 1.7,
-              color: NubifyMenuColors.primaryText(context),
-            ),
-          ),
+          if (translatable)
+            TranslatableText(
+              text: content,
+              builder: (String shown) =>
+                  SelectableText(shown, style: _contentStyle(context)),
+            )
+          else
+            SelectableText(content, style: _contentStyle(context)),
         ],
       ),
     );

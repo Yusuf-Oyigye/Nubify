@@ -9,6 +9,7 @@ import '../../utils/marketplace/marketplace_theme.dart';
 import '../../widgets/marketplace/marketplace_brand_icon.dart';
 import 'create_marketplace_listing_screen.dart';
 import 'marketplace_listing_details_screen.dart';
+import '../../l10n/nubify_text.dart';
 
 class MyMarketplaceListingsScreen extends StatefulWidget {
   const MyMarketplaceListingsScreen({super.key});
@@ -52,11 +53,11 @@ class _MyMarketplaceListingsScreenState
 
   String _tabLabel(String status) {
     final String name = switch (status) {
-      'available' => 'Available',
-      'sold' => 'Sold',
-      'unavailable' => 'Unavailable',
-      'draft' => 'Drafts',
-      _ => 'Archived',
+      'available' => context.tr('Available'),
+      'sold' => context.tr('Sold'),
+      'unavailable' => context.tr('Unavailable'),
+      'draft' => context.tr('Drafts'),
+      _ => context.tr('Archived'),
     };
     final int? count = _counts[status];
     return count == null ? name : '$name ($count)';
@@ -68,7 +69,7 @@ class _MyMarketplaceListingsScreenState
       length: 5,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('My Listings'),
+          title: Text(context.tr('My Listings')),
           bottom: TabBar(
             isScrollable: true,
             tabs: <Widget>[
@@ -94,7 +95,7 @@ class _MyMarketplaceListingsScreenState
             unawaited(_loadCounts());
           },
           icon: const Icon(Icons.add_rounded),
-          label: const Text('New Listing'),
+          label: Text(context.tr('New Listing')),
         ),
       ),
     );
@@ -256,12 +257,12 @@ class _ListingStatusTabState extends State<_ListingStatusTab>
                   ? TextButton.icon(
                       onPressed: () => unawaited(_loadListings()),
                       icon: const Icon(Icons.refresh_rounded),
-                      label: const Text('Could not load more — retry'),
+                      label: Text(context.tr('Could not load more — retry')),
                     )
                   : !_hasMore
-                  ? const Padding(
+                  ? Padding(
                       padding: EdgeInsets.all(12),
-                      child: Text('End of this section.'),
+                      child: Text(context.tr('End of this section.')),
                     )
                   : const SizedBox(height: 24),
             );
@@ -325,8 +326,8 @@ class _OwnerListingTileState extends State<_OwnerListingTile> {
           SnackBar(
             content: Text(
               value == 'story'
-                  ? 'Listing added to your Story.'
-                  : 'Listing sent.',
+                  ? context.tr('Listing added to your Story.')
+                  : context.tr('Listing sent.'),
             ),
           ),
         );
@@ -349,16 +350,16 @@ class _OwnerListingTileState extends State<_OwnerListingTile> {
       final bool? confirmed = await showDialog<bool>(
         context: context,
         builder: (BuildContext dialogContext) => AlertDialog(
-          title: const Text('Delete this listing?'),
-          content: const Text('This cannot be undone.'),
+          title: Text(context.tr('Delete this listing?')),
+          content: Text(context.tr('This cannot be undone.')),
           actions: <Widget>[
             TextButton(
               onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text('Cancel'),
+              child: Text(context.tr('Cancel')),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(dialogContext, true),
-              child: const Text('Delete'),
+              child: Text(context.tr('Delete')),
             ),
           ],
         ),
@@ -418,7 +419,7 @@ class _OwnerListingTileState extends State<_OwnerListingTile> {
           ),
         ),
         title: Text(
-          listing.title.isEmpty ? 'Untitled draft' : listing.title,
+          listing.title.isEmpty ? context.tr('Untitled draft') : listing.title,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: const TextStyle(fontWeight: FontWeight.w900),
@@ -427,7 +428,7 @@ class _OwnerListingTileState extends State<_OwnerListingTile> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Text(
-              listing.priceType.isEmpty ? 'Price not set' : listing.priceLabel,
+              listing.priceType.isEmpty ? context.tr('Price not set') : listing.displayPrice,
             ),
             Text(
               listing.status.toUpperCase(),
@@ -455,32 +456,32 @@ class _OwnerListingTileState extends State<_OwnerListingTile> {
 
   List<PopupMenuEntry<String>> _actions(MarketplaceListing listing) {
     return <PopupMenuEntry<String>>[
-      const PopupMenuItem(value: 'view', child: Text('View Details')),
-      const PopupMenuItem(value: 'edit', child: Text('Edit Listing')),
+      PopupMenuItem(value: 'view', child: Text(context.tr('View Details'))),
+      PopupMenuItem(value: 'edit', child: Text(context.tr('Edit Listing'))),
       if (listing.status == 'draft')
-        const PopupMenuItem(value: 'publish', child: Text('Publish Draft')),
+        PopupMenuItem(value: 'publish', child: Text(context.tr('Publish Draft'))),
       if (listing.status == 'available') ...<PopupMenuEntry<String>>[
-        const PopupMenuItem(value: 'sold', child: Text('Mark Sold')),
-        const PopupMenuItem(
+        PopupMenuItem(value: 'sold', child: Text(context.tr('Mark Sold'))),
+        PopupMenuItem(
           value: 'unavailable',
-          child: Text('Mark Unavailable'),
+          child: Text(context.tr('Mark Unavailable')),
         ),
       ],
       if (listing.status == 'unavailable' || listing.status == 'archived')
-        const PopupMenuItem(
+        PopupMenuItem(
           value: 'available',
-          child: Text('Restore Available'),
+          child: Text(context.tr('Restore Available')),
         ),
       if (listing.status != 'archived')
-        const PopupMenuItem(value: 'archived', child: Text('Archive')),
+        PopupMenuItem(value: 'archived', child: Text(context.tr('Archive'))),
       // Only a live listing can be opened by the people you share it with.
       if (listing.status == 'available') ...<PopupMenuEntry<String>>[
         const PopupMenuDivider(),
-        const PopupMenuItem(value: 'story', child: Text('Share to Story')),
-        const PopupMenuItem(value: 'chat', child: Text('Share to Chat')),
+        PopupMenuItem(value: 'story', child: Text(context.tr('Share to Story'))),
+        PopupMenuItem(value: 'chat', child: Text(context.tr('Share to Chat'))),
       ],
       const PopupMenuDivider(),
-      const PopupMenuItem(value: 'delete', child: Text('Delete')),
+      PopupMenuItem(value: 'delete', child: Text(context.tr('Delete'))),
     ];
   }
 }
@@ -491,21 +492,21 @@ class _EmptyStatus extends StatelessWidget {
   final String status;
 
   String get _title => switch (status) {
-    'available' => 'No available listings yet',
-    'sold' => 'No sold listings yet',
-    'unavailable' => 'No unavailable listings',
-    'draft' => 'No drafts yet',
-    'archived' => 'No archived listings',
-    _ => 'No listings yet',
+    'available' => NubifyText.tr('No available listings yet'),
+    'sold' => NubifyText.tr('No sold listings yet'),
+    'unavailable' => NubifyText.tr('No unavailable listings'),
+    'draft' => NubifyText.tr('No drafts yet'),
+    'archived' => NubifyText.tr('No archived listings'),
+    _ => NubifyText.tr('No listings yet'),
   };
 
   String get _message => switch (status) {
-    'available' => 'Tap New Listing to publish your first Marketplace item.',
-    'sold' => 'Items you mark as sold will appear here.',
-    'unavailable' => 'Items you temporarily hide will appear here.',
-    'draft' => 'Listings you save before publishing will appear here.',
-    'archived' => 'Listings you archive will appear here.',
-    _ => 'Your Marketplace items will appear here.',
+    'available' => NubifyText.tr('Tap New Listing to publish your first Marketplace item.'),
+    'sold' => NubifyText.tr('Items you mark as sold will appear here.'),
+    'unavailable' => NubifyText.tr('Items you temporarily hide will appear here.'),
+    'draft' => NubifyText.tr('Listings you save before publishing will appear here.'),
+    'archived' => NubifyText.tr('Listings you archive will appear here.'),
+    _ => NubifyText.tr('Your Marketplace items will appear here.'),
   };
 
   @override
