@@ -107,6 +107,8 @@ async function sendToPeople(uids, text, data) {
   }
 
   const gone = [];
+  let sent = 0;
+  const errors = [];
 
   for (const [language, tokens] of Object.entries(byLanguage)) {
     const {title, body} = text(language);
@@ -129,8 +131,10 @@ async function sendToPeople(uids, text, data) {
         apns: {payload: {aps: {sound: "default"}}},
       });
 
+      sent += result.successCount;
       result.responses.forEach((response, index) => {
         const code = response.error && response.error.code;
+        if (code) errors.push(code);
         if (code === "messaging/registration-token-not-registered" ||
             code === "messaging/invalid-registration-token") {
           gone.push(batch[index]);
@@ -138,6 +142,15 @@ async function sendToPeople(uids, text, data) {
       });
     }
   }
+
+  // One line per notification, to check delivery in the logs.
+  logger.info("Push sent", {
+    kind: data.kind,
+    people: people.length,
+    phones: Object.keys(owner).length,
+    sent,
+    errors,
+  });
 
   // Forget phones that no longer exist.
   await Promise.all(gone.map((token) =>
