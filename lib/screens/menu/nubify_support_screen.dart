@@ -8,10 +8,10 @@ import '../../l10n/nubify_text.dart';
 //===================================================
 // NUBIFY SUPPORT
 //
-// Contact Support, Report a Problem and Suggest a
-// Feature each let the student pick WhatsApp (fast) or
-// Gmail (slower), with a ready-made message that suits
-// each one.
+// Contact Support lets the student pick WhatsApp (fast)
+// or Gmail (slower). Report a Problem and Suggest a
+// Feature use WhatsApp only. Each comes with a
+// ready-made message that suits it.
 //===================================================
 
 class NubifySupportScreen extends StatelessWidget {
@@ -60,10 +60,12 @@ class NubifySupportScreen extends StatelessWidget {
     }
   }
 
+  // [subject] adds the Gmail option (Contact Support
+  // only); without it the sheet offers WhatsApp alone.
   Future<void> _chooseApp(
     BuildContext context, {
     required String message,
-    required String subject,
+    String? subject,
   }) async {
     await showModalBottomSheet<void>(
       context: context,
@@ -144,7 +146,8 @@ class NubifySupportScreen extends StatelessWidget {
                 onTap: () =>
                     _open(context, NubifyContact.whatsapp(message), 'WhatsApp'),
               ),
-              option(
+              if (subject != null)
+                option(
                 logo: const Icon(
                   Icons.mail_rounded,
                   color: Colors.white,
@@ -255,21 +258,13 @@ class NubifySupportScreen extends StatelessWidget {
               icon: Icons.bug_report_outlined,
               title: context.tr('Report a Problem'),
               subtitle: context.tr('Report bugs or technical issues.'),
-              onTap: () => _chooseApp(
-                context,
-                message: _problemMessage,
-                subject: 'Nubify problem report',
-              ),
+              onTap: () => _chooseApp(context, message: _problemMessage),
             ),
             _SupportRow(
               icon: Icons.lightbulb_outline_rounded,
               title: context.tr('Suggest a Feature'),
               subtitle: context.tr('Share ideas to improve Nubify.'),
-              onTap: () => _chooseApp(
-                context,
-                message: _ideaMessage,
-                subject: 'Nubify feature idea',
-              ),
+              onTap: () => _chooseApp(context, message: _ideaMessage),
             ),
           ],
         ),

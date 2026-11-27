@@ -166,8 +166,8 @@ abstract final class LanguageGuess {
   }
 
   /// True when [text] is worth offering to translate into
-  /// [language]: another language, or unsure and long
-  /// enough to matter.
+  /// [language]: another language, or a post we cannot
+  /// place (see below).
   static bool shouldOffer(String text, String language) {
     final String clean = text.trim();
     if (clean.isEmpty) return false;
@@ -175,6 +175,13 @@ abstract final class LanguageGuess {
     final String? guess = of(clean);
     if (guess == language) return false;
     if (guess != null) return true;
+
+    // Unsure: short Latin-letter posts ("Hello guys") are
+    // most often English, so every reader except English
+    // ones gets the link. English readers only get it on
+    // longer posts. No letters (emoji, numbers): no link.
+    if (_latin.allMatches(clean).length < 2) return false;
+    if (language != 'en') return true;
 
     return _word.allMatches(clean).length >= 3;
   }

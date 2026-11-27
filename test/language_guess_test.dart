@@ -45,6 +45,14 @@ void main() {
     test('does not offer for emoji or empty posts', () {
       expect(LanguageGuess.shouldOffer('', 'en'), isFalse);
       expect(LanguageGuess.shouldOffer('🔥🔥', 'ar'), isFalse);
+      expect(LanguageGuess.shouldOffer('2026 🔥', 'fr'), isFalse);
+    });
+
+    test('short posts we cannot place: everyone but English readers', () {
+      expect(LanguageGuess.shouldOffer('Hello guys', 'ar'), isTrue);
+      expect(LanguageGuess.shouldOffer('Good morning', 'fr'), isTrue);
+      expect(LanguageGuess.shouldOffer('Good morning', 'hi'), isTrue);
+      expect(LanguageGuess.shouldOffer('Hello guys', 'en'), isFalse);
     });
   });
 

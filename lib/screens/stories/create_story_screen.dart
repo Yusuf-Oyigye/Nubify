@@ -2064,10 +2064,19 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
 
           numChannels: 1,
 
+          // Louder, cleaner voice: the phone boosts quiet
+          // speech and removes background noise.
+          autoGain: true,
+
+          noiseSuppress: true,
+
           //===================================================
           // ANDROID AUDIO
           //===================================================
-          androidConfig: AndroidRecordConfig(manageBluetooth: false),
+          androidConfig: AndroidRecordConfig(
+            manageBluetooth: false,
+            audioSource: AndroidAudioSource.mic,
+          ),
         ),
 
         path: path,
