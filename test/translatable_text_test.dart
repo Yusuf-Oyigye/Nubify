@@ -60,18 +60,32 @@ void main() {
     expect(find.text(english), findsOneWidget);
   });
 
-  testWidgets('Hausa and Yoruba readers get Translate (into English)', (
+  testWidgets('Hausa and Yoruba readers: no button (phone cannot do it)', (
     WidgetTester tester,
   ) async {
-    await show(tester, 'ha', arabic);
-    expect(find.text('Fassara'), findsOneWidget);
+    for (final String text in <String>[arabic, french, english]) {
+      await show(tester, 'ha', text);
+      expect(find.text('Fassara'), findsNothing);
+      expect(find.byIcon(Icons.translate_rounded), findsNothing);
+      expect(find.text(text), findsOneWidget);
 
-    await show(tester, 'yo', french);
-    expect(find.text('Túmọ̀'), findsOneWidget);
+      await show(tester, 'yo', text);
+      expect(find.text('Túmọ̀'), findsNothing);
+      expect(find.byIcon(Icons.translate_rounded), findsNothing);
+    }
 
-    // Already English: nothing to do for them.
-    await show(tester, 'ha', english);
-    expect(find.text('Fassara'), findsNothing);
+    // Marketplace style heading: the title stays, no button.
+    await showApp(
+      tester,
+      'ha',
+      TranslatableText(
+        text: arabic,
+        heading: const Text('Description'),
+        builder: (String shown) => Text(shown),
+      ),
+    );
+    expect(find.text('Description'), findsOneWidget);
+    expect(find.byIcon(Icons.translate_rounded), findsNothing);
   });
 
   testWidgets('posts written in Hausa: no button (phone cannot read it)', (
@@ -79,6 +93,8 @@ void main() {
   ) async {
     await show(tester, 'en', hausa);
     expect(find.text('Translate'), findsNothing);
+    await show(tester, 'ar', hausa);
+    expect(find.text('ترجمة'), findsNothing);
   });
 
   testWidgets('heading: the button sits beside the title', (
@@ -132,13 +148,6 @@ void main() {
     controller.update('');
     await showApp(tester, 'en', TranslateButton(controller: controller));
     expect(find.text('Translate'), findsNothing);
-  });
-
-  test('Hausa and Yoruba readers translate into English', () {
-    expect(TranslationService.targetFor('ha'), 'en');
-    expect(TranslationService.targetFor('yo'), 'en');
-    expect(TranslationService.targetFor('ar'), 'ar');
-    expect(TranslationService.targetFor('fr'), 'fr');
   });
 
   test('short posts ML Kit cannot place are read as English', () {

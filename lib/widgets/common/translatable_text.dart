@@ -12,7 +12,8 @@ import '../../utils/common/language_guess.dart';
 // replies, chats, Marketplace descriptions, NUBuzz
 // captions and profile quotes written in another
 // language. Tapping it shows the translation; "Show
-// original" switches back.
+// original" switches back. English, Arabic, French and
+// Hindi only: no button for Hausa or Yoruba.
 //
 // - Posts put the button in their header (next to ⋮)
 //   with a [TranslationController] + [TranslateButton].
@@ -62,11 +63,13 @@ class TranslationController extends ChangeNotifier {
   }
 
   /// True when [appLanguage] readers should see the button.
-  static bool offers(String text, String appLanguage) {
-    final String target = TranslationService.targetFor(appLanguage);
-    return TranslationService.canTranslateFrom(LanguageGuess.of(text)) &&
-        LanguageGuess.shouldOffer(text, target);
-  }
+  /// Never for Hausa or Yoruba readers, and never on text
+  /// written in Hausa or Yoruba: the phone cannot translate
+  /// those.
+  static bool offers(String text, String appLanguage) =>
+      TranslationService.canTranslateInto(appLanguage) &&
+      TranslationService.canTranslateFrom(LanguageGuess.of(text)) &&
+      LanguageGuess.shouldOffer(text, appLanguage);
 
   bool _hasTranslation(String target) =>
       _translation != null &&
@@ -75,17 +78,14 @@ class TranslationController extends ChangeNotifier {
 
   /// True while the translation is on screen.
   bool shownIn(String appLanguage) =>
-      _showTranslation &&
-      _hasTranslation(TranslationService.targetFor(appLanguage));
+      _showTranslation && _hasTranslation(appLanguage);
 
   /// The text to draw: the translation or the original.
   String shownText(String appLanguage) =>
       shownIn(appLanguage) ? _translation! : _text;
 
   Future<void> toggle(BuildContext context) async {
-    final String target = TranslationService.targetFor(
-      Localizations.localeOf(context).languageCode,
-    );
+    final String target = Localizations.localeOf(context).languageCode;
 
     if (_hasTranslation(target)) {
       _showTranslation = !_showTranslation;
@@ -145,9 +145,8 @@ class TranslationController extends ChangeNotifier {
 // THE OUTLINED "文A Translate" BUTTON
 //
 // Hidden when the text is already in the reader's
-// language. Hausa and Yoruba readers get the English
-// translation (the phone cannot translate into Hausa or
-// Yoruba).
+// language, and for Hausa and Yoruba (the phone cannot
+// translate those).
 //===================================================
 
 class TranslateButton extends StatelessWidget {
