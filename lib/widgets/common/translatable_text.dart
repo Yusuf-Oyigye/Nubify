@@ -7,17 +7,18 @@ import '../../utils/common/language_guess.dart';
 //===================================================
 // TEXT PEOPLE WROTE, WITH A "TRANSLATE" BUTTON
 //
-// The outlined "文A Translate" button, in the reader's
-// own language, shows on posts, quotes, comments,
-// replies, chats, Marketplace descriptions, NUBuzz
-// captions and profile quotes written in another
-// language. Tapping it shows the translation; "Show
-// original" switches back. English, Arabic, French and
-// Hindi only: no button for Hausa or Yoruba.
+// "Translate", in the reader's own language, shows on
+// posts, quotes, comments, replies, chats, Marketplace
+// descriptions, NUBuzz captions and profile quotes
+// written in another language. Tapping it shows the
+// translation; "Show original" switches back. English,
+// Arabic, French and Hindi only: no button for Hausa or
+// Yoruba.
 //
-// - Posts put the button in their header (next to ⋮)
+// - Posts put a small pill in their header (next to ⋮)
 //   with a [TranslationController] + [TranslateButton].
-// - Everything else wraps the text:
+// - Everything else wraps the text and gets sky-blue
+//   "Translate" under it:
 //
 //   TranslatableText(
 //     text: text,
@@ -142,27 +143,39 @@ class TranslationController extends ChangeNotifier {
 }
 
 //===================================================
-// THE OUTLINED "文A Translate" BUTTON
+// THE "TRANSLATE" BUTTON, TWO LOOKS
+//
+// - pill: a small outlined "文A Translate", in post and
+//   quoted-post headers (next to ⋮) and beside the
+//   Marketplace "Description" title.
+// - link: plain sky-blue "Translate" under comments,
+//   replies, chat messages, NUBuzz captions and profile
+//   quotes.
 //
 // Hidden when the text is already in the reader's
 // language, and for Hausa and Yoruba (the phone cannot
 // translate those).
 //===================================================
 
+enum TranslateLook { pill, link }
+
 class TranslateButton extends StatelessWidget {
   const TranslateButton({
     super.key,
     required this.controller,
+    this.look = TranslateLook.pill,
     this.compact = false,
     this.color = const Color(0xFF1D9BF0),
   });
 
   final TranslationController controller;
 
-  /// Smaller, for chat bubbles and quoted posts.
+  final TranslateLook look;
+
+  /// Smaller link text (comments, chat bubbles).
   final bool compact;
 
-  /// Outline and text colour on light screens.
+  /// Sky blue, or white on chat bubbles and NUBuzz.
   final Color color;
 
   @override
@@ -173,10 +186,6 @@ class TranslateButton extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    final bool dark = Theme.of(context).brightness == Brightness.dark;
-    final Color line = dark ? const Color(0xFF8FD8FF) : color;
-    final Color ink = dark ? Colors.white : color;
-
     return ListenableBuilder(
       listenable: controller,
       builder: (BuildContext context, _) {
@@ -184,60 +193,93 @@ class TranslateButton extends StatelessWidget {
           controller.shownIn(language) ? 'Show original' : 'Translate',
         );
 
-        return Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(compact ? 8 : 10),
-            onTap: () => controller.toggle(context),
-            child: Container(
-              padding: compact
-                  ? const EdgeInsets.symmetric(horizontal: 8, vertical: 3)
-                  : const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
-              decoration: BoxDecoration(
-                border: Border.all(color: line, width: 1.3),
-                borderRadius: BorderRadius.circular(compact ? 8 : 10),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  if (controller.loading)
-                    SizedBox.square(
-                      dimension: compact ? 12 : 15,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: ink,
-                      ),
-                    )
-                  else
-                    Icon(
-                      Icons.translate_rounded,
-                      size: compact ? 14 : 17,
-                      color: ink,
-                    ),
-                  SizedBox(width: compact ? 5 : 7),
-                  Text(
-                    label,
-                    style: TextStyle(
-                      color: ink,
-                      fontSize: compact ? 12 : 13.5,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
+        return look == TranslateLook.pill
+            ? _pill(context, label)
+            : _link(context, label);
       },
+    );
+  }
+
+  // About 60% of the first pill's height and half its
+  // size. Any smaller and the word gets hard to read.
+  Widget _pill(BuildContext context, String label) {
+    final bool dark = Theme.of(context).brightness == Brightness.dark;
+    final Color line = dark ? const Color(0xFF8FD8FF) : color;
+    final Color ink = dark ? Colors.white : color;
+    final BorderRadius round = BorderRadius.circular(7);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: round,
+        onTap: () => controller.toggle(context),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          decoration: BoxDecoration(
+            border: Border.all(color: line, width: 1.1),
+            borderRadius: round,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              if (controller.loading)
+                SizedBox.square(
+                  dimension: 10,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 1.6,
+                    color: ink,
+                  ),
+                )
+              else
+                Icon(Icons.translate_rounded, size: 12, color: ink),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  color: ink,
+                  fontSize: 11,
+                  height: 1.15,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _link(BuildContext context, String label) {
+    final double size = compact ? 12.5 : 13.5;
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => controller.toggle(context),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 3),
+        child: controller.loading
+            ? SizedBox.square(
+                dimension: size,
+                child: CircularProgressIndicator(strokeWidth: 2, color: color),
+              )
+            : Text(
+                label,
+                style: TextStyle(
+                  color: color,
+                  fontSize: size,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+      ),
     );
   }
 }
 
 //===================================================
-// TEXT WITH THE BUTTON UNDER IT
+// TEXT WITH THE SKY-BLUE "TRANSLATE" UNDER IT
 //
 // With a [heading] (like Marketplace "Description"),
-// the button sits at the end of the heading instead.
+// the small pill sits at the end of the heading instead.
 //===================================================
 
 class TranslatableText extends StatefulWidget {
@@ -260,10 +302,10 @@ class TranslatableText extends StatefulWidget {
 
   final Color linkColor;
 
-  /// Smaller button (comments, chat bubbles).
+  /// Smaller link text (comments, chat bubbles).
   final bool compact;
 
-  /// A title above the text; the button goes beside it.
+  /// A title above the text; the pill goes beside it.
   final Widget? heading;
 
   /// Space between [heading] and the text.
@@ -298,7 +340,6 @@ class _TranslatableTextState extends State<TranslatableText> {
               Expanded(child: heading),
               TranslateButton(
                 controller: _controller,
-                compact: widget.compact,
                 color: widget.linkColor,
               ),
             ],
@@ -325,9 +366,10 @@ class _TranslatableTextState extends State<TranslatableText> {
         children: <Widget>[
           widget.builder(_controller.shownText(language)),
           Padding(
-            padding: EdgeInsets.only(top: widget.compact ? 5 : 7, bottom: 2),
+            padding: EdgeInsets.only(top: widget.compact ? 2 : 4),
             child: TranslateButton(
               controller: _controller,
+              look: TranslateLook.link,
               compact: widget.compact,
               color: widget.linkColor,
             ),

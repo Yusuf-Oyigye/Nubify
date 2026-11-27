@@ -30,12 +30,16 @@ void main() {
   const String french = 'Je suis dans la bibliothèque avec mon ami';
   const String hausa = 'Ina ƙaunar wannan jami’a sosai';
 
-  testWidgets('Arabic post, English reader: 文A Translate shows', (
+  testWidgets('comment in Arabic, English reader: sky-blue Translate', (
     WidgetTester tester,
   ) async {
     await show(tester, 'en', arabic);
     expect(find.text('Translate'), findsOneWidget);
-    expect(find.byIcon(Icons.translate_rounded), findsOneWidget);
+
+    // Plain text, no pill: no icon, no outline.
+    expect(find.byIcon(Icons.translate_rounded), findsNothing);
+    final Text link = tester.widget<Text>(find.text('Translate'));
+    expect(link.style?.color, const Color(0xFF1D9BF0));
   });
 
   testWidgets('English post, Arabic reader: ترجمة shows', (
@@ -110,6 +114,9 @@ void main() {
       ),
     );
 
+    // The small pill, with its 文A icon.
+    expect(find.byIcon(Icons.translate_rounded), findsOneWidget);
+
     final Offset title = tester.getCenter(find.text('Description'));
     final Offset button = tester.getCenter(find.text('Translate'));
     expect((title.dy - button.dy).abs(), lessThan(12));
@@ -142,8 +149,19 @@ void main() {
       ..update(arabic);
     addTearDown(controller.dispose);
 
-    await showApp(tester, 'en', TranslateButton(controller: controller));
+    await showApp(
+      tester,
+      'en',
+      Center(child: TranslateButton(controller: controller)),
+    );
     expect(find.text('Translate'), findsOneWidget);
+    expect(find.byIcon(Icons.translate_rounded), findsOneWidget);
+
+    // Small: the first pill was about 30 high. (Widths are
+    // not checked: the test font draws every letter as a
+    // square, much wider than on a phone.)
+    final Size pill = tester.getSize(find.byType(TranslateButton));
+    expect(pill.height, lessThanOrEqualTo(20));
 
     controller.update('');
     await showApp(tester, 'en', TranslateButton(controller: controller));

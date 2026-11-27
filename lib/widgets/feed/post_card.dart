@@ -3597,7 +3597,6 @@ class _PostCardState extends State<PostCard> {
                                   ),
                                   child: TranslateButton(
                                     controller: translation,
-                                    compact: true,
                                   ),
                                 ),
                               ],
