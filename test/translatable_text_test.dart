@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:google_mlkit_translation/google_mlkit_translation.dart';
 import 'package:nubify/l10n/nubify_text.dart';
 import 'package:nubify/services/common/translation_service.dart';
 import 'package:nubify/widgets/common/translatable_text.dart';
@@ -138,5 +139,47 @@ void main() {
     expect(TranslationService.targetFor('yo'), 'en');
     expect(TranslationService.targetFor('ar'), 'ar');
     expect(TranslationService.targetFor('fr'), 'fr');
+  });
+
+  test('short posts ML Kit cannot place are read as English', () {
+    expect(
+      TranslationService.sourceWhenUnsure('und', 'ok'),
+      TranslateLanguage.english,
+    );
+    expect(
+      TranslationService.sourceWhenUnsure('und', 'Hello guys'),
+      TranslateLanguage.english,
+    );
+    expect(
+      TranslationService.sourceWhenUnsure('und', 'مرحبا بكم'),
+      TranslateLanguage.arabic,
+    );
+    // One or two words: the app's own guess, no ML Kit.
+    expect(
+      TranslationService.shortTextSource('ddd'),
+      TranslateLanguage.english,
+    );
+    expect(
+      TranslationService.shortTextSource('Alhamdulillah'),
+      TranslateLanguage.english,
+    );
+    expect(
+      TranslationService.shortTextSource('مرحبا'),
+      TranslateLanguage.arabic,
+    );
+    expect(TranslationService.shortTextSource('🔥🔥'), isNull);
+    expect(
+      TranslationService.shortTextSource('See you all in the library'),
+      isNull,
+    );
+    // Arabic in English letters.
+    expect(
+      TranslationService.sourceWhenUnsure('ar-Latn', 'Alhamdulillah'),
+      TranslateLanguage.english,
+    );
+    // Hausa or Yoruba, or nothing to read: still unknown.
+    expect(TranslationService.sourceWhenUnsure('und', 'Ina ƙaunar ku'), isNull);
+    expect(TranslationService.sourceWhenUnsure('und', '🔥 2026'), isNull);
+    expect(TranslationService.sourceWhenUnsure('ha', 'Ina son ku'), isNull);
   });
 }

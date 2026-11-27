@@ -1,5 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:google_mlkit_language_id/google_mlkit_language_id.dart';
 import 'package:google_mlkit_translation/google_mlkit_translation.dart';
+
+import '../../utils/common/language_guess.dart';
 
 //===================================================
 // TRANSLATE WHAT PEOPLE WRITE (ON THE PHONE)
@@ -47,6 +50,47 @@ class TranslationService {
   static bool canTranslateFrom(String? guess) =>
       guess == null || _languages.containsKey(guess);
 
+  /// ML Kit guesses badly on one or two words ("ddd" came
+  /// back as Welsh, and started a Welsh download). For
+  /// those: Arabic or Hindi letters are Arabic or Hindi,
+  /// Latin letters are English (or French when they say
+  /// so). Null for longer text, or nothing to read.
+  @visibleForTesting
+  static TranslateLanguage? shortTextSource(String text) {
+    if (LanguageGuess.wordCount(text) >= 3) return null;
+    final String? guess = LanguageGuess.of(text);
+    if (guess != null) return _languages[guess];
+    return LanguageGuess.hasLetters(text) ? TranslateLanguage.english : null;
+  }
+
+  /// ML Kit says "und" (not sure) on very short text like
+  /// "ok" or "Hello guys", and "ar-Latn" (Arabic in
+  /// English letters) on words like "Alhamdulillah" that
+  /// it has no translator for. Use the app's own guess
+  /// then, and English for Latin-letter posts (the same
+  /// rule that shows the button). A language ML Kit did
+  /// recognise but cannot translate (Hausa, Yoruba) stays
+  /// unknown.
+  @visibleForTesting
+  static TranslateLanguage? sourceWhenUnsure(String code, String text) {
+    if (code != 'und' && !code.endsWith('-Latn')) return null;
+    final String? guess = LanguageGuess.of(text);
+    if (guess != null) return _languages[guess];
+    return LanguageGuess.hasLetters(text) ? TranslateLanguage.english : null;
+  }
+
+  // ML Kit's guess for longer text.
+  Future<TranslateLanguage> _identify(String text) async {
+    final String code = await _identifier.identifyLanguage(text);
+    final TranslateLanguage? source =
+        BCP47Code.fromRawValue(code) ?? sourceWhenUnsure(code, text);
+    if (source == null) {
+      debugPrint('Translate: cannot read language "$code"');
+      throw const TranslationException(TranslationProblem.unknownLanguage);
+    }
+    return source;
+  }
+
   final LanguageIdentifier _identifier = LanguageIdentifier(
     confidenceThreshold: 0.5,
   );
@@ -77,12 +121,10 @@ class TranslationService {
     final String? cached = _cache[key];
     if (cached != null) return cached;
 
-    // Which language did the person write in?
-    final String code = await _identifier.identifyLanguage(text);
-    final TranslateLanguage? source = BCP47Code.fromRawValue(code);
-    if (source == null) {
-      throw const TranslationException(TranslationProblem.unknownLanguage);
-    }
+    // Which language did the person write in? One or two
+    // words: the app's own guess. Longer: ML Kit.
+    final TranslateLanguage source =
+        shortTextSource(text) ?? await _identify(text);
     if (source == target) return text;
 
     // First time only: download both languages.

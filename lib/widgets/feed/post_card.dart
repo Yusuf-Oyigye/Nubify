@@ -2834,7 +2834,7 @@ class _PostCardState extends State<PostCard> {
               children: <Widget>[
                 Row(
                   children: <Widget>[
-                    Flexible(
+                    Expanded(
                       child: Text(
                         widget.post.fullName.isNotEmpty
                             ? widget.post.fullName
@@ -2846,6 +2846,17 @@ class _PostCardState extends State<PostCard> {
                           fontSize: 16,
                         ),
                       ),
+                    ),
+
+                    //===================================================
+                    // "文A TRANSLATE" AT THE END OF THE NAME LINE,
+                    // NEXT TO ⋮ (only when written in another
+                    // language). The @username + time line below
+                    // keeps the full width.
+                    //===================================================
+                    Padding(
+                      padding: const EdgeInsetsDirectional.only(start: 6),
+                      child: TranslateButton(controller: _headerTranslation),
                     ),
                   ],
                 ),
@@ -2891,18 +2902,13 @@ class _PostCardState extends State<PostCard> {
         ),
 
         //===================================================
-        // "文A TRANSLATE" (only when written in another
-        // language)
-        //===================================================
-        Padding(
-          padding: const EdgeInsetsDirectional.only(start: 6, top: 9),
-          child: TranslateButton(controller: _headerTranslation),
-        ),
-
-        //===================================================
         // THREE DOT MENU
         //===================================================
-        IconButton(onPressed: _showPostMenu, icon: const Icon(Icons.more_vert)),
+        IconButton(
+          onPressed: _showPostMenu,
+          visualDensity: VisualDensity.compact,
+          icon: const Icon(Icons.more_vert),
+        ),
       ],
     );
   }
@@ -3561,20 +3567,40 @@ class _PostCardState extends State<PostCard> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: <Widget>[
-                            GestureDetector(
-                              behavior: HitTestBehavior.opaque,
-                              onTap: () {
-                                _openProfile(referenced.uid);
-                              },
-                              child: Text(
-                                displayName,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 14.5,
+                            Row(
+                              children: <Widget>[
+                                Expanded(
+                                  child: GestureDetector(
+                                    behavior: HitTestBehavior.opaque,
+                                    onTap: () {
+                                      _openProfile(referenced.uid);
+                                    },
+                                    child: Text(
+                                      displayName,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 14.5,
+                                      ),
+                                    ),
+                                  ),
                                 ),
-                              ),
+
+                                //===================================================
+                                // "文A TRANSLATE" FOR THE QUOTED POST, AT
+                                // THE END OF ITS NAME LINE
+                                //===================================================
+                                Padding(
+                                  padding: const EdgeInsetsDirectional.only(
+                                    start: 6,
+                                  ),
+                                  child: TranslateButton(
+                                    controller: translation,
+                                    compact: true,
+                                  ),
+                                ),
+                              ],
                             ),
 
                             Row(
@@ -3621,20 +3647,6 @@ class _PostCardState extends State<PostCard> {
                               ],
                             ),
                           ],
-                        ),
-                      ),
-
-                      //===================================================
-                      // "文A TRANSLATE" FOR THE QUOTED POST
-                      //===================================================
-                      Padding(
-                        padding: const EdgeInsetsDirectional.only(
-                          start: 6,
-                          top: 4,
-                        ),
-                        child: TranslateButton(
-                          controller: translation,
-                          compact: true,
                         ),
                       ),
                     ],

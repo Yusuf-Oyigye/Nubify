@@ -165,6 +165,13 @@ abstract final class LanguageGuess {
     return bestHits >= 2 ? best : null;
   }
 
+  /// How many words [text] has.
+  static int wordCount(String text) => _word.allMatches(text).length;
+
+  /// True when [text] has at least two Latin letters (not
+  /// only emoji or numbers).
+  static bool hasLetters(String text) => _latin.allMatches(text).length >= 2;
+
   /// True when [text] is worth offering to translate into
   /// [language]: another language, or a post we cannot
   /// place (see below).
@@ -180,7 +187,7 @@ abstract final class LanguageGuess {
     // most often English, so every reader except English
     // ones gets the link. English readers only get it on
     // longer posts. No letters (emoji, numbers): no link.
-    if (_latin.allMatches(clean).length < 2) return false;
+    if (!hasLetters(clean)) return false;
     if (language != 'en') return true;
 
     return _word.allMatches(clean).length >= 3;
