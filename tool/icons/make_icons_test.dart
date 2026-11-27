@@ -13,6 +13,10 @@
 // - res/mipmap-*/ic_launcher.png and
 //   ic_launcher_foreground.png: the home-screen icon.
 // - tool/icons/preview.png: a quick look at the cut-out.
+// - play_store/: the pictures Google Play asks for:
+//   nubify_play_icon_512.png (512 x 512 app icon) and
+//   nubify_feature_graphic_1024x500.png (the banner on
+//   top of the store page).
 
 import 'dart:io';
 import 'dart:math' as math;
@@ -86,6 +90,32 @@ void main() {
           ),
         );
       }
+
+      // Google Play app icon: 512 x 512, a full square
+      // (Play rounds the corners itself), no see-through.
+      _write(
+        'play_store/nubify_play_icon_512.png',
+        logo.render(512, both, 0.7, background: logo.blue),
+      );
+
+      // Google Play feature graphic: 1024 x 500, no
+      // see-through (24-bit PNG). The full logo, tagline
+      // included, on a Nubify blue gradient, kept away
+      // from the edges.
+      final _Logo full = await _Logo.load(_logo);
+      final _Box everything = full.bounds(0, 150, full.width, full.height);
+      _write(
+        'play_store/nubify_feature_graphic_1024x500.png',
+        full.render(
+          1024,
+          everything,
+          0.74,
+          height: 500,
+          background: full.blue,
+          background2: const <int>[0x15, 0x46, 0xC9],
+          alpha: false,
+        ),
+      );
 
       final String hex = logo.blue
           .map((int c) => c.toRadixString(16).padLeft(2, '0'))
@@ -203,18 +233,26 @@ class _Logo {
     return _Box(minX, minY, maxX, maxY);
   }
 
-  /// A [size] x [size] PNG with the white of [box] in the
-  /// middle, [fill] of the width (or, with [circle], of
-  /// the circle around it). Transparent unless
-  /// [background] is given; [rounded] rounds its corners.
+  /// A [size] x [size] PNG (or [size] x [height]) with the
+  /// white of [box] in the middle, [fill] of the width (or,
+  /// with [circle], of the circle around it). Transparent
+  /// unless [background] is given ([background2] makes it
+  /// a gradient to the bottom right); [rounded] rounds its
+  /// corners; [alpha] false writes a 24-bit PNG.
   Uint8List render(
     int size,
     _Box box,
     double fill, {
+    int? height,
     bool circle = false,
     List<int>? background,
+    List<int>? background2,
     double rounded = 0,
+    bool alpha = true,
   }) {
+    final int outWidth = size;
+    final int tall = height ?? size;
+
     double scale;
     if (circle) {
       final double diagonal = math.sqrt(
@@ -223,20 +261,20 @@ class _Logo {
       scale = size * fill / diagonal;
     } else {
       scale = math.min(
-        size * fill / box.width,
-        size * fill / box.height,
+        outWidth * fill / box.width,
+        tall * fill / box.height,
       );
     }
 
     final double drawnWidth = box.width * scale;
     final double drawnHeight = box.height * scale;
-    final double offsetX = (size - drawnWidth) / 2;
-    final double offsetY = (size - drawnHeight) / 2;
+    final double offsetX = (outWidth - drawnWidth) / 2;
+    final double offsetY = (tall - drawnHeight) / 2;
 
-    final Uint8List pixels = Uint8List(size * size * 4);
+    final Uint8List pixels = Uint8List(outWidth * tall * 4);
 
-    for (int ty = 0; ty < size; ty++) {
-      for (int tx = 0; tx < size; tx++) {
+    for (int ty = 0; ty < tall; ty++) {
+      for (int tx = 0; tx < outWidth; tx++) {
         // Average every logo pixel under this icon pixel.
         final double sx0 = box.left + (tx - offsetX) / scale;
         final double sy0 = box.top + (ty - offsetY) / scale;
@@ -263,23 +301,28 @@ class _Logo {
           cover = n == 0 ? 0 : total / n;
         }
 
-        final int i = (ty * size + tx) * 4;
+        final int i = (ty * outWidth + tx) * 4;
         if (background == null) {
           pixels[i] = 255;
           pixels[i + 1] = 255;
           pixels[i + 2] = 255;
           pixels[i + 3] = (cover * 255).round();
         } else {
+          // How far along the gradient (top left 0, bottom
+          // right 1).
+          final double along = (tx / outWidth + ty / tall) / 2;
           for (int c = 0; c < 3; c++) {
-            pixels[i + c] = (background[c] + (255 - background[c]) * cover)
-                .round();
+            final double base = background2 == null
+                ? background[c].toDouble()
+                : background[c] + (background2[c] - background[c]) * along;
+            pixels[i + c] = (base + (255 - base) * cover).round();
           }
           pixels[i + 3] = (_inside(tx, ty, size, rounded) * 255).round();
         }
       }
     }
 
-    return _png(size, size, pixels);
+    return _png(outWidth, tall, pixels, alpha: alpha);
   }
 
   // How much of the pixel is inside the rounded square
@@ -307,11 +350,19 @@ class _Logo {
 // SMALL PNG WRITER (RGBA, no extra packages)
 //===================================================
 
-Uint8List _png(int width, int height, Uint8List rgba) {
+Uint8List _png(int width, int height, Uint8List rgba, {bool alpha = true}) {
   final BytesBuilder raw = BytesBuilder();
   for (int y = 0; y < height; y++) {
     raw.addByte(0);
-    raw.add(rgba.sublist(y * width * 4, (y + 1) * width * 4));
+    final Uint8List row = rgba.sublist(y * width * 4, (y + 1) * width * 4);
+    if (alpha) {
+      raw.add(row);
+    } else {
+      // RGB only.
+      for (int x = 0; x < width; x++) {
+        raw.add(row.sublist(x * 4, x * 4 + 3));
+      }
+    }
   }
 
   final BytesBuilder out = BytesBuilder()
@@ -321,7 +372,7 @@ Uint8List _png(int width, int height, Uint8List rgba) {
     ..setUint32(0, width)
     ..setUint32(4, height)
     ..setUint8(8, 8)
-    ..setUint8(9, 6);
+    ..setUint8(9, alpha ? 6 : 2);
   _chunk(out, 'IHDR', header.buffer.asUint8List());
   _chunk(out, 'IDAT', Uint8List.fromList(ZLibCodec(level: 9).encode(raw.toBytes())));
   _chunk(out, 'IEND', Uint8List(0));

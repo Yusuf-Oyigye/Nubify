@@ -2009,6 +2009,7 @@ class _NubuzzCardState extends State<NubuzzCard>
 
           TranslatableText(
             text: _caption,
+            linkColor: Colors.white,
             builder: (String shown) => UniversalLinkText(
               text: shown,
               compactPreview: true,

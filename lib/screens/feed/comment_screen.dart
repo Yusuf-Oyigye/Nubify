@@ -1003,6 +1003,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
                     if (text.trim().isNotEmpty)
                       TranslatableText(
                         text: text,
+                        compact: true,
                         builder: (String shown) => UniversalLinkText(
                           text: shown,
                           compactPreview: true,
@@ -2878,6 +2879,7 @@ class _RepliesSectionState extends State<_RepliesSection> {
                         if (text.trim().isNotEmpty)
                           TranslatableText(
                             text: text,
+                            compact: true,
                             builder: (String shown) => UniversalLinkText(
                               text: shown,
                               compactPreview: true,

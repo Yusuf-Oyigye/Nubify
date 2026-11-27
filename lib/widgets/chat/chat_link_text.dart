@@ -31,6 +31,9 @@ class ChatLinkText
       ) {
     return TranslatableText(
       text: text,
+      compact: true,
+      // Same colour as the message (white on the bubbles).
+      linkColor: style?.color ?? const Color(0xFF1D9BF0),
       builder: (String shown) => UniversalLinkText(
         text:
         shown,

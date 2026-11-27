@@ -12,7 +12,9 @@ import 'package:google_mlkit_translation/google_mlkit_translation.dart';
 // first time only).
 //
 // ML Kit has English, Arabic, French and Hindi, but no
-// Hausa or Yoruba, so the button is hidden for those.
+// Hausa or Yoruba: Hausa and Yoruba readers get
+// "Translate to English" instead, and posts written in
+// Hausa or Yoruba show no button.
 //===================================================
 
 class TranslationService {
@@ -32,6 +34,12 @@ class TranslationService {
   /// True when the phone can translate into [language].
   static bool canTranslateInto(String language) =>
       _languages.containsKey(language);
+
+  /// The language a reader using the app in [appLanguage]
+  /// gets: their own, or English when the phone cannot
+  /// translate into it (Hausa, Yoruba).
+  static String targetFor(String appLanguage) =>
+      canTranslateInto(appLanguage) ? appLanguage : 'en';
 
   /// False when the text is clearly in a language the
   /// phone cannot translate (Hausa, Yoruba). [guess] is

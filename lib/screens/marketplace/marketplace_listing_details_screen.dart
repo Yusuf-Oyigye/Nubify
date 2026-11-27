@@ -564,15 +564,15 @@ class _MarketplaceListingDetailsScreenState
                     ),
                     if (listing.description.trim().isNotEmpty) ...<Widget>[
                       const SizedBox(height: 26),
-                      Text(context.tr('Description'),
-                        style: TextStyle(
-                          fontSize: 19,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      const SizedBox(height: 9),
+                      // "文A Translate" sits beside the title.
                       TranslatableText(
                         text: listing.description,
+                        heading: Text(context.tr('Description'),
+                          style: TextStyle(
+                            fontSize: 19,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
                         builder: (String shown) => Text(
                           shown,
                           style: TextStyle(

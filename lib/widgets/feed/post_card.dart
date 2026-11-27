@@ -16,9 +16,7 @@ import '../../services/chat/chat_sevice.dart';
 import '../../services/feed/like_service.dart';
 import '../../services/feed/post_actions_service.dart';
 import '../../services/feed/repost_service.dart';
-import '../../services/common/translation_service.dart';
 import '../../services/stories/story_service.dart';
-import '../../utils/common/language_guess.dart';
 import '../../utils/common/nubify_time.dart';
 import 'post_media_carousel.dart';
 import '../../screens/chat/chat_forward_screen.dart';
@@ -131,19 +129,16 @@ class _PostCardState extends State<PostCard> {
   String _caption = '';
 
   //===================================================
-  // "TRANSLATE" BUTTON
+  // "TRANSLATE" BUTTONS
   //
-  // The caption in the reader's language, and the
-  // caption and language it was made for.
+  // One for this post (in the header, next to ⋮) and one
+  // for each quoted post shown inside it.
   //===================================================
 
-  static const Color _translateBlue = Color(0xFF1D9BF0);
+  final TranslationController _translation = TranslationController();
 
-  String? _translation;
-  String _translatedCaption = '';
-  String _translationLanguage = '';
-  bool _showTranslation = false;
-  bool _translating = false;
+  final Map<String, TranslationController> _embedTranslations =
+      <String, TranslationController>{};
 
   bool _isDeleted = false;
 
@@ -365,6 +360,11 @@ class _PostCardState extends State<PostCard> {
   @override
   void dispose() {
     _engagementSubscription?.cancel();
+
+    _translation.dispose();
+    for (final TranslationController controller in _embedTranslations.values) {
+      controller.dispose();
+    }
 
     super.dispose();
   }
@@ -2847,7 +2847,6 @@ class _PostCardState extends State<PostCard> {
                         ),
                       ),
                     ),
-                    _buildTranslateLink(),
                   ],
                 ),
 
@@ -2892,6 +2891,15 @@ class _PostCardState extends State<PostCard> {
         ),
 
         //===================================================
+        // "文A TRANSLATE" (only when written in another
+        // language)
+        //===================================================
+        Padding(
+          padding: const EdgeInsetsDirectional.only(start: 6, top: 9),
+          child: TranslateButton(controller: _headerTranslation),
+        ),
+
+        //===================================================
         // THREE DOT MENU
         //===================================================
         IconButton(onPressed: _showPostMenu, icon: const Icon(Icons.more_vert)),
@@ -2905,102 +2913,35 @@ class _PostCardState extends State<PostCard> {
 
   String get _readerLanguage => Localizations.localeOf(context).languageCode;
 
-  bool _translationShown(String language) =>
-      _showTranslation &&
-      _translation != null &&
-      _translationLanguage == language &&
-      _translatedCaption == _caption;
+  // The reposter's own words on a quote repost.
+  String get _quoteText => widget.post.repostText.trim().isNotEmpty
+      ? widget.post.repostText.trim()
+      : widget.post.caption.trim();
 
-  Future<void> _toggleTranslation() async {
-    final String language = _readerLanguage;
-
-    if (_translationShown(language)) {
-      setState(() => _showTranslation = false);
-      return;
-    }
-
-    if (_translation != null &&
-        _translationLanguage == language &&
-        _translatedCaption == _caption) {
-      setState(() => _showTranslation = true);
-      return;
-    }
-
-    if (_translating) return;
-    setState(() => _translating = true);
-    final String caption = _caption;
-    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
-    final String downloading = context.tr(
-      'Downloading the language for translation (about 30 MB)…',
+  // What the header's Translate button translates: the
+  // caption, the quote words, or nothing (plain repost).
+  TranslationController get _headerTranslation {
+    _translation.update(
+      !widget.post.isRepost
+          ? _caption
+          : widget.post.isQuoteRepost
+          ? _quoteText
+          : '',
     );
-
-    try {
-      final String translation = await TranslationService.instance.translate(
-        caption.trim(),
-        language,
-        onDownload: () =>
-            messenger.showSnackBar(SnackBar(content: Text(downloading))),
-      );
-
-      if (!mounted) return;
-
-      setState(() {
-        _translation = translation;
-        _translatedCaption = caption;
-        _translationLanguage = language;
-        _showTranslation = true;
-      });
-    } catch (error) {
-      debugPrint('Translate failed: $error');
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.tr('Could not translate. Please try again.')),
-          ),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _translating = false);
-    }
+    return _translation;
   }
 
-  // Blue, in the reader's own language, only on posts
-  // that are not already in it.
-  Widget _buildTranslateLink() {
-    final String language = _readerLanguage;
-
-    if (!TranslationService.canTranslateInto(language) ||
-        !TranslationService.canTranslateFrom(LanguageGuess.of(_caption)) ||
-        !LanguageGuess.shouldOffer(_caption, language)) {
-      return const SizedBox.shrink();
-    }
-
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: _toggleTranslation,
-      child: Padding(
-        padding: const EdgeInsetsDirectional.only(start: 8, top: 1),
-        child: _translating
-            ? const SizedBox.square(
-                dimension: 14,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: _translateBlue,
-                ),
-              )
-            : Text(
-                context.tr(
-                  _translationShown(language) ? 'Show original' : 'Translate',
-                ),
-                style: const TextStyle(
-                  color: _translateBlue,
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-      ),
-    );
+  // The Translate button of a quoted post shown inside
+  // this one.
+  TranslationController _embedTranslation(
+    Post referenced,
+    String text,
+    int depth,
+  ) {
+    return _embedTranslations.putIfAbsent(
+      '$depth:${referenced.postId}',
+      TranslationController.new,
+    )..update(text);
   }
 
   Widget _buildCaption() {
@@ -3008,22 +2949,26 @@ class _PostCardState extends State<PostCard> {
       return const SizedBox.shrink();
     }
 
+    final TranslationController translation = _headerTranslation;
+
     return Padding(
       padding: const EdgeInsets.only(top: 12, bottom: 10),
 
-      child: UniversalLinkText(
-        text: _translationShown(_readerLanguage)
-            ? _translation!
-            : _caption,
+      child: ListenableBuilder(
+        listenable: translation,
+        builder: (BuildContext context, _) => UniversalLinkText(
+          text: translation.shownText(_readerLanguage),
 
-        style: const TextStyle(fontSize: 16, height: 1.4),
+          style: const TextStyle(fontSize: 16, height: 1.4),
 
-        // Long posts show a short preview in the feed. The post's own
-        // page (comments screen) always shows the full text.
-        collapsedMaxLines: widget.inCommentsScreen ? null : 5,
+          // Long posts show a short preview in the feed. The post's own
+          // page (comments screen) always shows the full text.
+          collapsedMaxLines: widget.inCommentsScreen ? null : 5,
+        ),
       ),
     );
   }
+
   //===================================================
   // SHOW TAGGED USERS
   //===================================================
@@ -3365,9 +3310,10 @@ class _PostCardState extends State<PostCard> {
     required Post? referenced,
     bool loading = false,
   }) {
-    final String quoteText = widget.post.repostText.trim().isNotEmpty
-        ? widget.post.repostText.trim()
-        : widget.post.caption.trim();
+    final String quoteText = _quoteText;
+
+    // The header's Translate button translates the quote words.
+    final TranslationController translation = _headerTranslation;
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -3427,10 +3373,10 @@ class _PostCardState extends State<PostCard> {
                 if (quote && quoteText.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
-                    child: TranslatableText(
-                      text: quoteText,
-                      builder: (String shown) => UniversalLinkText(
-                        text: shown,
+                    child: ListenableBuilder(
+                      listenable: translation,
+                      builder: (BuildContext context, _) => UniversalLinkText(
+                        text: translation.shownText(_readerLanguage),
                         style: const TextStyle(
                           fontSize: 16,
                           height: 1.4,
@@ -3523,6 +3469,18 @@ class _PostCardState extends State<PostCard> {
     final String quoteText = referenced.repostText.trim().isNotEmpty
         ? referenced.repostText.trim()
         : referenced.caption.trim();
+
+    // Its own Translate button: the caption, or the quote
+    // words when it is itself a quote repost.
+    final TranslationController translation = _embedTranslation(
+      referenced,
+      !referenced.isRepost
+          ? referenced.caption.trim()
+          : referenced.isQuoteRepost
+          ? quoteText
+          : '',
+      depth,
+    );
 
     final String nestedSource = referenced.sourcePostId.trim();
 
@@ -3665,6 +3623,20 @@ class _PostCardState extends State<PostCard> {
                           ],
                         ),
                       ),
+
+                      //===================================================
+                      // "文A TRANSLATE" FOR THE QUOTED POST
+                      //===================================================
+                      Padding(
+                        padding: const EdgeInsetsDirectional.only(
+                          start: 6,
+                          top: 4,
+                        ),
+                        child: TranslateButton(
+                          controller: translation,
+                          compact: true,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -3706,10 +3678,10 @@ class _PostCardState extends State<PostCard> {
                     referenced.caption.trim().isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-                    child: TranslatableText(
-                      text: referenced.caption.trim(),
-                      builder: (String shown) => Text(
-                        shown,
+                    child: ListenableBuilder(
+                      listenable: translation,
+                      builder: (BuildContext context, _) => Text(
+                        translation.shownText(_readerLanguage),
                         style: const TextStyle(fontSize: 15, height: 1.35),
                       ),
                     ),
@@ -3721,10 +3693,10 @@ class _PostCardState extends State<PostCard> {
                 if (referenced.isQuoteRepost && quoteText.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-                    child: TranslatableText(
-                      text: quoteText,
-                      builder: (String shown) => Text(
-                        shown,
+                    child: ListenableBuilder(
+                      listenable: translation,
+                      builder: (BuildContext context, _) => Text(
+                        translation.shownText(_readerLanguage),
                         style: const TextStyle(
                           fontSize: 15,
                           height: 1.35,
@@ -4307,9 +4279,8 @@ class _PostCardState extends State<PostCard> {
     required bool quote,
     String message = 'Original post is no longer available.',
   }) {
-    final String quoteText = widget.post.repostText.trim().isNotEmpty
-        ? widget.post.repostText.trim()
-        : widget.post.caption.trim();
+    final String quoteText = _quoteText;
+    final TranslationController translation = _headerTranslation;
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -4356,12 +4327,15 @@ class _PostCardState extends State<PostCard> {
             if (quote && quoteText.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
-                child: Text(
-                  quoteText,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    height: 1.4,
-                    fontWeight: FontWeight.w500,
+                child: ListenableBuilder(
+                  listenable: translation,
+                  builder: (BuildContext context, _) => Text(
+                    translation.shownText(_readerLanguage),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      height: 1.4,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
               ),
